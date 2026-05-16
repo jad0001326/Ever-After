@@ -1,5 +1,5 @@
 -- Ever After Supabase/PostgreSQL schema
--- Run in the Supabase SQL editor, then create the first admin by updating public.users.role.
+-- Run in the Supabase SQL editor, then create the first admin by updating public.profiles.role.
 
 create extension if not exists "pgcrypto";
 
@@ -7,7 +7,7 @@ create type public.user_role as enum ('user', 'admin');
 create type public.venue_status as enum ('draft', 'published');
 create type public.enquiry_status as enum ('new', 'contacted', 'closed');
 
-create table public.users (
+create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null unique,
   full_name text,
@@ -60,7 +60,7 @@ create table public.venue_amenities (
 );
 
 create table public.favourites (
-  user_id uuid not null references public.users(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
   venue_id uuid not null references public.venues(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, venue_id)
@@ -69,7 +69,7 @@ create table public.favourites (
 create table public.enquiries (
   id uuid primary key default gen_random_uuid(),
   venue_id uuid not null references public.venues(id) on delete cascade,
-  user_id uuid references public.users(id) on delete set null,
+  user_id uuid references public.profiles(id) on delete set null,
   name text not null,
   email text not null,
   phone text,
@@ -111,7 +111,7 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.users (id, email, full_name)
+  insert into public.profiles (id, email, full_name)
   values (new.id, new.email, new.raw_user_meta_data ->> 'full_name');
   return new;
 end;
@@ -121,7 +121,7 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
-alter table public.users enable row level security;
+alter table public.profiles enable row level security;
 alter table public.venues enable row level security;
 alter table public.venue_images enable row level security;
 alter table public.amenities enable row level security;
@@ -135,13 +135,13 @@ language sql
 stable
 as $$
   select exists (
-    select 1 from public.users
+    select 1 from public.profiles
     where id = auth.uid() and role = 'admin'
   );
 $$;
 
-create policy "Users can read own profile" on public.users for select using (id = auth.uid() or public.is_admin());
-create policy "Users can update own profile" on public.users for update using (id = auth.uid()) with check (id = auth.uid());
+create policy "Users can read own profile" on public.profiles for select using (id = auth.uid() or public.is_admin());
+create policy "Users can update own profile" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
 
 create policy "Published venues are public" on public.venues for select using (status = 'published' or public.is_admin());
 create policy "Admins manage venues" on public.venues for all using (public.is_admin()) with check (public.is_admin());

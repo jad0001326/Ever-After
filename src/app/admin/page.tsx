@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Edit, ImagePlus, Plus, UploadCloud } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { venues as demoVenues } from "@/data/venues";
 import { ButtonLink } from "@/components/ui/button";
 import { gbp } from "@/lib/utils";
 
@@ -19,17 +18,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     ? await supabase.from("venues").select("id, name, slug, type, region, town, price_from, capacity_max, status").order("updated_at", { ascending: false })
     : { data: null };
 
-  const venues = data ?? demoVenues.map((venue) => ({
-    id: venue.id,
-    name: venue.name,
-    slug: venue.slug,
-    type: venue.type,
-    region: venue.region,
-    town: venue.town,
-    price_from: venue.priceFrom,
-    capacity_max: venue.capacityMax,
-    status: "published"
-  }));
+  const venues = data ?? [];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

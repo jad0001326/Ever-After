@@ -38,7 +38,7 @@ Fill in:
 ```bash
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=only-use-in-secure-server-jobs
 ```
 
@@ -59,14 +59,14 @@ Open `http://localhost:3000`.
 5. Promote yourself to admin:
 
 ```sql
-update public.users
+update public.profiles
 set role = 'admin'
 where email = 'you@example.com';
 ```
 
 The schema creates:
 
-- `public.users`
+- `public.profiles`
 - `public.venues`
 - `public.venue_images`
 - `public.amenities`
