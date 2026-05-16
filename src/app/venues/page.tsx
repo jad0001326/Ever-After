@@ -26,6 +26,7 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Venue search</p>
           <h1 className="mt-3 font-display text-5xl font-semibold">Wedding venues in Scotland</h1>
           <p className="mt-3 text-[var(--muted)]">{results.total} venues matched your search.</p>
+          {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase connection needed: {results.error}</p> : null}
         </div>
         <Suspense fallback={null}>
           <SortSelect />

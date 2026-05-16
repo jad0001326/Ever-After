@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function slugify(value: string) {
@@ -9,11 +10,15 @@ function slugify(value: string) {
 }
 
 export async function upsertVenue(formData: FormData) {
+  await requireAdmin();
+
   const supabase = await createClient();
-  if (!supabase) redirect("/admin?message=Connect+Supabase+to+persist+venue+changes");
+  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
 
   const id = formData.get("id")?.toString();
   const name = formData.get("name")?.toString() ?? "";
+  if (!name.trim()) redirect("/admin?message=Venue+name+is+required");
+
   const status: "draft" | "published" = formData.get("status")?.toString() === "draft" ? "draft" : "published";
   const payload = {
     slug: formData.get("slug")?.toString() || slugify(name),
@@ -32,12 +37,29 @@ export async function upsertVenue(formData: FormData) {
     status
   };
 
-  const { error } = id
-    ? await supabase.from("venues").update(payload).eq("id", id)
-    : await supabase.from("venues").insert(payload);
+  const selectedAmenityIds = formData.getAll("amenities").map((value) => value.toString()).filter(Boolean);
+  const result = id
+    ? await supabase.from("venues").update(payload).eq("id", id).select("id").single()
+    : await supabase.from("venues").insert(payload).select("id").single();
 
-  if (error) redirect(`/admin?message=${encodeURIComponent(error.message)}`);
+  if (result.error) redirect(`/admin?message=${encodeURIComponent(result.error.message)}`);
+
+  const venueId = result.data.id;
+  const { error: deleteError } = await supabase.from("venue_amenities").delete().eq("venue_id", venueId);
+  if (deleteError) redirect(`/admin/venues/${venueId}/edit?message=${encodeURIComponent(deleteError.message)}`);
+
+  if (selectedAmenityIds.length > 0) {
+    const { error: amenitiesError } = await supabase.from("venue_amenities").insert(
+      selectedAmenityIds.map((amenityId) => ({
+        venue_id: venueId,
+        amenity_id: amenityId
+      }))
+    );
+    if (amenitiesError) redirect(`/admin/venues/${venueId}/edit?message=${encodeURIComponent(amenitiesError.message)}`);
+  }
+
   revalidatePath("/admin");
   revalidatePath("/venues");
-  redirect("/admin?message=Venue+saved");
+  revalidatePath(`/venues/${payload.slug}`);
+  redirect(`/admin/venues/${venueId}/edit?message=Venue+saved`);
 }

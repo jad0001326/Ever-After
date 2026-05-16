@@ -3,7 +3,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { getFeaturedVenueListings } from "@/lib/venues";
 
 export async function FeaturedVenues() {
-  const featured = await getFeaturedVenueListings();
+  const { venues: featured, error } = await getFeaturedVenueListings();
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -21,6 +21,8 @@ export async function FeaturedVenues() {
           <VenueCard key={venue.id} priority={index === 0} venue={venue} />
         ))}
       </div>
+      {error ? <p className="mt-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase connection needed: {error}</p> : null}
+      {!error && featured.length === 0 ? <p className="mt-6 text-sm text-[var(--muted)]">No featured venues have been published yet.</p> : null}
     </section>
   );
 }

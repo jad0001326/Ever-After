@@ -1,5 +1,6 @@
 import type { Venue } from "@/types/venue";
 
+// Development/demo reference data only. Runtime venue pages and admin flows read from Supabase.
 export const venueTypes = ["Castle", "Barn", "Luxury Hotel", "Country Estate"] as const;
 
 export const amenities = [
