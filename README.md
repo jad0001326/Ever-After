@@ -41,6 +41,12 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=only-use-in-secure-server-jobs
 ```
 
+For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. For example:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://your-site.vercel.app
+```
+
 Run locally:
 
 ```bash
@@ -74,7 +80,8 @@ The schema creates:
 
 1. Start the app.
 2. Create your first account through `/signup`.
-3. In Supabase SQL Editor, promote that profile:
+3. If email confirmation is enabled, click the confirmation email link. It should redirect to `${NEXT_PUBLIC_SITE_URL}/login`.
+4. In Supabase SQL Editor, promote that profile:
 
 ```sql
 update public.profiles
@@ -82,10 +89,17 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-4. Sign out and sign back in if the admin area still redirects you.
-5. Visit `/admin`.
+5. Sign out and sign back in if the admin area still redirects you.
+6. Visit `/admin`.
 
 Unauthenticated users are redirected to `/login`. Signed-in users whose `public.profiles.role` is not `admin` are blocked from admin pages and admin actions.
+
+In Supabase Auth settings, set the production Site URL and redirect allow list:
+
+- Site URL: `https://your-site.vercel.app`
+- Additional Redirect URLs:
+  - `https://your-site.vercel.app/**`
+  - `http://localhost:3000/**`
 
 ## Adding Venues
 

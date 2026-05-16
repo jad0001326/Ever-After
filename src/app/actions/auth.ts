@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { absoluteUrl } from "@/lib/utils";
 
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
@@ -25,7 +26,10 @@ export async function signUp(formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName } }
+    options: {
+      data: { full_name: fullName },
+      emailRedirectTo: absoluteUrl("/login?message=Email+confirmed.+You+can+now+sign+in")
+    }
   });
 
   if (error) redirect(`/signup?message=${encodeURIComponent(error.message)}`);
