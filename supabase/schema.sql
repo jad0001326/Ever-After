@@ -182,6 +182,25 @@ alter table public.venue_amenities enable row level security;
 alter table public.favourites enable row level security;
 alter table public.enquiries enable row level security;
 
+grant usage on schema public to anon, authenticated;
+
+grant select on public.venues to anon, authenticated;
+grant select on public.venue_images to anon, authenticated;
+grant select on public.amenities to anon, authenticated;
+grant select on public.venue_amenities to anon, authenticated;
+
+grant select, insert, update, delete on public.venues to authenticated;
+grant select, insert, update, delete on public.venue_images to authenticated;
+grant select, insert, update, delete on public.amenities to authenticated;
+grant select, insert, update, delete on public.venue_amenities to authenticated;
+
+grant select, update on public.profiles to authenticated;
+
+grant select, insert, update, delete on public.favourites to authenticated;
+
+grant insert on public.enquiries to anon, authenticated;
+grant select, update, delete on public.enquiries to authenticated;
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -261,3 +280,5 @@ with check (bucket_id = 'venue-images' and public.is_admin());
 create policy "Admins delete venue images"
 on storage.objects for delete
 using (bucket_id = 'venue-images' and public.is_admin());
+
+notify pgrst, 'reload schema';
