@@ -1,9 +1,11 @@
 .next
 node_modules
+__pycache__/
 .env
 .env*.local
 dist
 coverage
 *.tsbuildinfo
+outputs/
 vercel
 .vercel
