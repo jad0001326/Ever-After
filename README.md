@@ -141,6 +141,31 @@ Then verify manually:
 
 If Supabase environment variables are missing, public venue pages show an explicit connection message instead of silently falling back to fake data.
 
+## Venue Research Tool
+
+Use `scripts/research_venues.py` to collect starter venue research into a reviewable CSV before entering listings into admin. The output is for research only; every row should be checked manually before publishing.
+
+Google Places discovery requires a Google Places API key:
+
+```bash
+set GOOGLE_PLACES_API_KEY=your-google-places-api-key
+python scripts/research_venues.py --query "wedding venues Scotland" --limit 20 --output outputs/venue_research/scotland_venues.csv
+```
+
+Known website crawl mode does not need an API key:
+
+```bash
+python scripts/research_venues.py --url https://example-venue.com --output outputs/venue_research/known_venues.csv
+```
+
+You can also provide a text file with one website per line:
+
+```bash
+python scripts/research_venues.py --urls-file inputs/venue_urls.txt --output outputs/venue_research/known_venues.csv
+```
+
+The CSV includes starter fields such as venue name, website, phone, public email, contact page, town, region, address, Google Maps URL, source URL, confidence, and notes. It deliberately does not auto-copy venue descriptions or images.
+
 ## Deployment
 
 1. Push the repo to GitHub.
