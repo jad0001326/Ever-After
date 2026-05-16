@@ -1,6 +1,4 @@
-import { amenities as demoAmenities, venues as demoVenues } from "@/data/venues";
 import { createClient } from "@/lib/supabase/server";
-import { searchVenues } from "@/lib/search";
 import type { Database } from "@/types/database";
 import type { Amenity, Venue, VenueSearchParams } from "@/types/venue";
 
@@ -9,17 +7,14 @@ type VenueImageRow = Database["public"]["Tables"]["venue_images"]["Row"];
 
 export async function searchVenueListings(params: VenueSearchParams) {
   const supabase = await createClient();
-  if (!supabase) return searchVenues(params);
+  if (!supabase) return { venues: [], total: 0, page: 1, totalPages: 1 };
 
   const page = Math.max(Number(params.page) || 1, 1);
   const pageSize = 6;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("venues")
-    .select("*", { count: "exact" })
-    .eq("status", "published");
+  let query = supabase.from("venues").select("*", { count: "exact" }).eq("status", "published");
 
   if (params.location) {
     const value = `%${params.location}%`;
@@ -39,12 +34,11 @@ export async function searchVenueListings(params: VenueSearchParams) {
   else query = query.order("price_from", { ascending: true });
 
   const { data, count } = await query.range(from, to);
+  const rows = data ?? [];
+  const total = count ?? rows.length;
 
-  if (!data) return searchVenues(params);
-
-  const total = count ?? data.length;
   return {
-    venues: data.map((row) => venueFromRow(row)),
+    venues: rows.map((row) => venueFromRow(row)),
     total,
     page,
     totalPages: Math.max(Math.ceil(total / pageSize), 1)
@@ -53,7 +47,7 @@ export async function searchVenueListings(params: VenueSearchParams) {
 
 export async function getFeaturedVenueListings() {
   const supabase = await createClient();
-  if (!supabase) return demoVenues.filter((venue) => venue.isFeatured);
+  if (!supabase) return [];
 
   const { data } = await supabase
     .from("venues")
@@ -63,15 +57,15 @@ export async function getFeaturedVenueListings() {
     .order("updated_at", { ascending: false })
     .limit(3);
 
-  return data?.length ? data.map((row) => venueFromRow(row)) : demoVenues.filter((venue) => venue.isFeatured);
+  return (data ?? []).map((row) => venueFromRow(row));
 }
 
 export async function getVenueListingBySlug(slug: string): Promise<Venue | undefined> {
   const supabase = await createClient();
-  if (!supabase) return demoVenues.find((venue) => venue.slug === slug);
+  if (!supabase) return undefined;
 
   const { data: venue } = await supabase.from("venues").select("*").eq("slug", slug).eq("status", "published").single();
-  if (!venue) return demoVenues.find((item) => item.slug === slug);
+  if (!venue) return undefined;
 
   const [{ data: images }, { data: links }, { data: amenityRows }] = await Promise.all([
     supabase.from("venue_images").select("*").eq("venue_id", venue.id).order("sort_order", { ascending: true }),
@@ -82,32 +76,15 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
   const amenityIds = new Set((links ?? []).map((link) => link.amenity_id));
   const mappedAmenities = (amenityRows ?? [])
     .filter((amenity) => amenityIds.has(amenity.id))
-    .map((amenity) => ({
-      id: amenity.slug,
-      name: amenity.name
-    }));
+    .map((amenity) => ({ id: amenity.slug, name: amenity.name }));
 
-  return venueFromRow(venue, images ?? [], mappedAmenities.length ? mappedAmenities : demoAmenities);
+  return venueFromRow(venue, images ?? [], mappedAmenities);
 }
 
 function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Amenity[] = []): Venue {
   const gallery = images.length
-    ? images.map((image) => ({
-        id: image.id,
-        venueId: image.venue_id,
-        url: image.url,
-        alt: image.alt,
-        sortOrder: image.sort_order
-      }))
-    : [
-        {
-          id: `${row.id}-hero`,
-          venueId: row.id,
-          url: row.hero_image,
-          alt: row.name,
-          sortOrder: 0
-        }
-      ];
+    ? images.map((image) => ({ id: image.id, venueId: image.venue_id, url: image.url, alt: image.alt, sortOrder: image.sort_order }))
+    : [{ id: `${row.id}-hero`, venueId: row.id, url: row.hero_image, alt: row.name, sortOrder: 0 }];
 
   return {
     id: row.id,

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { VenueForm } from "@/components/admin/venue-form";
-import { venues as demoVenues } from "@/data/venues";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,24 +15,7 @@ export default async function EditVenuePage({ params, searchParams }: { params: 
   const { message } = await searchParams;
   const supabase = await createClient();
   const { data } = supabase ? await supabase.from("venues").select("*").eq("id", id).single() : { data: null };
-  const demo = demoVenues.find((venue) => venue.id === id);
-  const venue = data ?? (demo ? {
-    id: demo.id,
-    slug: demo.slug,
-    name: demo.name,
-    type: demo.type,
-    region: demo.region,
-    town: demo.town,
-    summary: demo.summary,
-    description: demo.description,
-    price_from: demo.priceFrom,
-    price_to: demo.priceTo,
-    capacity_min: demo.capacityMin,
-    capacity_max: demo.capacityMax,
-    hero_image: demo.heroImage,
-    status: "published",
-    is_featured: demo.isFeatured
-  } : null);
+  const venue = data ?? null;
 
   if (!venue) notFound();
 
