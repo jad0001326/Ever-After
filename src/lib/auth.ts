@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export async function requireAdmin() {
   if (!isSupabaseConfigured) {
-    return { demoMode: true, user: null };
+    redirect("/login?message=Configure+Supabase+environment+variables+first");
   }
 
   const supabase = await createClient();
@@ -17,5 +17,5 @@ export async function requireAdmin() {
   const { data: profile } = await supabase!.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") redirect("/venues?message=Admin+access+required");
 
-  return { demoMode: false, user };
+  return { user };
 }

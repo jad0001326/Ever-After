@@ -16,7 +16,7 @@ export async function createEnquiry(_: EnquiryState, formData: FormData): Promis
   }
 
   const supabase = await createClient();
-  if (!supabase) return { ok: true, message: "Demo enquiry captured. Connect Supabase to store submissions." };
+  if (!supabase) return { ok: false, message: "Supabase is not configured, so enquiries cannot be stored yet." };
 
   const {
     data: { user }

@@ -7,12 +7,20 @@ type VenueImageRow = Database["public"]["Tables"]["venue_images"]["Row"];
 
 export async function searchVenueListings(params: VenueSearchParams) {
   const supabase = await createClient();
-  if (!supabase) return { venues: [], total: 0, page: 1, totalPages: 1 };
-
   const page = Math.max(Number(params.page) || 1, 1);
   const pageSize = 6;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+
+  if (!supabase) {
+    return {
+      venues: [],
+      total: 0,
+      page,
+      totalPages: 1,
+      error: "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+    };
+  }
 
   let query = supabase.from("venues").select("*", { count: "exact" }).eq("status", "published");
 
@@ -33,12 +41,21 @@ export async function searchVenueListings(params: VenueSearchParams) {
   else if (params.sort === "capacity-desc") query = query.order("capacity_max", { ascending: false });
   else query = query.order("price_from", { ascending: true });
 
-  const { data, count } = await query.range(from, to);
-  const rows = data ?? [];
-  const total = count ?? rows.length;
+  const { data, count, error } = await query.range(from, to);
 
+  if (error || !data) {
+    return {
+      venues: [],
+      total: 0,
+      page,
+      totalPages: 1,
+      error: error?.message ?? "Supabase did not return venue data."
+    };
+  }
+
+  const total = count ?? data.length;
   return {
-    venues: rows.map((row) => venueFromRow(row)),
+    venues: data.map((row) => venueFromRow(row)),
     total,
     page,
     totalPages: Math.max(Math.ceil(total / pageSize), 1)
@@ -47,9 +64,14 @@ export async function searchVenueListings(params: VenueSearchParams) {
 
 export async function getFeaturedVenueListings() {
   const supabase = await createClient();
-  if (!supabase) return [];
+  if (!supabase) {
+    return {
+      venues: [],
+      error: "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+    };
+  }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("venues")
     .select("*")
     .eq("status", "published")
@@ -57,7 +79,10 @@ export async function getFeaturedVenueListings() {
     .order("updated_at", { ascending: false })
     .limit(3);
 
-  return (data ?? []).map((row) => venueFromRow(row));
+  return {
+    venues: data?.map((row) => venueFromRow(row)) ?? [],
+    error: error?.message
+  };
 }
 
 export async function getVenueListingBySlug(slug: string): Promise<Venue | undefined> {

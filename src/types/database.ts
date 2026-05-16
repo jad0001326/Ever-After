@@ -6,20 +6,23 @@ export type Database = {
       profiles: {
         Row: {
           id: string;
-          email: string;
+          email: string | null;
           full_name: string | null;
-          role: "user" | "admin";
+          role: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id: string;
-          email: string;
+          email?: string | null;
           full_name?: string | null;
-          role?: "user" | "admin";
+          role?: string;
         };
         Update: {
+          email?: string | null;
           full_name?: string | null;
-          role?: "user" | "admin";
+          role?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -119,7 +122,6 @@ export type Database = {
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: {
-      user_role: "user" | "admin";
       venue_status: "draft" | "published";
       enquiry_status: "new" | "contacted" | "closed";
     };

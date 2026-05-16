@@ -1,6 +1,6 @@
 # Ever After
 
-Ever After is a production-minded MVP for premium Scottish wedding venue discovery. The current scope is focused on venue search, detail pages, favourites, enquiries, and a protected admin CMS foundation.
+Ever After is a production-minded MVP for premium Scottish wedding venue discovery. The current live foundation is focused on Supabase-backed venue search, venue detail pages, favourites, enquiries, and a protected admin CMS.
 
 ## Stack
 
@@ -15,11 +15,10 @@ Ever After is a production-minded MVP for premium Scottish wedding venue discove
 - Search results with URL-synced filters, sorting, and pagination
 - SEO-friendly `/venues/[slug]` detail pages with JSON-LD
 - Supabase sign up, sign in, favourites, and enquiry persistence
-- Protected admin CMS for adding/editing venues and uploading gallery images
-- PostgreSQL schema for users, venues, images, amenities, favourites, and enquiries
-- Scottish placeholder venue data for castles, barns, luxury hotels, and country estates
+- Protected admin CMS for adding/editing venues, linking amenities, and uploading gallery images
+- PostgreSQL schema for profiles, venues, images, amenities, favourites, and enquiries
 
-## Getting Started
+## Local Setup
 
 Install dependencies:
 
@@ -33,12 +32,12 @@ Create environment variables:
 cp .env.example .env.local
 ```
 
-Fill in:
+Fill in `.env.local`:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=only-use-in-secure-server-jobs
 ```
 
@@ -53,16 +52,10 @@ Open `http://localhost:3000`.
 ## Supabase Setup
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL editor.
-3. Optionally run `supabase/seed.sql` for starter records.
-4. Create your first account through `/signup`.
-5. Promote yourself to admin:
-
-```sql
-update public.profiles
-set role = 'admin'
-where email = 'you@example.com';
-```
+2. In Supabase, open SQL Editor.
+3. Run `supabase/schema.sql`.
+4. Run `supabase/seed.sql` if you want starter amenities and sample venue rows.
+5. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
 
 The schema creates:
 
@@ -75,7 +68,66 @@ The schema creates:
 - `public.enquiries`
 - `venue-images` storage bucket
 
-## Vercel Deployment
+`auth.users` remains Supabase's auth table. The app profile data lives in `public.profiles`.
+
+## First Admin
+
+1. Start the app.
+2. Create your first account through `/signup`.
+3. In Supabase SQL Editor, promote that profile:
+
+```sql
+update public.profiles
+set role = 'admin'
+where email = 'you@example.com';
+```
+
+4. Sign out and sign back in if the admin area still redirects you.
+5. Visit `/admin`.
+
+Unauthenticated users are redirected to `/login`. Signed-in users whose `public.profiles.role` is not `admin` are blocked from admin pages and admin actions.
+
+## Adding Venues
+
+1. Visit `/admin/venues/new`.
+2. Fill in the listing fields.
+3. Select amenities.
+4. Save the venue.
+5. The app redirects to the edit page with a success message.
+
+Published venues appear on `/venues` and `/venues/[slug]`. Draft venues stay visible to admins through the admin dashboard but are hidden from public venue pages.
+
+## Adding Images
+
+1. Open `/admin/venues/[id]/edit`.
+2. Upload an image through the image uploader.
+3. Add meaningful alt text.
+4. The file is stored in the public `venue-images` Supabase Storage bucket.
+5. A row is inserted into `public.venue_images`.
+
+If uploads fail, check that `venue-images` exists, is public, and that the storage policies from `supabase/schema.sql` were run.
+
+## Testing Supabase Connection
+
+Use these checks before treating the app as live:
+
+```bash
+npm run typecheck
+npm run build
+```
+
+Then verify manually:
+
+- `/venues` shows Supabase data, not demo data.
+- `/admin` requires a signed-in admin user.
+- `/admin/venues/new` creates a row in `public.venues`.
+- The edit page can upload an image and insert `public.venue_images`.
+- Selected amenities create rows in `public.venue_amenities`.
+- `/signup` creates both an `auth.users` row and a `public.profiles` row.
+
+If Supabase environment variables are missing, public venue pages show an explicit connection message instead of silently falling back to fake data.
+
+## Deployment
 
 1. Push the repo to GitHub.
 2. Import the project in Vercel.
@@ -94,16 +146,13 @@ npm run build
 ```text
 src/app                 App Router pages, metadata, server actions
 src/components          Reusable UI, search, venue, auth, admin components
-src/data                Demo Scottish venue data used before Supabase is connected
-src/lib                 Search, formatting, auth guards, Supabase clients
+src/data                Form option constants and isolated development/demo references
+src/lib                 Formatting, auth guards, compatibility Supabase exports, venue queries
+src/utils/supabase      Canonical Supabase browser/server/middleware helpers
 src/types               Domain and generated-style database types
 supabase                SQL schema and seed data
 ```
 
-## Scalability Notes
+## Out Of Scope For Now
 
-- Replace demo data search with Postgres queries once the venue catalogue grows beyond a few dozen records.
-- Add PostGIS for radius search and map clustering.
-- Move admin image management into a richer gallery table editor with ordering and deletion.
-- Add saved searches, availability calendars, venue owner accounts, and quote packages as the planning ecosystem expands.
-- Generate Supabase TypeScript types in CI once the database is live.
+Payments, supplier features, and wedding planner workflows are intentionally not part of this foundation pass.

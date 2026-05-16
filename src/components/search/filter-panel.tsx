@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
-import { venueTypes } from "@/data/venues";
+import { venueTypes } from "@/data/venue-options";
 import { Field, Input, Select } from "@/components/ui/field";
 
 export function FilterPanel() {

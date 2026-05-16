@@ -1,5 +1,5 @@
 import { upsertVenue } from "@/app/actions/admin";
-import { venueTypes } from "@/data/venues";
+import { venueTypes } from "@/data/venue-options";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 
@@ -21,9 +21,15 @@ type VenueFormProps = {
     status?: string;
     is_featured?: boolean;
   };
+  amenities?: {
+    id: string;
+    name: string;
+    slug: string;
+    selected?: boolean;
+  }[];
 };
 
-export function VenueForm({ venue }: VenueFormProps) {
+export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
   return (
     <form action={upsertVenue} className="grid gap-5 rounded-3xl border border-[var(--line)] bg-white p-5">
       {venue?.id ? <input name="id" type="hidden" value={venue.id} /> : null}
@@ -79,6 +85,23 @@ export function VenueForm({ venue }: VenueFormProps) {
         <input name="isFeatured" type="checkbox" defaultChecked={venue?.is_featured} className="size-4 accent-[#334235]" />
         Featured venue
       </label>
+      {amenities.length > 0 ? (
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-[#4a443c]">Amenities</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {amenities.map((amenity) => (
+              <label className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[#fbf8f3] px-4 py-3 text-sm text-[#4a443c]" key={amenity.id}>
+                <input name="amenities" type="checkbox" value={amenity.id} defaultChecked={amenity.selected} className="size-4 accent-[#334235]" />
+                {amenity.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <p className="rounded-2xl bg-[#fff8eb] px-4 py-3 text-sm text-[#7a5520] ring-1 ring-[#ead3a6]">
+          No amenities found in Supabase. Run the seed SQL or add amenities before linking them to venues.
+        </p>
+      )}
       <Button type="submit">Save venue</Button>
     </form>
   );

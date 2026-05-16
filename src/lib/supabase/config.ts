@@ -1,1 +1,1 @@
-export { isSupabaseConfigured } from "@/utils/supabase/config";
+export { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/utils/supabase/config";
