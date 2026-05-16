@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
@@ -14,7 +14,7 @@
     "@supabase/supabase-js": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
-    "next": "16.2.2",
+    "next": "^16.2.6",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest"
@@ -28,5 +28,8 @@
     "eslint-config-next": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
   }
 }

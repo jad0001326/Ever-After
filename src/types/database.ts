@@ -21,6 +21,7 @@ export type Database = {
           full_name?: string | null;
           role?: "user" | "admin";
         };
+        Relationships: [];
       };
       venues: {
         Row: {
@@ -53,6 +54,7 @@ export type Database = {
           town: string;
         };
         Update: Partial<Database["public"]["Tables"]["venues"]["Row"]>;
+        Relationships: [];
       };
       venue_images: {
         Row: {
@@ -70,21 +72,25 @@ export type Database = {
           sort_order?: number;
         };
         Update: Partial<Database["public"]["Tables"]["venue_images"]["Row"]>;
+        Relationships: [];
       };
       amenities: {
         Row: { id: string; slug: string; name: string };
         Insert: { slug: string; name: string };
         Update: Partial<Database["public"]["Tables"]["amenities"]["Row"]>;
+        Relationships: [];
       };
       venue_amenities: {
         Row: { venue_id: string; amenity_id: string };
         Insert: { venue_id: string; amenity_id: string };
         Update: never;
+        Relationships: [];
       };
       favourites: {
         Row: { user_id: string; venue_id: string; created_at: string };
         Insert: { user_id: string; venue_id: string };
         Update: never;
+        Relationships: [];
       };
       enquiries: {
         Row: {
@@ -107,7 +113,16 @@ export type Database = {
           message: string;
         };
         Update: Partial<Database["public"]["Tables"]["enquiries"]["Row"]>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      user_role: "user" | "admin";
+      venue_status: "draft" | "published";
+      enquiry_status: "new" | "contacted" | "closed";
+    };
+    CompositeTypes: Record<string, never>;
   };
 };

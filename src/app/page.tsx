@@ -21,7 +21,7 @@ export default function Home() {
           <div className="max-w-3xl pb-8">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm backdrop-blur">
               <Sparkles size={15} />
-              Scotland's most beautiful wedding venues, curated.
+              Scotland&apos;s most beautiful wedding venues, curated.
             </div>
             <h1 className="font-display text-6xl font-semibold leading-[0.92] sm:text-7xl lg:text-8xl">
               Find the place your story gathers.
