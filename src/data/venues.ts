@@ -34,6 +34,8 @@ export const venues: Venue[] = [
     capacityMin: 40,
     capacityMax: 160,
     heroImage: image("photo-1519225421980-715cb0215aed"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-001", venueId: "v-001", url: image("photo-1519225421980-715cb0215aed"), alt: "Castle wedding tablescape", sortOrder: 1 },
       { id: "i-002", venueId: "v-001", url: image("photo-1523438885200-e635ba2c371e"), alt: "Historic stone venue exterior", sortOrder: 2 },
@@ -60,6 +62,8 @@ export const venues: Venue[] = [
     capacityMin: 30,
     capacityMax: 120,
     heroImage: image("photo-1519167758481-83f550bb49b3"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-004", venueId: "v-002", url: image("photo-1519167758481-83f550bb49b3"), alt: "Rustic barn wedding reception", sortOrder: 1 },
       { id: "i-005", venueId: "v-002", url: image("photo-1527529482837-4698179dc6ce"), alt: "Outdoor wedding celebration", sortOrder: 2 },
@@ -86,6 +90,8 @@ export const venues: Venue[] = [
     capacityMin: 50,
     capacityMax: 220,
     heroImage: image("photo-1519741497674-611481863552"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-007", venueId: "v-003", url: image("photo-1519741497674-611481863552"), alt: "Luxury hotel wedding", sortOrder: 1 },
       { id: "i-008", venueId: "v-003", url: image("photo-1511795409834-ef04bbd61622"), alt: "Ballroom wedding dinner", sortOrder: 2 },
@@ -112,6 +118,8 @@ export const venues: Venue[] = [
     capacityMin: 20,
     capacityMax: 180,
     heroImage: image("photo-1500530855697-b586d89ba3ee"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-010", venueId: "v-004", url: image("photo-1500530855697-b586d89ba3ee"), alt: "Country estate landscape", sortOrder: 1 },
       { id: "i-011", venueId: "v-004", url: image("photo-1506744038136-46273834b3fb"), alt: "Highland loch view", sortOrder: 2 },
@@ -138,6 +146,8 @@ export const venues: Venue[] = [
     capacityMin: 20,
     capacityMax: 95,
     heroImage: image("photo-1464146072230-91cabc968266"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-013", venueId: "v-005", url: image("photo-1464146072230-91cabc968266"), alt: "Country house exterior", sortOrder: 1 },
       { id: "i-014", venueId: "v-005", url: image("photo-1529634806980-85c3dd6d34ac"), alt: "Wedding dining room", sortOrder: 2 },
@@ -164,6 +174,8 @@ export const venues: Venue[] = [
     capacityMin: 35,
     capacityMax: 150,
     heroImage: image("photo-1542314831-068cd1dbfeeb"),
+    imagePermissionStatus: "pending",
+    imageIsRepresentative: true,
     images: [
       { id: "i-016", venueId: "v-006", url: image("photo-1542314831-068cd1dbfeeb"), alt: "Historic venue driveway", sortOrder: 1 },
       { id: "i-017", venueId: "v-006", url: image("photo-1519225421980-715cb0215aed"), alt: "Reception candlelight", sortOrder: 2 },

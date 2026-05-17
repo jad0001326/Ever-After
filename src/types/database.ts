@@ -42,6 +42,10 @@ export type Database = {
           capacity_min: number;
           capacity_max: number;
           hero_image: string;
+          official_gallery_url: string | null;
+          image_permission_status: string;
+          image_credit: string | null;
+          image_is_representative: boolean;
           latitude: number | null;
           longitude: number | null;
           is_featured: boolean;
