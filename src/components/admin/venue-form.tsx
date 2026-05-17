@@ -100,6 +100,7 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
       </div>
       <Field label="Hero image URL">
         <Input name="heroImage" defaultValue={venue?.hero_image} placeholder="https://images.unsplash.com/..." />
+        <span className="text-xs font-normal text-[var(--muted)]">Leave blank to use a representative stock image until the venue provides approved photos.</span>
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Official website URL">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { representativeImageForType } from "@/lib/venue-images";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -31,6 +32,7 @@ export async function upsertVenue(formData: FormData) {
   const claimStatus = (["unclaimed", "pending", "approved", "rejected"].includes(rawClaimStatus) ? rawClaimStatus : "unclaimed") as "unclaimed" | "pending" | "approved" | "rejected";
   const rawInviteStatus = formData.get("inviteStatus")?.toString() ?? "not_sent";
   const inviteStatus = (["not_sent", "sent", "bounced", "replied", "claimed"].includes(rawInviteStatus) ? rawInviteStatus : "not_sent") as "not_sent" | "sent" | "bounced" | "replied" | "claimed";
+  const type = formData.get("type")?.toString() ?? "Country Estate";
   const officialWebsiteUrl = formData.get("officialWebsiteUrl")?.toString().trim() || null;
   const officialGalleryUrl = formData.get("officialGalleryUrl")?.toString().trim() || null;
   const vendorContactEmail = formData.get("vendorContactEmail")?.toString().trim() || null;
@@ -57,7 +59,7 @@ export async function upsertVenue(formData: FormData) {
   const payload = {
     slug: formData.get("slug")?.toString() || slugify(name),
     name,
-    type: formData.get("type")?.toString() ?? "Country Estate",
+    type,
     region: formData.get("region")?.toString() ?? "",
     town: formData.get("town")?.toString() ?? "",
     summary: formData.get("summary")?.toString() ?? "",
@@ -66,7 +68,7 @@ export async function upsertVenue(formData: FormData) {
     price_to: priceTo,
     capacity_min: capacityMin,
     capacity_max: capacityMax,
-    hero_image: formData.get("heroImage")?.toString() ?? "",
+    hero_image: formData.get("heroImage")?.toString().trim() || representativeImageForType(type),
     official_website_url: officialWebsiteUrl,
     official_gallery_url: officialGalleryUrl,
     vendor_contact_email: vendorContactEmail,

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { representativeImageForType } from "@/lib/venue-images";
 import type { Database } from "@/types/database";
 import type { Amenity, Venue, VenueSearchParams } from "@/types/venue";
 
@@ -107,9 +108,10 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
 }
 
 function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Amenity[] = []): Venue {
+  const heroImage = row.hero_image || representativeImageForType(row.type);
   const gallery = images.length
     ? images.map((image) => ({ id: image.id, venueId: image.venue_id, url: image.url, alt: image.alt, sortOrder: image.sort_order }))
-    : [{ id: `${row.id}-hero`, venueId: row.id, url: row.hero_image, alt: row.name, sortOrder: 0 }];
+    : [{ id: `${row.id}-hero`, venueId: row.id, url: heroImage, alt: row.name, sortOrder: 0 }];
 
   return {
     id: row.id,
@@ -125,7 +127,7 @@ function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Am
     priceTo: row.price_to,
     capacityMin: row.capacity_min,
     capacityMax: row.capacity_max,
-    heroImage: row.hero_image,
+    heroImage,
     officialWebsiteUrl: row.official_website_url ?? undefined,
     officialGalleryUrl: row.official_gallery_url ?? undefined,
     vendorContactEmail: row.vendor_contact_email ?? undefined,
