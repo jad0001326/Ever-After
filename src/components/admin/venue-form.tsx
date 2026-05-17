@@ -86,16 +86,16 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
           <Input name="region" required defaultValue={venue?.region} />
         </Field>
         <Field label="Price from">
-          <Input name="priceFrom" type="number" defaultValue={venue?.price_from} />
+          <Input name="priceFrom" type="number" min="0" defaultValue={venue?.price_from} />
         </Field>
         <Field label="Price to">
-          <Input name="priceTo" type="number" defaultValue={venue?.price_to} />
+          <Input name="priceTo" type="number" min="0" defaultValue={venue?.price_to} />
         </Field>
         <Field label="Capacity min">
-          <Input name="capacityMin" type="number" defaultValue={venue?.capacity_min} />
+          <Input name="capacityMin" type="number" min="1" required defaultValue={venue?.capacity_min} />
         </Field>
         <Field label="Capacity max">
-          <Input name="capacityMax" type="number" defaultValue={venue?.capacity_max} />
+          <Input name="capacityMax" type="number" min="1" required defaultValue={venue?.capacity_max} />
         </Field>
       </div>
       <Field label="Hero image URL">
