@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Edit, ImagePlus, Inbox, Plus } from "lucide-react";
+import { Edit, ImagePlus, Inbox, Plus, UploadCloud } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ButtonLink } from "@/components/ui/button";
@@ -33,6 +33,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="mt-3 text-[var(--muted)]">Protected admin area for venue operations.</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <ButtonLink href="/admin/import" variant="secondary">
+            <UploadCloud size={17} /> Import venues
+          </ButtonLink>
           <ButtonLink href="/admin/claims" variant="secondary">
             <Inbox size={17} /> Review claims
           </ButtonLink>
