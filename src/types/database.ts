@@ -42,10 +42,19 @@ export type Database = {
           capacity_min: number;
           capacity_max: number;
           hero_image: string;
+          official_website_url: string | null;
           official_gallery_url: string | null;
+          vendor_contact_email: string | null;
+          listing_status: "draft" | "published" | "claimed" | "archived";
+          claim_status: "unclaimed" | "pending" | "approved" | "rejected";
           image_permission_status: string;
           image_credit: string | null;
           image_is_representative: boolean;
+          is_claimed: boolean;
+          claimed_by: string | null;
+          claimed_at: string | null;
+          invite_sent_at: string | null;
+          invite_status: "not_sent" | "sent" | "bounced" | "replied" | "claimed";
           latitude: number | null;
           longitude: number | null;
           is_featured: boolean;
@@ -61,6 +70,115 @@ export type Database = {
           town: string;
         };
         Update: Partial<Database["public"]["Tables"]["venues"]["Row"]>;
+        Relationships: [];
+      };
+      vendors: {
+        Row: {
+          id: string;
+          name: string;
+          contact_email: string | null;
+          contact_phone: string | null;
+          status: "active" | "paused";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["vendors"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vendors"]["Row"]>;
+        Relationships: [];
+      };
+      vendor_users: {
+        Row: {
+          vendor_id: string;
+          user_id: string;
+          role: string;
+          status: "active" | "paused";
+          created_at: string;
+        };
+        Insert: {
+          vendor_id: string;
+          user_id: string;
+          role?: string;
+          status?: "active" | "paused";
+        };
+        Update: Partial<Database["public"]["Tables"]["vendor_users"]["Row"]>;
+        Relationships: [];
+      };
+      venue_claims: {
+        Row: {
+          id: string;
+          venue_id: string;
+          claimant_user_id: string;
+          claimant_name: string;
+          claimant_email: string;
+          claimant_role: string;
+          business_email: string;
+          business_phone: string;
+          message: string;
+          evidence_url: string | null;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          permission_confirmed: boolean;
+          terms_accepted: boolean;
+          created_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["venue_claims"]["Row"]> & {
+          venue_id: string;
+          claimant_user_id: string;
+          claimant_name: string;
+          claimant_email: string;
+          claimant_role: string;
+          business_email: string;
+          business_phone: string;
+          message: string;
+          permission_confirmed: boolean;
+          terms_accepted: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["venue_claims"]["Row"]>;
+        Relationships: [];
+      };
+      venue_claim_audit_log: {
+        Row: {
+          id: string;
+          claim_id: string | null;
+          venue_id: string | null;
+          admin_user_id: string | null;
+          action: string;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["venue_claim_audit_log"]["Row"]> & {
+          action: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["venue_claim_audit_log"]["Row"]>;
+        Relationships: [];
+      };
+      vendor_update_requests: {
+        Row: {
+          id: string;
+          venue_id: string;
+          vendor_user_id: string;
+          requested_name: string | null;
+          requested_summary: string | null;
+          requested_description: string | null;
+          requested_official_website_url: string | null;
+          requested_official_gallery_url: string | null;
+          requested_message: string;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          created_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["vendor_update_requests"]["Row"]> & {
+          venue_id: string;
+          vendor_user_id: string;
+          requested_message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vendor_update_requests"]["Row"]>;
         Relationships: [];
       };
       venue_images: {

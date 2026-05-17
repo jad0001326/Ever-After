@@ -7,16 +7,19 @@ export function AuthCard({
   action,
   cta,
   message,
-  mode
+  mode,
+  redirectTo
 }: {
   action: (formData: FormData) => Promise<void>;
   cta: string;
   message?: string;
   mode: "login" | "signup";
+  redirectTo?: string;
 }) {
   return (
     <div className="mx-auto grid min-h-[calc(100vh-9rem)] max-w-md place-items-center px-4 py-12">
       <form action={action} className="soft-shadow w-full rounded-[2rem] border border-[var(--line)] bg-white p-6">
+        {redirectTo ? <input name="redirectTo" type="hidden" value={redirectTo} /> : null}
         <div className="mb-6 grid justify-items-center gap-3 text-center">
           <span className="grid size-12 place-items-center rounded-full bg-[var(--brand)] text-white">
             <Heart size={18} />
@@ -46,11 +49,11 @@ export function AuthCard({
         <p className="mt-5 text-center text-sm text-[var(--muted)]">
           {mode === "login" ? (
             <>
-              New to Ever After? <Link className="font-semibold text-[#5c6b52]" href="/signup">Create an account</Link>
+              New to Ever After? <Link className="font-semibold text-[#5c6b52]" href={redirectTo ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : "/signup"}>Create an account</Link>
             </>
           ) : (
             <>
-              Already have an account? <Link className="font-semibold text-[#5c6b52]" href="/login">Sign in</Link>
+              Already have an account? <Link className="font-semibold text-[#5c6b52]" href={redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"}>Sign in</Link>
             </>
           )}
         </p>

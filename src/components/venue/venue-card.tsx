@@ -20,7 +20,11 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
           <div className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-[#3d372f] backdrop-blur">
             {venue.type}
           </div>
-          {venue.imageIsRepresentative ? (
+          {venue.isClaimed ? (
+            <div className="absolute bottom-4 left-4 rounded-full border border-white/50 bg-white/88 px-3 py-1 text-[11px] font-semibold text-[#3f5c35] backdrop-blur">
+              Managed by venue
+            </div>
+          ) : venue.imageIsRepresentative ? (
             <div className="absolute bottom-4 left-4 rounded-full border border-white/50 bg-white/86 px-3 py-1 text-[11px] font-medium text-[#5c554a] backdrop-blur">
               Representative image
             </div>

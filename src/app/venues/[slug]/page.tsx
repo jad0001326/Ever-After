@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, ExternalLink, MapPin, UsersRound } from "lucide-react";
+import { Check, ExternalLink, MapPin, ShieldCheck, UsersRound } from "lucide-react";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
@@ -67,7 +67,14 @@ export default async function VenuePage({ params }: PageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mb-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">{venue.type}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">{venue.type}</p>
+            {venue.isClaimed ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#eef4ea] px-3 py-1 text-xs font-semibold text-[#3f5c35] ring-1 ring-[#d7e3d2]">
+                <ShieldCheck size={14} /> Managed by venue
+              </span>
+            ) : null}
+          </div>
           <h1 className="mt-3 font-display text-5xl font-semibold sm:text-6xl">{venue.name}</h1>
           <p className="mt-3 flex items-center gap-2 text-[var(--muted)]">
             <MapPin size={17} /> {venue.town}, {venue.region}
@@ -78,7 +85,7 @@ export default async function VenuePage({ params }: PageProps) {
 
       <VenueGallery venue={venue} />
       <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-[var(--line)] bg-white/72 px-5 py-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
-        <p>Official photos are hosted by the venue. Approved images will appear here once permission is confirmed.</p>
+        <p>{venue.isClaimed ? "Approved venue content is reviewed before it appears on EverAft." : "Official photos are hosted by the venue. Approved images will appear here once permission is confirmed."}</p>
         {venue.officialGalleryUrl ? (
           <ButtonLink href={venue.officialGalleryUrl} target="_blank" rel="noopener noreferrer" variant="secondary" className="shrink-0">
             View official gallery <ExternalLink size={16} />
@@ -124,6 +131,16 @@ export default async function VenuePage({ params }: PageProps) {
           </section>
         </div>
         <aside className="lg:sticky lg:top-24 lg:self-start">
+          {!venue.isClaimed ? (
+            <section className="mb-5 rounded-3xl border border-[#d7c49d] bg-[#fff9ef] p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9d7b45]">Own or manage this venue?</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold">Claim this listing</h2>
+              <p className="mt-2 text-sm leading-6 text-[#6a5b42]">Claim this listing to update details, add approved photos, and manage enquiries.</p>
+              <ButtonLink className="mt-5 w-full" href={`/venues/${venue.slug}/claim`}>
+                Claim this listing
+              </ButtonLink>
+            </section>
+          ) : null}
           <EnquiryForm venueId={venue.id} />
         </aside>
       </div>

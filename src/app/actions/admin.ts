@@ -20,9 +20,18 @@ export async function upsertVenue(formData: FormData) {
   if (!name.trim()) redirect("/admin?message=Venue+name+is+required");
 
   const status: "draft" | "published" = formData.get("status")?.toString() === "draft" ? "draft" : "published";
+  const rawListingStatus = formData.get("listingStatus")?.toString() ?? "published";
+  const listingStatus = (["draft", "published", "claimed", "archived"].includes(rawListingStatus) ? rawListingStatus : "published") as "draft" | "published" | "claimed" | "archived";
+  const rawClaimStatus = formData.get("claimStatus")?.toString() ?? "unclaimed";
+  const claimStatus = (["unclaimed", "pending", "approved", "rejected"].includes(rawClaimStatus) ? rawClaimStatus : "unclaimed") as "unclaimed" | "pending" | "approved" | "rejected";
+  const rawInviteStatus = formData.get("inviteStatus")?.toString() ?? "not_sent";
+  const inviteStatus = (["not_sent", "sent", "bounced", "replied", "claimed"].includes(rawInviteStatus) ? rawInviteStatus : "not_sent") as "not_sent" | "sent" | "bounced" | "replied" | "claimed";
+  const officialWebsiteUrl = formData.get("officialWebsiteUrl")?.toString().trim() || null;
   const officialGalleryUrl = formData.get("officialGalleryUrl")?.toString().trim() || null;
+  const vendorContactEmail = formData.get("vendorContactEmail")?.toString().trim() || null;
   const imageCredit = formData.get("imageCredit")?.toString().trim() || null;
-  const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "pending";
+  const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "representative";
+  const inviteSentAt = formData.get("inviteSentAt")?.toString().trim();
   const payload = {
     slug: formData.get("slug")?.toString() || slugify(name),
     name,
@@ -36,10 +45,16 @@ export async function upsertVenue(formData: FormData) {
     capacity_min: Number(formData.get("capacityMin")) || 0,
     capacity_max: Number(formData.get("capacityMax")) || 0,
     hero_image: formData.get("heroImage")?.toString() ?? "",
+    official_website_url: officialWebsiteUrl,
     official_gallery_url: officialGalleryUrl,
+    vendor_contact_email: vendorContactEmail,
+    listing_status: listingStatus,
+    claim_status: claimStatus,
     image_permission_status: imagePermissionStatus,
     image_credit: imageCredit,
     image_is_representative: formData.get("imageIsRepresentative") === "on",
+    invite_status: inviteStatus,
+    invite_sent_at: inviteSentAt ? new Date(inviteSentAt).toISOString() : null,
     is_featured: formData.get("isFeatured") === "on",
     status
   };

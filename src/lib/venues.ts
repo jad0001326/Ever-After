@@ -55,7 +55,7 @@ export async function searchVenueListings(params: VenueSearchParams) {
 
   const total = count ?? data.length;
   return {
-    venues: data.map((row) => venueFromRow(row)),
+    venues: data.filter(isVisibleVenueRow).map((row) => venueFromRow(row)),
     total,
     page,
     totalPages: Math.max(Math.ceil(total / pageSize), 1)
@@ -80,7 +80,7 @@ export async function getFeaturedVenueListings() {
     .limit(3);
 
   return {
-    venues: data?.map((row) => venueFromRow(row)) ?? [],
+    venues: data?.filter(isVisibleVenueRow).map((row) => venueFromRow(row)) ?? [],
     error: error?.message
   };
 }
@@ -90,7 +90,7 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
   if (!supabase) return undefined;
 
   const { data: venue } = await supabase.from("venues").select("*").eq("slug", slug).eq("status", "published").single();
-  if (!venue) return undefined;
+  if (!venue || !isVisibleVenueRow(venue)) return undefined;
 
   const [{ data: images }, { data: links }, { data: amenityRows }] = await Promise.all([
     supabase.from("venue_images").select("*").eq("venue_id", venue.id).order("sort_order", { ascending: true }),
@@ -126,14 +126,27 @@ function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Am
     capacityMin: row.capacity_min,
     capacityMax: row.capacity_max,
     heroImage: row.hero_image,
+    officialWebsiteUrl: row.official_website_url ?? undefined,
     officialGalleryUrl: row.official_gallery_url ?? undefined,
-    imagePermissionStatus: row.image_permission_status ?? "pending",
+    vendorContactEmail: row.vendor_contact_email ?? undefined,
+    listingStatus: row.listing_status ?? "published",
+    claimStatus: row.claim_status ?? "unclaimed",
+    imagePermissionStatus: row.image_permission_status ?? "representative",
     imageCredit: row.image_credit ?? undefined,
     imageIsRepresentative: row.image_is_representative ?? true,
+    isClaimed: row.is_claimed ?? false,
+    claimedBy: row.claimed_by ?? undefined,
+    claimedAt: row.claimed_at ?? undefined,
+    inviteSentAt: row.invite_sent_at ?? undefined,
+    inviteStatus: row.invite_status ?? "not_sent",
     images: gallery,
     amenities,
     latitude: row.latitude ?? undefined,
     longitude: row.longitude ?? undefined,
     isFeatured: row.is_featured
   };
+}
+
+function isVisibleVenueRow(row: VenueRow) {
+  return !["draft", "archived"].includes(row.listing_status ?? "published");
 }

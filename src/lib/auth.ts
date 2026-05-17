@@ -19,3 +19,18 @@ export async function requireAdmin() {
 
   return { user };
 }
+
+export async function requireUser(redirectTo: string, message = "Sign in to continue") {
+  if (!isSupabaseConfigured) {
+    redirect(`/login?message=Configure+Supabase+environment+variables+first&redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase!.auth.getUser();
+
+  if (!user) redirect(`/login?message=${encodeURIComponent(message)}&redirectTo=${encodeURIComponent(redirectTo)}`);
+
+  return { user, supabase };
+}

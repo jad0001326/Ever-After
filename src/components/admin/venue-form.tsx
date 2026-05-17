@@ -18,10 +18,16 @@ type VenueFormProps = {
     capacity_min?: number;
     capacity_max?: number;
     hero_image?: string;
+    official_website_url?: string | null;
     official_gallery_url?: string | null;
+    vendor_contact_email?: string | null;
+    listing_status?: string | null;
+    claim_status?: string | null;
     image_permission_status?: string | null;
     image_credit?: string | null;
     image_is_representative?: boolean;
+    invite_status?: string | null;
+    invite_sent_at?: string | null;
     status?: string;
     is_featured?: boolean;
   };
@@ -57,6 +63,22 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
             <option value="draft">Draft</option>
           </Select>
         </Field>
+        <Field label="Listing status">
+          <Select name="listingStatus" defaultValue={venue?.listing_status ?? "published"}>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="claimed">Claimed</option>
+            <option value="archived">Archived</option>
+          </Select>
+        </Field>
+        <Field label="Claim status">
+          <Select name="claimStatus" defaultValue={venue?.claim_status ?? "unclaimed"}>
+            <option value="unclaimed">Unclaimed</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </Field>
         <Field label="Town">
           <Input name="town" required defaultValue={venue?.town} />
         </Field>
@@ -80,11 +102,36 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
         <Input name="heroImage" defaultValue={venue?.hero_image} placeholder="https://images.unsplash.com/..." />
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Official website URL">
+          <Input name="officialWebsiteUrl" defaultValue={venue?.official_website_url ?? ""} placeholder="https://venue.com" />
+        </Field>
         <Field label="Official gallery URL">
           <Input name="officialGalleryUrl" defaultValue={venue?.official_gallery_url ?? ""} placeholder="https://venue.com/gallery" />
         </Field>
         <Field label="Image permission status">
-          <Input name="imagePermissionStatus" defaultValue={venue?.image_permission_status ?? "pending"} placeholder="pending" />
+          <Select name="imagePermissionStatus" defaultValue={venue?.image_permission_status ?? "representative"}>
+            <option value="representative">Representative</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </Field>
+        <Field label="Vendor contact email">
+          <Input name="vendorContactEmail" type="email" defaultValue={venue?.vendor_contact_email ?? ""} placeholder="events@venue.com" />
+        </Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Invite status">
+          <Select name="inviteStatus" defaultValue={venue?.invite_status ?? "not_sent"}>
+            <option value="not_sent">Not sent</option>
+            <option value="sent">Sent</option>
+            <option value="bounced">Bounced</option>
+            <option value="replied">Replied</option>
+            <option value="claimed">Claimed</option>
+          </Select>
+        </Field>
+        <Field label="Invite sent at">
+          <Input name="inviteSentAt" type="datetime-local" defaultValue={venue?.invite_sent_at ? venue.invite_sent_at.slice(0, 16) : ""} />
         </Field>
       </div>
       <Field label="Image credit">
