@@ -384,6 +384,20 @@ def read_urls_file(path: Path) -> list[str]:
     return urls
 
 
+def load_env_file(path: Path = Path(".env")) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Collect starter wedding venue research into a CSV.")
     parser.add_argument("--query", action="append", default=[], help="Google Places query. Can be repeated.")
@@ -396,6 +410,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    load_env_file()
     args = parse_args()
     api_key = os.getenv("GOOGLE_PLACES_API_KEY") or os.getenv("GOOGLE_MAPS_API_KEY")
     leads: list[VenueLead] = []
