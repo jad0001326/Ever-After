@@ -22,16 +22,16 @@ const display = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
   title: {
-    default: "Ever After | Scottish wedding venue search",
-    template: "%s | Ever After"
+    default: "EverAft | Scottish wedding venue search",
+    template: "%s | EverAft"
   },
   description:
     "Discover premium Scottish wedding venues, from castles and country estates to barns and luxury hotels.",
   openGraph: {
-    title: "Ever After",
+    title: "EverAft",
     description: "A modern wedding venue discovery platform for Scotland.",
     url: absoluteUrl(),
-    siteName: "Ever After",
+    siteName: "EverAft",
     type: "website"
   }
 };

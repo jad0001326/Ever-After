@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Heart, LayoutDashboard, Search, UserRound } from "lucide-react";
+import { LayoutDashboard, Search, UserRound } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 
 const nav = [
   { href: "/venues", label: "Venues", icon: Search },
@@ -9,14 +10,14 @@ const nav = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[#fbfaf7]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--background)]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2" aria-label="Ever After home">
-          <span className="grid size-9 place-items-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)]">
-            <Heart size={16} strokeWidth={1.8} />
-          </span>
-          <span className="font-display text-2xl font-semibold tracking-normal">Ever After</span>
-        </Link>
+        <div className="hidden sm:block">
+          <Logo href="/" variant="full" wordmarkClassName="text-[2.1rem]" />
+        </div>
+        <div className="sm:hidden">
+          <Logo href="/" variant="wordmark" showArch={false} />
+        </div>
         <nav className="flex items-center gap-1">
           {nav.map((item) => {
             const Icon = item.icon;
