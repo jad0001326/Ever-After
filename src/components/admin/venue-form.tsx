@@ -18,6 +18,10 @@ type VenueFormProps = {
     capacity_min?: number;
     capacity_max?: number;
     hero_image?: string;
+    official_gallery_url?: string | null;
+    image_permission_status?: string | null;
+    image_credit?: string | null;
+    image_is_representative?: boolean;
     status?: string;
     is_featured?: boolean;
   };
@@ -75,6 +79,17 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
       <Field label="Hero image URL">
         <Input name="heroImage" defaultValue={venue?.hero_image} placeholder="https://images.unsplash.com/..." />
       </Field>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Official gallery URL">
+          <Input name="officialGalleryUrl" defaultValue={venue?.official_gallery_url ?? ""} placeholder="https://venue.com/gallery" />
+        </Field>
+        <Field label="Image permission status">
+          <Input name="imagePermissionStatus" defaultValue={venue?.image_permission_status ?? "pending"} placeholder="pending" />
+        </Field>
+      </div>
+      <Field label="Image credit">
+        <Input name="imageCredit" defaultValue={venue?.image_credit ?? ""} placeholder="Venue name or photographer" />
+      </Field>
       <Field label="Summary">
         <Textarea name="summary" required defaultValue={venue?.summary} />
       </Field>
@@ -84,6 +99,10 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
       <label className="flex items-center gap-3 text-sm font-medium text-[#4a443c]">
         <input name="isFeatured" type="checkbox" defaultChecked={venue?.is_featured} className="size-4 accent-[#334235]" />
         Featured venue
+      </label>
+      <label className="flex items-center gap-3 text-sm font-medium text-[#4a443c]">
+        <input name="imageIsRepresentative" type="checkbox" defaultChecked={venue?.image_is_representative ?? true} className="size-4 accent-[#334235]" />
+        Representative image
       </label>
       {amenities.length > 0 ? (
         <fieldset className="grid gap-3">

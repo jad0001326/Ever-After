@@ -20,6 +20,11 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
           <div className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-[#3d372f] backdrop-blur">
             {venue.type}
           </div>
+          {venue.imageIsRepresentative ? (
+            <div className="absolute bottom-4 left-4 rounded-full border border-white/50 bg-white/86 px-3 py-1 text-[11px] font-medium text-[#5c554a] backdrop-blur">
+              Representative image
+            </div>
+          ) : null}
         </div>
         <div className="grid gap-4 p-5">
           <div>

@@ -72,6 +72,10 @@ create table if not exists public.venues (
   capacity_min integer not null check (capacity_min > 0),
   capacity_max integer not null check (capacity_max >= capacity_min),
   hero_image text not null,
+  official_gallery_url text,
+  image_permission_status text not null default 'pending',
+  image_credit text,
+  image_is_representative boolean not null default true,
   latitude numeric(9, 6),
   longitude numeric(9, 6),
   is_featured boolean not null default false,
@@ -79,6 +83,12 @@ create table if not exists public.venues (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.venues
+  add column if not exists official_gallery_url text,
+  add column if not exists image_permission_status text not null default 'pending',
+  add column if not exists image_credit text,
+  add column if not exists image_is_representative boolean not null default true;
 
 create table if not exists public.venue_images (
   id uuid primary key default gen_random_uuid(),

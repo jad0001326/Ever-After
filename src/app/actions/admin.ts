@@ -20,6 +20,9 @@ export async function upsertVenue(formData: FormData) {
   if (!name.trim()) redirect("/admin?message=Venue+name+is+required");
 
   const status: "draft" | "published" = formData.get("status")?.toString() === "draft" ? "draft" : "published";
+  const officialGalleryUrl = formData.get("officialGalleryUrl")?.toString().trim() || null;
+  const imageCredit = formData.get("imageCredit")?.toString().trim() || null;
+  const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "pending";
   const payload = {
     slug: formData.get("slug")?.toString() || slugify(name),
     name,
@@ -33,6 +36,10 @@ export async function upsertVenue(formData: FormData) {
     capacity_min: Number(formData.get("capacityMin")) || 0,
     capacity_max: Number(formData.get("capacityMax")) || 0,
     hero_image: formData.get("heroImage")?.toString() ?? "",
+    official_gallery_url: officialGalleryUrl,
+    image_permission_status: imagePermissionStatus,
+    image_credit: imageCredit,
+    image_is_representative: formData.get("imageIsRepresentative") === "on",
     is_featured: formData.get("isFeatured") === "on",
     status
   };

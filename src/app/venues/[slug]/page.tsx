@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Check, MapPin, UsersRound } from "lucide-react";
+import { Check, ExternalLink, MapPin, UsersRound } from "lucide-react";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
+import { ButtonLink } from "@/components/ui/button";
 import { absoluteUrl, formatCapacity, gbp } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueListingBySlug } from "@/lib/venues";
@@ -76,6 +77,14 @@ export default async function VenuePage({ params }: PageProps) {
       </div>
 
       <VenueGallery venue={venue} />
+      <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-[var(--line)] bg-white/72 px-5 py-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
+        <p>Official photos are hosted by the venue. Approved images will appear here once permission is confirmed.</p>
+        {venue.officialGalleryUrl ? (
+          <ButtonLink href={venue.officialGalleryUrl} target="_blank" rel="noopener noreferrer" variant="secondary" className="shrink-0">
+            View official gallery <ExternalLink size={16} />
+          </ButtonLink>
+        ) : null}
+      </div>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="grid gap-8">

@@ -29,6 +29,10 @@ export type Venue = {
   capacityMin: number;
   capacityMax: number;
   heroImage: string;
+  officialGalleryUrl?: string;
+  imagePermissionStatus: string;
+  imageCredit?: string;
+  imageIsRepresentative: boolean;
   images: VenueImage[];
   amenities: Amenity[];
   latitude?: number;
