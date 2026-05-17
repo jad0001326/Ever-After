@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Create account"
 };
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ message?: string }> }) {
-  const { message } = await searchParams;
-  return <AuthCard action={signUp} cta="Create account" message={message} mode="signup" />;
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ message?: string; redirectTo?: string }> }) {
+  const { message, redirectTo } = await searchParams;
+  return <AuthCard action={signUp} cta="Create account" message={message} mode="signup" redirectTo={redirectTo} />;
 }

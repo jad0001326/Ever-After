@@ -72,10 +72,19 @@ create table if not exists public.venues (
   capacity_min integer not null check (capacity_min > 0),
   capacity_max integer not null check (capacity_max >= capacity_min),
   hero_image text not null,
+  official_website_url text,
   official_gallery_url text,
-  image_permission_status text not null default 'pending',
+  vendor_contact_email text,
+  listing_status text not null default 'published' check (listing_status in ('draft', 'published', 'claimed', 'archived')),
+  claim_status text not null default 'unclaimed' check (claim_status in ('unclaimed', 'pending', 'approved', 'rejected')),
+  image_permission_status text not null default 'representative' check (image_permission_status in ('representative', 'approved', 'rejected', 'pending')),
   image_credit text,
   image_is_representative boolean not null default true,
+  is_claimed boolean not null default false,
+  claimed_by uuid references public.profiles(id) on delete set null,
+  claimed_at timestamptz,
+  invite_sent_at timestamptz,
+  invite_status text not null default 'not_sent' check (invite_status in ('not_sent', 'sent', 'bounced', 'replied', 'claimed')),
   latitude numeric(9, 6),
   longitude numeric(9, 6),
   is_featured boolean not null default false,
@@ -85,10 +94,38 @@ create table if not exists public.venues (
 );
 
 alter table public.venues
+  add column if not exists official_website_url text,
   add column if not exists official_gallery_url text,
-  add column if not exists image_permission_status text not null default 'pending',
+  add column if not exists vendor_contact_email text,
+  add column if not exists listing_status text not null default 'published',
+  add column if not exists claim_status text not null default 'unclaimed',
+  add column if not exists image_permission_status text not null default 'representative',
   add column if not exists image_credit text,
-  add column if not exists image_is_representative boolean not null default true;
+  add column if not exists image_is_representative boolean not null default true,
+  add column if not exists is_claimed boolean not null default false,
+  add column if not exists claimed_by uuid references public.profiles(id) on delete set null,
+  add column if not exists claimed_at timestamptz,
+  add column if not exists invite_sent_at timestamptz,
+  add column if not exists invite_status text not null default 'not_sent';
+
+alter table public.venues
+  alter column image_permission_status set default 'representative';
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'venues_listing_status_check') then
+    alter table public.venues add constraint venues_listing_status_check check (listing_status in ('draft', 'published', 'claimed', 'archived'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'venues_claim_status_check') then
+    alter table public.venues add constraint venues_claim_status_check check (claim_status in ('unclaimed', 'pending', 'approved', 'rejected'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'venues_image_permission_status_check') then
+    alter table public.venues add constraint venues_image_permission_status_check check (image_permission_status in ('representative', 'approved', 'rejected', 'pending'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'venues_invite_status_check') then
+    alter table public.venues add constraint venues_invite_status_check check (invite_status in ('not_sent', 'sent', 'bounced', 'replied', 'claimed'));
+  end if;
+end $$;
 
 create table if not exists public.venue_images (
   id uuid primary key default gen_random_uuid(),
@@ -103,6 +140,72 @@ create table if not exists public.amenities (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
   name text not null
+);
+
+create table if not exists public.vendors (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  contact_email text unique,
+  contact_phone text,
+  status text not null default 'active' check (status in ('active', 'paused')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.vendor_users (
+  vendor_id uuid not null references public.vendors(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  role text not null default 'owner',
+  status text not null default 'active' check (status in ('active', 'paused')),
+  created_at timestamptz not null default now(),
+  primary key (vendor_id, user_id)
+);
+
+create table if not exists public.venue_claims (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references public.venues(id) on delete cascade,
+  claimant_user_id uuid not null references public.profiles(id) on delete cascade,
+  claimant_name text not null,
+  claimant_email text not null,
+  claimant_role text not null,
+  business_email text not null,
+  business_phone text not null,
+  message text not null,
+  evidence_url text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  admin_notes text,
+  permission_confirmed boolean not null default false,
+  terms_accepted boolean not null default false,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null
+);
+
+create table if not exists public.venue_claim_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  claim_id uuid references public.venue_claims(id) on delete cascade,
+  venue_id uuid references public.venues(id) on delete cascade,
+  admin_user_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.vendor_update_requests (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references public.venues(id) on delete cascade,
+  vendor_user_id uuid not null references public.profiles(id) on delete cascade,
+  requested_name text,
+  requested_summary text,
+  requested_description text,
+  requested_official_website_url text,
+  requested_official_gallery_url text,
+  requested_message text not null,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  admin_notes text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null
 );
 
 create table if not exists public.venue_amenities (
@@ -139,7 +242,11 @@ create index if not exists venues_price_idx on public.venues (price_from);
 create index if not exists venues_capacity_idx on public.venues (capacity_max);
 create index if not exists venues_type_idx on public.venues (type);
 create index if not exists venues_featured_idx on public.venues (is_featured) where status = 'published';
+create index if not exists venues_claim_status_idx on public.venues (claim_status, is_claimed);
+create index if not exists venues_invite_status_idx on public.venues (invite_status, invite_sent_at desc);
 create index if not exists venue_images_venue_sort_idx on public.venue_images (venue_id, sort_order);
+create index if not exists venue_claims_status_idx on public.venue_claims (status, created_at desc);
+create index if not exists vendor_update_requests_status_idx on public.vendor_update_requests (status, created_at desc);
 create index if not exists enquiries_venue_status_idx on public.enquiries (venue_id, status, created_at desc);
 create index if not exists favourites_user_idx on public.favourites (user_id, created_at desc);
 
@@ -161,6 +268,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists venues_set_updated_at on public.venues;
 create trigger venues_set_updated_at
 before update on public.venues
+for each row execute function public.set_updated_at();
+
+drop trigger if exists vendors_set_updated_at on public.vendors;
+create trigger vendors_set_updated_at
+before update on public.vendors
 for each row execute function public.set_updated_at();
 
 create or replace function public.handle_new_user()
@@ -188,6 +300,11 @@ alter table public.profiles enable row level security;
 alter table public.venues enable row level security;
 alter table public.venue_images enable row level security;
 alter table public.amenities enable row level security;
+alter table public.vendors enable row level security;
+alter table public.vendor_users enable row level security;
+alter table public.venue_claims enable row level security;
+alter table public.venue_claim_audit_log enable row level security;
+alter table public.vendor_update_requests enable row level security;
 alter table public.venue_amenities enable row level security;
 alter table public.favourites enable row level security;
 alter table public.enquiries enable row level security;
@@ -202,6 +319,11 @@ grant select on public.venue_amenities to anon, authenticated;
 grant select, insert, update, delete on public.venues to authenticated;
 grant select, insert, update, delete on public.venue_images to authenticated;
 grant select, insert, update, delete on public.amenities to authenticated;
+grant select, insert, update, delete on public.vendors to authenticated;
+grant select, insert, update, delete on public.vendor_users to authenticated;
+grant select, insert, update, delete on public.venue_claims to authenticated;
+grant select, insert, update, delete on public.venue_claim_audit_log to authenticated;
+grant select, insert, update, delete on public.vendor_update_requests to authenticated;
 grant select, insert, update, delete on public.venue_amenities to authenticated;
 
 grant select, update on public.profiles to authenticated;
@@ -247,6 +369,35 @@ drop policy if exists "Amenities are public" on public.amenities;
 drop policy if exists "Admins manage amenities" on public.amenities;
 create policy "Amenities are public" on public.amenities for select using (true);
 create policy "Admins manage amenities" on public.amenities for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Admins manage vendors" on public.vendors;
+drop policy if exists "Vendor users read own vendor" on public.vendors;
+create policy "Admins manage vendors" on public.vendors for all using (public.is_admin()) with check (public.is_admin());
+create policy "Vendor users read own vendor" on public.vendors for select using (
+  exists (select 1 from public.vendor_users where vendor_users.vendor_id = vendors.id and vendor_users.user_id = auth.uid())
+);
+
+drop policy if exists "Admins manage vendor users" on public.vendor_users;
+drop policy if exists "Vendor users read own links" on public.vendor_users;
+create policy "Admins manage vendor users" on public.vendor_users for all using (public.is_admin()) with check (public.is_admin());
+create policy "Vendor users read own links" on public.vendor_users for select using (user_id = auth.uid());
+
+drop policy if exists "Users create own venue claims" on public.venue_claims;
+drop policy if exists "Users read own venue claims" on public.venue_claims;
+drop policy if exists "Admins manage venue claims" on public.venue_claims;
+create policy "Users create own venue claims" on public.venue_claims for insert with check (claimant_user_id = auth.uid());
+create policy "Users read own venue claims" on public.venue_claims for select using (claimant_user_id = auth.uid() or public.is_admin());
+create policy "Admins manage venue claims" on public.venue_claims for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Admins manage venue claim audit log" on public.venue_claim_audit_log;
+create policy "Admins manage venue claim audit log" on public.venue_claim_audit_log for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Vendor users create update requests" on public.vendor_update_requests;
+drop policy if exists "Vendor users read own update requests" on public.vendor_update_requests;
+drop policy if exists "Admins manage vendor update requests" on public.vendor_update_requests;
+create policy "Vendor users create update requests" on public.vendor_update_requests for insert with check (vendor_user_id = auth.uid());
+create policy "Vendor users read own update requests" on public.vendor_update_requests for select using (vendor_user_id = auth.uid() or public.is_admin());
+create policy "Admins manage vendor update requests" on public.vendor_update_requests for all using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Venue amenities are public" on public.venue_amenities;
 drop policy if exists "Admins manage venue amenities" on public.venue_amenities;

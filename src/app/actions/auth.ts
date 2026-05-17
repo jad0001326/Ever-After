@@ -12,6 +12,12 @@ function authFailureMessage(error: unknown) {
   return message;
 }
 
+function safeRedirectPath(value: FormDataEntryValue | null) {
+  const path = value?.toString() || "/venues";
+  if (!path.startsWith("/") || path.startsWith("//")) return "/venues";
+  return path;
+}
+
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
   if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
@@ -23,7 +29,7 @@ export async function signIn(formData: FormData) {
   }));
 
   if (error) redirect(`/login?message=${encodeURIComponent(error.message)}`);
-  redirect("/venues");
+  redirect(safeRedirectPath(formData.get("redirectTo")));
 }
 
 export async function signUp(formData: FormData) {
@@ -33,13 +39,14 @@ export async function signUp(formData: FormData) {
   const email = formData.get("email")?.toString() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const fullName = formData.get("fullName")?.toString() ?? "";
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
   const { error } = await supabase.auth
     .signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: absoluteUrl("/login?message=Email+confirmed.+You+can+now+sign+in")
+        emailRedirectTo: absoluteUrl(`/login?message=Email+confirmed.+You+can+now+sign+in&redirectTo=${encodeURIComponent(redirectTo)}`)
       }
     })
     .catch((error: unknown) => ({
@@ -47,7 +54,7 @@ export async function signUp(formData: FormData) {
     }));
 
   if (error) redirect(`/signup?message=${encodeURIComponent(error.message)}`);
-  redirect("/login?message=Check+your+email+to+confirm+your+account");
+  redirect(`/login?message=Check+your+email+to+confirm+your+account&redirectTo=${encodeURIComponent(redirectTo)}`);
 }
 
 export async function signOut() {

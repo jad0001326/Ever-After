@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { LayoutDashboard, Search, UserRound } from "lucide-react";
+import { BriefcaseBusiness, LayoutDashboard, Search, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 const nav = [
   { href: "/venues", label: "Venues", icon: Search },
+  { href: "/vendor", label: "Vendor", icon: BriefcaseBusiness },
   { href: "/admin", label: "Admin", icon: LayoutDashboard },
   { href: "/login", label: "Sign in", icon: UserRound }
 ];

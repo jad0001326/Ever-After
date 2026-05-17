@@ -1,0 +1,99 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { approveVenueClaim, rejectVenueClaim } from "@/app/actions/claims";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/field";
+import { requireAdmin } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Review claim"
+};
+
+export default async function AdminClaimPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ message?: string }> }) {
+  await requireAdmin();
+  const { id } = await params;
+  const { message } = await searchParams;
+  const supabase = await createClient();
+  const { data: claim } = await supabase!.from("venue_claims").select("*").eq("id", id).single();
+  if (!claim) notFound();
+
+  const [{ data: venue }, { data: audit }] = await Promise.all([
+    supabase!.from("venues").select("*").eq("id", claim.venue_id).single(),
+    supabase!.from("venue_claim_audit_log").select("*").eq("claim_id", claim.id).order("created_at", { ascending: false })
+  ]);
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      <Link className="text-sm font-semibold text-[#5c6b52]" href="/admin/claims">Back to claims</Link>
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_360px]">
+        <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Claim request</p>
+          <h1 className="mt-3 font-display text-5xl font-semibold">{venue?.name ?? "Venue claim"}</h1>
+          <p className="mt-3 text-sm text-[var(--muted)]">Status: {claim.status}</p>
+          {message ? <p className="mt-5 rounded-2xl bg-[#f4efe7] px-4 py-3 text-sm text-[#5f594f]">{message}</p> : null}
+
+          <dl className="mt-8 grid gap-5 sm:grid-cols-2">
+            <Info label="Claimant" value={claim.claimant_name} />
+            <Info label="Role" value={claim.claimant_role} />
+            <Info label="Account email" value={claim.claimant_email} />
+            <Info label="Business email" value={claim.business_email} />
+            <Info label="Business phone" value={claim.business_phone} />
+            <Info label="Evidence URL" value={claim.evidence_url || "Not provided"} />
+          </dl>
+
+          <div className="mt-8 rounded-2xl bg-[#fbf8f3] p-5">
+            <p className="text-sm font-semibold text-[#4a443c]">Message</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{claim.message}</p>
+          </div>
+
+          <div className="mt-5 grid gap-2 text-sm text-[#4a443c]">
+            <p>{claim.permission_confirmed ? "Confirmed content permission" : "Missing content permission confirmation"}</p>
+            <p>{claim.terms_accepted ? "Accepted EverAft display terms" : "Missing display terms acceptance"}</p>
+          </div>
+        </section>
+
+        <aside className="grid gap-5 self-start">
+          <form action={approveVenueClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5">
+            <input name="claimId" type="hidden" value={claim.id} />
+            <h2 className="font-display text-3xl font-semibold">Approve</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Approval marks the venue as claimed and creates vendor dashboard access.</p>
+            <Textarea className="mt-4" name="adminNotes" placeholder="Admin notes" defaultValue={claim.admin_notes ?? ""} />
+            <Button className="mt-4 w-full" type="submit" disabled={claim.status === "approved"}>Approve claim</Button>
+          </form>
+
+          <form action={rejectVenueClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5">
+            <input name="claimId" type="hidden" value={claim.id} />
+            <h2 className="font-display text-3xl font-semibold">Reject</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Rejecting keeps the listing unclaimed and stores your notes for the record.</p>
+            <Textarea className="mt-4" name="adminNotes" required placeholder="Reason or internal notes" defaultValue={claim.admin_notes ?? ""} />
+            <Button className="mt-4 w-full" type="submit" variant="secondary" disabled={claim.status === "rejected"}>Reject claim</Button>
+          </form>
+        </aside>
+      </div>
+
+      <section className="mt-8 rounded-3xl border border-[var(--line)] bg-white p-6">
+        <h2 className="font-display text-3xl font-semibold">Audit log</h2>
+        <div className="mt-5 grid gap-3">
+          {(audit ?? []).map((entry) => (
+            <div className="rounded-2xl bg-[#fbf8f3] px-4 py-3 text-sm" key={entry.id}>
+              <p className="font-semibold">{entry.action}</p>
+              <p className="mt-1 text-[var(--muted)]">{entry.notes || "No notes"} - {new Date(entry.created_at).toLocaleString("en-GB")}</p>
+            </div>
+          ))}
+          {(audit ?? []).length === 0 ? <p className="text-sm text-[var(--muted)]">No audit events yet.</p> : null}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a806f]">{label}</dt>
+      <dd className="mt-1 text-sm text-[#4a443c]">{value}</dd>
+    </div>
+  );
+}
