@@ -8,3 +8,17 @@ const representativeImages = {
 export function representativeImageForType(type?: string) {
   return representativeImages[type as keyof typeof representativeImages] ?? representativeImages["Country Estate"];
 }
+
+export function imageUrlOrRepresentative(value: string | null | undefined, type?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return representativeImageForType(type);
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") return trimmed;
+  } catch {
+    return representativeImageForType(type);
+  }
+
+  return representativeImageForType(type);
+}

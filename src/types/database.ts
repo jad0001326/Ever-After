@@ -37,8 +37,8 @@ export type Database = {
           country: string;
           summary: string;
           description: string;
-          price_from: number;
-          price_to: number;
+          price_from: number | null;
+          price_to: number | null;
           capacity_min: number;
           capacity_max: number;
           hero_image: string;

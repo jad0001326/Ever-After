@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, UsersRound } from "lucide-react";
 import type { Venue } from "@/types/venue";
-import { formatCapacity, gbp } from "@/lib/utils";
+import { formatCapacity, formatPriceRange } from "@/lib/utils";
 
 export function VenueCard({ venue, priority = false }: { venue: Venue; priority?: boolean }) {
+  const price = formatPriceRange(venue.priceFrom, venue.priceTo);
+
   return (
     <article className="group overflow-hidden rounded-3xl border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/10">
       <Link href={`/venues/${venue.slug}`} className="block">
@@ -45,10 +47,12 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
               {formatCapacity(venue.capacityMin, venue.capacityMax)}
             </span>
           </div>
-          <div className="flex items-end justify-between border-t border-[var(--line)] pt-4">
-            <span className="text-xs uppercase tracking-[0.18em] text-[#8a806f]">From</span>
-            <span className="text-lg font-semibold">{gbp.format(venue.priceFrom)}</span>
-          </div>
+          {price ? (
+            <div className="flex items-end justify-between border-t border-[var(--line)] pt-4">
+              <span className="text-xs uppercase tracking-[0.18em] text-[#8a806f]">From</span>
+              <span className="text-lg font-semibold">{price}</span>
+            </div>
+          ) : null}
         </div>
       </Link>
     </article>

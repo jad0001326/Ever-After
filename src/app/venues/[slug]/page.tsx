@@ -5,7 +5,7 @@ import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
 import { ButtonLink } from "@/components/ui/button";
-import { absoluteUrl, formatCapacity, gbp } from "@/lib/utils";
+import { absoluteUrl, formatCapacity, formatPriceRange } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueListingBySlug } from "@/lib/venues";
 
@@ -45,6 +45,9 @@ export default async function VenuePage({ params }: PageProps) {
         .match({ user_id: user.id, venue_id: venue.id })
         .maybeSingle()
     : null;
+
+  const price = formatPriceRange(venue.priceFrom, venue.priceTo);
+  const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venue.name}, ${venue.town}, ${venue.region}, Scotland`)}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -101,7 +104,7 @@ export default async function VenuePage({ params }: PageProps) {
           </section>
 
           <section className="grid gap-4 sm:grid-cols-3">
-            <InfoTile title="Pricing" value={`${gbp.format(venue.priceFrom)} - ${gbp.format(venue.priceTo)}`} />
+            {price ? <InfoTile title="Pricing" value={price} /> : null}
             <InfoTile title="Capacity" value={formatCapacity(venue.capacityMin, venue.capacityMax)} />
             <InfoTile title="Location" value={`${venue.town}, Scotland`} />
           </section>
@@ -120,13 +123,16 @@ export default async function VenuePage({ params }: PageProps) {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-3xl border border-[var(--line)] bg-[#dfe6df]">
-            <div className="grid min-h-72 place-items-center p-8 text-center">
+          <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <MapPin className="mx-auto text-[#6d795f]" size={32} />
-                <h2 className="mt-4 font-display text-3xl font-semibold">Map preview</h2>
-                <p className="mt-2 text-sm text-[#5f6957]">Interactive map integration placeholder for {venue.town}.</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9d7b45]">Location</p>
+                <h2 className="mt-3 font-display text-3xl font-semibold">{venue.town}, {venue.region}</h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Open the venue location in Google Maps for directions and nearby travel planning.</p>
               </div>
+              <ButtonLink href={mapsHref} target="_blank" rel="noopener noreferrer" variant="secondary" className="shrink-0">
+                Open in Google Maps <ExternalLink size={16} />
+              </ButtonLink>
             </div>
           </section>
         </div>
