@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { Camera, CheckCircle2, ExternalLink, Globe2, ShieldCheck } from "lucide-react";
 import { VendorUpdateForm } from "@/components/vendor/vendor-update-form";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,7 @@ export default async function VendorPage() {
       <div className="grid gap-6">
         {(venues ?? []).map((venue) => {
           const venueRequests = (requests ?? []).filter((request) => request.venue_id === venue.id);
+          const health = listingHealth(venue);
           return (
             <section className="rounded-3xl border border-[var(--line)] bg-white p-6" key={venue.id}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -44,7 +46,21 @@ export default async function VendorPage() {
                   </div>
                   <p className="mt-2 text-sm text-[var(--muted)]">Listing: {venue.listing_status ?? venue.status} - Claim: {venue.claim_status ?? "approved"}</p>
                 </div>
-                <Link className="text-sm font-semibold text-[#5c6b52]" href={`/venues/${venue.slug}`}>View listing</Link>
+                <Link className="inline-flex items-center gap-2 text-sm font-semibold text-[#5c6b52]" href={`/venues/${venue.slug}`}>View listing <ExternalLink size={14} /></Link>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf8f3] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[#4a443c]">Listing health: {health.score}/{health.total}</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">{health.missing.length ? `Suggested next steps: ${health.missing.join(", ")}` : "Your listing has the core launch details in place."}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <HealthBadge icon={<Globe2 size={14} />} ok={Boolean(venue.official_website_url)} label="Website" />
+                    <HealthBadge icon={<Camera size={14} />} ok={Boolean(venue.official_gallery_url)} label="Gallery" />
+                    <HealthBadge icon={<ShieldCheck size={14} />} ok={!venue.image_is_representative} label="Approved image" />
+                  </div>
+                </div>
               </div>
 
               <VendorUpdateForm venue={venue} />
@@ -74,5 +90,39 @@ export default async function VendorPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+type VendorVenue = {
+  official_website_url: string | null;
+  official_gallery_url: string | null;
+  vendor_contact_email: string | null;
+  image_is_representative: boolean | null;
+  summary: string | null;
+  description: string | null;
+};
+
+function listingHealth(venue: VendorVenue) {
+  const checks = [
+    { label: "add official website", ok: Boolean(venue.official_website_url) },
+    { label: "add official gallery", ok: Boolean(venue.official_gallery_url) },
+    { label: "confirm enquiry email", ok: Boolean(venue.vendor_contact_email) },
+    { label: "submit approved imagery", ok: !venue.image_is_representative },
+    { label: "review summary", ok: Boolean(venue.summary) },
+    { label: "review description", ok: Boolean(venue.description) }
+  ];
+  return {
+    score: checks.filter((check) => check.ok).length,
+    total: checks.length,
+    missing: checks.filter((check) => !check.ok).map((check) => check.label)
+  };
+}
+
+function HealthBadge({ icon, label, ok }: { icon: ReactNode; label: string; ok: boolean }) {
+  return (
+    <span className={ok ? "inline-flex items-center gap-1 rounded-full bg-[#eef4ea] px-3 py-1 text-xs font-semibold text-[#3f5c35]" : "inline-flex items-center gap-1 rounded-full bg-[#fff9ef] px-3 py-1 text-xs font-semibold text-[#8a672d]"}>
+      {ok ? <CheckCircle2 size={14} /> : icon}
+      {label}
+    </span>
   );
 }

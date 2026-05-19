@@ -28,6 +28,7 @@ type VenueFormProps = {
     image_is_representative?: boolean;
     invite_status?: string | null;
     invite_sent_at?: string | null;
+    outreach_notes?: string | null;
     status?: string;
     is_featured?: boolean;
   };
@@ -137,6 +138,9 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
       </div>
       <Field label="Image credit">
         <Input name="imageCredit" defaultValue={venue?.image_credit ?? ""} placeholder="Venue name or photographer" />
+      </Field>
+      <Field label="Outreach notes">
+        <Textarea name="outreachNotes" defaultValue={venue?.outreach_notes ?? ""} placeholder="Founding partner offer sent, wrong contact, follow-up needed..." />
       </Field>
       <Field label="Summary">
         <Textarea name="summary" required defaultValue={venue?.summary} />
