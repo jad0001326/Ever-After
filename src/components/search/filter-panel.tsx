@@ -18,6 +18,8 @@ export function FilterPanel() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
+  const hasFilters = ["location", "guests", "budget", "type", "sort"].some((key) => searchParams.has(key));
+
   return (
     <aside className="rounded-3xl border border-[var(--line)] bg-white p-5 lg:sticky lg:top-24">
       <div className="mb-5 flex items-center justify-between">
@@ -60,6 +62,15 @@ export function FilterPanel() {
             ))}
           </Select>
         </Field>
+        {hasFilters ? (
+          <button
+            className="focus-ring min-h-11 rounded-full bg-[#f4efe7] px-4 text-sm font-semibold text-[#3f4d38] transition hover:bg-[#e8dece]"
+            onClick={() => router.replace(pathname, { scroll: false })}
+            type="button"
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
     </aside>
   );

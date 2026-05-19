@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const variants = {
   primary: "bg-[var(--brand)] text-white hover:bg-[#253128]",
-  secondary: "bg-white text-[#191713] ring-1 ring-[var(--line)] hover:bg-[#f7f1e8]",
+  secondary: "bg-white text-stone-950 ring-1 ring-[var(--line)] hover:bg-[#f7f1e8]",
   ghost: "text-[#4f4a43] hover:bg-white"
 };
 
@@ -12,7 +12,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof variants;
 };
 
-export function Button({ className, variant = "primary", ...props }: ButtonProps) {
+export function Button({ className, style, variant = "primary", ...props }: ButtonProps) {
   return (
     <button
       className={cn(
@@ -20,6 +20,7 @@ export function Button({ className, variant = "primary", ...props }: ButtonProps
         variants[variant],
         className
       )}
+      style={variant === "secondary" ? { color: "#191713", ...style } : variant === "primary" ? { color: "#ffffff", ...style } : style}
       {...props}
     />
   );
@@ -31,7 +32,7 @@ type ButtonLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkP
   variant?: keyof typeof variants;
 };
 
-export function ButtonLink({ className, variant = "primary", ...props }: ButtonLinkProps) {
+export function ButtonLink({ className, style, variant = "primary", ...props }: ButtonLinkProps) {
   return (
     <Link
       className={cn(
@@ -39,6 +40,7 @@ export function ButtonLink({ className, variant = "primary", ...props }: ButtonL
         variants[variant],
         className
       )}
+      style={variant === "secondary" ? { color: "#191713", ...style } : variant === "primary" ? { color: "#ffffff", ...style } : style}
       {...props}
     />
   );

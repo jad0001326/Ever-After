@@ -49,7 +49,7 @@ export function AuthCard({
         <p className="mt-5 text-center text-sm text-[var(--muted)]">
           {mode === "login" ? (
             <>
-              New to Ever After? <Link className="font-semibold text-[#5c6b52]" href={redirectTo ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : "/signup"}>Create an account</Link>
+              New to EverAft? <Link className="font-semibold text-[#5c6b52]" href={redirectTo ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : "/signup"}>Create an account</Link>
             </>
           ) : (
             <>

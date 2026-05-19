@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { Check, ExternalLink, MapPin, ShieldCheck, UsersRound } from "lucide-react";
+import { Camera, Check, ExternalLink, Globe2, MapPin, ShieldCheck, UsersRound } from "lucide-react";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
@@ -82,13 +83,28 @@ export default async function VenuePage({ params }: PageProps) {
           <p className="mt-3 flex items-center gap-2 text-[var(--muted)]">
             <MapPin size={17} /> {venue.town}, {venue.region}
           </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ButtonLink href="#enquiry">
+              Send enquiry
+            </ButtonLink>
+            {venue.officialWebsiteUrl ? (
+              <ButtonLink href={venue.officialWebsiteUrl} target="_blank" rel="noopener noreferrer" variant="secondary">
+                Official website <ExternalLink size={16} />
+              </ButtonLink>
+            ) : null}
+            {venue.officialGalleryUrl ? (
+              <ButtonLink href={venue.officialGalleryUrl} target="_blank" rel="noopener noreferrer" variant="secondary">
+                Gallery <Camera size={16} />
+              </ButtonLink>
+            ) : null}
+          </div>
         </div>
         <FavouriteButton initialSaved={Boolean(favourite?.data)} venueId={venue.id} />
       </div>
 
       <VenueGallery venue={venue} />
       <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-[var(--line)] bg-white/72 px-5 py-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
-        <p>{venue.isClaimed ? "Approved venue content is reviewed before it appears on EverAft." : "Official photos are hosted by the venue. Approved images will appear here once permission is confirmed."}</p>
+        <p>{venue.imageIsRepresentative ? "Representative imagery is shown until venue-approved photography is available." : "Venue imagery has been reviewed for this listing."}</p>
         {venue.officialGalleryUrl ? (
           <ButtonLink href={venue.officialGalleryUrl} target="_blank" rel="noopener noreferrer" variant="secondary" className="shrink-0">
             View official gallery <ExternalLink size={16} />
@@ -111,16 +127,20 @@ export default async function VenuePage({ params }: PageProps) {
 
           <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
             <h2 className="font-display text-3xl font-semibold">Amenities</h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {venue.amenities.map((amenity) => (
-                <div className="flex items-center gap-3 text-sm text-[#4f4a43]" key={amenity.id}>
-                  <span className="grid size-8 place-items-center rounded-full bg-[#f4efe7] text-[#8b6d3c]">
-                    <Check size={16} />
-                  </span>
-                  {amenity.name}
-                </div>
-              ))}
-            </div>
+            {venue.amenities.length > 0 ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {venue.amenities.map((amenity) => (
+                  <div className="flex items-center gap-3 text-sm text-[#4f4a43]" key={amenity.id}>
+                    <span className="grid size-8 place-items-center rounded-full bg-[#f4efe7] text-[#8b6d3c]">
+                      <Check size={16} />
+                    </span>
+                    {amenity.name}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-[var(--muted)]">Amenities are being confirmed with the venue.</p>
+            )}
           </section>
 
           <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
@@ -137,20 +157,39 @@ export default async function VenuePage({ params }: PageProps) {
           </section>
         </div>
         <aside className="lg:sticky lg:top-24 lg:self-start">
+          <section className="mb-5 rounded-3xl border border-[var(--line)] bg-white p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9d7b45]">Listing confidence</p>
+            <div className="mt-4 grid gap-3 text-sm text-[#4f4a43]">
+              <TrustRow icon={<ShieldCheck size={16} />} text={venue.isClaimed ? "Managed by the venue team" : "Open for venue owner verification"} />
+              <TrustRow icon={<Camera size={16} />} text={venue.imageIsRepresentative ? "Representative imagery in use" : "Reviewed venue imagery"} />
+              {venue.officialWebsiteUrl ? <TrustRow icon={<Globe2 size={16} />} text="Official website linked" /> : null}
+            </div>
+          </section>
           {!venue.isClaimed ? (
             <section className="mb-5 rounded-3xl border border-[#d7c49d] bg-[#fff9ef] p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9d7b45]">Own or manage this venue?</p>
               <h2 className="mt-3 font-display text-3xl font-semibold">Claim this listing</h2>
-              <p className="mt-2 text-sm leading-6 text-[#6a5b42]">Claim this listing to update details, add approved photos, and manage enquiries.</p>
+              <p className="mt-2 text-sm leading-6 text-[#6a5b42]">Verify your connection to update details, submit approved photography, and manage listing requests.</p>
               <ButtonLink className="mt-5 w-full" href={`/venues/${venue.slug}/claim`}>
                 Claim this listing
               </ButtonLink>
             </section>
           ) : null}
-          <EnquiryForm venueId={venue.id} />
+          <div id="enquiry">
+            <EnquiryForm venueId={venue.id} />
+          </div>
         </aside>
       </div>
     </article>
+  );
+}
+
+function TrustRow({ icon, text }: { icon: ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f4efe7] text-[#8b6d3c]">{icon}</span>
+      <span>{text}</span>
+    </div>
   );
 }
 

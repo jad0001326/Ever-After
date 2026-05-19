@@ -20,8 +20,8 @@ export function SortSelect() {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }}
     >
-      <option value="price-asc">Price low-high</option>
-      <option value="price-desc">Price high-low</option>
+      <option value="price-asc">Lowest confirmed price</option>
+      <option value="price-desc">Highest confirmed price</option>
       <option value="capacity-desc">Guest capacity</option>
     </Select>
   );
