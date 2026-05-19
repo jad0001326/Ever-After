@@ -15,6 +15,8 @@ type ImportError = {
   message: string;
 };
 
+type ImportWarning = ImportError;
+
 export type VenueImportState = {
   ok: boolean;
   message: string;
@@ -24,6 +26,7 @@ export type VenueImportState = {
   importedRows: number;
   skippedRows: number;
   errors: ImportError[];
+  warnings: ImportWarning[];
 } | null;
 
 type RawRow = Record<string, string>;
@@ -177,7 +180,18 @@ function rowsToObjects(rows: string[][]) {
   };
 }
 
-function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; errors: string[] } {
+function warningsForVenue(venue: ParsedVenue) {
+  const warnings: string[] = [];
+  if (venue.priceFrom == null && venue.priceTo == null) warnings.push("Missing price; public listing will hide pricing until confirmed.");
+  if (!venue.vendorContactEmail) warnings.push("Missing vendor contact email; outreach and claim follow-up may be harder.");
+  if (!venue.officialWebsiteUrl) warnings.push("Missing official website URL.");
+  if (!venue.officialGalleryUrl) warnings.push("Missing official gallery URL.");
+  if (venue.imageIsRepresentative || venue.imagePermissionStatus !== "approved") warnings.push("Representative or unapproved imagery; keep listing under review before launch promotion.");
+  if (venue.amenities.length === 0) warnings.push("No amenities linked from import.");
+  return warnings;
+}
+
+function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const name = value(row, "Venue name", "Name");
   const rawType = value(row, "Type", "Venue type");
@@ -194,7 +208,7 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
   if (capacityMin < 1) errors.push("Capacity min must be at least 1.");
   if (capacityMax < capacityMin) errors.push("Capacity max must be greater than or equal to capacity min.");
 
-  if (!name || !type) return { errors };
+  if (!name || !type) return { errors, warnings: [] };
 
   const slug = value(row, "Slug") || slugify(name);
   const priceFrom = parseNumber(value(row, "Price from"));
@@ -206,33 +220,36 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
   const officialGalleryUrl = value(row, "Official gallery URL") || null;
   const imagePermissionStatus = parseImagePermissionStatus(value(row, "Image permission status"));
 
+  const venue = {
+    rowNumber,
+    name,
+    slug,
+    type,
+    town,
+    region,
+    summary,
+    description,
+    priceFrom,
+    priceTo,
+    capacityMin,
+    capacityMax,
+    heroImage,
+    officialWebsiteUrl,
+    officialGalleryUrl,
+    vendorContactEmail: value(row, "Vendor contact email") || null,
+    imageCredit: value(row, "Image credit", "Image source/permission notes") || null,
+    imagePermissionStatus,
+    imageIsRepresentative: parseBoolean(value(row, "Image is representative?"), imagePermissionStatus === "representative"),
+    inviteStatus: parseInviteStatus(value(row, "Invite status")),
+    inviteSentAt: value(row, "Invite sent at") || null,
+    isFeatured: parseBoolean(value(row, "Featured?")),
+    amenities: value(row, "Amenities").split(",").map((amenity) => amenity.trim()).filter(Boolean)
+  };
+
   return {
     errors,
-    venue: {
-      rowNumber,
-      name,
-      slug,
-      type,
-      town,
-      region,
-      summary,
-      description,
-      priceFrom,
-      priceTo,
-      capacityMin,
-      capacityMax,
-      heroImage,
-      officialWebsiteUrl,
-      officialGalleryUrl,
-      vendorContactEmail: value(row, "Vendor contact email") || null,
-      imageCredit: value(row, "Image credit", "Image source/permission notes") || null,
-      imagePermissionStatus,
-      imageIsRepresentative: parseBoolean(value(row, "Image is representative?"), imagePermissionStatus === "representative"),
-      inviteStatus: parseInviteStatus(value(row, "Invite status")),
-      inviteSentAt: value(row, "Invite sent at") || null,
-      isFeatured: parseBoolean(value(row, "Featured?")),
-      amenities: value(row, "Amenities").split(",").map((amenity) => amenity.trim()).filter(Boolean)
-    }
+    warnings: warningsForVenue(venue),
+    venue
   };
 }
 
@@ -241,13 +258,13 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
 
   const supabase = await createClient();
   if (!supabase) {
-    return { ok: false, message: "Supabase is not configured.", mode: "validate", rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [] };
+    return { ok: false, message: "Supabase is not configured.", mode: "validate", rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [], warnings: [] };
   }
 
   const mode: ImportMode = formData.get("mode")?.toString() === "import" ? "import" : "validate";
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: "Choose an Excel workbook or CSV file first.", mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [] };
+    return { ok: false, message: "Choose an Excel workbook or CSV file first.", mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [], warnings: [] };
   }
 
   let rawRows: string[][];
@@ -265,16 +282,18 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
       errors: [{
         row: 0,
         message: error instanceof Error ? error.message : "The uploaded workbook could not be parsed."
-      }]
+      }],
+      warnings: []
     };
   }
   const { rows, error } = rowsToObjects(rawRows);
   if (error) {
-    return { ok: false, message: error, mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [{ row: 0, message: error }] };
+    return { ok: false, message: error, mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [{ row: 0, message: error }], warnings: [] };
   }
 
   const parsed = rows.map(({ rowNumber, record }) => ({ rowNumber, ...parseVenue(rowNumber, record) }));
   const errors: ImportError[] = parsed.flatMap((item) => item.errors.map((message) => ({ row: item.rowNumber, venue: item.venue?.name, message })));
+  const warnings: ImportWarning[] = parsed.flatMap((item) => item.warnings.map((message) => ({ row: item.rowNumber, venue: item.venue?.name, message })));
   const validVenues = parsed.flatMap((item) => item.venue && item.errors.length === 0 ? [item.venue] : []);
   const duplicateSlugs = new Set<string>();
   const seenSlugs = new Set<string>();
@@ -303,7 +322,8 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
       validRows: importableVenues.length,
       importedRows: 0,
       skippedRows: rows.length - importableVenues.length,
-      errors
+      errors,
+      warnings
     };
   }
 
@@ -364,6 +384,7 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
     validRows: importableVenues.length,
     importedRows,
     skippedRows: rows.length - importedRows,
-    errors
+    errors,
+    warnings
   };
 }
