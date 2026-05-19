@@ -85,7 +85,7 @@ export default async function VenuePage({ params }: PageProps) {
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <ButtonLink href="#enquiry">
-              Send enquiry
+              Check availability
             </ButtonLink>
             {venue.officialWebsiteUrl ? (
               <ButtonLink href={venue.officialWebsiteUrl} target="_blank" rel="noopener noreferrer" variant="secondary">

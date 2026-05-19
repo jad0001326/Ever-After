@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Archive, CheckCircle2, Edit, ImagePlus, Inbox, Mail, Plus, Search, Send, Star, UploadCloud } from "lucide-react";
+import { Archive, CheckCircle2, Edit, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud } from "lucide-react";
 import { bulkUpdateVenues } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -47,13 +47,14 @@ type AdminVenue = {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<AdminSearchParams> }) {
   const [{ message, ...filters }] = await Promise.all([searchParams, requireAdmin()]);
   const supabase = await createClient();
-  const [{ data, error }, { data: claims }, { data: amenityLinks }] = await Promise.all([
+  const [{ data, error }, { data: claims }, { data: amenityLinks }, { data: newEnquiries }] = await Promise.all([
     supabase!
       .from("venues")
       .select("id, name, slug, type, region, town, price_from, price_to, capacity_max, status, listing_status, claim_status, invite_status, official_website_url, official_gallery_url, vendor_contact_email, image_is_representative, is_claimed, is_featured")
       .order("updated_at", { ascending: false }),
     supabase!.from("venue_claims").select("id, status").eq("status", "pending"),
-    supabase!.from("venue_amenities").select("venue_id")
+    supabase!.from("venue_amenities").select("venue_id"),
+    supabase!.from("enquiries").select("id, status").eq("status", "new")
   ]);
   const amenityCounts = new Map<string, number>();
   for (const link of amenityLinks ?? []) amenityCounts.set(link.venue_id, (amenityCounts.get(link.venue_id) ?? 0) + 1);
@@ -77,6 +78,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <ButtonLink href="/admin/outreach" variant="secondary">
             <Send size={17} /> Outreach
           </ButtonLink>
+          <ButtonLink href="/admin/enquiries" variant="secondary">
+            <MessageSquareText size={17} /> Leads
+          </ButtonLink>
           <ButtonLink href="/admin/claims" variant="secondary">
             <Inbox size={17} /> Review claims
           </ButtonLink>
@@ -89,10 +93,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       {message ? <p className="mb-6 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
       {error ? <p className="mb-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase error: {error.message}</p> : null}
 
-      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <AdminStat icon={<Edit size={18} />} label="Listings" value={venues.length.toString()} />
         <AdminStat icon={<CheckCircle2 size={18} />} label="Launch ready" value={stats.launchReady.toString()} />
         <AdminStat icon={<Archive size={18} />} label="Missing price" value={stats.missingPrice.toString()} />
+        <AdminStat icon={<MessageSquareText size={18} />} label="New leads" value={(newEnquiries?.length ?? 0).toString()} />
         <AdminStat icon={<Inbox size={18} />} label="Pending claims" value={(claims?.length ?? 0).toString()} />
       </section>
 
