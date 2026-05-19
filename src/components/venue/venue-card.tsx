@@ -8,8 +8,8 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
   const price = formatPriceRange(venue.priceFrom, venue.priceTo);
 
   return (
-    <article className="group overflow-hidden rounded-3xl border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/10">
-      <Link href={`/venues/${venue.slug}`} className="block">
+    <article className="group h-full overflow-hidden rounded-3xl border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/10">
+      <Link href={`/venues/${venue.slug}`} className="grid h-full grid-rows-[auto_1fr]">
         <div className="relative aspect-[4/3] overflow-hidden bg-[#eee8dd]">
           <Image
             alt={venue.name}
@@ -32,7 +32,7 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
             </div>
           ) : null}
         </div>
-        <div className="grid gap-4 p-5">
+        <div className="flex h-full flex-col gap-4 p-5">
           <div>
             <h3 className="font-display text-2xl font-semibold">{venue.name}</h3>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{venue.summary}</p>
@@ -48,7 +48,7 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
             </span>
           </div>
           {price ? (
-            <div className="flex items-end justify-between border-t border-[var(--line)] pt-4">
+            <div className="mt-auto flex items-end justify-between border-t border-[var(--line)] pt-4">
               <span className="text-xs uppercase tracking-[0.18em] text-[#8a806f]">From</span>
               <span className="text-lg font-semibold">{price}</span>
             </div>

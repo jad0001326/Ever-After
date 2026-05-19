@@ -52,9 +52,10 @@ export function ClaimListingForm({ venueId, venueSlug }: { venueId: string; venu
       </div>
 
       {state?.message ? (
-        <p className={state.ok ? "mt-5 rounded-2xl bg-[#eef4ea] px-4 py-3 text-sm text-[#3f5c35]" : "mt-5 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19]"}>
-          {state.message}
-        </p>
+        <div className={state.ok ? "mt-5 rounded-2xl bg-[#eef4ea] px-4 py-3 text-sm text-[#3f5c35]" : "mt-5 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19]"}>
+          <p>{state.message}</p>
+          {state.ok ? <p className="mt-2">We will review your evidence and update your vendor dashboard once the claim is approved.</p> : null}
+        </div>
       ) : null}
 
       <Button className="mt-5 w-full" disabled={pending || state?.ok} type="submit">

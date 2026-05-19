@@ -33,6 +33,8 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
         </Suspense>
       </div>
 
+      <ActiveFilterSummary params={params} />
+
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         <Suspense fallback={null}>
           <FilterPanel />
@@ -47,7 +49,8 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
           ) : (
             <div className="rounded-3xl border border-[var(--line)] bg-white p-10 text-center">
               <h2 className="font-display text-3xl font-semibold">No venues found</h2>
-              <p className="mt-3 text-[var(--muted)]">Try widening your guest count, budget, or location.</p>
+              <p className="mt-3 text-[var(--muted)]">Try widening your guest count, budget, location, or venue type.</p>
+              <Link className="mt-5 inline-flex text-sm font-semibold text-[#5c6b52]" href="/venues">Clear all filters</Link>
             </div>
           )}
 
@@ -67,6 +70,31 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+function ActiveFilterSummary({ params }: { params: VenueSearchParams }) {
+  const budget = Number(params.budget);
+  const filters = [
+    params.location ? `Location: ${params.location}` : null,
+    params.guests ? `${params.guests} guests` : null,
+    params.budget && Number.isFinite(budget) ? `Budget up to £${budget.toLocaleString("en-GB")}` : null,
+    params.type ? `Style: ${params.type}` : null
+  ].filter((item): item is string => Boolean(item));
+
+  if (filters.length === 0) return null;
+
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-2">
+      {filters.map((filter) => (
+        <span className="rounded-full bg-[#f4efe7] px-3 py-1 text-sm font-medium text-[#4f4a43]" key={filter}>
+          {filter}
+        </span>
+      ))}
+      <Link className="rounded-full px-3 py-1 text-sm font-semibold text-[#5c6b52] transition hover:bg-white" href="/venues">
+        Clear all
+      </Link>
     </div>
   );
 }

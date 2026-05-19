@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, ShieldCheck, Sparkles } from "lucide-react";
 import { FeaturedVenues } from "@/components/home/featured-venues";
 import { SearchBar } from "@/components/search/search-bar";
 import { ButtonLink } from "@/components/ui/button";
@@ -40,6 +40,25 @@ export default function Home() {
         </div>
       </section>
       <FeaturedVenues />
+      <section className="bg-[#334235] text-white">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">For venues</p>
+            <h2 className="mt-3 font-display text-4xl font-semibold sm:text-5xl">Own or manage a Scottish wedding venue?</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/78">
+              Claim your listing to verify details, add approved imagery, and keep enquiry paths accurate during launch.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href="/venues" variant="secondary">
+              <Building2 size={17} /> Find your listing
+            </ButtonLink>
+            <ButtonLink href="/vendor" className="bg-white/12 text-white ring-1 ring-white/25 hover:bg-white/18">
+              <ShieldCheck size={17} /> Vendor dashboard
+            </ButtonLink>
+          </div>
+        </div>
+      </section>
       <section className="bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
           {[

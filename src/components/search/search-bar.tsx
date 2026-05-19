@@ -33,7 +33,7 @@ export function SearchBar() {
         <Input inputMode="numeric" name="guests" placeholder="120" type="number" min="1" />
       </Field>
       <Field label="Budget">
-        <Input inputMode="numeric" name="budget" placeholder="£12,000" type="number" min="0" />
+        <Input inputMode="numeric" name="budget" placeholder="12000" type="number" min="0" />
       </Field>
       <Field label="Venue type">
         <Select name="type" defaultValue="">

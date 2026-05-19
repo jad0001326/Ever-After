@@ -23,7 +23,7 @@ export function Footer() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7a6d59]">Platform</p>
           <div className="mt-4 grid gap-2 text-sm text-[var(--muted)]">
             <Link href="/login">Couple login</Link>
-            <Link href="/admin">Venue admin</Link>
+            <Link href="/vendor">Venue dashboard</Link>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/logo";
 
 const nav = [
   { href: "/venues", label: "Venues", icon: Search },
-  { href: "/vendor", label: "Vendor", icon: BriefcaseBusiness },
+  { href: "/vendor", label: "For venues", icon: BriefcaseBusiness },
   { href: "/admin", label: "Admin", icon: LayoutDashboard },
   { href: "/login", label: "Sign in", icon: UserRound }
 ];
