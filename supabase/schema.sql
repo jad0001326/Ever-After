@@ -85,6 +85,7 @@ create table if not exists public.venues (
   claimed_at timestamptz,
   invite_sent_at timestamptz,
   invite_status text not null default 'not_sent' check (invite_status in ('not_sent', 'sent', 'bounced', 'replied', 'claimed')),
+  outreach_notes text,
   latitude numeric(9, 6),
   longitude numeric(9, 6),
   is_featured boolean not null default false,
@@ -106,7 +107,8 @@ alter table public.venues
   add column if not exists claimed_by uuid references public.profiles(id) on delete set null,
   add column if not exists claimed_at timestamptz,
   add column if not exists invite_sent_at timestamptz,
-  add column if not exists invite_status text not null default 'not_sent';
+  add column if not exists invite_status text not null default 'not_sent',
+  add column if not exists outreach_notes text;
 
 alter table public.venues
   alter column price_from drop not null,

@@ -55,6 +55,7 @@ export type Database = {
           claimed_at: string | null;
           invite_sent_at: string | null;
           invite_status: "not_sent" | "sent" | "bounced" | "replied" | "claimed";
+          outreach_notes: string | null;
           latitude: number | null;
           longitude: number | null;
           is_featured: boolean;

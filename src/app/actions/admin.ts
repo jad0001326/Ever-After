@@ -66,6 +66,40 @@ export async function bulkUpdateVenues(formData: FormData) {
   redirect(`/admin?message=${encodeURIComponent(`Updated ${ids.length} venue${ids.length === 1 ? "" : "s"}`)}`);
 }
 
+export async function updateVenueOutreach(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
+
+  const venueId = formData.get("venueId")?.toString();
+  const action = formData.get("outreachAction")?.toString();
+  const notes = formData.get("outreachNotes")?.toString().trim() || null;
+  if (!venueId) redirect("/admin/outreach?message=Venue+is+required");
+
+  const updates: VenueUpdate = { outreach_notes: notes };
+  if (action === "mark_sent") {
+    updates.invite_status = "sent";
+    updates.invite_sent_at = new Date().toISOString();
+  } else if (action === "mark_replied") {
+    updates.invite_status = "replied";
+  } else if (action === "mark_bounced") {
+    updates.invite_status = "bounced";
+  } else if (action === "reset") {
+    updates.invite_status = "not_sent";
+    updates.invite_sent_at = null;
+  } else if (action !== "save_notes") {
+    redirect("/admin/outreach?message=Choose+an+outreach+action");
+  }
+
+  const { error } = await supabase.from("venues").update(updates).eq("id", venueId);
+  if (error) redirect(`/admin/outreach?message=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/outreach");
+  redirect("/admin/outreach?message=Outreach+updated");
+}
+
 export async function upsertVenue(formData: FormData) {
   await requireAdmin();
 
@@ -89,6 +123,7 @@ export async function upsertVenue(formData: FormData) {
   const officialGalleryUrl = formData.get("officialGalleryUrl")?.toString().trim() || null;
   const vendorContactEmail = formData.get("vendorContactEmail")?.toString().trim() || null;
   const imageCredit = formData.get("imageCredit")?.toString().trim() || null;
+  const outreachNotes = formData.get("outreachNotes")?.toString().trim() || null;
   const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "representative";
   const inviteSentAt = formData.get("inviteSentAt")?.toString().trim();
   const priceFrom = optionalPrice(formData.get("priceFrom"));
@@ -128,6 +163,7 @@ export async function upsertVenue(formData: FormData) {
     claim_status: claimStatus,
     image_permission_status: imagePermissionStatus,
     image_credit: imageCredit,
+    outreach_notes: outreachNotes,
     image_is_representative: formData.get("imageIsRepresentative") === "on",
     invite_status: inviteStatus,
     invite_sent_at: inviteSentAt ? new Date(inviteSentAt).toISOString() : null,

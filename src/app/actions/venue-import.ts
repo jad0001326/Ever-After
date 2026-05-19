@@ -53,6 +53,7 @@ type ParsedVenue = {
   imageIsRepresentative: boolean;
   inviteStatus: "not_sent" | "sent" | "bounced" | "replied" | "claimed";
   inviteSentAt: string | null;
+  outreachNotes: string | null;
   isFeatured: boolean;
   amenities: string[];
 };
@@ -242,6 +243,7 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
     imageIsRepresentative: parseBoolean(value(row, "Image is representative?"), imagePermissionStatus === "representative"),
     inviteStatus: parseInviteStatus(value(row, "Invite status")),
     inviteSentAt: value(row, "Invite sent at") || null,
+    outreachNotes: value(row, "Founding partner notes", "Outreach notes", "Claim admin notes") || null,
     isFeatured: parseBoolean(value(row, "Featured?")),
     amenities: value(row, "Amenities").split(",").map((amenity) => amenity.trim()).filter(Boolean)
   };
@@ -355,6 +357,7 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
       image_is_representative: venue.imageIsRepresentative,
       invite_status: venue.inviteStatus,
       invite_sent_at: venue.inviteSentAt ? new Date(venue.inviteSentAt).toISOString() : null,
+      outreach_notes: venue.outreachNotes,
       is_featured: venue.isFeatured,
       status: "draft"
     }).select("id").single();
