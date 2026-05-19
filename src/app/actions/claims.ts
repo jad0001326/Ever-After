@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { notifyClaimReviewed, notifyClaimSubmitted } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 export type ClaimState = { ok: boolean; message: string } | null;
@@ -55,7 +56,7 @@ export async function submitVenueClaim(_: ClaimState, formData: FormData): Promi
 
   if (existing) return { ok: false, message: existing.status === "approved" ? "This claim has already been approved." : "You already have a claim under review for this venue." };
 
-  const { error } = await supabase.from("venue_claims").insert({
+  const { data: claim, error } = await supabase.from("venue_claims").insert({
     venue_id: venueId,
     claimant_user_id: user.id,
     claimant_name: claimantName,
@@ -68,11 +69,27 @@ export async function submitVenueClaim(_: ClaimState, formData: FormData): Promi
     status: "pending",
     permission_confirmed: permissionConfirmed,
     terms_accepted: termsAccepted
-  });
+  }).select("id").single();
 
   if (error) return { ok: false, message: error.message };
 
   await supabase.from("venues").update({ claim_status: "pending" }).eq("id", venueId).eq("claim_status", "unclaimed");
+  const { data: venue } = await supabase.from("venues").select("name, slug").eq("id", venueId).maybeSingle();
+
+  if (claim && venue) {
+    await notifyClaimSubmitted({
+      claimId: claim.id,
+      venueName: venue.name,
+      venueSlug: venue.slug,
+      claimantName,
+      claimantEmail: user.email ?? businessEmail,
+      businessEmail,
+      businessPhone,
+      claimantRole,
+      message
+    });
+  }
+
   revalidatePath(`/venues/${slug}`);
   revalidatePath("/admin/claims");
   return { ok: true, message: "Your claim has been submitted for review." };
@@ -142,6 +159,18 @@ export async function approveVenueClaim(formData: FormData) {
     notes: adminNotes
   });
 
+  if (venue) {
+    await notifyClaimReviewed({
+      claimId: claim.id,
+      venueName: venue.name,
+      venueSlug: venue.slug,
+      claimantEmail: claim.claimant_email,
+      businessEmail: claim.business_email,
+      status: "approved",
+      adminNotes
+    });
+  }
+
   revalidatePath("/admin/claims");
   revalidatePath(`/admin/claims/${claim.id}`);
   if (venue?.slug) revalidatePath(`/venues/${venue.slug}`);
@@ -157,6 +186,7 @@ export async function rejectVenueClaim(formData: FormData) {
   const adminNotes = requiredText(formData, "adminNotes") || null;
   const { data: claim, error } = await supabase.from("venue_claims").select("*").eq("id", claimId).single();
   if (error || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
+  const { data: venue } = await supabase.from("venues").select("id, name, slug").eq("id", claim.venue_id).maybeSingle();
 
   await supabase.from("venue_claims").update({
     status: "rejected",
@@ -180,7 +210,20 @@ export async function rejectVenueClaim(formData: FormData) {
     notes: adminNotes
   });
 
+  if (venue) {
+    await notifyClaimReviewed({
+      claimId: claim.id,
+      venueName: venue.name,
+      venueSlug: venue.slug,
+      claimantEmail: claim.claimant_email,
+      businessEmail: claim.business_email,
+      status: "rejected",
+      adminNotes
+    });
+  }
+
   revalidatePath("/admin/claims");
   revalidatePath(`/admin/claims/${claim.id}`);
+  if (venue?.slug) revalidatePath(`/venues/${venue.slug}`);
   redirect(`/admin/claims/${claim.id}?message=Claim+rejected`);
 }

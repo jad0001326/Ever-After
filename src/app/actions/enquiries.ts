@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireUser } from "@/lib/auth";
+import { notifyNewEnquiry } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 export type EnquiryState = { ok: boolean; message: string } | null;
@@ -45,18 +46,44 @@ export async function createEnquiry(_: EnquiryState, formData: FormData): Promis
     data: { user }
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("enquiries").insert({
+  const phone = cleanText(formData.get("phone")) || null;
+  const weddingDate = cleanText(formData.get("weddingDate")) || null;
+  const guestCount = Number(cleanText(formData.get("guestCount"))) || null;
+
+  const { data: enquiry, error } = await supabase.from("enquiries").insert({
     venue_id: venueId,
     user_id: user?.id ?? null,
     name,
     email,
-    phone: cleanText(formData.get("phone")) || null,
-    wedding_date: cleanText(formData.get("weddingDate")) || null,
-    guest_count: Number(cleanText(formData.get("guestCount"))) || null,
+    phone,
+    wedding_date: weddingDate,
+    guest_count: guestCount,
     message
-  });
+  }).select("id").single();
 
   if (error) return { ok: false, message: error.message };
+
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("name, slug, vendor_contact_email")
+    .eq("id", venueId)
+    .maybeSingle();
+
+  if (venue && enquiry) {
+    await notifyNewEnquiry({
+      enquiryId: enquiry.id,
+      venueName: venue.name,
+      venueSlug: venue.slug,
+      vendorEmail: venue.vendor_contact_email,
+      coupleName: name,
+      coupleEmail: email,
+      phone,
+      weddingDate,
+      guestCount,
+      message
+    });
+  }
+
   revalidatePath("/admin");
   revalidatePath("/admin/enquiries");
   revalidatePath("/vendor");

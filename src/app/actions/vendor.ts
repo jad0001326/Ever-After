@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyVendorUpdateRequested } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 export type VendorUpdateState = { ok: boolean; message: string } | null;
@@ -25,14 +26,14 @@ export async function requestVenueUpdate(_: VendorUpdateState, formData: FormDat
 
   const { data: venue } = await supabase
     .from("venues")
-    .select("id, slug, claimed_by")
+    .select("id, name, slug, claimed_by")
     .eq("id", venueId)
     .eq("is_claimed", true)
     .single();
 
   if (!venue || venue.claimed_by !== user.id) return { ok: false, message: "Only the approved claimant can request updates for this listing." };
 
-  const { error } = await supabase.from("vendor_update_requests").insert({
+  const { data: request, error } = await supabase.from("vendor_update_requests").insert({
     venue_id: venueId,
     vendor_user_id: user.id,
     requested_name: field(formData, "name") || null,
@@ -42,9 +43,19 @@ export async function requestVenueUpdate(_: VendorUpdateState, formData: FormDat
     requested_official_gallery_url: field(formData, "officialGalleryUrl") || null,
     requested_message: message,
     status: "pending"
-  });
+  }).select("id").single();
 
   if (error) return { ok: false, message: error.message };
+
+  if (request) {
+    await notifyVendorUpdateRequested({
+      requestId: request.id,
+      venueName: venue.name,
+      venueSlug: venue.slug,
+      requesterEmail: user.email ?? null,
+      requestedMessage: message
+    });
+  }
 
   revalidatePath("/vendor");
   revalidatePath(`/venues/${venue.slug}`);
