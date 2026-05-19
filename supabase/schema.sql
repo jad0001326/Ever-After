@@ -12,10 +12,12 @@ end $$;
 
 do $$
 begin
-  create type public.enquiry_status as enum ('new', 'contacted', 'closed');
+  create type public.enquiry_status as enum ('new', 'contacted', 'converted', 'closed');
 exception
   when duplicate_object then null;
 end $$;
+
+alter type public.enquiry_status add value if not exists 'converted';
 
 -- Previous app versions created public.users. Keep existing data by renaming it
 -- to public.profiles when profiles does not already exist.
@@ -238,8 +240,12 @@ create table if not exists public.enquiries (
   guest_count integer check (guest_count is null or guest_count > 0),
   message text not null,
   status public.enquiry_status not null default 'new',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+alter table public.enquiries
+  add column if not exists updated_at timestamptz not null default now();
 
 create index if not exists venues_search_idx on public.venues using gin (
   to_tsvector('english', name || ' ' || town || ' ' || region || ' ' || type || ' ' || summary)
@@ -254,6 +260,7 @@ create index if not exists venue_images_venue_sort_idx on public.venue_images (v
 create index if not exists venue_claims_status_idx on public.venue_claims (status, created_at desc);
 create index if not exists vendor_update_requests_status_idx on public.vendor_update_requests (status, created_at desc);
 create index if not exists enquiries_venue_status_idx on public.enquiries (venue_id, status, created_at desc);
+create index if not exists enquiries_status_created_idx on public.enquiries (status, created_at desc);
 create index if not exists favourites_user_idx on public.favourites (user_id, created_at desc);
 
 create or replace function public.set_updated_at()
@@ -279,6 +286,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists vendors_set_updated_at on public.vendors;
 create trigger vendors_set_updated_at
 before update on public.vendors
+for each row execute function public.set_updated_at();
+
+drop trigger if exists enquiries_set_updated_at on public.enquiries;
+create trigger enquiries_set_updated_at
+before update on public.enquiries
 for each row execute function public.set_updated_at();
 
 create or replace function public.handle_new_user()
@@ -418,8 +430,36 @@ create policy "Users manage own favourites" on public.favourites for all using (
 drop policy if exists "Users create enquiries" on public.enquiries;
 drop policy if exists "Users read own enquiries" on public.enquiries;
 drop policy if exists "Admins manage enquiries" on public.enquiries;
+drop policy if exists "Vendor users read venue enquiries" on public.enquiries;
+drop policy if exists "Vendor users update venue enquiries" on public.enquiries;
 create policy "Users create enquiries" on public.enquiries for insert with check (user_id is null or user_id = auth.uid());
 create policy "Users read own enquiries" on public.enquiries for select using (user_id = auth.uid() or public.is_admin());
+create policy "Vendor users read venue enquiries" on public.enquiries for select using (
+  exists (
+    select 1
+    from public.venues
+    where venues.id = enquiries.venue_id
+      and venues.claimed_by = auth.uid()
+      and venues.is_claimed = true
+  )
+);
+create policy "Vendor users update venue enquiries" on public.enquiries for update using (
+  exists (
+    select 1
+    from public.venues
+    where venues.id = enquiries.venue_id
+      and venues.claimed_by = auth.uid()
+      and venues.is_claimed = true
+  )
+) with check (
+  exists (
+    select 1
+    from public.venues
+    where venues.id = enquiries.venue_id
+      and venues.claimed_by = auth.uid()
+      and venues.is_claimed = true
+  )
+);
 create policy "Admins manage enquiries" on public.enquiries for all using (public.is_admin()) with check (public.is_admin());
 
 insert into storage.buckets (id, name, public)

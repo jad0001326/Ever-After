@@ -229,8 +229,9 @@ export type Database = {
           wedding_date: string | null;
           guest_count: number | null;
           message: string;
-          status: "new" | "contacted" | "closed";
+          status: "new" | "contacted" | "converted" | "closed";
           created_at: string;
+          updated_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["enquiries"]["Row"]> & {
           venue_id: string;
@@ -246,7 +247,7 @@ export type Database = {
     Functions: Record<string, never>;
     Enums: {
       venue_status: "draft" | "published";
-      enquiry_status: "new" | "contacted" | "closed";
+      enquiry_status: "new" | "contacted" | "converted" | "closed";
     };
     CompositeTypes: Record<string, never>;
   };

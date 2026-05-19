@@ -12,11 +12,12 @@ export function EnquiryForm({ venueId }: { venueId: string }) {
   return (
     <form action={formAction} className="rounded-3xl border border-[var(--line)] bg-white p-5">
       <input name="venueId" type="hidden" value={venueId} />
-      <h2 className="font-display text-3xl font-semibold">Enquire with the venue</h2>
+      <h2 className="font-display text-3xl font-semibold">Check availability</h2>
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-        Share your date, guest count, and what matters most. This is ready to persist to Supabase.
+        Share your date, guest count, and what matters most. The venue team can follow up from there.
       </p>
       <div className="mt-5 grid gap-4">
+        <input aria-hidden="true" autoComplete="off" className="hidden" name="website" tabIndex={-1} />
         <Field label="Name">
           <Input name="name" required placeholder="Your name" />
         </Field>
