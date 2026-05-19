@@ -39,6 +39,10 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=only-use-in-secure-server-jobs
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL="EverAft <notifications@yourdomain.com>"
+ADMIN_NOTIFICATION_EMAIL=hello@yourdomain.com
+REPLY_TO_EMAIL=hello@yourdomain.com
 ```
 
 For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. For example:
@@ -46,6 +50,24 @@ For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://your-site.vercel.app
 ```
+
+## Email Notifications
+
+Titan can stay as your normal domain mailbox for reading and replying to email. The app uses Resend for automated transactional emails when these optional environment variables are configured:
+
+- `RESEND_API_KEY`: Resend API key.
+- `RESEND_FROM_EMAIL`: branded sender, for example `EverAft <notifications@yourdomain.com>`.
+- `ADMIN_NOTIFICATION_EMAIL`: one or more admin inboxes, comma-separated.
+- `REPLY_TO_EMAIL`: mailbox for replies, usually your Titan inbox.
+
+If `RESEND_API_KEY` or `RESEND_FROM_EMAIL` is missing, form submissions still work and email sends are skipped. Configure the sending domain in Resend DNS before using a domain sender in production.
+
+Automated emails currently cover:
+
+- new venue enquiries to admin, claimed venue contact, and the couple
+- new venue claims to admin
+- claim approval/rejection to the claimant
+- vendor listing update requests to admin
 
 Run locally:
 
