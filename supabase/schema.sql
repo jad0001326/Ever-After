@@ -67,8 +67,8 @@ create table if not exists public.venues (
   country text not null default 'Scotland',
   summary text not null,
   description text not null,
-  price_from integer not null check (price_from >= 0),
-  price_to integer not null check (price_to >= price_from),
+  price_from integer check (price_from is null or price_from >= 0),
+  price_to integer check (price_to is null or price_from is null or price_to >= price_from),
   capacity_min integer not null check (capacity_min > 0),
   capacity_max integer not null check (capacity_max >= capacity_min),
   hero_image text not null,
@@ -107,6 +107,10 @@ alter table public.venues
   add column if not exists claimed_at timestamptz,
   add column if not exists invite_sent_at timestamptz,
   add column if not exists invite_status text not null default 'not_sent';
+
+alter table public.venues
+  alter column price_from drop not null,
+  alter column price_to drop not null;
 
 alter table public.venues
   alter column image_permission_status set default 'representative';

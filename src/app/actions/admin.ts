@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { representativeImageForType } from "@/lib/venue-images";
+import { imageUrlOrRepresentative } from "@/lib/venue-images";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -12,6 +12,13 @@ function slugify(value: string) {
 
 function venueFormPath(id?: string) {
   return id ? `/admin/venues/${id}/edit` : "/admin/venues/new";
+}
+
+function optionalPrice(value: FormDataEntryValue | null) {
+  const input = value?.toString().trim();
+  if (!input) return null;
+  const parsed = Number(input);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 export async function upsertVenue(formData: FormData) {
@@ -39,8 +46,8 @@ export async function upsertVenue(formData: FormData) {
   const imageCredit = formData.get("imageCredit")?.toString().trim() || null;
   const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "representative";
   const inviteSentAt = formData.get("inviteSentAt")?.toString().trim();
-  const priceFrom = Number(formData.get("priceFrom")) || 0;
-  const priceTo = Number(formData.get("priceTo")) || priceFrom;
+  const priceFrom = optionalPrice(formData.get("priceFrom"));
+  const priceTo = optionalPrice(formData.get("priceTo")) ?? priceFrom;
   const capacityMin = Number(formData.get("capacityMin"));
   const capacityMax = Number(formData.get("capacityMax"));
 
@@ -52,7 +59,7 @@ export async function upsertVenue(formData: FormData) {
     redirect(`${errorPath}?message=Capacity+maximum+must+be+greater+than+or+equal+to+capacity+minimum`);
   }
 
-  if (priceTo < priceFrom) {
+  if (priceFrom != null && priceTo != null && priceTo < priceFrom) {
     redirect(`${errorPath}?message=Price+to+must+be+greater+than+or+equal+to+price+from`);
   }
 
@@ -68,7 +75,7 @@ export async function upsertVenue(formData: FormData) {
     price_to: priceTo,
     capacity_min: capacityMin,
     capacity_max: capacityMax,
-    hero_image: formData.get("heroImage")?.toString().trim() || representativeImageForType(type),
+    hero_image: imageUrlOrRepresentative(formData.get("heroImage")?.toString(), type),
     official_website_url: officialWebsiteUrl,
     official_gallery_url: officialGalleryUrl,
     vendor_contact_email: vendorContactEmail,

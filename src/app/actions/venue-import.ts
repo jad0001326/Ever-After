@@ -5,7 +5,7 @@ import { readSheet } from "read-excel-file/node";
 import { venueTypes } from "@/data/venue-options";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { representativeImageForType } from "@/lib/venue-images";
+import { imageUrlOrRepresentative } from "@/lib/venue-images";
 
 type ImportMode = "validate" | "import";
 
@@ -37,8 +37,8 @@ type ParsedVenue = {
   region: string;
   summary: string;
   description: string;
-  priceFrom: number;
-  priceTo: number;
+  priceFrom: number | null;
+  priceTo: number | null;
   capacityMin: number;
   capacityMax: number;
   heroImage: string;
@@ -72,9 +72,9 @@ function value(row: RawRow, ...headers: string[]) {
 
 function parseNumber(input: string) {
   const cleaned = input.replace(/[£,\s]/g, "");
-  if (!cleaned || cleaned.toLowerCase() === "tbc") return 0;
+  if (!cleaned || cleaned.toLowerCase() === "tbc") return null;
   const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function parsePositiveInteger(input: string) {
@@ -198,10 +198,10 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
 
   const slug = value(row, "Slug") || slugify(name);
   const priceFrom = parseNumber(value(row, "Price from"));
-  const priceTo = parseNumber(value(row, "Price to")) || priceFrom;
+  const priceTo = parseNumber(value(row, "Price to")) ?? priceFrom;
   const description = value(row, "Description") || defaultDescription(name);
   const summary = value(row, "Summary") || description.slice(0, 180) || defaultSummary(name, town, region);
-  const heroImage = value(row, "Hero image URL") || representativeImageForType(type);
+  const heroImage = imageUrlOrRepresentative(value(row, "Hero image URL"), type);
   const officialWebsiteUrl = value(row, "Official website URL", "Official website/source") || null;
   const officialGalleryUrl = value(row, "Official gallery URL") || null;
   const imagePermissionStatus = parseImagePermissionStatus(value(row, "Image permission status"));
@@ -250,7 +250,24 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
     return { ok: false, message: "Choose an Excel workbook or CSV file first.", mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [] };
   }
 
-  const rawRows = await readWorkbookRows(file);
+  let rawRows: string[][];
+  try {
+    rawRows = await readWorkbookRows(file);
+  } catch (error) {
+    return {
+      ok: false,
+      message: "Could not read that file. Try exporting the Venue Intake sheet as CSV, then upload the CSV instead.",
+      mode,
+      rowsRead: 0,
+      validRows: 0,
+      importedRows: 0,
+      skippedRows: 0,
+      errors: [{
+        row: 0,
+        message: error instanceof Error ? error.message : "The uploaded workbook could not be parsed."
+      }]
+    };
+  }
   const { rows, error } = rowsToObjects(rawRows);
   if (error) {
     return { ok: false, message: error, mode, rowsRead: 0, validRows: 0, importedRows: 0, skippedRows: 0, errors: [{ row: 0, message: error }] };

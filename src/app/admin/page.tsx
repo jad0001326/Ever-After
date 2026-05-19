@@ -5,7 +5,7 @@ import { Edit, ImagePlus, Inbox, Plus, UploadCloud } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ButtonLink } from "@/components/ui/button";
-import { gbp } from "@/lib/utils";
+import { formatPriceRange } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Admin dashboard"
@@ -68,7 +68,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <p className="mt-1 text-sm text-[var(--muted)]">{venue.type} - {venue.listing_status ?? venue.status} - {venue.claim_status ?? "unclaimed"}</p>
             </div>
             <p className="hidden text-sm text-[var(--muted)] sm:block">{venue.town}, {venue.region}</p>
-            <p className="hidden text-sm text-[var(--muted)] sm:block">{gbp.format(venue.price_from)} - {venue.capacity_max} guests - {venue.invite_status ?? "not_sent"}</p>
+            <p className="hidden text-sm text-[var(--muted)] sm:block">
+              {formatPriceRange(venue.price_from, null) ?? "No price"} - {venue.capacity_max} guests - {venue.invite_status ?? "not_sent"}
+            </p>
             <Link className="focus-ring inline-flex size-10 items-center justify-center rounded-full bg-[#f4efe7] text-[#3f4d38] transition hover:bg-[#e8dece]" href={`/admin/venues/${venue.id}/edit`} aria-label={`Edit ${venue.name}`}>
               <Edit size={16} />
             </Link>

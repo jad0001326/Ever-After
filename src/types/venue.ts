@@ -24,8 +24,8 @@ export type Venue = {
   country: "Scotland";
   summary: string;
   description: string;
-  priceFrom: number;
-  priceTo: number;
+  priceFrom: number | null;
+  priceTo: number | null;
   capacityMin: number;
   capacityMax: number;
   heroImage: string;

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { representativeImageForType } from "@/lib/venue-images";
+import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import type { Database } from "@/types/database";
 import type { Amenity, Venue, VenueSearchParams } from "@/types/venue";
 
@@ -23,7 +23,11 @@ export async function searchVenueListings(params: VenueSearchParams) {
     };
   }
 
-  let query = supabase.from("venues").select("*", { count: "exact" }).eq("status", "published");
+  let query = supabase
+    .from("venues")
+    .select("*", { count: "exact" })
+    .eq("status", "published")
+    .in("listing_status", ["published", "claimed"]);
 
   if (params.location) {
     const value = `%${params.location}%`;
@@ -34,13 +38,13 @@ export async function searchVenueListings(params: VenueSearchParams) {
   if (!Number.isNaN(guests) && guests > 0) query = query.gte("capacity_max", guests);
 
   const budget = Number(params.budget);
-  if (!Number.isNaN(budget) && budget > 0) query = query.lte("price_from", budget);
+  if (!Number.isNaN(budget) && budget > 0) query = query.not("price_from", "is", null).lte("price_from", budget);
 
   if (params.type) query = query.eq("type", params.type);
 
-  if (params.sort === "price-desc") query = query.order("price_from", { ascending: false });
+  if (params.sort === "price-desc") query = query.order("price_from", { ascending: false, nullsFirst: false });
   else if (params.sort === "capacity-desc") query = query.order("capacity_max", { ascending: false });
-  else query = query.order("price_from", { ascending: true });
+  else query = query.order("price_from", { ascending: true, nullsFirst: false });
 
   const { data, count, error } = await query.range(from, to);
 
@@ -76,6 +80,7 @@ export async function getFeaturedVenueListings() {
     .from("venues")
     .select("*")
     .eq("status", "published")
+    .in("listing_status", ["published", "claimed"])
     .eq("is_featured", true)
     .order("updated_at", { ascending: false })
     .limit(3);
@@ -108,7 +113,7 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
 }
 
 function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Amenity[] = []): Venue {
-  const heroImage = row.hero_image || representativeImageForType(row.type);
+  const heroImage = imageUrlOrRepresentative(row.hero_image, row.type);
   const gallery = images.length
     ? images.map((image) => ({ id: image.id, venueId: image.venue_id, url: image.url, alt: image.alt, sortOrder: image.sort_order }))
     : [{ id: `${row.id}-hero`, venueId: row.id, url: heroImage, alt: row.name, sortOrder: 0 }];
