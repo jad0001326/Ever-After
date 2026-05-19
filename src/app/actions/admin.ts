@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
+import type { Database } from "@/types/database";
+
+type VenueUpdate = Database["public"]["Tables"]["venues"]["Update"];
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -19,6 +22,48 @@ function optionalPrice(value: FormDataEntryValue | null) {
   if (!input) return null;
   const parsed = Number(input);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+export async function bulkUpdateVenues(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
+
+  const ids = formData.getAll("venueIds").map((value) => value.toString()).filter(Boolean);
+  const action = formData.get("bulkAction")?.toString();
+  if (ids.length === 0) redirect("/admin?message=Select+at+least+one+venue");
+
+  const updates: VenueUpdate = {};
+  if (action === "publish") {
+    updates.status = "published";
+    updates.listing_status = "published";
+  } else if (action === "draft") {
+    updates.status = "draft";
+    updates.listing_status = "draft";
+  } else if (action === "archive") {
+    updates.status = "draft";
+    updates.listing_status = "archived";
+  } else if (action === "feature") {
+    updates.is_featured = true;
+  } else if (action === "unfeature") {
+    updates.is_featured = false;
+  } else if (action === "mark_invite_sent") {
+    updates.invite_status = "sent";
+    updates.invite_sent_at = new Date().toISOString();
+  } else if (action === "reset_invite") {
+    updates.invite_status = "not_sent";
+    updates.invite_sent_at = null;
+  } else {
+    redirect("/admin?message=Choose+a+bulk+action");
+  }
+
+  const { error } = await supabase.from("venues").update(updates).in("id", ids);
+  if (error) redirect(`/admin?message=${encodeURIComponent(error.message)}`);
+
+  revalidatePath("/admin");
+  revalidatePath("/venues");
+  redirect(`/admin?message=${encodeURIComponent(`Updated ${ids.length} venue${ids.length === 1 ? "" : "s"}`)}`);
 }
 
 export async function upsertVenue(formData: FormData) {

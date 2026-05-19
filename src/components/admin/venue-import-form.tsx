@@ -42,12 +42,29 @@ export function VenueImportForm() {
         <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
           <h2 className="font-display text-3xl font-semibold">Import results</h2>
           <p className={state.ok ? "mt-2 text-sm text-[var(--brand)]" : "mt-2 text-sm text-[#8a3c19]"}>{state.message}</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-5">
             <Metric label="Rows read" value={state.rowsRead} />
             <Metric label="Valid rows" value={state.validRows} />
             <Metric label="Imported" value={state.importedRows} />
             <Metric label="Skipped" value={state.skippedRows} />
+            <Metric label="Warnings" value={state.warnings.length} />
           </div>
+          {state.warnings.length > 0 ? (
+            <div className="mt-6 overflow-hidden rounded-2xl border border-[#e5d5b7]">
+              <div className="grid grid-cols-[80px_1fr_2fr] gap-3 bg-[#fff9ef] px-4 py-3 text-sm font-semibold text-[#715622]">
+                <span>Row</span>
+                <span>Venue</span>
+                <span>Warning</span>
+              </div>
+              {state.warnings.slice(0, 80).map((warning, index) => (
+                <div className="grid grid-cols-[80px_1fr_2fr] gap-3 border-t border-[#e5d5b7] px-4 py-3 text-sm text-[#4a443c]" key={`${warning.row}-${index}`}>
+                  <span>{warning.row || "-"}</span>
+                  <span>{warning.venue || "-"}</span>
+                  <span>{warning.message}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {state.errors.length > 0 ? (
             <div className="mt-6 overflow-hidden rounded-2xl border border-[#efd2bf]">
               <div className="grid grid-cols-[80px_1fr_2fr] gap-3 bg-[#fff4ed] px-4 py-3 text-sm font-semibold text-[#7a3b19]">
