@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Camera, Check, ExternalLink, Globe2, MapPin, ShieldCheck, UsersRound } from "lucide-react";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
 import { ButtonLink } from "@/components/ui/button";
+import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
 import { absoluteUrl, formatCapacity, formatPriceRange } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueListingBySlug } from "@/lib/venues";
@@ -17,16 +20,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const venue = await getVenueListingBySlug(slug);
   if (!venue) return {};
 
-  return {
-    title: venue.name,
+  return buildMetadata({
+    title: `${venue.name} wedding venue, ${venue.town}`,
     description: venue.summary,
-    alternates: { canonical: `/venues/${venue.slug}` },
-    openGraph: {
-      title: venue.name,
-      description: venue.summary,
-      images: [{ url: venue.heroImage }]
-    }
-  };
+    path: `/venues/${venue.slug}`,
+    image: venue.heroImage,
+    keywords: [
+      `${venue.name} wedding venue`,
+      `${venue.town} wedding venue`,
+      `${venue.type} wedding venue Scotland`
+    ]
+  });
 }
 
 export default async function VenuePage({ params }: PageProps) {
@@ -52,7 +56,8 @@ export default async function VenuePage({ params }: PageProps) {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "EventVenue",
+    "@type": ["LocalBusiness", "EventVenue"],
+    additionalType: "https://schema.org/WeddingVenue",
     name: venue.name,
     description: venue.summary,
     image: venue.images.map((image) => image.url),
@@ -65,10 +70,17 @@ export default async function VenuePage({ params }: PageProps) {
     maximumAttendeeCapacity: venue.capacityMax,
     url: absoluteUrl(`/venues/${venue.slug}`)
   };
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Venues", path: "/venues" },
+    { name: venue.name, path: `/venues/${venue.slug}` }
+  ]);
 
   return (
     <article className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Venues", href: "/venues" }, { label: venue.name, href: `/venues/${venue.slug}` }]} />
       <div className="mb-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -117,6 +129,14 @@ export default async function VenuePage({ params }: PageProps) {
           <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
             <h2 className="font-display text-3xl font-semibold">About the venue</h2>
             <p className="mt-4 text-base leading-8 text-[var(--muted)]">{venue.description}</p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm">
+              <Link className="font-semibold text-[#5c6b52] hover:underline" href={`/venues?location=${encodeURIComponent(venue.town)}`}>
+                Explore more venues in {venue.town}
+              </Link>
+              <Link className="font-semibold text-[#5c6b52] hover:underline" href={`/venues?type=${encodeURIComponent(venue.type)}`}>
+                Browse more {venue.type.toLowerCase()} venues
+              </Link>
+            </div>
           </section>
 
           <section className="grid gap-4 sm:grid-cols-3">

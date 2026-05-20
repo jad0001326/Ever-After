@@ -12,7 +12,7 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
       <Link href={`/venues/${venue.slug}`} className="grid h-full grid-rows-[auto_1fr]">
         <div className="relative aspect-[4/3] overflow-hidden bg-[#eee8dd]">
           <Image
-            alt={venue.name}
+            alt={`${venue.name} wedding venue in ${venue.town}, Scotland`}
             className="object-cover transition duration-700 group-hover:scale-105"
             fill
             priority={priority}

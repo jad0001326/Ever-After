@@ -3,6 +3,15 @@ import { ArrowRight, Building2, ShieldCheck, Sparkles } from "lucide-react";
 import { FeaturedVenues } from "@/components/home/featured-venues";
 import { SearchBar } from "@/components/search/search-bar";
 import { ButtonLink } from "@/components/ui/button";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
+  title: "Find Scottish Wedding Venues",
+  description:
+    "Search Scottish wedding venues including castles, barns, country estates and luxury hotels with clear pricing and guest capacity.",
+  path: "/",
+  keywords: ["Scottish wedding venues", "Scotland wedding venues", "wedding venues Scotland"]
+});
 
 export default function Home() {
   return (
@@ -40,6 +49,20 @@ export default function Home() {
         </div>
       </section>
       <FeaturedVenues />
+      <section className="bg-[#f7f2ea]">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <h2 className="font-display text-4xl font-semibold">Plan by location and style</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
+            Start with popular Scotland wedding searches and quickly jump into venue lists tailored to your day.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <ButtonLink href="/venues?location=Edinburgh" variant="secondary">Wedding venues in Edinburgh</ButtonLink>
+            <ButtonLink href="/venues?location=Glasgow" variant="secondary">Wedding venues in Glasgow</ButtonLink>
+            <ButtonLink href="/venues?type=Castle" variant="secondary">Scottish castle wedding venues</ButtonLink>
+            <ButtonLink href="/venues?type=Country Estate" variant="secondary">Country estate venues</ButtonLink>
+          </div>
+        </div>
+      </section>
       <section className="bg-[#334235] text-white">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
           <div>

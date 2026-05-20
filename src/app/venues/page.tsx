@@ -7,20 +7,32 @@ import { FilterPanel } from "@/components/search/filter-panel";
 import { SortSelect } from "@/components/search/sort-select";
 import { VenueCard } from "@/components/venue/venue-card";
 import { buildVenueHref } from "@/lib/search";
+import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
 import { searchVenueListings } from "@/lib/venues";
 import type { VenueSearchParams } from "@/types/venue";
 
-export const metadata: Metadata = {
-  title: "Search wedding venues",
-  description: "Search premium Scottish wedding venues by location, guest count, budget, and venue type."
-};
+export async function generateMetadata({ searchParams }: { searchParams: Promise<VenueSearchParams> }): Promise<Metadata> {
+  const params = await searchParams;
+  const canonical = buildVenueHref({ ...params, page: params.page === "1" ? undefined : params.page });
+  return buildMetadata({
+    title: "Search Scottish Wedding Venues",
+    description: "Compare wedding venues in Scotland by location, budget, guest capacity and venue style.",
+    path: canonical,
+    keywords: ["wedding venues Scotland", "Scottish wedding venue search"]
+  });
+}
 
 export default async function VenuesPage({ searchParams }: { searchParams: Promise<VenueSearchParams> }) {
   const params = await searchParams;
   const results = await searchVenueListings(params);
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Wedding venues in Scotland", path: "/venues" }
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Venue search</p>
