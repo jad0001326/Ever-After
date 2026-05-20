@@ -22,17 +22,26 @@ const display = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
   title: {
-    default: "EverAft | Scottish wedding venue search",
+    default: "Scottish Wedding Venues | EverAft",
     template: "%s | EverAft"
   },
   description:
-    "Discover premium Scottish wedding venues, from castles and country estates to barns and luxury hotels.",
+    "Discover premium Scottish wedding venues, compare capacity and pricing, and enquire directly with venue teams across Scotland.",
+  alternates: {
+    canonical: "/"
+  },
   openGraph: {
-    title: "EverAft",
-    description: "A modern wedding venue discovery platform for Scotland.",
+    title: "Scottish Wedding Venues | EverAft",
+    description: "A premium wedding venue discovery platform for couples planning weddings in Scotland.",
     url: absoluteUrl(),
     siteName: "EverAft",
-    type: "website"
+    type: "website",
+    locale: "en_GB"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Scottish Wedding Venues | EverAft",
+    description: "Browse castles, estates, barns, and luxury hotels for your Scottish wedding day."
   }
 };
 
@@ -41,7 +50,33 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="en-GB">
       <body className={`${sans.variable} ${display.variable} antialiased`}>
         <Header />
-        <main>{children}</main>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  name: "EverAft",
+                  url: absoluteUrl(),
+                  potentialAction: {
+                    "@type": "SearchAction",
+                    target: `${absoluteUrl("/venues")}?location={location}&guests={guests}&type={type}`,
+                    "query-input": ["required name=location"]
+                  }
+                },
+                {
+                  "@type": "Organization",
+                  name: "EverAft",
+                  url: absoluteUrl(),
+                  areaServed: "Scotland"
+                }
+              ]
+            })
+          }}
+        />
+        <main id="main-content">{children}</main>
         <Footer />
       </body>
     </html>
