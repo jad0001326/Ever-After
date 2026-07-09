@@ -8,7 +8,7 @@ export function Footer() {
         <div>
           <Logo href="/" variant="full" wordmarkClassName="text-[2.55rem] !text-white" />
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
-            Thoughtful wedding supplier discovery for couples planning celebrations across the UK.
+            A growing wedding directory for couples planning celebrations across the UK.
           </p>
         </div>
         <div>

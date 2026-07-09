@@ -82,7 +82,7 @@ export default function Home() {
         "@type": "Organization",
         name: "EverAft",
         url: absoluteUrl(),
-        description: "Thoughtful wedding supplier discovery for couples planning celebrations across the UK."
+        description: "A growing wedding directory for couples planning celebrations across the UK."
       },
       {
         "@type": "WebSite",
@@ -117,11 +117,11 @@ export default function Home() {
               Find the people who make it unforgettable.
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-[#4c4a43] sm:text-xl">
-              Discover thoughtful, trusted wedding suppliers across the UK — then enquire with confidence.
+              Discover thoughtful wedding venues now, with trusted UK supplier categories opening alongside them.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/venues">
-                Explore suppliers <ArrowRight size={17} />
+                Explore venues <ArrowRight size={17} />
               </ButtonLink>
               <ButtonLink href="/for-business" variant="secondary">
                 List your business

@@ -27,11 +27,11 @@ export const metadata: Metadata = {
     template: "%s | EverAft"
   },
   description:
-    "Discover thoughtful, trusted wedding suppliers across the UK, from beautiful venues to the people who bring a celebration to life.",
+    "Discover thoughtful wedding venues and help shape a trusted supplier directory for celebrations across the UK.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "EverAft",
-    description: "Thoughtful wedding supplier discovery for couples planning celebrations across the UK.",
+    description: "A growing wedding directory for couples planning celebrations across the UK.",
     url: absoluteUrl(),
     siteName: "EverAft",
     type: "website",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "EverAft | Trusted UK wedding suppliers",
-    description: "Thoughtful wedding supplier discovery for couples planning celebrations across the UK.",
+    description: "A growing wedding directory for couples planning celebrations across the UK.",
     images: [absoluteUrl("/images/everaft-wedding-reception.png")]
   }
 };
