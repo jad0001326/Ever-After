@@ -12,6 +12,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: absoluteUrl("/"), lastModified: now, priority: 1 },
     { url: absoluteUrl("/venues"), lastModified: now, priority: 0.9 },
+    { url: absoluteUrl("/for-business"), lastModified: now, priority: 0.8 },
+    { url: absoluteUrl("/about"), lastModified: now, priority: 0.6 },
+    { url: absoluteUrl("/contact"), lastModified: now, priority: 0.5 },
+    { url: absoluteUrl("/privacy"), lastModified: now, priority: 0.3 },
+    { url: absoluteUrl("/terms"), lastModified: now, priority: 0.3 },
+    { url: absoluteUrl("/supplier-terms"), lastModified: now, priority: 0.3 },
     ...(venues ?? []).map((venue) => ({
       url: absoluteUrl(`/venues/${venue.slug}`),
       lastModified: venue.updated_at,

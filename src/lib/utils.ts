@@ -22,6 +22,6 @@ export function formatPriceRange(from: number | null | undefined, to: number | n
 }
 
 export function absoluteUrl(path = "") {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${siteUrl}${path}`;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return `${siteUrl}${path.startsWith("/") || !path ? path : `/${path}`}`;
 }

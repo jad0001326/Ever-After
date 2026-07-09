@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { CookieBanner } from "@/components/privacy/cookie-banner";
 import { absoluteUrl } from "@/lib/utils";
 
 const sans = Inter({
@@ -22,26 +23,26 @@ const display = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
   title: {
-    default: "Scottish Wedding Venues | EverAft",
+    default: "EverAft | Trusted UK wedding suppliers",
     template: "%s | EverAft"
   },
   description:
-    "Discover premium Scottish wedding venues, compare capacity and pricing, and enquire directly with venue teams across Scotland.",
-  alternates: {
-    canonical: "/"
-  },
+    "Discover thoughtful, trusted wedding suppliers across the UK, from beautiful venues to the people who bring a celebration to life.",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Scottish Wedding Venues | EverAft",
-    description: "A premium wedding venue discovery platform for couples planning weddings in Scotland.",
+    title: "EverAft",
+    description: "Thoughtful wedding supplier discovery for couples planning celebrations across the UK.",
     url: absoluteUrl(),
     siteName: "EverAft",
     type: "website",
-    locale: "en_GB"
+    locale: "en_GB",
+    images: [{ url: absoluteUrl("/images/everaft-wedding-reception.png"), width: 1536, height: 1024, alt: "Wedding breakfast in a light-filled country house" }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Scottish Wedding Venues | EverAft",
-    description: "Browse castles, estates, barns, and luxury hotels for your Scottish wedding day."
+    title: "EverAft | Trusted UK wedding suppliers",
+    description: "Thoughtful wedding supplier discovery for couples planning celebrations across the UK.",
+    images: [absoluteUrl("/images/everaft-wedding-reception.png")]
   }
 };
 
@@ -70,7 +71,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                   "@type": "Organization",
                   name: "EverAft",
                   url: absoluteUrl(),
-                  areaServed: "Scotland"
+                  areaServed: "United Kingdom"
                 }
               ]
             })
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         />
         <main id="main-content">{children}</main>
         <Footer />
+        <CookieBanner />
       </body>
     </html>
   );

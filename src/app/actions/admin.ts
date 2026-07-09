@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import type { Database } from "@/types/database";
 
@@ -196,4 +197,28 @@ export async function upsertVenue(formData: FormData) {
   revalidatePath("/venues");
   revalidatePath(`/venues/${payload.slug}`);
   redirect(`/admin/venues/${venueId}/edit?message=Venue+saved`);
+}
+
+export async function reviewSupplierApplication(formData: FormData) {
+  const { user } = await requireAdmin();
+  const applicationId = formData.get("applicationId")?.toString().trim();
+  const status = formData.get("status")?.toString();
+  const adminNotes = formData.get("adminNotes")?.toString().trim().slice(0, 2_000) || null;
+
+  if (!applicationId || (status !== "approved" && status !== "rejected")) {
+    redirect("/admin/applications?message=Choose+a+valid+application+decision");
+  }
+
+  const supabase = createAdminClient();
+  if (!supabase) redirect("/admin/applications?message=Configure+the+Supabase+service+role+key+to+review+applications");
+
+  const { error } = await supabase
+    .from("supplier_applications")
+    .update({ status, admin_notes: adminNotes, reviewed_at: new Date().toISOString(), reviewed_by: user.id })
+    .eq("id", applicationId)
+    .eq("status", "pending");
+
+  if (error) redirect(`/admin/applications?message=${encodeURIComponent(error.message)}`);
+  revalidatePath("/admin/applications");
+  redirect(`/admin/applications?message=Application+${status}`);
 }
