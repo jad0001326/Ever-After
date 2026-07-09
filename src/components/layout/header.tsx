@@ -1,38 +1,17 @@
 import Link from "next/link";
-import { BriefcaseBusiness, LayoutDashboard, Search, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-
-const nav = [
-  { href: "/venues", label: "Venues", icon: Search },
-  { href: "/vendor", label: "For venues", icon: BriefcaseBusiness },
-  { href: "/admin", label: "Admin", icon: LayoutDashboard },
-  { href: "/login", label: "Sign in", icon: UserRound }
-];
 
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--background)]/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="hidden sm:block">
-          <Logo href="/" variant="full" wordmarkClassName="text-[2.1rem]" />
-        </div>
-        <div className="sm:hidden">
-          <Logo href="/" variant="wordmark" showArch={false} />
-        </div>
-        <nav className="flex items-center gap-1">
-          {nav.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                className="focus-ring inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-[#4f4a43] transition hover:bg-white hover:text-[#191713] sm:px-4"
-                href={item.href}
-                key={item.href}
-              >
-                <Icon size={16} />
-                <span className="hidden sm:inline">{item.label}</span>
-              </Link>
-            );
-          })}
+      <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Logo href="/" variant="wordmark" showArch={false} wordmarkClassName="text-[2.2rem] sm:text-[2.45rem]" />
+        <nav aria-label="Primary navigation" className="flex items-center gap-1">
+          <Link className="focus-ring inline-flex h-10 items-center rounded-full px-2 text-sm font-medium text-[#4f4a43] transition hover:bg-white hover:text-[#191713] sm:px-3" href="/venues">Explore</Link>
+          <Link className="focus-ring hidden h-10 items-center rounded-full px-2 text-sm font-medium text-[#4f4a43] transition hover:bg-white hover:text-[#191713] sm:inline-flex sm:px-3" href="/#how-it-works">How it works</Link>
+          <Link className="focus-ring hidden h-10 items-center rounded-full px-2 text-sm font-medium text-[#4f4a43] transition hover:bg-white hover:text-[#191713] md:inline-flex md:px-3" href="/for-business">For businesses</Link>
+          <Link className="focus-ring inline-flex h-10 items-center rounded-full px-2 text-sm font-medium text-[#4f4a43] transition hover:bg-white hover:text-[#191713] sm:px-3" href="/login">Sign in</Link>
+          <Link className="focus-ring hidden min-h-10 items-center rounded-full bg-[var(--brand)] px-4 text-sm font-semibold text-white transition hover:bg-[#183522] lg:inline-flex" href="/for-business">List your business</Link>
         </nav>
       </div>
     </header>

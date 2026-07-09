@@ -1,0 +1,20 @@
+export const supplierCategories = [
+  "Venue",
+  "Photographer",
+  "Videographer",
+  "Florist",
+  "Cake maker",
+  "Celebrant",
+  "Band or musician",
+  "DJ",
+  "Styling and decor",
+  "Transport",
+  "Bridal boutique",
+  "Hair and makeup",
+  "Stationery",
+  "Entertainment",
+  "Caterer",
+  "Wedding planner",
+  "Jeweller",
+  "Other"
+] as const;

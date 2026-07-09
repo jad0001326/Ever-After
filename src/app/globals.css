@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf8f2;
-  --foreground: #171512;
-  --muted: #675f55;
-  --line: #e2d9cc;
-  --ink: #171512;
-  --champagne: #bda273;
-  --accent: #bda273;
-  --brand: #334235;
+  --background: #fbfaf7;
+  --foreground: #1a2019;
+  --muted: #625f57;
+  --line: #ddd6cb;
+  --ink: #152017;
+  --champagne: #bc845f;
+  --accent: #9c542d;
+  --brand: #24432f;
 }
 
 * {
@@ -24,6 +24,20 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, sans-serif;
+}
+
+.hero-image-mask {
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.2) 18%, #000 42%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 a {

@@ -16,6 +16,8 @@ Ever After is a production-minded MVP for premium Scottish wedding venue discove
 - SEO-friendly `/venues/[slug]` detail pages with JSON-LD
 - Supabase sign up, sign in, favourites, and enquiry persistence
 - Protected admin CMS for adding/editing venues, linking amenities, and uploading gallery images
+- Public supplier application flow with admin review queue
+- Double-opt-in newsletter architecture and cookie-preference control
 - PostgreSQL schema for profiles, venues, images, amenities, favourites, and enquiries
 
 ## Local Setup
@@ -83,7 +85,8 @@ Open `http://localhost:3000`.
 2. In Supabase, open SQL Editor.
 3. Run `supabase/schema.sql`.
 4. Run `supabase/seed.sql` if you want starter amenities and sample venue rows.
-5. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
+5. Existing projects should also run `supabase/phase6_supplier_and_newsletter.sql` to add supplier applications and newsletter tables.
+6. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
 
 The schema creates:
 
@@ -94,6 +97,8 @@ The schema creates:
 - `public.venue_amenities`
 - `public.favourites`
 - `public.enquiries`
+- `public.supplier_applications`
+- `public.newsletter_subscribers`
 - `venue-images` storage bucket
 
 `auth.users` remains Supabase's auth table. The app profile data lives in `public.profiles`.
@@ -132,6 +137,14 @@ In Supabase Auth settings, set the production Site URL and redirect allow list:
 5. The app redirects to the edit page with a success message.
 
 Published venues appear on `/venues` and `/venues/[slug]`. Draft venues stay visible to admins through the admin dashboard but are hidden from public venue pages.
+
+## Supplier applications and newsletters
+
+`/for-business` is a public supplier application flow. It includes server-side input validation, an anti-spam honeypot, a best-effort rate guard and a secure Supabase service-role write. The service-role key must be present only in Vercel/server environment variables; it is never used in browser code.
+
+New applications are visible in `/admin/applications` for an authenticated admin. Review and approval are intentionally separate from publishing a public profile so the team can verify the business first.
+
+The homepage newsletter uses a double-opt-in flow. It stores only a hashed, one-time confirmation token and sends the confirmation email through Resend. Newsletter confirmation requires both the Supabase service-role key and the Resend variables listed above.
 
 ## Adding Images
 
@@ -192,7 +205,7 @@ The CSV includes starter fields such as venue name, website, phone, public email
 
 1. Push the repo to GitHub.
 2. Import the project in Vercel.
-3. Add the same environment variables from `.env.example`.
+3. Add the same environment variables from `.env.example`, including `SUPABASE_SERVICE_ROLE_KEY` for the supplier-application and newsletter server actions.
 4. Set `NEXT_PUBLIC_SITE_URL` to your production domain.
 5. Deploy.
 

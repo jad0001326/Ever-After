@@ -242,6 +242,60 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["enquiries"]["Row"]>;
         Relationships: [];
       };
+      supplier_applications: {
+        Row: {
+          id: string;
+          business_name: string;
+          owner_name: string;
+          email: string;
+          phone: string;
+          website_url: string | null;
+          instagram_handle: string | null;
+          facebook_url: string | null;
+          location: string;
+          coverage_radius_miles: number;
+          category: string;
+          description: string;
+          services: string;
+          pricing: string | null;
+          gallery_urls: string | null;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          terms_accepted_at: string;
+          created_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_applications"]["Row"]> & {
+          business_name: string;
+          owner_name: string;
+          email: string;
+          phone: string;
+          location: string;
+          coverage_radius_miles: number;
+          category: string;
+          description: string;
+          services: string;
+          terms_accepted_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_applications"]["Row"]>;
+        Relationships: [];
+      };
+      newsletter_subscribers: {
+        Row: {
+          id: string;
+          email: string;
+          status: "pending" | "active" | "unsubscribed";
+          confirmation_token_hash: string | null;
+          unsubscribe_token_hash: string | null;
+          confirmed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["newsletter_subscribers"]["Row"]> & { email: string };
+        Update: Partial<Database["public"]["Tables"]["newsletter_subscribers"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

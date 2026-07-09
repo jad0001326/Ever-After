@@ -52,6 +52,29 @@ type VendorUpdateNotification = {
   requestedMessage: string;
 };
 
+type NewsletterConfirmation = {
+  email: string;
+  confirmationUrl: string;
+  unsubscribeUrl: string;
+  idempotencyKey: string;
+};
+
+type SupplierApplicationNotification = {
+  applicationId: string;
+  businessName: string;
+  ownerName: string;
+  email: string;
+  category: string;
+  location: string;
+};
+
+type ContactMessageNotification = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
 const resendUrl = "https://api.resend.com/emails";
 
 function emailConfig() {
@@ -267,4 +290,60 @@ export async function notifyVendorUpdateRequested(input: VendorUpdateNotificatio
     ].filter((line): line is string => line !== null).join("\n"),
     idempotencyKey: `vendor-update-${input.requestId}`
   });
+}
+
+export async function notifyNewsletterConfirmation(input: NewsletterConfirmation) {
+  await sendEmail({
+    to: input.email,
+    subject: "Confirm your EverAft subscription",
+    text: [
+      "Hello,",
+      "",
+      "Please confirm that you would like to receive occasional EverAft planning inspiration and supplier finds.",
+      "",
+      `Confirm subscription: ${input.confirmationUrl}`,
+      "",
+      "If you did not request this, you can safely ignore this email.",
+      `Unsubscribe: ${input.unsubscribeUrl}`
+    ].join("\n"),
+    idempotencyKey: input.idempotencyKey
+  });
+}
+
+export async function notifySupplierApplication(input: SupplierApplicationNotification) {
+  const { adminTo } = emailConfig();
+  if (adminTo.length === 0) return;
+
+  await sendEmail({
+    to: adminTo,
+    replyTo: input.email,
+    subject: `New supplier application: ${input.businessName}`,
+    text: [
+      `Business: ${input.businessName}`,
+      `Contact: ${input.ownerName}`,
+      `Email: ${input.email}`,
+      `Category: ${input.category}`,
+      `Location: ${input.location}`,
+      "",
+      `Review application: ${absoluteUrl(`/admin/applications?application=${input.applicationId}`)}`
+    ].join("\n"),
+    idempotencyKey: `supplier-application-${input.applicationId}`
+  });
+}
+
+export async function notifyContactMessage(input: ContactMessageNotification) {
+  const { adminTo } = emailConfig();
+  if (adminTo.length === 0) return;
+
+  await sendEmail({
+    to: adminTo,
+    replyTo: input.email,
+    subject: `EverAft contact: ${input.subject}`,
+    text: [`From: ${input.name}`, `Email: ${input.email}`, "", input.message].join("\n"),
+    idempotencyKey: `contact-${input.email}-${createContactKey(input.subject, input.message)}`
+  });
+}
+
+function createContactKey(subject: string, message: string) {
+  return Buffer.from(`${subject}:${message}`).toString("base64url").slice(0, 80);
 }
