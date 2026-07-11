@@ -45,6 +45,9 @@ export type Database = {
           official_website_url: string | null;
           official_gallery_url: string | null;
           vendor_contact_email: string | null;
+          vendor_contact_source_url: string | null;
+          vendor_contact_verified_at: string | null;
+          vendor_contact_verified_by: string | null;
           listing_status: "draft" | "published" | "claimed" | "archived";
           claim_status: "unclaimed" | "pending" | "approved" | "rejected";
           image_permission_status: string;
@@ -294,6 +297,111 @@ export type Database = {
         };
         Insert: Partial<Database["public"]["Tables"]["newsletter_subscribers"]["Row"]> & { email: string };
         Update: Partial<Database["public"]["Tables"]["newsletter_subscribers"]["Row"]>;
+        Relationships: [];
+      };
+      outreach_campaigns: {
+        Row: {
+          id: string;
+          name: string;
+          kind: "initial_invite" | "follow_up";
+          source: "admin" | "chatgpt";
+          status: "draft" | "sending" | "sent" | "partially_sent" | "failed" | "cancelled";
+          subject: string;
+          preheader: string;
+          intro_text: string;
+          offer_text: string;
+          audience_filter: Json;
+          approval_fingerprint: string | null;
+          recipient_count: number;
+          sent_count: number;
+          failed_count: number;
+          skipped_count: number;
+          send_attempts: number;
+          created_by: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["outreach_campaigns"]["Row"]> & {
+          name: string;
+          subject: string;
+          preheader: string;
+          intro_text: string;
+          offer_text: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["outreach_campaigns"]["Row"]>;
+        Relationships: [];
+      };
+      outreach_campaign_recipients: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          venue_id: string | null;
+          venue_slug: string;
+          business_name: string;
+          town: string;
+          region: string;
+          email: string;
+          normalized_email: string;
+          contact_source_url: string | null;
+          status: "pending" | "sent" | "delivered" | "failed" | "bounced" | "complained" | "replied" | "unsubscribed" | "suppressed";
+          resend_email_id: string | null;
+          unsubscribe_token_hash: string | null;
+          error_message: string | null;
+          sent_at: string | null;
+          delivered_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["outreach_campaign_recipients"]["Row"]> & {
+          campaign_id: string;
+          venue_slug: string;
+          business_name: string;
+          town: string;
+          region: string;
+          email: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["outreach_campaign_recipients"]["Row"]>;
+        Relationships: [];
+      };
+      outreach_suppressions: {
+        Row: {
+          id: string;
+          email: string;
+          normalized_email: string;
+          reason: "unsubscribed" | "bounced" | "complained" | "provider_suppressed" | "manual";
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          reason: "unsubscribed" | "bounced" | "complained" | "provider_suppressed" | "manual";
+          source?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["outreach_suppressions"]["Row"]>;
+        Relationships: [];
+      };
+      outreach_email_events: {
+        Row: {
+          id: string;
+          resend_email_id: string;
+          event_type: string;
+          event_created_at: string | null;
+          received_at: string;
+        };
+        Insert: {
+          id: string;
+          resend_email_id: string;
+          event_type: string;
+          event_created_at?: string | null;
+          received_at?: string;
+        };
+        Update: never;
         Relationships: [];
       };
     };

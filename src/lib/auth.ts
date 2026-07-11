@@ -8,13 +8,14 @@ export async function requireAdmin() {
   }
 
   const supabase = await createClient();
+  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
   const {
     data: { user }
-  } = await supabase!.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (!user) redirect("/login?message=Sign+in+to+access+admin");
 
-  const { data: profile } = await supabase!.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") redirect("/venues?message=Admin+access+required");
 
   return { user };
@@ -26,9 +27,10 @@ export async function requireUser(redirectTo: string, message = "Sign in to cont
   }
 
   const supabase = await createClient();
+  if (!supabase) redirect(`/login?message=Configure+Supabase+environment+variables+first&redirectTo=${encodeURIComponent(redirectTo)}`);
   const {
     data: { user }
-  } = await supabase!.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (!user) redirect(`/login?message=${encodeURIComponent(message)}&redirectTo=${encodeURIComponent(redirectTo)}`);
 

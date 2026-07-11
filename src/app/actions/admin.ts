@@ -25,6 +25,16 @@ function optionalPrice(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
+function optionalHttpUrl(value: string | null) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function bulkUpdateVenues(formData: FormData) {
   await requireAdmin();
 
@@ -123,6 +133,11 @@ export async function upsertVenue(formData: FormData) {
   const officialWebsiteUrl = formData.get("officialWebsiteUrl")?.toString().trim() || null;
   const officialGalleryUrl = formData.get("officialGalleryUrl")?.toString().trim() || null;
   const vendorContactEmail = formData.get("vendorContactEmail")?.toString().trim() || null;
+  const vendorContactSourceInput = formData.get("vendorContactSourceUrl")?.toString().trim() || null;
+  const vendorContactSourceUrl = optionalHttpUrl(vendorContactSourceInput);
+  const originalVendorContactEmail = formData.get("originalVendorContactEmail")?.toString().trim().toLowerCase() || null;
+  const originalVendorContactSourceUrl = formData.get("originalVendorContactSourceUrl")?.toString().trim() || null;
+  const vendorContactChanged = vendorContactEmail?.toLowerCase() !== originalVendorContactEmail || vendorContactSourceUrl !== originalVendorContactSourceUrl;
   const imageCredit = formData.get("imageCredit")?.toString().trim() || null;
   const outreachNotes = formData.get("outreachNotes")?.toString().trim() || null;
   const imagePermissionStatus = formData.get("imagePermissionStatus")?.toString().trim() || "representative";
@@ -131,6 +146,10 @@ export async function upsertVenue(formData: FormData) {
   const priceTo = optionalPrice(formData.get("priceTo")) ?? priceFrom;
   const capacityMin = Number(formData.get("capacityMin"));
   const capacityMax = Number(formData.get("capacityMax"));
+
+  if (vendorContactSourceInput && !vendorContactSourceUrl) {
+    redirect(`${errorPath}?message=Contact+source+must+be+a+valid+HTTP+or+HTTPS+URL`);
+  }
 
   if (!Number.isFinite(capacityMin) || capacityMin < 1) {
     redirect(`${errorPath}?message=Capacity+minimum+must+be+at+least+1+guest`);
@@ -160,6 +179,8 @@ export async function upsertVenue(formData: FormData) {
     official_website_url: officialWebsiteUrl,
     official_gallery_url: officialGalleryUrl,
     vendor_contact_email: vendorContactEmail,
+    vendor_contact_source_url: vendorContactEmail ? vendorContactSourceUrl : null,
+    ...(vendorContactChanged ? { vendor_contact_verified_at: null, vendor_contact_verified_by: null } : {}),
     listing_status: listingStatus,
     claim_status: claimStatus,
     image_permission_status: imagePermissionStatus,
