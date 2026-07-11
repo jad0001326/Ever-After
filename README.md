@@ -18,6 +18,7 @@ Ever After is a production-minded MVP for premium Scottish wedding venue discove
 - Protected admin CMS for adding/editing venues, linking amenities, and uploading gallery images
 - Public supplier application flow with admin review queue
 - Double-opt-in newsletter architecture and cookie-preference control
+- Approval-gated, branded business invitation campaigns with ChatGPT tools, unsubscribe handling and delivery tracking
 - PostgreSQL schema for profiles, venues, images, amenities, favourites, and enquiries
 
 ## Local Setup
@@ -42,9 +43,13 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=only-use-in-secure-server-jobs
 RESEND_API_KEY=your-resend-api-key
-RESEND_FROM_EMAIL="EverAft <notifications@yourdomain.com>"
+RESEND_FROM_EMAIL="EverAft <invites@everaft.co.uk>"
+RESEND_WEBHOOK_SECRET=whsec_your-resend-webhook-secret
 ADMIN_NOTIFICATION_EMAIL=hello@yourdomain.com
 REPLY_TO_EMAIL=hello@yourdomain.com
+OUTREACH_SENDING_ENABLED=false
+OUTREACH_APPROVAL_SECRET=generate-a-random-secret-of-at-least-32-characters
+OUTREACH_MCP_AUDIENCE=https://everaft.co.uk/api/mcp
 ```
 
 For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. For example:
@@ -58,9 +63,10 @@ NEXT_PUBLIC_SITE_URL=https://your-site.vercel.app
 Titan can stay as your normal domain mailbox for reading and replying to email. The app uses Resend for automated transactional emails when these optional environment variables are configured:
 
 - `RESEND_API_KEY`: Resend API key.
-- `RESEND_FROM_EMAIL`: branded sender, for example `EverAft <notifications@yourdomain.com>`.
+- `RESEND_FROM_EMAIL`: branded sender, for example `EverAft <invites@everaft.co.uk>`.
 - `ADMIN_NOTIFICATION_EMAIL`: one or more admin inboxes, comma-separated.
 - `REPLY_TO_EMAIL`: mailbox for replies, usually your Titan inbox.
+- `RESEND_WEBHOOK_SECRET`: signing secret for delivery, bounce and complaint events.
 
 If `RESEND_API_KEY` or `RESEND_FROM_EMAIL` is missing, form submissions still work and email sends are skipped. Configure the sending domain in Resend DNS before using a domain sender in production.
 
@@ -70,6 +76,7 @@ Automated emails currently cover:
 - new venue claims to admin
 - claim approval/rejection to the claimant
 - vendor listing update requests to admin
+- approval-gated venue invitations with rich EverAft HTML, plain-text fallback, one-click unsubscribe and delivery tracking
 
 Run locally:
 
@@ -86,7 +93,8 @@ Open `http://localhost:3000`.
 3. Run `supabase/schema.sql`.
 4. Run `supabase/seed.sql` if you want starter amenities and sample venue rows.
 5. Existing projects should also run `supabase/phase6_supplier_and_newsletter.sql` to add supplier applications and newsletter tables.
-6. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
+6. Existing projects should run `supabase/phase7_outreach_campaigns.sql` to add campaign, recipient, suppression, delivery-event and sourced-contact records.
+7. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
 
 The schema creates:
 
@@ -99,6 +107,10 @@ The schema creates:
 - `public.enquiries`
 - `public.supplier_applications`
 - `public.newsletter_subscribers`
+- `public.outreach_campaigns`
+- `public.outreach_campaign_recipients`
+- `public.outreach_suppressions`
+- `public.outreach_email_events`
 - `venue-images` storage bucket
 
 `auth.users` remains Supabase's auth table. The app profile data lives in `public.profiles`.
@@ -145,6 +157,43 @@ Published venues appear on `/venues` and `/venues/[slug]`. Draft venues stay vis
 New applications are visible in `/admin/applications` for an authenticated admin. Review and approval are intentionally separate from publishing a public profile so the team can verify the business first.
 
 The homepage newsletter uses a double-opt-in flow. It stores only a hashed, one-time confirmation token and sends the confirmation email through Resend. Newsletter confirmation requires both the Supabase service-role key and the Resend variables listed above.
+
+## Business invitation automation
+
+The `/admin/outreach` workspace and `/api/mcp` ChatGPT connection use the same approval-gated campaign service. ChatGPT can:
+
+1. Read published, unclaimed venues that are eligible for a first invitation or follow-up.
+2. List venues that still need contact research, with each official website.
+3. Add only a business email visibly published on that official website, together with the exact source page, to a read-only campaign preview.
+4. Generate personalised EverAft copy and return the exact recipient list, sourced contacts, subject and sample before asking for approval.
+5. On one explicit send approval, save those exact sourced contacts, freeze the audience, send the rich HTML campaign and record provider IDs.
+6. Track accepted, delivered, failed, bounced, complained, replied, suppressed and unsubscribed states. Admins can record replies or manually suppress an address, and suppressions are re-checked immediately before every send.
+
+The preview token is signed, tied to the connected admin, expires after 30 minutes and freezes the exact copy and recipients. A changed audience requires a new preview. Resend batches are capped at 100 recipients, and replaying the same approval is idempotent.
+
+Production sending is deliberately off by default. Keep `OUTREACH_SENDING_ENABLED=false` until all of the following are complete:
+
+- Verify `everaft.co.uk` as a sending domain in Resend and use a domain sender such as `EverAft <invites@everaft.co.uk>`.
+- Point `REPLY_TO_EMAIL` at the monitored EverAft mailbox.
+- Create a Resend webhook for `https://everaft.co.uk/api/resend/webhook`, subscribe to delivered, bounced, complained, failed and suppressed email events, and copy its signing secret into `RESEND_WEBHOOK_SECRET`.
+- Generate `OUTREACH_APPROVAL_SECRET` with a password manager or `openssl rand -base64 48`; never commit its value.
+- In a non-production deployment, add a dedicated test venue whose recipient address you control, temporarily enable sending there, then inspect the campaign on desktop and mobile mail clients, test its unsubscribe link and confirm webhook events appear in the campaign record. Keep the production switch off during this test.
+- Review the audience as corporate subscribers. Do not use this flow for sole traders, some partnerships or personal subscribers unless the appropriate electronic-mail permission has been established.
+
+Only after those checks should production set `OUTREACH_SENDING_ENABLED=true`.
+
+### Connect EverAft to ChatGPT
+
+The MCP endpoint uses Supabase OAuth and accepts only an authenticated EverAft profile whose role is still `admin`.
+
+1. Deploy the site on the final HTTPS domain and set `NEXT_PUBLIC_SITE_URL=https://everaft.co.uk` and `OUTREACH_MCP_AUDIENCE=https://everaft.co.uk/api/mcp`.
+2. In Supabase Authentication, enable the OAuth 2.1 server and dynamic client registration.
+3. Set the OAuth authorization path to `/oauth/consent` and make sure the production site URL and redirect allow list are correct.
+4. In Authentication Hooks, select `public.everaft_mcp_access_token_hook` as the Custom Access Token hook. The phase 7 migration creates this hook and binds OAuth access tokens to the production MCP audience.
+5. Use an asymmetric Supabase JWT signing key and complete the Supabase OAuth token-security checklist before production use.
+6. In ChatGPT on the web, enable developer mode, add an MCP connection for `https://everaft.co.uk/api/mcp`, and sign in with the EverAft admin account. Once linked, the connection is also available in ChatGPT mobile.
+
+An example request after connection is: “Find all eligible Scottish venues, research only public business emails on their official sites, write a warm EverAft founding-partner invitation, and show me the exact recipients and email for approval.” ChatGPT will do the read-only preparation first; sending remains an external write action and requires confirmation for that exact preview.
 
 ## Adding Images
 

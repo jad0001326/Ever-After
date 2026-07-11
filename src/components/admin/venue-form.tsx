@@ -21,6 +21,8 @@ type VenueFormProps = {
     official_website_url?: string | null;
     official_gallery_url?: string | null;
     vendor_contact_email?: string | null;
+    vendor_contact_source_url?: string | null;
+    vendor_contact_verified_at?: string | null;
     listing_status?: string | null;
     claim_status?: string | null;
     image_permission_status?: string | null;
@@ -44,6 +46,8 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
   return (
     <form action={upsertVenue} className="grid gap-5 rounded-3xl border border-[var(--line)] bg-white p-5">
       {venue?.id ? <input name="id" type="hidden" value={venue.id} /> : null}
+      <input name="originalVendorContactEmail" type="hidden" value={venue?.vendor_contact_email ?? ""} />
+      <input name="originalVendorContactSourceUrl" type="hidden" value={venue?.vendor_contact_source_url ?? ""} />
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Venue name">
           <Input name="name" required defaultValue={venue?.name} placeholder="Ardencairn Castle" />
@@ -121,7 +125,14 @@ export function VenueForm({ venue, amenities = [] }: VenueFormProps) {
         <Field label="Vendor contact email">
           <Input name="vendorContactEmail" type="email" defaultValue={venue?.vendor_contact_email ?? ""} placeholder="events@venue.com" />
         </Field>
+        <Field label="Public email source URL">
+          <Input name="vendorContactSourceUrl" type="url" defaultValue={venue?.vendor_contact_source_url ?? ""} placeholder="https://venue.com/contact" />
+          <span className="text-xs font-normal text-[var(--muted)]">Use the official page where this business address is publicly shown.</span>
+        </Field>
       </div>
+      {venue?.vendor_contact_verified_at ? (
+        <p className="text-xs text-[var(--muted)]">Contact source last verified {new Date(venue.vendor_contact_verified_at).toLocaleDateString("en-GB")}.</p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Invite status">
           <Select name="inviteStatus" defaultValue={venue?.invite_status ?? "not_sent"}>

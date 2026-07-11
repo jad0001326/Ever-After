@@ -48,6 +48,7 @@ type ParsedVenue = {
   officialWebsiteUrl: string | null;
   officialGalleryUrl: string | null;
   vendorContactEmail: string | null;
+  vendorContactSourceUrl: string | null;
   imageCredit: string | null;
   imagePermissionStatus: "representative" | "approved" | "rejected" | "pending";
   imageIsRepresentative: boolean;
@@ -89,6 +90,16 @@ function parsePositiveInteger(input: string) {
 function parseBoolean(input: string, fallback = false) {
   if (!input) return fallback;
   return ["yes", "true", "y", "1"].includes(input.toLowerCase());
+}
+
+function parseHttpUrl(input: string) {
+  if (!input) return null;
+  try {
+    const url = new URL(input);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseImagePermissionStatus(input: string): ParsedVenue["imagePermissionStatus"] {
@@ -221,6 +232,7 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
   const officialGalleryUrl = value(row, "Official gallery URL") || null;
   const imagePermissionStatus = parseImagePermissionStatus(value(row, "Image permission status"));
 
+  const vendorContactEmail = value(row, "Vendor contact email") || null;
   const venue = {
     rowNumber,
     name,
@@ -237,7 +249,8 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
     heroImage,
     officialWebsiteUrl,
     officialGalleryUrl,
-    vendorContactEmail: value(row, "Vendor contact email") || null,
+    vendorContactEmail,
+    vendorContactSourceUrl: vendorContactEmail ? parseHttpUrl(value(row, "Contact source URL", "Email source URL", "Source URL")) : null,
     imageCredit: value(row, "Image credit", "Image source/permission notes") || null,
     imagePermissionStatus,
     imageIsRepresentative: parseBoolean(value(row, "Image is representative?"), imagePermissionStatus === "representative"),
@@ -350,6 +363,7 @@ export async function importVenuesFromFile(_: VenueImportState, formData: FormDa
       official_website_url: venue.officialWebsiteUrl,
       official_gallery_url: venue.officialGalleryUrl,
       vendor_contact_email: venue.vendorContactEmail,
+      vendor_contact_source_url: venue.vendorContactSourceUrl,
       listing_status: "draft",
       claim_status: "unclaimed",
       image_permission_status: venue.imagePermissionStatus,

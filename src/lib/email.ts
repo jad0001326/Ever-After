@@ -1,12 +1,21 @@
 import { absoluteUrl } from "@/lib/utils";
 
-type EmailInput = {
+export type EmailInput = {
   to: string | string[];
   subject: string;
   text: string;
   html?: string;
   replyTo?: string | string[];
   idempotencyKey?: string;
+  headers?: Record<string, string>;
+  tags?: Array<{ name: string; value: string }>;
+};
+
+export type EmailSendResult = {
+  ok: boolean;
+  skipped: boolean;
+  id?: string;
+  error?: string;
 };
 
 type EnquiryNotification = {
@@ -117,13 +126,13 @@ export function emailNotificationsEnabled() {
   return Boolean(apiKey && from);
 }
 
-export async function sendEmail({ html, idempotencyKey, replyTo, subject, text, to }: EmailInput) {
+export async function sendEmail({ headers, html, idempotencyKey, replyTo, subject, tags, text, to }: EmailInput) {
   const { apiKey, from, replyTo: defaultReplyTo } = emailConfig();
   const recipients = Array.isArray(to) ? to : [to];
 
   if (!apiKey || !from || recipients.length === 0) {
     console.info(`Email skipped: ${subject}`);
-    return { ok: false, skipped: true };
+    return { ok: false, skipped: true, error: "Email delivery is not configured." } satisfies EmailSendResult;
   }
 
   try {
@@ -140,19 +149,71 @@ export async function sendEmail({ html, idempotencyKey, replyTo, subject, text, 
         subject,
         text,
         html: html ?? textToHtml(text),
-        reply_to: replyTo ?? defaultReplyTo
+        reply_to: replyTo ?? defaultReplyTo,
+        headers,
+        tags
       })
     });
 
     if (!response.ok) {
       console.error(`Email failed: ${subject} (${response.status})`);
-      return { ok: false, skipped: false };
+      return { ok: false, skipped: false, error: `Resend returned ${response.status}.` } satisfies EmailSendResult;
     }
 
-    return { ok: true, skipped: false };
+    const data = (await response.json().catch(() => null)) as { id?: string } | null;
+    return { ok: true, skipped: false, id: data?.id } satisfies EmailSendResult;
   } catch (error) {
     console.error(`Email failed: ${subject}`, error);
-    return { ok: false, skipped: false };
+    return { ok: false, skipped: false, error: "The email request failed." } satisfies EmailSendResult;
+  }
+}
+
+export async function sendEmailBatch(messages: EmailInput[], idempotencyKey: string): Promise<EmailSendResult[]> {
+  const { apiKey, from, replyTo: defaultReplyTo } = emailConfig();
+
+  if (messages.length === 0) return [];
+  if (messages.length > 100) throw new Error("Resend batches are limited to 100 emails.");
+  if (!apiKey || !from) {
+    return messages.map(() => ({ ok: false, skipped: true, error: "Email delivery is not configured." }));
+  }
+
+  try {
+    const response = await fetch(`${resendUrl}/batch`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey
+      },
+      body: JSON.stringify(
+        messages.map(({ headers, html, replyTo, subject, tags, text, to }) => ({
+          from,
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          text,
+          html: html ?? textToHtml(text),
+          reply_to: replyTo ?? defaultReplyTo,
+          headers,
+          tags
+        }))
+      )
+    });
+
+    if (!response.ok) {
+      console.error(`Email batch failed (${response.status})`);
+      return messages.map(() => ({ ok: false, skipped: false, error: `Resend returned ${response.status}.` }));
+    }
+
+    const data = (await response.json().catch(() => null)) as { data?: Array<{ id?: string }> } | null;
+    return messages.map((_, index) => ({
+      ok: Boolean(data?.data?.[index]?.id),
+      skipped: false,
+      id: data?.data?.[index]?.id,
+      error: data?.data?.[index]?.id ? undefined : "Resend did not return a delivery ID."
+    }));
+  } catch (error) {
+    console.error("Email batch failed", error);
+    return messages.map(() => ({ ok: false, skipped: false, error: "The email batch request failed." }));
   }
 }
 

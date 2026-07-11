@@ -141,6 +141,9 @@ export async function approveVenueClaim(formData: FormData) {
     claimed_by: claim.claimant_user_id,
     claimed_at: new Date().toISOString(),
     vendor_contact_email: claim.business_email,
+    vendor_contact_source_url: null,
+    vendor_contact_verified_at: null,
+    vendor_contact_verified_by: null,
     invite_status: "claimed"
   }).eq("id", claim.venue_id);
 
