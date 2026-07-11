@@ -124,7 +124,7 @@ begin
   claims := event -> 'claims';
   oauth_client_id := coalesce(event ->> 'client_id', claims ->> 'client_id');
   if oauth_client_id is not null then
-    claims := jsonb_set(claims, '{aud}', to_jsonb('https://everaft.co.uk/api/mcp'::text));
+    claims := jsonb_set(claims, '{aud}', to_jsonb('https://www.everaft.co.uk/api/mcp'::text));
     claims := jsonb_set(claims, '{everaft_mcp}', 'true'::jsonb);
   end if;
   return jsonb_build_object('claims', claims);

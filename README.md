@@ -49,7 +49,7 @@ ADMIN_NOTIFICATION_EMAIL=hello@yourdomain.com
 REPLY_TO_EMAIL=hello@yourdomain.com
 OUTREACH_SENDING_ENABLED=false
 OUTREACH_APPROVAL_SECRET=generate-a-random-secret-of-at-least-32-characters
-OUTREACH_MCP_AUDIENCE=https://everaft.co.uk/api/mcp
+OUTREACH_MCP_AUDIENCE=https://www.everaft.co.uk/api/mcp
 ```
 
 For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. For example:
@@ -93,7 +93,7 @@ Open `http://localhost:3000`.
 3. Run `supabase/schema.sql`.
 4. Run `supabase/seed.sql` if you want starter amenities and sample venue rows.
 5. Existing projects should also run `supabase/phase6_supplier_and_newsletter.sql` to add supplier applications and newsletter tables.
-6. Existing projects should run `supabase/phase7_outreach_campaigns.sql` to add campaign, recipient, suppression, delivery-event and sourced-contact records.
+6. Existing projects should run `supabase/phase7_outreach_campaigns.sql` to add campaign, recipient, suppression, delivery-event and sourced-contact records, then `supabase/phase8_mcp_origin.sql` to align OAuth with the canonical `www` domain.
 7. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
 
 The schema creates:
@@ -175,7 +175,7 @@ Production sending is deliberately off by default. Keep `OUTREACH_SENDING_ENABLE
 
 - Verify `everaft.co.uk` as a sending domain in Resend and use a domain sender such as `EverAft <invites@everaft.co.uk>`.
 - Point `REPLY_TO_EMAIL` at the monitored EverAft mailbox.
-- Create a Resend webhook for `https://everaft.co.uk/api/resend/webhook`, subscribe to delivered, bounced, complained, failed and suppressed email events, and copy its signing secret into `RESEND_WEBHOOK_SECRET`.
+- Create a Resend webhook for `https://www.everaft.co.uk/api/resend/webhook`, subscribe to delivered, bounced, complained, failed and suppressed email events, and copy its signing secret into `RESEND_WEBHOOK_SECRET`.
 - Generate `OUTREACH_APPROVAL_SECRET` with a password manager or `openssl rand -base64 48`; never commit its value.
 - In a non-production deployment, add a dedicated test venue whose recipient address you control, temporarily enable sending there, then inspect the campaign on desktop and mobile mail clients, test its unsubscribe link and confirm webhook events appear in the campaign record. Keep the production switch off during this test.
 - Review the audience as corporate subscribers. Do not use this flow for sole traders, some partnerships or personal subscribers unless the appropriate electronic-mail permission has been established.
@@ -186,12 +186,12 @@ Only after those checks should production set `OUTREACH_SENDING_ENABLED=true`.
 
 The MCP endpoint uses Supabase OAuth and accepts only an authenticated EverAft profile whose role is still `admin`.
 
-1. Deploy the site on the final HTTPS domain and set `NEXT_PUBLIC_SITE_URL=https://everaft.co.uk` and `OUTREACH_MCP_AUDIENCE=https://everaft.co.uk/api/mcp`.
+1. Deploy the site on the final HTTPS domain and set `NEXT_PUBLIC_SITE_URL=https://www.everaft.co.uk` and `OUTREACH_MCP_AUDIENCE=https://www.everaft.co.uk/api/mcp`.
 2. In Supabase Authentication, enable the OAuth 2.1 server and dynamic client registration.
 3. Set the OAuth authorization path to `/oauth/consent` and make sure the production site URL and redirect allow list are correct.
 4. In Authentication Hooks, select `public.everaft_mcp_access_token_hook` as the Custom Access Token hook. The phase 7 migration creates this hook and binds OAuth access tokens to the production MCP audience.
 5. Use an asymmetric Supabase JWT signing key and complete the Supabase OAuth token-security checklist before production use.
-6. In ChatGPT on the web, enable developer mode, add an MCP connection for `https://everaft.co.uk/api/mcp`, and sign in with the EverAft admin account. Once linked, the connection is also available in ChatGPT mobile.
+6. In ChatGPT on the web, enable developer mode, add an MCP connection for `https://www.everaft.co.uk/api/mcp`, and sign in with the EverAft admin account. Once linked, the connection is also available in ChatGPT mobile.
 
 An example request after connection is: “Find all eligible Scottish venues, research only public business emails on their official sites, write a warm EverAft founding-partner invitation, and show me the exact recipients and email for approval.” ChatGPT will do the read-only preparation first; sending remains an external write action and requires confirmation for that exact preview.
 
