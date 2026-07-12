@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Camera, Check, ExternalLink, Globe2, MapPin, ShieldCheck, UsersRound } from "lucide-react";
+import { Calculator, Camera, Check, ExternalLink, Globe2, MapPin, ShieldCheck, UsersRound } from "lucide-react";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
@@ -98,6 +98,9 @@ export default async function VenuePage({ params }: PageProps) {
           <div className="mt-5 flex flex-wrap gap-3">
             <ButtonLink href="#enquiry">
               Check availability
+            </ButtonLink>
+            <ButtonLink href={`/wedding-budget-planner?venue=${encodeURIComponent(venue.id)}`} variant="secondary">
+              Add venue to budget <Calculator size={16} />
             </ButtonLink>
             {venue.officialWebsiteUrl ? (
               <ButtonLink href={venue.officialWebsiteUrl} target="_blank" rel="noopener noreferrer" variant="secondary">

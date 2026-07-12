@@ -15,6 +15,7 @@ export function Footer() {
           <p className="text-sm font-semibold tracking-[0.16em] text-[#d19a72]">Explore</p>
           <div className="mt-4 grid gap-3 text-sm text-white/75">
             <Link className="transition hover:text-white" href="/venues">Wedding venues</Link>
+            <Link className="transition hover:text-white" href="/wedding-budget-planner">Wedding budget planner</Link>
             <Link className="transition hover:text-white" href="/venues?type=Castle">Castles</Link>
             <Link className="transition hover:text-white" href="/venues?type=Country+Estate">Country estates</Link>
           </div>

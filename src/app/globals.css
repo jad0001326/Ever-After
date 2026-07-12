@@ -73,3 +73,11 @@ textarea {
 .soft-shadow {
   box-shadow: 0 24px 70px rgba(25, 23, 19, 0.09);
 }
+
+@media print {
+  header, footer, .print\:hidden { display: none !important; }
+  body { background: #fff; color: #111; }
+  main { padding: 0 !important; }
+  .print\:break-inside-avoid { break-inside: avoid; }
+  @page { size: A4; margin: 14mm; }
+}

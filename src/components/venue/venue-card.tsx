@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, UsersRound } from "lucide-react";
+import { Calculator, MapPin, UsersRound } from "lucide-react";
 import type { Venue } from "@/types/venue";
 import { formatCapacity, formatPriceRange } from "@/lib/utils";
 
@@ -9,8 +9,8 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
 
   return (
     <article className="group h-full overflow-hidden rounded-3xl border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/10">
-      <Link href={`/venues/${venue.slug}`} className="grid h-full grid-rows-[auto_1fr]">
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#eee8dd]">
+      <div className="grid h-full grid-rows-[auto_1fr]">
+        <Link href={`/venues/${venue.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#eee8dd]">
           <Image
             alt={`${venue.name} wedding venue in ${venue.town}, Scotland`}
             className="object-cover transition duration-700 group-hover:scale-105"
@@ -31,10 +31,10 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
               Representative image
             </div>
           ) : null}
-        </div>
+        </Link>
         <div className="flex h-full flex-col gap-4 p-5">
           <div>
-            <h3 className="font-display text-2xl font-semibold">{venue.name}</h3>
+            <h3 className="font-display text-2xl font-semibold"><Link className="focus-ring rounded-lg hover:text-[var(--brand)]" href={`/venues/${venue.slug}`}>{venue.name}</Link></h3>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{venue.summary}</p>
           </div>
           <div className="grid gap-2 text-sm text-[#4f4a43]">
@@ -47,14 +47,12 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
               {formatCapacity(venue.capacityMin, venue.capacityMax)}
             </span>
           </div>
-          {price ? (
-            <div className="mt-auto flex items-end justify-between border-t border-[var(--line)] pt-4">
-              <span className="text-xs uppercase tracking-[0.18em] text-[#8a806f]">From</span>
-              <span className="text-lg font-semibold">{price}</span>
-            </div>
-          ) : null}
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
+            <span>{price ? <><span className="block text-[10px] uppercase tracking-[0.18em] text-[#8a806f]">From</span><span className="text-lg font-semibold">{price}</span></> : <span className="text-xs text-[var(--muted)]">Price unavailable</span>}</span>
+            <Link className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-full bg-[#f4efe7] px-3 text-xs font-semibold text-[var(--brand)] transition hover:bg-[#e9dece]" href={`/wedding-budget-planner?venue=${encodeURIComponent(venue.id)}`}><Calculator size={15} /> Add to budget</Link>
+          </div>
         </div>
-      </Link>
+      </div>
     </article>
   );
 }

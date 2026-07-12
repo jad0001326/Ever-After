@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import type { Database } from "@/types/database";
 import type { Amenity, Venue, VenueSearchParams } from "@/types/venue";
+import type { PlannerListing } from "@/lib/budget/types";
 
 type VenueRow = Database["public"]["Tables"]["venues"]["Row"];
 type VenueImageRow = Database["public"]["Tables"]["venue_images"]["Row"];
@@ -110,6 +111,19 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
     .map((amenity) => ({ id: amenity.slug, name: amenity.name }));
 
   return venueFromRow(venue, images ?? [], mappedAmenities);
+}
+
+export async function getBudgetPlannerVenueListings(): Promise<PlannerListing[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image, price_from, price_to").eq("status", "published").in("listing_status", ["published", "claimed"]).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(60);
+  return (data ?? []).map((venue) => ({
+    id: venue.id, slug: venue.slug, name: venue.name, type: venue.type,
+    location: `${venue.town}, ${venue.region}`, imageUrl: imageUrlOrRepresentative(venue.hero_image, venue.type),
+    listingUrl: `/venues/${venue.slug}`, priceFromPence: venue.price_from == null ? null : venue.price_from * 100,
+    priceToPence: venue.price_to == null ? null : venue.price_to * 100,
+    pricingStatus: venue.price_from == null ? "unavailable" : venue.price_to != null && venue.price_to > venue.price_from ? "range" : "starting_from"
+  }));
 }
 
 function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Amenity[] = []): Venue {
