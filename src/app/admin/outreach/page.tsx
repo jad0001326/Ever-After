@@ -20,7 +20,7 @@ export default async function AdminOutreachPage({
   const kind: OutreachCampaignKind = requestedKind === "follow_up" ? "follow_up" : "initial_invite";
   let candidateResult: OutreachCandidateResult = {
     candidates: [],
-    excluded: { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, overLimit: 0 }
+    excluded: { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, unverifiedContact: 0, overLimit: 0 }
   };
   let campaigns: CampaignListItem[] = [];
   let loadError: string | null = null;

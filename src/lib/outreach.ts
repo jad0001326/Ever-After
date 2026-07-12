@@ -43,6 +43,7 @@ export type OutreachCandidateResult = {
     missingEmail: number;
     duplicateEmail: number;
     suppressed: number;
+    unverifiedContact: number;
     overLimit: number;
   };
 };
@@ -96,17 +97,20 @@ export async function listOutreachCandidates(
   const prepared = venues.map((venue) => {
     const researched = researchedByVenue.get(venue.id);
     const storedEmail = normalizeEmail(venue.vendor_contact_email ?? "");
-    if (researched && storedEmail) {
-      throw new Error(`${venue.name} already has a contact email. Refresh the audience before preparing the campaign.`);
+    const storedSourceUrl = venue.vendor_contact_source_url ?? "";
+    const storedContactIsTrusted = isTrustedVenueContact(storedEmail, storedSourceUrl, venue);
+    if (researched && storedContactIsTrusted) {
+      throw new Error(`${venue.name} already has a verified contact email. Refresh the audience before preparing the campaign.`);
     }
     return {
       venue,
       email: researched?.email ?? storedEmail,
-      contactSourceUrl: researched?.sourceUrl ?? venue.vendor_contact_source_url,
-      contactWasResearched: Boolean(researched)
+      contactSourceUrl: researched?.sourceUrl ?? storedSourceUrl,
+      contactWasResearched: Boolean(researched),
+      contactTrusted: Boolean(researched) || storedContactIsTrusted
     };
   });
-  const normalizedEmails = prepared.map((item) => item.email).filter((email) => emailPattern.test(email));
+  const normalizedEmails = prepared.map((item) => item.email).filter(isValidOutreachEmail);
 
   const suppressed = new Set<string>();
   if (normalizedEmails.length > 0) {
@@ -120,7 +124,7 @@ export async function listOutreachCandidates(
 
   const candidates: OutreachCandidate[] = [];
   const seen = new Set<string>();
-  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, overLimit: 0 };
+  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, unverifiedContact: 0, overLimit: 0 };
 
   for (const item of prepared) {
     const { venue, email } = item;
@@ -128,8 +132,12 @@ export async function listOutreachCandidates(
       excluded.missingEmail += 1;
       continue;
     }
-    if (!emailPattern.test(email)) {
+    if (!isValidOutreachEmail(email)) {
       excluded.invalidEmail += 1;
+      continue;
+    }
+    if (!item.contactTrusted) {
+      excluded.unverifiedContact += 1;
       continue;
     }
     if (seen.has(email)) {
@@ -169,12 +177,11 @@ export async function listMissingOutreachContacts(
   const country = filter.country?.trim() || "Scotland";
   let query = supabase
     .from("venues")
-    .select("id, slug, name, town, region, country, official_website_url")
+    .select("id, slug, name, town, region, country, official_website_url, vendor_contact_email, vendor_contact_source_url")
     .eq("is_claimed", false)
     .eq("listing_status", "published")
     .eq("invite_status", "not_sent")
     .eq("country", country)
-    .is("vendor_contact_email", null)
     .order("name", { ascending: true })
     .limit(1000);
 
@@ -187,6 +194,9 @@ export async function listMissingOutreachContacts(
   let missingOfficialWebsite = 0;
   let overLimit = 0;
   for (const venue of data ?? []) {
+    if (isTrustedVenueContact(normalizeEmail(venue.vendor_contact_email ?? ""), venue.vendor_contact_source_url ?? "", venue)) {
+      continue;
+    }
     const website = validPublicUrl(venue.official_website_url);
     if (!website) {
       missingOfficialWebsite += 1;
@@ -768,7 +778,7 @@ function validateResearchedContacts(contacts: ResearchedOutreachContact[], venue
   for (const contact of contacts) {
     if (byVenue.has(contact.venueId)) throw new Error(`Venue ${contact.venueId} has more than one researched contact.`);
     const email = normalizeEmail(contact.email);
-    if (!emailPattern.test(email) || email.length > 254) throw new Error(`The researched email for venue ${contact.venueId} is invalid.`);
+    if (!isValidOutreachEmail(email) || email.length > 254) throw new Error(`The researched email for venue ${contact.venueId} is invalid or a test address.`);
     if (emails.has(email)) throw new Error(`The researched address ${email} was supplied for more than one venue.`);
     const venue = venuesById.get(contact.venueId);
     if (!venue) continue;
@@ -781,13 +791,27 @@ function validateResearchedContacts(contacts: ResearchedOutreachContact[], venue
 
 function validateContactSourceUrl(sourceValue: string, websiteValue: string | null, businessName: string) {
   const sourceUrl = validPublicUrl(sourceValue);
+  if (!sourceUrl || !hasOfficialContactSource(sourceUrl, websiteValue)) {
+    throw new Error(`The contact source for ${businessName} must be a public page on its official website.`);
+  }
+  return sourceUrl;
+}
+
+function isTrustedVenueContact(
+  email: string,
+  sourceValue: string | null | undefined,
+  venue: Pick<VenueRow, "official_website_url">
+) {
+  return isValidOutreachEmail(email) && hasOfficialContactSource(sourceValue, venue.official_website_url);
+}
+
+function hasOfficialContactSource(sourceValue: string | null | undefined, websiteValue: string | null | undefined) {
+  const sourceUrl = validPublicUrl(sourceValue);
   const websiteUrl = validPublicUrl(websiteValue);
-  if (!sourceUrl || !websiteUrl) throw new Error(`${businessName} needs a valid official website and public source URL.`);
+  if (!sourceUrl || !websiteUrl) return false;
   const sourceHost = normalizedHostname(sourceUrl);
   const websiteHost = normalizedHostname(websiteUrl);
-  const sameOfficialHost = sourceHost === websiteHost || sourceHost.endsWith(`.${websiteHost}`) || websiteHost.endsWith(`.${sourceHost}`);
-  if (!sameOfficialHost) throw new Error(`The contact source for ${businessName} must be a page on its official website.`);
-  return sourceUrl;
+  return sourceHost === websiteHost || sourceHost.endsWith(`.${websiteHost}`) || websiteHost.endsWith(`.${sourceHost}`);
 }
 
 function validPublicUrl(value: string | null | undefined) {
@@ -904,6 +928,15 @@ function requireAdminClient() {
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
+}
+
+function isValidOutreachEmail(email: string) {
+  if (!emailPattern.test(email)) return false;
+  const [localPart, domain] = email.split("@");
+  const normalizedLocalPart = localPart.replace(/[+._-].*$/, "");
+  const placeholderLocalParts = new Set(["test", "testing", "sample", "example", "xxx", "dummy", "fake"]);
+  const placeholderDomains = new Set(["example.com", "test.com", "invalid"]);
+  return !placeholderLocalParts.has(normalizedLocalPart) && !placeholderDomains.has(domain);
 }
 
 function hashToken(token: string) {

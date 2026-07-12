@@ -60,7 +60,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
     "outreach_candidates_list",
     {
       title: "List outreach candidates",
-      description: "List eligible EverAft venue businesses after contact validation, deduplication, invite-status filtering and suppression checks. Use this before preparing an invitation campaign.",
+      description: "List eligible EverAft venue businesses only when their contact email is valid and backed by a public page on that business's official website. Applies deduplication, invite-status filtering and suppression checks before any invitation preview.",
       inputSchema: {
         kind: z.enum(["initial_invite", "follow_up"]).default("initial_invite"),
         country: z.string().min(2).max(80).default("Scotland"),
@@ -78,7 +78,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
           email: z.string(),
           contact_source_url: z.string().nullable()
         })),
-        excluded: z.object({ missing_email: z.number().int(), invalid_email: z.number().int(), duplicate_email: z.number().int(), suppressed: z.number().int(), over_limit: z.number().int() })
+        excluded: z.object({ missing_email: z.number().int(), invalid_email: z.number().int(), duplicate_email: z.number().int(), suppressed: z.number().int(), unverified_contact: z.number().int(), over_limit: z.number().int() })
       },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Checking eligible venues…", "openai/toolInvocation/invoked": "Eligible venues ready" }
@@ -107,6 +107,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
           invalid_email: result.excluded.invalidEmail,
           duplicate_email: result.excluded.duplicateEmail,
           suppressed: result.excluded.suppressed,
+          unverified_contact: result.excluded.unverifiedContact,
           over_limit: result.excluded.overLimit
         }
       };
@@ -121,7 +122,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
     "outreach_contacts_missing",
     {
       title: "Find venues needing contact research",
-      description: "List eligible unclaimed venue businesses that do not yet have an outreach email, together with each official website. Research only a public business address visibly published on that official website. Do not guess address patterns, use personal addresses, or use data-broker results.",
+      description: "List eligible unclaimed venue businesses that do not yet have a verified, source-backed outreach email, together with each official website. Research only a public business address visibly published on that official website. Do not guess address patterns, use personal addresses, or use data-broker results.",
       inputSchema: {
         country: z.string().min(2).max(80).default("Scotland"),
         region: z.string().min(1).max(120).optional(),
