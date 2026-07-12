@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="260" viewBox="0 0 720 260" role="img" aria-labelledby="title desc">
+  <title id="title">EverAft</title>
+  <desc id="desc">EverAft wordmark with a refined champagne arch above it.</desc>
+  <rect width="720" height="260" fill="none"/>
+  <g fill="none" stroke="#C7AA73" stroke-linecap="round">
+    <path d="M120 105C200 28 280 18 360 18C440 18 520 28 600 105" stroke-width="5"/>
+    <path d="M136 105C211 42 286 33 360 33C434 33 509 42 584 105" stroke-width="3" opacity="0.65"/>
+  </g>
+  <text x="360" y="208" text-anchor="middle" fill="#191713" font-family="Cormorant Garamond, Garamond, Georgia, serif" font-size="112" font-weight="600" letter-spacing="5">EverAft</text>
+</svg>
