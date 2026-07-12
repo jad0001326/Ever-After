@@ -10,6 +10,10 @@ export const mcpResourceUrl = () => process.env.OUTREACH_MCP_AUDIENCE ?? absolut
 export const mcpResourceMetadataUrl = () => absoluteUrl("/.well-known/oauth-protected-resource");
 export const mcpScopes = ["openid", "email", "profile"];
 
+export function mcpWwwAuthenticateChallenge() {
+  return `Bearer resource_metadata="${mcpResourceMetadataUrl()}", scope="${mcpScopes.join(" ")}", error="invalid_token", error_description="Connect as an EverAft administrator to continue"`;
+}
+
 export async function authenticateMcpRequest(request: Request): Promise<AuthInfo | null> {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ") || !supabaseUrl || !supabasePublishableKey) return null;
@@ -58,13 +62,12 @@ export async function authenticateMcpRequest(request: Request): Promise<AuthInfo
 }
 
 export function mcpUnauthorizedResponse() {
-  const challenge = `Bearer resource_metadata="${mcpResourceMetadataUrl()}", scope="${mcpScopes.join(" ")}", error="invalid_token", error_description="Connect as an EverAft administrator to continue"`;
   return new Response(JSON.stringify({ error: "unauthorized" }), {
     status: 401,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "WWW-Authenticate": challenge
+      "WWW-Authenticate": mcpWwwAuthenticateChallenge()
     }
   });
 }
