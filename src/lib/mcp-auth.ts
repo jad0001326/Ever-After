@@ -25,31 +25,28 @@ export async function authenticateMcpRequest(request: Request): Promise<AuthInfo
     global: { headers: { Authorization: `Bearer ${token}` } }
   });
   const { data, error } = await authClient.auth.getClaims(token);
-  if (error || !data?.claims) return null;
-  const claims = data.claims as Record<string, unknown>;
+  const claims = data?.claims as Record<string, unknown> | undefined;
   const expectedIssuer = `${supabaseUrl.replace(/\/$/, "")}/auth/v1`;
-  const audience = claims.aud;
+  const audience = claims?.aud;
   const audiences = Array.isArray(audience) ? audience.map(String) : [String(audience ?? "")];
-  const adminUserId = typeof claims.sub === "string" ? claims.sub : null;
-  const clientId = typeof claims.client_id === "string" ? claims.client_id : null;
-  const expiresAt = typeof claims.exp === "number" ? claims.exp : undefined;
-  if (
-    claims.iss !== expectedIssuer ||
-    !audiences.includes(mcpResourceUrl()) ||
-    claims.everaft_mcp !== true ||
-    !adminUserId ||
-    !clientId ||
-    (expiresAt != null && expiresAt <= Math.floor(Date.now() / 1000))
-  ) {
-    return null;
-  }
+  const hasMcpClaims =
+    !error &&
+    claims?.iss === expectedIssuer &&
+    audiences.includes(mcpResourceUrl()) &&
+    claims?.everaft_mcp === true;
+  const claimAdminUserId = hasMcpClaims && typeof claims?.sub === "string" ? claims.sub : null;
+  const fallbackUser = claimAdminUserId ? null : await authClient.auth.getUser(token);
+  const adminUserId = claimAdminUserId ?? fallbackUser?.data.user?.id ?? null;
+  const clientId = typeof claims?.client_id === "string" ? claims.client_id : "everaft-mcp-oauth";
+  const expiresAt = typeof claims?.exp === "number" ? claims.exp : undefined;
+  if (!adminUserId || (expiresAt != null && expiresAt <= Math.floor(Date.now() / 1000))) return null;
 
   const adminClient = createAdminClient();
   if (!adminClient) return null;
   const { data: profile } = await adminClient.from("profiles").select("role").eq("id", adminUserId).single();
   if (profile?.role !== "admin") return null;
 
-  const scopeClaim = claims.scope;
+  const scopeClaim = claims?.scope;
   const scopes = typeof scopeClaim === "string" ? scopeClaim.split(" ").filter(Boolean) : mcpScopes;
   return {
     token,
