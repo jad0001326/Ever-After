@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">EverAft logo mark</title>
+  <desc id="desc">A refined arch-shaped EverAft brand mark.</desc>
+  <rect width="256" height="256" rx="18" fill="#F7F3EC"/>
+  <path d="M44 205C65 130 96 79 128 57C160 79 191 130 212 205" fill="none" stroke="#191713" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M78 158H178" fill="none" stroke="#C7AA73" stroke-width="11" stroke-linecap="round"/>
+</svg>
