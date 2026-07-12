@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import * as z from "zod/v4";
-import { authenticateMcpRequest, mcpScopes, mcpUnauthorizedResponse } from "@/lib/mcp-auth";
+import { authenticateMcpRequest, mcpScopes, mcpUnauthorizedResponse, mcpWwwAuthenticateChallenge } from "@/lib/mcp-auth";
 import {
   createOutreachPreview,
   getOutreachCampaign,
@@ -16,6 +16,19 @@ export const dynamic = "force-dynamic";
 
 const securitySchemes = [{ type: "oauth2", scopes: mcpScopes }] as const;
 const authMeta = { securitySchemes };
+
+function authenticationRequiredResult() {
+  return {
+    content: [{ type: "text" as const, text: "Authentication required. Connect as an EverAft administrator to continue." }],
+    isError: true,
+    _meta: { "mcp/www_authenticate": [mcpWwwAuthenticateChallenge()] }
+  };
+}
+
+function getAuthenticatedAdminId(extra: { authInfo?: { extra?: Record<string, unknown> } }) {
+  const adminUserId = extra.authInfo?.extra?.adminUserId;
+  return typeof adminUserId === "string" ? adminUserId : null;
+}
 
 function createEverAftMcpServer() {
   const server = new McpServer(
@@ -54,7 +67,8 @@ function createEverAftMcpServer() {
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Checking eligible venues…", "openai/toolInvocation/invoked": "Eligible venues ready" }
     },
-    async ({ country, follow_up_after_days, kind, limit, region }) => {
+    async ({ country, follow_up_after_days, kind, limit, region }, extra) => {
+      if (!getAuthenticatedAdminId(extra)) return authenticationRequiredResult();
       const result = await listOutreachCandidates({
         kind,
         country,
@@ -113,7 +127,8 @@ function createEverAftMcpServer() {
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Finding missing business contacts…", "openai/toolInvocation/invoked": "Contact research list ready" }
     },
-    async ({ country, limit, region, venue_ids }) => {
+    async ({ country, limit, region, venue_ids }, extra) => {
+      if (!getAuthenticatedAdminId(extra)) return authenticationRequiredResult();
       const result = await listMissingOutreachContacts({ country, region, venueIds: venue_ids, limit });
       const structuredContent = {
         research_count: result.contacts.length,
@@ -180,8 +195,8 @@ function createEverAftMcpServer() {
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Building branded preview…", "openai/toolInvocation/invoked": "Campaign preview ready" }
     },
     async (args, extra) => {
-      const adminUserId = extra.authInfo?.extra?.adminUserId;
-      if (typeof adminUserId !== "string") throw new Error("Authenticated admin identity is missing.");
+      const adminUserId = getAuthenticatedAdminId(extra);
+      if (!adminUserId) return authenticationRequiredResult();
       const defaults = defaultOutreachCopy[args.kind];
       const preview = await createOutreachPreview({
         adminUserId,
@@ -256,8 +271,8 @@ function createEverAftMcpServer() {
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Sending approved invitations…", "openai/toolInvocation/invoked": "Campaign send completed" }
     },
     async ({ approval_token, confirmed_recipient_count }, extra) => {
-      const adminUserId = extra.authInfo?.extra?.adminUserId;
-      if (typeof adminUserId !== "string") throw new Error("Authenticated admin identity is missing.");
+      const adminUserId = getAuthenticatedAdminId(extra);
+      if (!adminUserId) return authenticationRequiredResult();
       const result = await sendApprovedOutreachCampaign({
         adminUserId,
         approvalToken: approval_token,
@@ -297,7 +312,8 @@ function createEverAftMcpServer() {
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Checking campaign status…", "openai/toolInvocation/invoked": "Campaign status ready" }
     },
-    async ({ campaign_id }) => {
+    async ({ campaign_id }, extra) => {
+      if (!getAuthenticatedAdminId(extra)) return authenticationRequiredResult();
       const { campaign, recipients } = await getOutreachCampaign(campaign_id);
       const recipientStatuses: Record<string, number> = {};
       for (const recipient of recipients) recipientStatuses[recipient.status] = (recipientStatuses[recipient.status] ?? 0) + 1;
@@ -320,7 +336,7 @@ function createEverAftMcpServer() {
 
 async function handleMcpRequest(request: Request) {
   const authInfo = await authenticateMcpRequest(request);
-  if (!authInfo) return withCors(mcpUnauthorizedResponse());
+  if (!authInfo && request.method !== "POST") return withCors(mcpUnauthorizedResponse());
 
   const server = createEverAftMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
@@ -329,7 +345,7 @@ async function handleMcpRequest(request: Request) {
   });
   try {
     await server.connect(transport);
-    return withCors(await transport.handleRequest(request, { authInfo }));
+    return withCors(await transport.handleRequest(request, { authInfo: authInfo ?? undefined }));
   } finally {
     await transport.close();
     await server.close();
