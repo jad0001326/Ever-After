@@ -127,20 +127,35 @@ export async function listOutreachCandidates(
   const normalizedEmails = prepared.map((item) => item.email).filter(isValidOutreachEmail);
 
   const existingOutreachVenueIds = new Set<string>();
+  const existingOutreachEmails = new Set<string>();
   if (filter.kind === "initial_invite" && venues.length > 0) {
     const venueIds = venues.map((venue) => venue.id);
-    const permanentHistoryBatches = await Promise.all(
+    const permanentHistoryByVenueBatches = await Promise.all(
       chunkValues(venueIds).map(async (venueIdBatch) => {
         const { data: permanentHistory, error: permanentHistoryError } = await supabase
           .from("outreach_campaign_recipients")
-          .select("venue_id")
+          .select("venue_id, normalized_email")
           .in("venue_id", venueIdBatch)
           .in("status", ["sent", "delivered", "replied"]);
         if (permanentHistoryError) throw new Error(`Could not check completed outreach history: ${permanentHistoryError.message}`);
         return permanentHistory ?? [];
       })
     );
-    for (const row of permanentHistoryBatches.flat()) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+    const permanentHistoryByEmailBatches = await Promise.all(
+      chunkValues(Array.from(new Set(normalizedEmails))).map(async (emailBatch) => {
+        const { data: permanentHistory, error: permanentHistoryError } = await supabase
+          .from("outreach_campaign_recipients")
+          .select("venue_id, normalized_email")
+          .in("normalized_email", emailBatch)
+          .in("status", ["sent", "delivered", "replied"]);
+        if (permanentHistoryError) throw new Error(`Could not check completed outreach history: ${permanentHistoryError.message}`);
+        return permanentHistory ?? [];
+      })
+    );
+    for (const row of [...permanentHistoryByVenueBatches.flat(), ...permanentHistoryByEmailBatches.flat()]) {
+      if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+      existingOutreachEmails.add(row.normalized_email);
+    }
 
     const { data: activeCampaigns, error: campaignHistoryError } = await supabase
       .from("outreach_campaigns")
@@ -154,7 +169,7 @@ export async function listOutreachCandidates(
           chunkValues(venueIds).map(async (venueIdBatch) => {
             const { data: existingRows, error: existingError } = await supabase
               .from("outreach_campaign_recipients")
-              .select("venue_id")
+              .select("venue_id, normalized_email")
               .in("campaign_id", campaignIdBatch)
               .in("venue_id", venueIdBatch)
               .eq("status", "pending");
@@ -163,7 +178,24 @@ export async function listOutreachCandidates(
           })
         )
       );
-      for (const row of existingRowBatches.flat()) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+      const existingEmailBatches = await Promise.all(
+        chunkValues(campaignIds).flatMap((campaignIdBatch) =>
+          chunkValues(Array.from(new Set(normalizedEmails))).map(async (emailBatch) => {
+            const { data: existingRows, error: existingError } = await supabase
+              .from("outreach_campaign_recipients")
+              .select("venue_id, normalized_email")
+              .in("campaign_id", campaignIdBatch)
+              .in("normalized_email", emailBatch)
+              .eq("status", "pending");
+            if (existingError) throw new Error(`Could not check existing outreach history: ${existingError.message}`);
+            return existingRows ?? [];
+          })
+        )
+      );
+      for (const row of [...existingRowBatches.flat(), ...existingEmailBatches.flat()]) {
+        if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+        existingOutreachEmails.add(row.normalized_email);
+      }
     }
   }
 
@@ -209,7 +241,7 @@ export async function listOutreachCandidates(
       excluded.suppressed += 1;
       continue;
     }
-    if (existingOutreachVenueIds.has(venue.id)) {
+    if (existingOutreachVenueIds.has(venue.id) || existingOutreachEmails.has(email)) {
       excluded.existingOutreach += 1;
       continue;
     }
@@ -475,17 +507,37 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
       for (const venue of currentVenues ?? []) currentVenueById.set(venue.id, venue);
     }
 
+    const recipientEmails = Array.from(new Set(recipients.map((recipient) => recipient.normalized_email)));
     const conflictingVenueIds = new Set<string>();
+    const conflictingEmails = new Set<string>();
     if (venueIds.length > 0) {
       if (locked.kind === "initial_invite") {
-        const { data: completedConflicts, error: completedConflictError } = await supabase
-          .from("outreach_campaign_recipients")
-          .select("venue_id")
-          .neq("campaign_id", campaignId)
-          .in("venue_id", venueIds)
-          .in("status", ["sent", "delivered", "replied"]);
-        if (completedConflictError) throw new Error(`Could not re-check completed outreach: ${completedConflictError.message}`);
-        for (const conflict of completedConflicts ?? []) if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+        const [completedByVenueBatches, completedByEmailBatches] = await Promise.all([
+          Promise.all(chunkValues(venueIds).map(async (venueIdBatch) => {
+            const { data: completedConflicts, error: completedConflictError } = await supabase
+              .from("outreach_campaign_recipients")
+              .select("venue_id, normalized_email")
+              .neq("campaign_id", campaignId)
+              .in("venue_id", venueIdBatch)
+              .in("status", ["sent", "delivered", "replied"]);
+            if (completedConflictError) throw new Error(`Could not re-check completed outreach: ${completedConflictError.message}`);
+            return completedConflicts ?? [];
+          })),
+          Promise.all(chunkValues(recipientEmails).map(async (emailBatch) => {
+            const { data: completedConflicts, error: completedConflictError } = await supabase
+              .from("outreach_campaign_recipients")
+              .select("venue_id, normalized_email")
+              .neq("campaign_id", campaignId)
+              .in("normalized_email", emailBatch)
+              .in("status", ["sent", "delivered", "replied"]);
+            if (completedConflictError) throw new Error(`Could not re-check completed outreach: ${completedConflictError.message}`);
+            return completedConflicts ?? [];
+          }))
+        ]);
+        for (const conflict of [...completedByVenueBatches.flat(), ...completedByEmailBatches.flat()]) {
+          if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+          conflictingEmails.add(conflict.normalized_email);
+        }
       }
 
       const { data: otherCampaigns, error: otherCampaignError } = await supabase
@@ -496,14 +548,27 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
       if (otherCampaignError) throw new Error(`Could not re-check concurrent campaigns: ${otherCampaignError.message}`);
       const otherCampaignIds = (otherCampaigns ?? []).map((otherCampaign) => otherCampaign.id);
       if (otherCampaignIds.length > 0) {
-        const { data: conflicts, error: conflictError } = await supabase
-          .from("outreach_campaign_recipients")
-          .select("venue_id")
-          .in("campaign_id", otherCampaignIds)
-          .in("venue_id", venueIds)
-          .eq("status", "pending");
-        if (conflictError) throw new Error(`Could not re-check concurrent outreach: ${conflictError.message}`);
-        for (const conflict of conflicts ?? []) if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+        const [conflictsByVenue, conflictsByEmail] = await Promise.all([
+          supabase
+            .from("outreach_campaign_recipients")
+            .select("venue_id, normalized_email")
+            .in("campaign_id", otherCampaignIds)
+            .in("venue_id", venueIds)
+            .eq("status", "pending"),
+          supabase
+            .from("outreach_campaign_recipients")
+            .select("venue_id, normalized_email")
+            .in("campaign_id", otherCampaignIds)
+            .in("normalized_email", recipientEmails)
+            .eq("status", "pending")
+        ]);
+        if (conflictsByVenue.error || conflictsByEmail.error) {
+          throw new Error(`Could not re-check concurrent outreach: ${conflictsByVenue.error?.message ?? conflictsByEmail.error?.message}`);
+        }
+        for (const conflict of [...(conflictsByVenue.data ?? []), ...(conflictsByEmail.data ?? [])]) {
+          if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+          conflictingEmails.add(conflict.normalized_email);
+        }
       }
     }
 
@@ -537,8 +602,8 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
         noLongerEligible.set(recipient.id, "The venue contact email changed after the campaign draft was created.");
       } else if (!isTrustedVenueContact(recipient.normalized_email, venue.vendor_contact_source_url, venue)) {
         noLongerEligible.set(recipient.id, "The current contact no longer has a trusted official-site source.");
-      } else if (conflictingVenueIds.has(recipient.venue_id)) {
-        noLongerEligible.set(recipient.id, "Another campaign already contains active or completed outreach for this venue.");
+      } else if (conflictingVenueIds.has(recipient.venue_id) || conflictingEmails.has(recipient.normalized_email)) {
+        noLongerEligible.set(recipient.id, "Another campaign already contains active or completed outreach for this venue or inbox.");
       }
     }
     if (noLongerEligible.size > 0) {
