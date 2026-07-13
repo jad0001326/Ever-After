@@ -147,7 +147,10 @@ export default async function VenuePage({ params }: PageProps) {
           <VenuePricingSection priceOptions={venue.priceOptions} />
 
           <section className="grid gap-4 sm:grid-cols-3">
-            <InfoTile title="Pricing" value={price?.amountLabel ?? "Ask venue for current pricing"} />
+            <InfoTile
+              title="Pricing"
+              value={price ? [price.amountLabel, ...price.materialQualifierLabels].join(" · ") : "Ask venue for current pricing"}
+            />
             <InfoTile title="Capacity" value={formatCapacity(venue.capacityMin, venue.capacityMax)} />
             <InfoTile title="Location" value={`${venue.town}, Scotland`} />
           </section>
