@@ -41,6 +41,13 @@ type VenueRow = Pick<
 >;
 
 const maxCampaignRecipients = 100;
+const postgrestInFilterBatchSize = 100;
+
+function chunkValues<T>(values: T[], size = postgrestInFilterBatchSize): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) chunks.push(values.slice(index, index + size));
+  return chunks;
+}
 
 export type OutreachCandidateResult = {
   candidates: OutreachCandidate[];
@@ -122,13 +129,18 @@ export async function listOutreachCandidates(
   const existingOutreachVenueIds = new Set<string>();
   if (filter.kind === "initial_invite" && venues.length > 0) {
     const venueIds = venues.map((venue) => venue.id);
-    const { data: permanentHistory, error: permanentHistoryError } = await supabase
-      .from("outreach_campaign_recipients")
-      .select("venue_id")
-      .in("venue_id", venueIds)
-      .in("status", ["sent", "delivered", "replied"]);
-    if (permanentHistoryError) throw new Error(`Could not check completed outreach history: ${permanentHistoryError.message}`);
-    for (const row of permanentHistory ?? []) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+    const permanentHistoryBatches = await Promise.all(
+      chunkValues(venueIds).map(async (venueIdBatch) => {
+        const { data: permanentHistory, error: permanentHistoryError } = await supabase
+          .from("outreach_campaign_recipients")
+          .select("venue_id")
+          .in("venue_id", venueIdBatch)
+          .in("status", ["sent", "delivered", "replied"]);
+        if (permanentHistoryError) throw new Error(`Could not check completed outreach history: ${permanentHistoryError.message}`);
+        return permanentHistory ?? [];
+      })
+    );
+    for (const row of permanentHistoryBatches.flat()) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
 
     const { data: activeCampaigns, error: campaignHistoryError } = await supabase
       .from("outreach_campaigns")
@@ -137,25 +149,37 @@ export async function listOutreachCandidates(
     if (campaignHistoryError) throw new Error(`Could not check campaign history: ${campaignHistoryError.message}`);
     const campaignIds = (activeCampaigns ?? []).map((campaign) => campaign.id);
     if (campaignIds.length > 0) {
-      const { data: existingRows, error: existingError } = await supabase
-        .from("outreach_campaign_recipients")
-        .select("venue_id")
-        .in("campaign_id", campaignIds)
-        .in("venue_id", venueIds)
-        .eq("status", "pending");
-      if (existingError) throw new Error(`Could not check existing outreach history: ${existingError.message}`);
-      for (const row of existingRows ?? []) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+      const existingRowBatches = await Promise.all(
+        chunkValues(campaignIds).flatMap((campaignIdBatch) =>
+          chunkValues(venueIds).map(async (venueIdBatch) => {
+            const { data: existingRows, error: existingError } = await supabase
+              .from("outreach_campaign_recipients")
+              .select("venue_id")
+              .in("campaign_id", campaignIdBatch)
+              .in("venue_id", venueIdBatch)
+              .eq("status", "pending");
+            if (existingError) throw new Error(`Could not check existing outreach history: ${existingError.message}`);
+            return existingRows ?? [];
+          })
+        )
+      );
+      for (const row of existingRowBatches.flat()) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
     }
   }
 
   const suppressed = new Set<string>();
   if (normalizedEmails.length > 0) {
-    const { data: rows, error: suppressionError } = await supabase
-      .from("outreach_suppressions")
-      .select("normalized_email")
-      .in("normalized_email", Array.from(new Set(normalizedEmails)));
-    if (suppressionError) throw new Error(`Could not check the suppression list: ${suppressionError.message}`);
-    for (const row of rows ?? []) suppressed.add(row.normalized_email);
+    const suppressionBatches = await Promise.all(
+      chunkValues(Array.from(new Set(normalizedEmails))).map(async (emailBatch) => {
+        const { data: rows, error: suppressionError } = await supabase
+          .from("outreach_suppressions")
+          .select("normalized_email")
+          .in("normalized_email", emailBatch);
+        if (suppressionError) throw new Error(`Could not check the suppression list: ${suppressionError.message}`);
+        return rows ?? [];
+      })
+    );
+    for (const row of suppressionBatches.flat()) suppressed.add(row.normalized_email);
   }
 
   const candidates: OutreachCandidate[] = [];
