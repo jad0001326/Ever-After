@@ -10,6 +10,7 @@ import { VenueGallery } from "@/components/venue/venue-gallery";
 import { VenuePricingSection } from "@/components/venue/venue-pricing-section";
 import { ButtonLink } from "@/components/ui/button";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
+import { shouldUseVenuePassport } from "@/lib/venue-images";
 import { getPrimaryVenuePriceDisplay } from "@/lib/venue-pricing";
 import { absoluteUrl, formatCapacity } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
@@ -21,12 +22,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const venue = await getVenueListingBySlug(slug);
   if (!venue) return {};
+  const usesPassport = shouldUseVenuePassport(venue);
 
   return buildMetadata({
     title: `${venue.name} wedding venue, ${venue.town}`,
     description: venue.summary,
     path: `/venues/${venue.slug}`,
-    image: venue.heroImage,
+    ...(usesPassport ? {} : { image: venue.heroImage }),
     keywords: [
       `${venue.name} wedding venue`,
       `${venue.town} wedding venue`,
@@ -54,6 +56,7 @@ export default async function VenuePage({ params }: PageProps) {
     : null;
 
   const price = getPrimaryVenuePriceDisplay(venue.priceOptions);
+  const usesPassport = shouldUseVenuePassport(venue);
   const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venue.name}, ${venue.town}, ${venue.region}, Scotland`)}`;
 
   const jsonLd = {
@@ -62,7 +65,7 @@ export default async function VenuePage({ params }: PageProps) {
     additionalType: "https://schema.org/WeddingVenue",
     name: venue.name,
     description: venue.summary,
-    image: venue.images.map((image) => image.url),
+    ...(usesPassport ? {} : { image: venue.images.map((image) => image.url) }),
     address: {
       "@type": "PostalAddress",
       addressLocality: venue.town,
@@ -121,7 +124,7 @@ export default async function VenuePage({ params }: PageProps) {
 
       <VenueGallery venue={venue} />
       <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-[var(--line)] bg-white/72 px-5 py-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
-        <p>{venue.imageIsRepresentative ? "Representative imagery is shown until venue-approved photography is available." : "Venue imagery has been reviewed for this listing."}</p>
+        <p>{usesPassport ? "An EverAft visual profile is shown until venue-approved photography is available." : "Venue imagery has been reviewed for this listing."}</p>
         {venue.officialGalleryUrl ? (
           <ButtonLink href={venue.officialGalleryUrl} target="_blank" rel="noopener noreferrer" variant="secondary" className="shrink-0">
             View official gallery <ExternalLink size={16} />
@@ -191,7 +194,7 @@ export default async function VenuePage({ params }: PageProps) {
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9d7b45]">Listing confidence</p>
             <div className="mt-4 grid gap-3 text-sm text-[#4f4a43]">
               <TrustRow icon={<ShieldCheck size={16} />} text={venue.isClaimed ? "Managed by the venue team" : "Open for venue owner verification"} />
-              <TrustRow icon={<Camera size={16} />} text={venue.imageIsRepresentative ? "Representative imagery in use" : "Reviewed venue imagery"} />
+              <TrustRow icon={<Camera size={16} />} text={usesPassport ? "EverAft visual profile in use" : "Reviewed venue imagery"} />
               {venue.officialWebsiteUrl ? <TrustRow icon={<Globe2 size={16} />} text="Official website linked" /> : null}
             </div>
           </section>
