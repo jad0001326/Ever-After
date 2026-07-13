@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
-    "enrichment:stage": "node scripts/stage-enrichment-review.mts"
+    "enrichment:stage": "node scripts/stage-enrichment-review.mts",
+    "pricing:recover": "node scripts/build-pricing-recovery.mts",
+    "pricing:curate": "node scripts/build-curated-pricing.mts",
+    "pricing:publication-sql": "node scripts/build-pricing-publication-sql.mts",
+    "pricing:stage": "node scripts/stage-pricing-options.mts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -20,6 +24,7 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "^16.2.6",
+    "pdf-parse": "2.4.5",
     "react": "latest",
     "react-dom": "latest",
     "read-excel-file": "^9.0.9",

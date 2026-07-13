@@ -76,6 +76,53 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["venues"]["Row"]>;
         Relationships: [];
       };
+      venue_price_options: {
+        Row: {
+          id: string;
+          venue_id: string;
+          kind: Database["public"]["Enums"]["venue_price_kind"];
+          label: string;
+          amount_from_pence: number | null;
+          amount_to_pence: number | null;
+          currency: string;
+          pricing_unit: Database["public"]["Enums"]["venue_price_unit"];
+          included_guests: number | null;
+          season_label: string | null;
+          day_label: string | null;
+          description: string | null;
+          tax_label: string | null;
+          minimum_nights: number | null;
+          price_qualifier: Database["public"]["Enums"]["venue_price_qualifier"];
+          source_type: Database["public"]["Enums"]["venue_price_source_type"];
+          source_url: string | null;
+          source_title: string | null;
+          evidence_text: string | null;
+          source_fingerprint: string | null;
+          valid_from: string | null;
+          valid_to: string | null;
+          last_checked_at: string | null;
+          verification_method: Database["public"]["Enums"]["venue_price_verification_method"] | null;
+          verified_at: string | null;
+          verified_by: string | null;
+          status: Database["public"]["Enums"]["venue_price_status"];
+          published_at: string | null;
+          superseded_at: string | null;
+          superseded_by: string | null;
+          display_priority: number;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["venue_price_options"]["Row"]> & {
+          venue_id: string;
+          kind: Database["public"]["Enums"]["venue_price_kind"];
+          label: string;
+          source_type: Database["public"]["Enums"]["venue_price_source_type"];
+        };
+        Update: Partial<Database["public"]["Tables"]["venue_price_options"]["Row"]>;
+        Relationships: [];
+      };
       vendors: {
         Row: {
           id: string;
@@ -641,6 +688,12 @@ export type Database = {
     Enums: {
       venue_status: "draft" | "published";
       enquiry_status: "new" | "contacted" | "converted" | "closed";
+      venue_price_kind: "venue_hire" | "exclusive_use" | "wedding_package" | "per_person" | "ceremony_fee" | "catering" | "accommodation" | "minimum_spend" | "quote_required" | "other";
+      venue_price_qualifier: "from" | "fixed" | "range" | "quote";
+      venue_price_source_type: "official_website" | "official_brochure" | "venue_confirmed" | "admin_verified" | "legacy_import" | "other";
+      venue_price_status: "draft" | "published" | "superseded";
+      venue_price_unit: "total" | "per_person" | "per_night" | "per_room" | "per_event" | "per_hour" | "unspecified" | "quote";
+      venue_price_verification_method: "official_source" | "venue_confirmation" | "admin_review";
     };
     CompositeTypes: Record<string, never>;
   };
