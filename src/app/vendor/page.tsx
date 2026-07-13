@@ -3,10 +3,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { CalendarDays, Camera, CheckCircle2, ExternalLink, Globe2, Mail, MessageSquareText, Phone, ShieldCheck, UsersRound } from "lucide-react";
 import { updateVendorEnquiryStatus } from "@/app/actions/enquiries";
+import { VendorImageUploader, type VendorImageSubmissionView } from "@/components/vendor/vendor-image-uploader";
 import { VendorUpdateForm } from "@/components/vendor/vendor-update-form";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { VENUE_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/venue-image-submissions";
 
 export const metadata: Metadata = {
   title: "Vendor dashboard"
@@ -42,10 +44,29 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
   const { message } = await searchParams;
   const { user } = await requireUser("/vendor", "Sign in to access your vendor dashboard");
   const supabase = await createClient();
-  const [{ data: venues }, { data: requests }] = await Promise.all([
+  const [{ data: venues }, { data: requests }, { data: imageSubmissions }] = await Promise.all([
     supabase!.from("venues").select("*").eq("claimed_by", user.id).eq("is_claimed", true).order("updated_at", { ascending: false }),
-    supabase!.from("vendor_update_requests").select("*").eq("vendor_user_id", user.id).order("created_at", { ascending: false })
+    supabase!.from("vendor_update_requests").select("*").eq("vendor_user_id", user.id).order("created_at", { ascending: false }),
+    supabase!.from("venue_image_submissions").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false })
   ]);
+  const submissionViews = await Promise.all((imageSubmissions ?? []).map(async (submission): Promise<VendorImageSubmissionView> => {
+    let previewUrl = submission.published_url;
+    if (!previewUrl) {
+      const { data } = await supabase!.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).createSignedUrl(submission.storage_path, 60 * 60);
+      previewUrl = data?.signedUrl ?? null;
+    }
+    return {
+      id: submission.id,
+      venueId: submission.venue_id,
+      altText: submission.alt_text,
+      creditText: submission.credit_text,
+      isPreferred: submission.is_preferred,
+      status: submission.status,
+      adminNotes: submission.admin_notes,
+      previewUrl,
+      createdAt: submission.created_at
+    };
+  }));
   const venueIds = (venues ?? []).map((venue) => venue.id);
   const { data: enquiries } = venueIds.length
     ? await supabase!.from("enquiries").select("*").in("venue_id", venueIds).order("created_at", { ascending: false }).limit(100)
@@ -69,6 +90,7 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
       <div className="grid gap-6">
         {(venues ?? []).map((venue) => {
           const venueRequests = (requests ?? []).filter((request) => request.venue_id === venue.id);
+          const venueImageSubmissions = submissionViews.filter((submission) => submission.venueId === venue.id);
           const venueEnquiries = ((enquiries ?? []) as VendorEnquiry[]).filter((enquiry) => enquiry.venue_id === venue.id);
           const health = listingHealth(venue);
           return (
@@ -99,6 +121,13 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
                   </div>
                 </div>
               </div>
+
+              <VendorImageUploader
+                venueId={venue.id}
+                venueName={venue.name}
+                userId={user.id}
+                submissions={venueImageSubmissions}
+              />
 
               <VendorUpdateForm venue={venue} />
 

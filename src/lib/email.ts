@@ -61,6 +61,23 @@ type VendorUpdateNotification = {
   requestedMessage: string;
 };
 
+export type VenueImagesSubmittedNotification = {
+  submissionId: string;
+  venueName: string;
+  venueSlug: string;
+  requesterEmail: string | null;
+  imageCount: number;
+};
+
+export type VenueImageReviewedNotification = {
+  submissionId: string;
+  venueName: string;
+  venueSlug: string;
+  vendorEmail: string | null;
+  status: "approved" | "rejected";
+  adminNotes: string | null;
+};
+
 type NewsletterConfirmation = {
   email: string;
   confirmationUrl: string;
@@ -350,6 +367,51 @@ export async function notifyVendorUpdateRequested(input: VendorUpdateNotificatio
       `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}`
     ].filter((line): line is string => line !== null).join("\n"),
     idempotencyKey: `vendor-update-${input.requestId}`
+  });
+}
+
+export async function notifyVenueImagesSubmitted(input: VenueImagesSubmittedNotification) {
+  const { adminTo } = emailConfig();
+  if (adminTo.length === 0) return;
+
+  const imageLabel = input.imageCount === 1 ? "photo" : "photos";
+  await sendEmail({
+    to: adminTo,
+    replyTo: input.requesterEmail ?? undefined,
+    subject: `New venue ${imageLabel} for ${input.venueName}`,
+    text: [
+      `Venue: ${input.venueName}`,
+      `Submitted: ${input.imageCount} ${imageLabel}`,
+      input.requesterEmail ? `Submitted by: ${input.requesterEmail}` : null,
+      "",
+      `Review photos: ${absoluteUrl("/admin/images")}`,
+      `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}`
+    ].filter((line): line is string => line !== null).join("\n"),
+    idempotencyKey: `venue-images-submitted-${input.submissionId}`
+  });
+}
+
+export async function notifyVenueImageReviewed(input: VenueImageReviewedNotification) {
+  if (!input.vendorEmail) return;
+
+  const approved = input.status === "approved";
+  await sendEmail({
+    to: input.vendorEmail,
+    subject: approved
+      ? `Your photo for ${input.venueName} is now live`
+      : `Your photo for ${input.venueName} has been reviewed`,
+    text: [
+      "Hello,",
+      "",
+      approved
+        ? `Your photo submission for ${input.venueName} has been approved and published on EverAft.`
+        : `Your photo submission for ${input.venueName} was not approved for publication at this stage. You can review the note below and submit a replacement from your vendor dashboard.`,
+      input.adminNotes ? `Admin note: ${input.adminNotes}` : null,
+      "",
+      `Vendor dashboard: ${absoluteUrl("/vendor")}`,
+      approved ? `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}` : null
+    ].filter((line): line is string => line !== null).join("\n"),
+    idempotencyKey: `venue-image-${input.status}-${input.submissionId}`
   });
 }
 

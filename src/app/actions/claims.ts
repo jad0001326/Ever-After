@@ -136,8 +136,6 @@ export async function approveVenueClaim(formData: FormData) {
     is_claimed: true,
     claim_status: "approved",
     listing_status: "claimed",
-    image_permission_status: "approved",
-    image_is_representative: false,
     claimed_by: claim.claimant_user_id,
     claimed_at: new Date().toISOString(),
     vendor_contact_email: claim.business_email,

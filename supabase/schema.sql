@@ -150,6 +150,45 @@ create table if not exists public.venue_images (
   created_at timestamptz not null default now()
 );
 
+-- Venue-owner uploads are held in a private Storage bucket and in this review
+-- queue. An administrator publishes approved files into public.venue_images.
+create table if not exists public.venue_image_submissions (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid not null references public.venues(id) on delete cascade,
+  submitted_by uuid not null references public.profiles(id) on delete cascade,
+  storage_path text not null unique check (
+    char_length(storage_path) between 5 and 500
+    and storage_path = btrim(storage_path)
+    and storage_path not like '%//%'
+  ),
+  original_file_name text not null check (
+    char_length(original_file_name) <= 240 and char_length(btrim(original_file_name)) >= 1
+  ),
+  mime_type text not null check (mime_type in ('image/jpeg', 'image/png', 'image/webp')),
+  file_size integer not null check (file_size > 0 and file_size <= 10485760),
+  alt_text text not null check (
+    char_length(alt_text) <= 300 and char_length(btrim(alt_text)) >= 3
+  ),
+  credit_text text check (
+    credit_text is null or (char_length(credit_text) <= 200 and char_length(btrim(credit_text)) >= 1)
+  ),
+  is_preferred boolean not null default false,
+  permission_confirmed boolean not null default false,
+  permission_confirmed_at timestamptz,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  admin_notes text check (admin_notes is null or char_length(admin_notes) <= 2000),
+  published_url text check (published_url is null or char_length(published_url) <= 2048),
+  published_image_id uuid references public.venue_images(id) on delete set null,
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint venue_image_submissions_permission_check check (
+    (permission_confirmed = true and permission_confirmed_at is not null)
+    or (permission_confirmed = false and permission_confirmed_at is null)
+  )
+);
+
 create table if not exists public.amenities (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
@@ -263,6 +302,19 @@ create index if not exists venues_featured_idx on public.venues (is_featured) wh
 create index if not exists venues_claim_status_idx on public.venues (claim_status, is_claimed);
 create index if not exists venues_invite_status_idx on public.venues (invite_status, invite_sent_at desc);
 create index if not exists venue_images_venue_sort_idx on public.venue_images (venue_id, sort_order);
+create index if not exists venue_image_submissions_venue_status_idx
+  on public.venue_image_submissions (venue_id, status, created_at desc);
+create index if not exists venue_image_submissions_review_queue_idx
+  on public.venue_image_submissions (status, created_at asc)
+  where status = 'pending';
+create index if not exists venue_image_submissions_submitter_idx
+  on public.venue_image_submissions (submitted_by, created_at desc);
+create index if not exists venue_image_submissions_published_image_idx
+  on public.venue_image_submissions (published_image_id)
+  where published_image_id is not null;
+create index if not exists venue_image_submissions_reviewer_idx
+  on public.venue_image_submissions (reviewed_by)
+  where reviewed_by is not null;
 create index if not exists venue_claims_status_idx on public.venue_claims (status, created_at desc);
 create index if not exists vendor_update_requests_status_idx on public.vendor_update_requests (status, created_at desc);
 create index if not exists enquiries_venue_status_idx on public.enquiries (venue_id, status, created_at desc);
@@ -294,6 +346,11 @@ create trigger vendors_set_updated_at
 before update on public.vendors
 for each row execute function public.set_updated_at();
 
+drop trigger if exists venue_image_submissions_set_updated_at on public.venue_image_submissions;
+create trigger venue_image_submissions_set_updated_at
+before update on public.venue_image_submissions
+for each row execute function public.set_updated_at();
+
 drop trigger if exists enquiries_set_updated_at on public.enquiries;
 create trigger enquiries_set_updated_at
 before update on public.enquiries
@@ -323,6 +380,7 @@ for each row execute function public.handle_new_user();
 alter table public.profiles enable row level security;
 alter table public.venues enable row level security;
 alter table public.venue_images enable row level security;
+alter table public.venue_image_submissions enable row level security;
 alter table public.amenities enable row level security;
 alter table public.vendors enable row level security;
 alter table public.vendor_users enable row level security;
@@ -342,6 +400,9 @@ grant select on public.venue_amenities to anon, authenticated;
 
 grant select, insert, update, delete on public.venues to authenticated;
 grant select, insert, update, delete on public.venue_images to authenticated;
+revoke all on public.venue_image_submissions from public, anon, authenticated;
+grant select, insert, update, delete on public.venue_image_submissions to authenticated;
+grant all on public.venue_image_submissions to service_role;
 grant select, insert, update, delete on public.amenities to authenticated;
 grant select, insert, update, delete on public.vendors to authenticated;
 grant select, insert, update, delete on public.vendor_users to authenticated;
@@ -389,6 +450,91 @@ create policy "Venue images are public" on public.venue_images for select using 
 );
 create policy "Admins manage venue images" on public.venue_images for all using (public.is_admin()) with check (public.is_admin());
 
+drop policy if exists "Venue owners create image submissions" on public.venue_image_submissions;
+drop policy if exists "Venue owners read image submissions" on public.venue_image_submissions;
+drop policy if exists "Venue owners delete image submissions" on public.venue_image_submissions;
+drop policy if exists "Admins manage image submissions" on public.venue_image_submissions;
+drop policy if exists "Authenticated read image submissions" on public.venue_image_submissions;
+drop policy if exists "Authenticated delete image submissions" on public.venue_image_submissions;
+drop policy if exists "Admins update image submissions" on public.venue_image_submissions;
+
+create policy "Venue owners create image submissions"
+on public.venue_image_submissions
+for insert
+to authenticated
+with check (
+  submitted_by = (select auth.uid())
+  and permission_confirmed = true
+  and permission_confirmed_at is not null
+  and status = 'pending'
+  and admin_notes is null
+  and published_url is null
+  and published_image_id is null
+  and reviewed_at is null
+  and reviewed_by is null
+  and array_length(string_to_array(storage_path, '/'), 1) = 3
+  and split_part(storage_path, '/', 1) = (select auth.uid()::text)
+  and split_part(storage_path, '/', 2) = venue_id::text
+  and exists (
+    select 1
+    from storage.objects
+    where storage.objects.bucket_id = 'venue-image-submissions'
+      and storage.objects.name = venue_image_submissions.storage_path
+  )
+  and exists (
+    select 1
+    from public.venues
+    where venues.id = venue_image_submissions.venue_id
+      and venues.claimed_by = (select auth.uid())
+      and venues.is_claimed = true
+      and venues.claim_status = 'approved'
+  )
+);
+
+create policy "Authenticated read image submissions"
+on public.venue_image_submissions
+for select
+to authenticated
+using (
+  (select public.is_admin())
+  or (
+    submitted_by = (select auth.uid())
+    and exists (
+      select 1
+      from public.venues
+      where venues.id = venue_image_submissions.venue_id
+        and venues.claimed_by = (select auth.uid())
+        and venues.is_claimed = true
+    )
+  )
+);
+
+create policy "Authenticated delete image submissions"
+on public.venue_image_submissions
+for delete
+to authenticated
+using (
+  (select public.is_admin())
+  or (
+    submitted_by = (select auth.uid())
+    and status in ('pending', 'rejected')
+    and exists (
+      select 1
+      from public.venues
+      where venues.id = venue_image_submissions.venue_id
+        and venues.claimed_by = (select auth.uid())
+        and venues.is_claimed = true
+    )
+  )
+);
+
+create policy "Admins update image submissions"
+on public.venue_image_submissions
+for update
+to authenticated
+using ((select public.is_admin()))
+with check ((select public.is_admin()));
+
 drop policy if exists "Amenities are public" on public.amenities;
 drop policy if exists "Admins manage amenities" on public.amenities;
 create policy "Amenities are public" on public.amenities for select using (true);
@@ -419,7 +565,21 @@ create policy "Admins manage venue claim audit log" on public.venue_claim_audit_
 drop policy if exists "Vendor users create update requests" on public.vendor_update_requests;
 drop policy if exists "Vendor users read own update requests" on public.vendor_update_requests;
 drop policy if exists "Admins manage vendor update requests" on public.vendor_update_requests;
-create policy "Vendor users create update requests" on public.vendor_update_requests for insert with check (vendor_user_id = auth.uid());
+create policy "Vendor users create update requests"
+on public.vendor_update_requests
+for insert
+to authenticated
+with check (
+  vendor_user_id = (select auth.uid())
+  and exists (
+    select 1
+    from public.venues
+    where venues.id = vendor_update_requests.venue_id
+      and venues.claimed_by = (select auth.uid())
+      and venues.is_claimed = true
+      and venues.claim_status = 'approved'
+  )
+);
 create policy "Vendor users read own update requests" on public.vendor_update_requests for select using (vendor_user_id = auth.uid() or public.is_admin());
 create policy "Admins manage vendor update requests" on public.vendor_update_requests for all using (public.is_admin()) with check (public.is_admin());
 
@@ -493,6 +653,104 @@ with check (bucket_id = 'venue-images' and public.is_admin());
 create policy "Admins delete venue images"
 on storage.objects for delete
 using (bucket_id = 'venue-images' and public.is_admin());
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'venue-image-submissions',
+  'venue-image-submissions',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Venue owners upload image submissions" on storage.objects;
+drop policy if exists "Venue owners read image submissions" on storage.objects;
+drop policy if exists "Venue owners delete image submissions" on storage.objects;
+drop policy if exists "Admins read image submissions" on storage.objects;
+drop policy if exists "Admins delete image submissions" on storage.objects;
+drop policy if exists "Authenticated read image submissions" on storage.objects;
+drop policy if exists "Authenticated delete image submissions" on storage.objects;
+
+create policy "Venue owners upload image submissions"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'venue-image-submissions'
+  and array_length(storage.foldername(name), 1) = 2
+  and (storage.foldername(name))[1] = (select auth.uid()::text)
+  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp')
+  and exists (
+    select 1
+    from public.venues
+    where venues.id::text = (storage.foldername(name))[2]
+      and venues.claimed_by = (select auth.uid())
+      and venues.is_claimed = true
+      and venues.claim_status = 'approved'
+  )
+);
+
+create policy "Authenticated read image submissions"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'venue-image-submissions' and (
+    (select public.is_admin())
+    or (
+      array_length(storage.foldername(name), 1) = 2
+      and (storage.foldername(name))[1] = (select auth.uid()::text)
+      and owner_id = (select auth.uid()::text)
+      and exists (
+        select 1
+        from public.venues
+        where venues.id::text = (storage.foldername(name))[2]
+          and venues.claimed_by = (select auth.uid())
+          and venues.is_claimed = true
+      )
+    )
+  )
+);
+
+create policy "Authenticated delete image submissions"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'venue-image-submissions' and (
+    (select public.is_admin())
+    or (
+      array_length(storage.foldername(name), 1) = 2
+      and (storage.foldername(name))[1] = (select auth.uid()::text)
+      and owner_id = (select auth.uid()::text)
+      and exists (
+        select 1
+        from public.venues
+        where venues.id::text = (storage.foldername(name))[2]
+          and venues.claimed_by = (select auth.uid())
+          and venues.is_claimed = true
+      )
+      and (
+        not exists (
+          select 1
+          from public.venue_image_submissions
+          where venue_image_submissions.storage_path = storage.objects.name
+        )
+        or exists (
+          select 1
+          from public.venue_image_submissions
+          where venue_image_submissions.storage_path = storage.objects.name
+            and venue_image_submissions.submitted_by = (select auth.uid())
+            and venue_image_submissions.status in ('pending', 'rejected')
+        )
+      )
+    )
+  )
+);
 
 -- Supplier applications and double-opt-in newsletter subscriptions are kept
 -- server-only. Public forms call trusted server actions which validate, rate

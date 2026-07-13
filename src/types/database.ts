@@ -232,6 +232,41 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["vendor_update_requests"]["Row"]>;
         Relationships: [];
       };
+      venue_image_submissions: {
+        Row: {
+          id: string;
+          venue_id: string;
+          submitted_by: string;
+          storage_path: string;
+          original_file_name: string;
+          mime_type: "image/jpeg" | "image/png" | "image/webp";
+          file_size: number;
+          alt_text: string;
+          credit_text: string | null;
+          is_preferred: boolean;
+          permission_confirmed: boolean;
+          permission_confirmed_at: string | null;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          published_url: string | null;
+          published_image_id: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["venue_image_submissions"]["Row"]> & {
+          venue_id: string;
+          submitted_by: string;
+          storage_path: string;
+          original_file_name: string;
+          mime_type: "image/jpeg" | "image/png" | "image/webp";
+          file_size: number;
+          alt_text: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["venue_image_submissions"]["Row"]>;
+        Relationships: [];
+      };
       venue_images: {
         Row: {
           id: string;
