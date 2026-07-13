@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { CookieSettingsButton } from "@/components/privacy/cookie-settings-button";
 
 export function Footer() {
   return (
@@ -34,6 +35,7 @@ export function Footer() {
             <Link className="transition hover:text-white" href="/about">About</Link>
             <Link className="transition hover:text-white" href="/contact">Contact</Link>
             <Link className="transition hover:text-white" href="/privacy">Privacy</Link>
+            <CookieSettingsButton />
             <Link className="transition hover:text-white" href="/terms">Terms</Link>
           </div>
         </div>
