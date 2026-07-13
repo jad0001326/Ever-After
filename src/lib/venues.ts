@@ -125,7 +125,7 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
 export async function getBudgetPlannerVenueListings(): Promise<PlannerListing[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"]).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(60);
+  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"]).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(1000);
   const priceOptions = await fetchPublishedPriceOptions(supabase, (data ?? []).map((venue) => venue.id));
   return (data ?? []).map((venue) => ({
     ...plannerListingFromRow(venue, priceOptions.get(venue.id) ?? [])
