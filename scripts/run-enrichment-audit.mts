@@ -12,7 +12,9 @@ import {
 import {
   isPromotablePublicBusinessEmail,
   normalizeCachedEmailFinding,
+  normalizePublishedPriceEvidence,
   researchOfficialWebsite,
+  WEBSITE_RESEARCH_VERSION,
   type WebsiteResearchResult
 } from "../src/lib/enrichment/research.ts";
 import { hasOfficialContactSource, isValidOutreachEmail, normalizeEmail } from "../src/lib/outreach-validation.ts";
@@ -151,10 +153,23 @@ const rawResearchResults = args.research ? await runResearch(venues, checkpointP
 const venueById = new Map(venues.map((venue) => [venue.id, venue]));
 const researchResults = rawResearchResults.map((result): WebsiteResearchResult => {
   const currentOfficialWebsite = venueById.get(result.targetId)?.official_website_url ?? result.officialWebsiteUrl;
+  const normalizedPrices = (result.publishedPrices ?? [])
+    .map((price) => normalizePublishedPriceEvidence(price))
+    .filter((price): price is NonNullable<typeof price> => price !== null);
+  const publishedPrices = [...new Map(normalizedPrices.map((price) => [
+    JSON.stringify([price.amount, price.basis, price.unit]),
+    price
+  ])).values()]
+    .sort((left, right) => left.amount - right.amount);
+  const explicitlyContactForPrice = result.pricingStatus === "contact_for_price" || (result.evidence ?? []).some((item) =>
+    item.sourceType === "official_pricing" && /enquire|contact|quote|brochure/i.test(item.notes)
+  );
   return {
     ...result,
     officialWebsiteUrl: currentOfficialWebsite,
-    emails: result.emails.map((finding) => normalizeCachedEmailFinding(finding, currentOfficialWebsite))
+    emails: result.emails.map((finding) => normalizeCachedEmailFinding(finding, currentOfficialWebsite)),
+    publishedPrices,
+    pricingStatus: publishedPrices.length ? "published" : explicitlyContactForPrice ? "contact_for_price" : "not_found"
   };
 });
 const proposals = buildProposals(venues, researchResults);
@@ -425,6 +440,7 @@ function venueNeedsResearch(venue: LiveVenue) {
 
 function checkpointIsFresh(result: WebsiteResearchResult, venue: LiveVenue | undefined) {
   if (!venue?.official_website_url || result.status !== "completed") return false;
+  if (result.researchVersion !== WEBSITE_RESEARCH_VERSION) return false;
   if (normalizedWebsiteKey(result.officialWebsiteUrl) !== normalizedWebsiteKey(venue.official_website_url)) return false;
   const checkedAt = Date.parse(result.checkedAt);
   return Number.isFinite(checkedAt) && Date.now() - checkedAt < 30 * 24 * 60 * 60 * 1000;
@@ -464,23 +480,40 @@ function buildProposals(liveVenues: LiveVenue[], research: WebsiteResearchResult
     if (result.enquiryPageUrl) proposals.push(proposal(venue, "business_enrichment_profiles", "enquiry_page_url", null, result.enquiryPageUrl, result.enquiryPageUrl, "high", "verified", "official_site", "Official enquiry page discovered during the crawl.", false, result));
     if (result.businessStatus !== "uncertain") proposals.push(proposal(venue, "business_enrichment_profiles", "business_status", "uncertain", result.businessStatus, result.pagesChecked[0] ?? venue.official_website_url!, "medium", "verified", "official_site_activity", "Business activity status inferred conservatively from the functioning official website and published booking/enquiry content.", true, result));
     if (result.pricingStatus !== "not_found") {
+      const comparableVenuePrices = result.publishedPrices
+        .filter((item) => ["total", "per_event"].includes(item.unit) && ["venue_hire", "exclusive_use", "wedding_package"].includes(item.basis))
+        .sort((left, right) => left.amount - right.amount);
+      const comparableVenuePrice = comparableVenuePrices[0];
+      const publishedBases = [...new Set(result.publishedPrices.map((item) => item.basis))];
+      const startingPricesByBasis = Object.fromEntries(publishedBases.map((basis) => [
+        basis,
+        Math.min(...result.publishedPrices.filter((item) => item.basis === basis).map((item) => item.amount))
+      ]));
       const pricing = {
         pricingStatus: result.pricingStatus,
         currency: result.publishedPrices.length ? "GBP" : null,
-        startingPrice: result.publishedPrices[0]?.amount ?? null,
-        maximumPublishedPrice: result.publishedPrices.at(-1)?.amount ?? null,
-        pricingBasis: "unspecified",
-        packages: result.publishedPrices.map((item) => ({ price: item.amount, context: item.context, sourceUrl: item.sourceUrl })),
+        startingPrice: comparableVenuePrice?.amount ?? null,
+        maximumPublishedPrice: comparableVenuePrices.at(-1)?.amount ?? null,
+        pricingBasis: publishedBases.length === 1 ? publishedBases[0] : publishedBases.length ? "mixed" : "unspecified",
+        startingPricesByBasis,
+        packages: result.publishedPrices.map((item) => ({
+          price: item.amount,
+          currency: item.currency,
+          basis: item.basis,
+          unit: item.unit,
+          qualifier: item.qualifier,
+          confidence: item.confidence,
+          context: item.context,
+          evidenceText: item.evidenceText,
+          extractionMethod: item.extractionMethod,
+          sourceUrl: item.sourceUrl
+        })),
         sourceUrl: result.publishedPrices[0]?.sourceUrl ?? result.pagesChecked[0] ?? venue.official_website_url,
         lastVerifiedAt: result.checkedAt
       };
-      proposals.push(proposal(venue, "business_enrichment_profiles", "structured_pricing", {}, pricing, String(pricing.sourceUrl), "medium", "verified", "official_site", "Structured copy of pricing visibly published by the business, or an official contact-for-price instruction.", true, result));
-      const comparableVenuePrice = result.publishedPrices.find((item) =>
-        /\b(?:venue\s+hire|wedding\s+package|package\s+price|per\s+event|exclusive\s+use)\b/i.test(item.context) &&
-        !/\bper\s+(?:person|head|guest|room|night|hour)\b/i.test(item.context)
-      );
+      proposals.push(proposal(venue, "business_enrichment_profiles", "structured_pricing", {}, pricing, String(pricing.sourceUrl), "medium", "verified", "official_site_classified_pricing", "Classified pricing copied from exact official-site evidence, or an official contact-for-price instruction; each amount retains its basis and unit.", true, result));
       if (venue.price_from == null && comparableVenuePrice) {
-        proposals.push(proposal(venue, "venues", "price_from", null, comparableVenuePrice.amount, comparableVenuePrice.sourceUrl, "medium", "verified", "official_site", "Explicit comparable venue-hire, exclusive-use or wedding-package price found on an official page; requires human context review before applying.", true, result));
+        proposals.push(proposal(venue, "venues", "price_from", null, comparableVenuePrice.amount, comparableVenuePrice.sourceUrl, comparableVenuePrice.confidence, "verified", `official_site_${comparableVenuePrice.extractionMethod}`, `Explicit ${comparableVenuePrice.basis.replaceAll("_", " ")} total found in exact official-site evidence; requires human source review before applying.`, true, result));
       }
     }
   }

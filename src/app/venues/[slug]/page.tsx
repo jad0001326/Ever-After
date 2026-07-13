@@ -7,9 +7,11 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { EnquiryForm } from "@/components/venue/enquiry-form";
 import { FavouriteButton } from "@/components/venue/favourite-button";
 import { VenueGallery } from "@/components/venue/venue-gallery";
+import { VenuePricingSection } from "@/components/venue/venue-pricing-section";
 import { ButtonLink } from "@/components/ui/button";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
-import { absoluteUrl, formatCapacity, formatPriceRange } from "@/lib/utils";
+import { getPrimaryVenuePriceDisplay } from "@/lib/venue-pricing";
+import { absoluteUrl, formatCapacity } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueListingBySlug } from "@/lib/venues";
 
@@ -51,7 +53,7 @@ export default async function VenuePage({ params }: PageProps) {
         .maybeSingle()
     : null;
 
-  const price = formatPriceRange(venue.priceFrom, venue.priceTo);
+  const price = getPrimaryVenuePriceDisplay(venue.priceOptions);
   const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venue.name}, ${venue.town}, ${venue.region}, Scotland`)}`;
 
   const jsonLd = {
@@ -142,8 +144,10 @@ export default async function VenuePage({ params }: PageProps) {
             </div>
           </section>
 
+          <VenuePricingSection priceOptions={venue.priceOptions} />
+
           <section className="grid gap-4 sm:grid-cols-3">
-            {price ? <InfoTile title="Pricing" value={price} /> : null}
+            <InfoTile title="Pricing" value={price?.amountLabel ?? "Ask venue for current pricing"} />
             <InfoTile title="Capacity" value={formatCapacity(venue.capacityMin, venue.capacityMax)} />
             <InfoTile title="Location" value={`${venue.town}, Scotland`} />
           </section>

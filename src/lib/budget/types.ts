@@ -78,5 +78,16 @@ export type PlannerListing = {
   priceFromPence: number | null;
   priceToPence: number | null;
   pricingStatus: ImportedPriceType;
+  pricingKind?: string | null;
+  pricingLabel?: string | null;
+  pricingUnit?: string | null;
+  priceQualifier?: string | null;
+  includedGuests?: number | null;
+  pricingDescription?: string | null;
+  taxLabel?: string | null;
+  minimumNights?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  verifiedAt?: string | null;
 };
 

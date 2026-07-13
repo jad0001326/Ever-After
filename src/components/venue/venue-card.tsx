@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Calculator, MapPin, UsersRound } from "lucide-react";
 import type { Venue } from "@/types/venue";
-import { formatCapacity, formatPriceRange } from "@/lib/utils";
+import { getPrimaryVenuePriceDisplay } from "@/lib/venue-pricing";
+import { formatCapacity } from "@/lib/utils";
 
 export function VenueCard({ venue, priority = false }: { venue: Venue; priority?: boolean }) {
-  const price = formatPriceRange(venue.priceFrom, venue.priceTo);
+  const price = getPrimaryVenuePriceDisplay(venue.priceOptions);
 
   return (
     <article className="group h-full overflow-hidden rounded-3xl border border-[var(--line)] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/10">
@@ -48,7 +49,7 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
             </span>
           </div>
           <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
-            <span>{price ? <><span className="block text-[10px] uppercase tracking-[0.18em] text-[#8a806f]">From</span><span className="text-lg font-semibold">{price}</span></> : <span className="text-xs text-[var(--muted)]">Price unavailable</span>}</span>
+            <span>{price ? <><span className="block text-[10px] uppercase tracking-[0.18em] text-[#8a806f]">{price.kindLabel}</span><span className="text-lg font-semibold">{price.amountLabel}</span>{price.materialQualifierLabels.length > 0 ? <span className="mt-1 block max-w-52 text-[11px] leading-4 text-[var(--muted)]">{price.materialQualifierLabels.join(" · ")}</span> : null}</> : <span className="text-xs text-[var(--muted)]">Pricing being confirmed</span>}</span>
             <Link className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-full bg-[#f4efe7] px-3 text-xs font-semibold text-[var(--brand)] transition hover:bg-[#e9dece]" href={`/wedding-budget-planner?venue=${encodeURIComponent(venue.id)}`}><Calculator size={15} /> Add to budget</Link>
           </div>
         </div>

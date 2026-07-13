@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { VenueForm } from "@/components/admin/venue-form";
+import { VenuePricingManager, type AdminVenuePriceOption } from "@/components/admin/venue-pricing-manager";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,11 +15,16 @@ export default async function EditVenuePage({ params, searchParams }: { params: 
   const { id } = await params;
   const { message } = await searchParams;
   const supabase = await createClient();
-  const [{ data: venue }, { data: amenities }, { data: venueAmenities }, { data: images }] = await Promise.all([
+  const [{ data: venue }, { data: amenities }, { data: venueAmenities }, { data: images }, { data: priceOptions }] = await Promise.all([
     supabase!.from("venues").select("*").eq("id", id).single(),
     supabase!.from("amenities").select("id, slug, name").order("name", { ascending: true }),
     supabase!.from("venue_amenities").select("amenity_id").eq("venue_id", id),
-    supabase!.from("venue_images").select("id, url, alt, sort_order").eq("venue_id", id).order("sort_order", { ascending: true })
+    supabase!.from("venue_images").select("id, url, alt, sort_order").eq("venue_id", id).order("sort_order", { ascending: true }),
+    supabase!
+      .from("venue_price_options")
+      .select("id, kind, label, amount_from_pence, amount_to_pence, pricing_unit, price_qualifier, included_guests, season_label, day_label, description, tax_label, minimum_nights, valid_from, valid_to, source_type, source_url, source_title, evidence_text, verified_at, status, display_priority")
+      .eq("venue_id", id)
+      .order("display_priority", { ascending: true })
   ]);
 
   if (!venue) notFound();
@@ -36,6 +42,7 @@ export default async function EditVenuePage({ params, searchParams }: { params: 
       {message ? <p className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
       <div className="mt-8">
         <VenueForm venue={venue} amenities={amenityOptions} />
+        <VenuePricingManager venueId={venue.id} venueSlug={venue.slug} options={(priceOptions ?? []) as AdminVenuePriceOption[]} />
         {images && images.length > 0 ? (
           <div className="mt-8 rounded-3xl border border-[var(--line)] bg-white p-5">
             <h2 className="font-display text-3xl font-semibold">Current images</h2>

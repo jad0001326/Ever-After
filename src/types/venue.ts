@@ -14,6 +14,44 @@ export type VenueImage = {
   sortOrder: number;
 };
 
+export type VenuePriceKind =
+  | "venue_hire"
+  | "exclusive_use"
+  | "wedding_package"
+  | "per_person"
+  | "ceremony_fee"
+  | "catering"
+  | "accommodation"
+  | "minimum_spend"
+  | "quote_required"
+  | "other";
+
+export type VenuePricingUnit = "total" | "per_person" | "per_night" | "per_room" | "per_event" | "per_hour" | "unspecified" | "quote";
+export type VenuePriceQualifier = "from" | "fixed" | "range" | "quote";
+
+export type VenuePriceOption = {
+  id: string;
+  venueId: string;
+  kind: VenuePriceKind | string;
+  label: string;
+  amountFromPence: number | null;
+  amountToPence: number | null;
+  currency: string;
+  pricingUnit: VenuePricingUnit | string;
+  priceQualifier: VenuePriceQualifier | string;
+  includedGuests: number | null;
+  seasonLabel: string | null;
+  dayLabel: string | null;
+  description: string | null;
+  taxLabel: string | null;
+  minimumNights: number | null;
+  validFrom: string | null;
+  validTo: string | null;
+  sourceUrl: string | null;
+  verifiedAt: string | null;
+  displayPriority: number;
+};
+
 export type Venue = {
   id: string;
   slug: string;
@@ -26,6 +64,7 @@ export type Venue = {
   description: string;
   priceFrom: number | null;
   priceTo: number | null;
+  priceOptions?: VenuePriceOption[];
   capacityMin: number;
   capacityMax: number;
   heroImage: string;
