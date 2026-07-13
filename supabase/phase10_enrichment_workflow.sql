@@ -359,7 +359,10 @@ begin
     raise exception 'Target table is not allowlisted';
   end if;
 
-  if v_current is distinct from v_proposal.previous_value then
+  -- Target columns that are SQL NULL are read above as JSON null. Staged
+  -- proposals preserve that original value as SQL NULL, so normalize the
+  -- proposal side before the optimistic-concurrency comparison.
+  if v_current is distinct from coalesce(v_proposal.previous_value, 'null'::jsonb) then
     update public.enrichment_field_proposals
     set status = 'conflict',
         conflict_reason = 'Current value no longer matches the approved previous value.'
