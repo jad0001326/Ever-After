@@ -78,7 +78,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
           email: z.string(),
           contact_source_url: z.string().nullable()
         })),
-        excluded: z.object({ missing_email: z.number().int(), invalid_email: z.number().int(), duplicate_email: z.number().int(), suppressed: z.number().int(), unverified_contact: z.number().int(), over_limit: z.number().int() })
+        excluded: z.object({ missing_email: z.number().int(), invalid_email: z.number().int(), duplicate_email: z.number().int(), suppressed: z.number().int(), existing_outreach: z.number().int(), unverified_contact: z.number().int(), over_limit: z.number().int() })
       },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Checking eligible venues…", "openai/toolInvocation/invoked": "Eligible venues ready" }
@@ -107,6 +107,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
           invalid_email: result.excluded.invalidEmail,
           duplicate_email: result.excluded.duplicateEmail,
           suppressed: result.excluded.suppressed,
+          existing_outreach: result.excluded.existingOutreach,
           unverified_contact: result.excluded.unverifiedContact,
           over_limit: result.excluded.overLimit
         }

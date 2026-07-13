@@ -404,6 +404,218 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      enrichment_runs: {
+        Row: {
+          id: string;
+          mode: "dry_run" | "review" | "apply" | "rollback";
+          status: "pending" | "running" | "completed" | "failed" | "cancelled";
+          source_fingerprint: string;
+          scope: Json;
+          options: Json;
+          summary: Json;
+          external_usage: Json;
+          created_by: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["enrichment_runs"]["Row"]> & {
+          source_fingerprint: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["enrichment_runs"]["Row"]>;
+        Relationships: [];
+      };
+      enrichment_records: {
+        Row: {
+          id: string;
+          run_id: string;
+          entity_type: "venue" | "vendor" | "supplier_application";
+          entity_id: string;
+          entity_snapshot: Json;
+          eligibility_blockers: string[];
+          quality_blockers: string[];
+          missing_fields: string[];
+          business_status: "active" | "likely_active" | "temporarily_closed" | "closed" | "rebranded" | "duplicate" | "uncertain";
+          research_status: "pending" | "processing" | "researched" | "verified" | "manual_review" | "failed" | "skipped";
+          requires_manual_review: boolean;
+          before_outreach_eligible: boolean;
+          after_outreach_eligible: boolean | null;
+          attempt_count: number;
+          next_attempt_at: string | null;
+          locked_by: string | null;
+          locked_at: string | null;
+          last_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["enrichment_records"]["Row"]> & {
+          run_id: string;
+          entity_type: "venue" | "vendor" | "supplier_application";
+          entity_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["enrichment_records"]["Row"]>;
+        Relationships: [];
+      };
+      business_enrichment_profiles: {
+        Row: {
+          entity_type: "venue" | "vendor" | "supplier_application";
+          entity_id: string;
+          trading_name: string | null;
+          contact_page_url: string | null;
+          enquiry_page_url: string | null;
+          public_email: string | null;
+          enquiries_email: string | null;
+          wedding_email: string | null;
+          sales_email: string | null;
+          phone: string | null;
+          full_address: string | null;
+          address_line_1: string | null;
+          address_line_2: string | null;
+          town: string | null;
+          county_region: string | null;
+          country: string | null;
+          postcode: string | null;
+          instagram_url: string | null;
+          facebook_url: string | null;
+          tiktok_url: string | null;
+          linkedin_url: string | null;
+          services: Json;
+          areas_served: Json;
+          structured_pricing: Json;
+          business_status: "active" | "likely_active" | "temporarily_closed" | "closed" | "rebranded" | "duplicate" | "uncertain";
+          last_verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["business_enrichment_profiles"]["Row"]> & {
+          entity_type: "venue" | "vendor" | "supplier_application";
+          entity_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["business_enrichment_profiles"]["Row"]>;
+        Relationships: [];
+      };
+      enrichment_field_proposals: {
+        Row: {
+          id: string;
+          enrichment_record_id: string;
+          target_table: "venues" | "business_enrichment_profiles";
+          target_field: string;
+          previous_value: Json | null;
+          proposed_value: Json;
+          source_url: string;
+          source_title: string;
+          source_type: "official_website" | "official_contact" | "official_pricing" | "official_social" | "official_register" | "tourism_body" | "trade_body" | "reputable_directory" | "internal_record" | "manual_research";
+          source_accessed_at: string;
+          confidence: "high" | "medium" | "low";
+          verification_status: "verified" | "likely_valid" | "unverified" | "invalid" | "not_applicable";
+          verification_method: string | null;
+          reason: string;
+          status: "pending" | "approved" | "rejected" | "applied" | "rolled_back" | "conflict";
+          conflict_reason: string | null;
+          proposal_fingerprint: string;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          applied_at: string | null;
+          rolled_back_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["enrichment_field_proposals"]["Row"]> & {
+          enrichment_record_id: string;
+          target_table: "venues" | "business_enrichment_profiles";
+          target_field: string;
+          proposed_value: Json;
+          source_url: string;
+          source_title: string;
+          source_type: Database["public"]["Tables"]["enrichment_field_proposals"]["Row"]["source_type"];
+          source_accessed_at: string;
+          confidence: "high" | "medium" | "low";
+          reason: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["enrichment_field_proposals"]["Row"]>;
+        Relationships: [];
+      };
+      enrichment_email_checks: {
+        Row: {
+          id: string;
+          enrichment_record_id: string;
+          email: string;
+          normalized_email: string;
+          syntax_valid: boolean;
+          domain: string | null;
+          domain_exists: boolean | null;
+          has_mx: boolean | null;
+          mx_hosts: Json;
+          is_disposable: boolean | null;
+          is_role_based: boolean | null;
+          known_hard_bounce: boolean | null;
+          is_suppressed: boolean | null;
+          is_opted_out: boolean | null;
+          has_prior_outreach: boolean | null;
+          domain_associated: boolean | null;
+          status: "verified" | "likely_valid" | "unverified" | "invalid" | "hard_bounce" | "suppressed" | "opted_out" | "not_found";
+          verification_method: string | null;
+          details: Json;
+          checked_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["enrichment_email_checks"]["Row"]> & {
+          enrichment_record_id: string;
+          email: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["enrichment_email_checks"]["Row"]>;
+        Relationships: [];
+      };
+      enrichment_duplicate_candidates: {
+        Row: {
+          id: string;
+          run_id: string;
+          left_entity_type: "venue" | "vendor" | "supplier_application";
+          left_entity_id: string;
+          right_entity_type: "venue" | "vendor" | "supplier_application";
+          right_entity_id: string;
+          match_reasons: Json;
+          match_score: number;
+          canonical_entity_type: "venue" | "vendor" | "supplier_application" | null;
+          canonical_entity_id: string | null;
+          status: "pending" | "confirmed" | "not_duplicate" | "merged";
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["enrichment_duplicate_candidates"]["Row"]> & {
+          run_id: string;
+          left_entity_type: "venue" | "vendor" | "supplier_application";
+          left_entity_id: string;
+          right_entity_type: "venue" | "vendor" | "supplier_application";
+          right_entity_id: string;
+          match_score: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["enrichment_duplicate_candidates"]["Row"]>;
+        Relationships: [];
+      };
+      enrichment_change_log: {
+        Row: {
+          id: string;
+          proposal_id: string;
+          run_id: string;
+          enrichment_record_id: string;
+          action: "applied" | "rolled_back";
+          target_table: "venues" | "business_enrichment_profiles";
+          target_field: string;
+          previous_value: Json | null;
+          new_value: Json | null;
+          changed_by: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       budget_plans: {
         Row: { id: string; user_id: string; name: string; scenario_name: string; currency: "GBP" | "EUR" | "USD"; total_budget_pence: number; plan_json: Json; created_at: string; updated_at: string; };
         Insert: { id: string; user_id: string; name: string; scenario_name?: string; currency?: "GBP" | "EUR" | "USD"; total_budget_pence?: number; plan_json: Json; created_at?: string; updated_at?: string; };
@@ -412,7 +624,20 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      apply_enrichment_proposal: {
+        Args: { p_proposal_id: string; p_reviewer_id: string };
+        Returns: Database["public"]["Tables"]["enrichment_field_proposals"]["Row"];
+      };
+      rollback_enrichment_proposal: {
+        Args: { p_proposal_id: string; p_reviewer_id: string };
+        Returns: Database["public"]["Tables"]["enrichment_field_proposals"]["Row"];
+      };
+      claim_enrichment_records: {
+        Args: { p_run_id: string; p_worker_id: string; p_limit?: number };
+        Returns: Database["public"]["Tables"]["enrichment_records"]["Row"][];
+      };
+    };
     Enums: {
       venue_status: "draft" | "published";
       enquiry_status: "new" | "contacted" | "converted" | "closed";

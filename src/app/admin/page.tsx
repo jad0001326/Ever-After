@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Archive, CheckCircle2, ClipboardList, Edit, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud } from "lucide-react";
+import { Archive, CheckCircle2, ClipboardList, DatabaseZap, Edit, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud } from "lucide-react";
 import { bulkUpdateVenues } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -78,6 +78,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <ButtonLink href="/admin/outreach" variant="secondary">
             <Send size={17} /> Outreach
           </ButtonLink>
+          <ButtonLink href="/admin/enrichment" variant="secondary">
+            <DatabaseZap size={17} /> Enrichment review
+          </ButtonLink>
           <ButtonLink href="/admin/enquiries" variant="secondary">
             <MessageSquareText size={17} /> Leads
           </ButtonLink>
@@ -105,7 +108,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </section>
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <QualityPill label="Missing vendor email" value={stats.missingVendorEmail} href="/admin?quality=missing_vendor_email" />
+        <QualityPill label="Missing vendor email" value={stats.missingVendorEmail} href="/admin/enrichment?blocker=missing_email" />
         <QualityPill label="Representative image" value={stats.representativeImage} href="/admin?quality=representative_image" />
         <QualityPill label="Unclaimed" value={stats.unclaimed} href="/admin?quality=unclaimed" />
         <QualityPill label="Invite not sent" value={stats.inviteNotSent} href="/admin?invite=not_sent" />

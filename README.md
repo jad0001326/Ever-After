@@ -250,6 +250,37 @@ python scripts/research_venues.py --urls-file inputs/venue_urls.txt --output out
 
 The CSV includes starter fields such as venue name, website, phone, public email, contact page, town, region, address, Google Maps URL, source URL, confidence, and notes. It deliberately does not auto-copy venue descriptions or images.
 
+## Outreach enrichment audit
+
+Run the catalogue-wide audit in dry-run mode before proposing any database change:
+
+```powershell
+npm.cmd run enrichment:audit
+```
+
+Add `--research` to crawl only official business websites, respect `robots.txt`, collect exact source pages, and run syntax plus DNS/MX checks on public email addresses:
+
+```powershell
+npm.cmd run enrichment:audit -- --research --concurrency=4 --max-pages=5
+```
+
+The command is deliberately read-only. It writes review artifacts under `outputs/enrichment-audit/`, never sends email, and rejects an `--apply` flag. Research is resumable through its checkpoint file and uses bounded concurrency, per-host delays, timeouts, and retries.
+
+Without `SUPABASE_SERVICE_ROLE_KEY`, the public venue catalogue is still audited, but protected supplier applications, suppressions, unsubscribe/bounce state, and campaign history are reported as unavailable. Those checks must be available before any record is treated as safe to send. Apply `supabase/phase10_enrichment_workflow.sql` only after reviewing the first dry-run report; it creates the private evidence, proposal, duplicate, verification, change-log, and rollback workflow used by `/admin/enrichment`.
+
+After the dry run has been reviewed and phase 10 has been applied, stage its evidence in the private admin queue without changing any business record:
+
+```powershell
+npm.cmd run enrichment:stage -- --from=outputs/enrichment-audit/<run>/audit.json --confirm-stage-review
+```
+
+Staging is fingerprinted and idempotent. Replaying the same report returns the existing run. Business-field changes still require an authenticated admin to approve and apply individual proposals in `/admin/enrichment`; rollback is available only when the live value still matches the value applied by that proposal.
+
+The audit keeps two concepts separate:
+
+- Current outreach eligibility mirrors the sender: published, unclaimed Scottish venue; correct invite state; valid public business email; exact official-site source; no duplicate email; no suppression; campaign limit respected.
+- Broader data quality includes pricing, coordinates, amenities, representative imagery, freshness, business activity, and possible duplicate businesses. Missing price or representative imagery does not by itself block outreach.
+
 ## Deployment
 
 1. Push the repo to GitHub.

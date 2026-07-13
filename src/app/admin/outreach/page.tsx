@@ -20,7 +20,7 @@ export default async function AdminOutreachPage({
   const kind: OutreachCampaignKind = requestedKind === "follow_up" ? "follow_up" : "initial_invite";
   let candidateResult: OutreachCandidateResult = {
     candidates: [],
-    excluded: { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, unverifiedContact: 0, overLimit: 0 }
+    excluded: { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, overLimit: 0 }
   };
   let campaigns: CampaignListItem[] = [];
   let loadError: string | null = null;
@@ -60,7 +60,7 @@ export default async function AdminOutreachPage({
       <div className="mb-8 flex flex-wrap gap-3 rounded-3xl border border-[var(--line)] bg-white p-4">
         <Link className={kind === "initial_invite" ? activePill : inactivePill} href="/admin/outreach?kind=initial_invite">First invitations</Link>
         <Link className={kind === "follow_up" ? activePill : inactivePill} href="/admin/outreach?kind=follow_up">Follow-ups after 7 days</Link>
-        <Link className={inactivePill} href="/admin?quality=missing_vendor_email">Find missing emails</Link>
+        <Link className={inactivePill} href="/admin/enrichment?blocker=missing_email">Find missing emails</Link>
       </div>
 
       {!loadError ? (

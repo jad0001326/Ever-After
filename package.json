@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
+    "enrichment:stage": "node scripts/stage-enrichment-review.mts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

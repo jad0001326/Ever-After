@@ -5,6 +5,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { emailNotificationsEnabled, sendEmailBatch, type EmailInput } from "@/lib/email";
 import { buildOutreachEmail, type OutreachCopy } from "@/lib/outreach-email";
 import { approvalFingerprint, createOutreachApprovalToken, verifyOutreachApprovalToken } from "@/lib/outreach-approval";
+import {
+  hasOfficialContactSource,
+  isTrustedVenueContact,
+  isValidOutreachEmail,
+  normalizeEmail,
+  validPublicUrl
+} from "@/lib/outreach-validation";
 import type {
   MissingOutreachContact,
   OutreachAudienceFilter,
@@ -33,7 +40,6 @@ type VenueRow = Pick<
   | "invite_sent_at"
 >;
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const maxCampaignRecipients = 100;
 
 export type OutreachCandidateResult = {
@@ -43,6 +49,7 @@ export type OutreachCandidateResult = {
     missingEmail: number;
     duplicateEmail: number;
     suppressed: number;
+    existingOutreach: number;
     unverifiedContact: number;
     overLimit: number;
   };
@@ -112,6 +119,35 @@ export async function listOutreachCandidates(
   });
   const normalizedEmails = prepared.map((item) => item.email).filter(isValidOutreachEmail);
 
+  const existingOutreachVenueIds = new Set<string>();
+  if (filter.kind === "initial_invite" && venues.length > 0) {
+    const venueIds = venues.map((venue) => venue.id);
+    const { data: permanentHistory, error: permanentHistoryError } = await supabase
+      .from("outreach_campaign_recipients")
+      .select("venue_id")
+      .in("venue_id", venueIds)
+      .in("status", ["sent", "delivered", "replied"]);
+    if (permanentHistoryError) throw new Error(`Could not check completed outreach history: ${permanentHistoryError.message}`);
+    for (const row of permanentHistory ?? []) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+
+    const { data: activeCampaigns, error: campaignHistoryError } = await supabase
+      .from("outreach_campaigns")
+      .select("id")
+      .in("status", ["draft", "sending"]);
+    if (campaignHistoryError) throw new Error(`Could not check campaign history: ${campaignHistoryError.message}`);
+    const campaignIds = (activeCampaigns ?? []).map((campaign) => campaign.id);
+    if (campaignIds.length > 0) {
+      const { data: existingRows, error: existingError } = await supabase
+        .from("outreach_campaign_recipients")
+        .select("venue_id")
+        .in("campaign_id", campaignIds)
+        .in("venue_id", venueIds)
+        .eq("status", "pending");
+      if (existingError) throw new Error(`Could not check existing outreach history: ${existingError.message}`);
+      for (const row of existingRows ?? []) if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
+    }
+  }
+
   const suppressed = new Set<string>();
   if (normalizedEmails.length > 0) {
     const { data: rows, error: suppressionError } = await supabase
@@ -124,7 +160,7 @@ export async function listOutreachCandidates(
 
   const candidates: OutreachCandidate[] = [];
   const seen = new Set<string>();
-  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, unverifiedContact: 0, overLimit: 0 };
+  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, overLimit: 0 };
 
   for (const item of prepared) {
     const { venue, email } = item;
@@ -147,6 +183,10 @@ export async function listOutreachCandidates(
     seen.add(email);
     if (suppressed.has(email)) {
       excluded.suppressed += 1;
+      continue;
+    }
+    if (existingOutreachVenueIds.has(venue.id)) {
+      excluded.existingOutreach += 1;
       continue;
     }
     if (candidates.length >= limit) {
@@ -386,9 +426,118 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
     if (recipientError) throw new Error(`Could not load campaign recipients: ${recipientError.message}`);
     const recipients = (rows ?? []) as CampaignRecipient[];
 
-    const suppressedEmails = await currentSuppressions(recipients.map((recipient) => recipient.normalized_email));
-    const suppressedRecipients = recipients.filter((recipient) => suppressedEmails.has(recipient.normalized_email));
-    const sendable = recipients.filter((recipient) => !suppressedEmails.has(recipient.normalized_email));
+    const venueIds = recipients.map((recipient) => recipient.venue_id).filter((id): id is string => Boolean(id));
+    const currentVenueById = new Map<string, {
+      id: string;
+      slug: string;
+      name: string;
+      town: string;
+      region: string;
+      country: string;
+      is_claimed: boolean;
+      listing_status: string;
+      invite_status: string;
+      invite_sent_at: string | null;
+      vendor_contact_email: string | null;
+      vendor_contact_source_url: string | null;
+      official_website_url: string | null;
+    }>();
+    if (venueIds.length > 0) {
+      const { data: currentVenues, error: currentVenueError } = await supabase
+        .from("venues")
+        .select("id, slug, name, town, region, country, is_claimed, listing_status, invite_status, invite_sent_at, vendor_contact_email, vendor_contact_source_url, official_website_url")
+        .in("id", venueIds);
+      if (currentVenueError) throw new Error(`Could not re-check venue eligibility: ${currentVenueError.message}`);
+      for (const venue of currentVenues ?? []) currentVenueById.set(venue.id, venue);
+    }
+
+    const conflictingVenueIds = new Set<string>();
+    if (venueIds.length > 0) {
+      if (locked.kind === "initial_invite") {
+        const { data: completedConflicts, error: completedConflictError } = await supabase
+          .from("outreach_campaign_recipients")
+          .select("venue_id")
+          .neq("campaign_id", campaignId)
+          .in("venue_id", venueIds)
+          .in("status", ["sent", "delivered", "replied"]);
+        if (completedConflictError) throw new Error(`Could not re-check completed outreach: ${completedConflictError.message}`);
+        for (const conflict of completedConflicts ?? []) if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+      }
+
+      const { data: otherCampaigns, error: otherCampaignError } = await supabase
+        .from("outreach_campaigns")
+        .select("id")
+        .neq("id", campaignId)
+        .in("status", ["draft", "sending"]);
+      if (otherCampaignError) throw new Error(`Could not re-check concurrent campaigns: ${otherCampaignError.message}`);
+      const otherCampaignIds = (otherCampaigns ?? []).map((otherCampaign) => otherCampaign.id);
+      if (otherCampaignIds.length > 0) {
+        const { data: conflicts, error: conflictError } = await supabase
+          .from("outreach_campaign_recipients")
+          .select("venue_id")
+          .in("campaign_id", otherCampaignIds)
+          .in("venue_id", venueIds)
+          .eq("status", "pending");
+        if (conflictError) throw new Error(`Could not re-check concurrent outreach: ${conflictError.message}`);
+        for (const conflict of conflicts ?? []) if (conflict.venue_id) conflictingVenueIds.add(conflict.venue_id);
+      }
+    }
+
+    const audienceFilter = locked.audience_filter && typeof locked.audience_filter === "object" && !Array.isArray(locked.audience_filter)
+      ? locked.audience_filter as Record<string, Json>
+      : {};
+    const audienceCountry = typeof audienceFilter.country === "string" && audienceFilter.country.trim() ? audienceFilter.country.trim() : "Scotland";
+    const audienceRegion = typeof audienceFilter.region === "string" && audienceFilter.region.trim() ? audienceFilter.region.trim().toLowerCase() : null;
+    const followUpDays = clampInteger(typeof audienceFilter.followUpAfterDays === "number" ? audienceFilter.followUpAfterDays : 7, 1, 90);
+    const followUpCutoff = Date.now() - followUpDays * 24 * 60 * 60 * 1000;
+    const noLongerEligible = new Map<string, string>();
+    for (const recipient of recipients) {
+      if (!recipient.venue_id) {
+        noLongerEligible.set(recipient.id, "The venue record no longer exists.");
+        continue;
+      }
+      const venue = currentVenueById.get(recipient.venue_id);
+      if (!venue) {
+        noLongerEligible.set(recipient.id, "The venue record could not be reloaded.");
+      } else if (venue.is_claimed || venue.listing_status !== "published") {
+        noLongerEligible.set(recipient.id, "The venue is claimed or no longer published.");
+      } else if (venue.country !== audienceCountry || (audienceRegion && venue.region.toLowerCase() !== audienceRegion)) {
+        noLongerEligible.set(recipient.id, "The venue moved outside the approved campaign audience.");
+      } else if (venue.slug !== recipient.venue_slug || venue.name !== recipient.business_name || venue.town !== recipient.town || venue.region !== recipient.region) {
+        noLongerEligible.set(recipient.id, "Venue identity or personalisation fields changed after the campaign draft was created.");
+      } else if (venue.invite_status !== (locked.kind === "follow_up" ? "sent" : "not_sent")) {
+        noLongerEligible.set(recipient.id, "The venue invite state changed after the campaign draft was created.");
+      } else if (locked.kind === "follow_up" && (!venue.invite_sent_at || Date.parse(venue.invite_sent_at) >= followUpCutoff)) {
+        noLongerEligible.set(recipient.id, "The venue is no longer old enough for the approved follow-up interval.");
+      } else if (normalizeEmail(venue.vendor_contact_email ?? "") !== recipient.normalized_email) {
+        noLongerEligible.set(recipient.id, "The venue contact email changed after the campaign draft was created.");
+      } else if (!isTrustedVenueContact(recipient.normalized_email, venue.vendor_contact_source_url, venue)) {
+        noLongerEligible.set(recipient.id, "The current contact no longer has a trusted official-site source.");
+      } else if (conflictingVenueIds.has(recipient.venue_id)) {
+        noLongerEligible.set(recipient.id, "Another campaign already contains active or completed outreach for this venue.");
+      }
+    }
+    if (noLongerEligible.size > 0) {
+      const eligibilityUpdates = await Promise.all(
+        recipients
+          .filter((recipient) => noLongerEligible.has(recipient.id))
+          .map((recipient) =>
+            supabase
+              .from("outreach_campaign_recipients")
+              .update({ status: "failed", error_message: noLongerEligible.get(recipient.id)! })
+              .eq("id", recipient.id)
+              .eq("status", "pending")
+          )
+      );
+      const eligibilityError = eligibilityUpdates.find((result) => result.error)?.error;
+      if (eligibilityError) throw new Error(`Could not record changed eligibility: ${eligibilityError.message}`);
+    }
+
+    const currentlyEligibleRecipients = recipients.filter((recipient) => !noLongerEligible.has(recipient.id));
+
+    const suppressedEmails = await currentSuppressions(currentlyEligibleRecipients.map((recipient) => recipient.normalized_email));
+    const suppressedRecipients = currentlyEligibleRecipients.filter((recipient) => suppressedEmails.has(recipient.normalized_email));
+    const sendable = currentlyEligibleRecipients.filter((recipient) => !suppressedEmails.has(recipient.normalized_email));
 
     if (suppressedRecipients.length > 0) {
       const suppressionUpdates = await Promise.all(
@@ -797,40 +946,6 @@ function validateContactSourceUrl(sourceValue: string, websiteValue: string | nu
   return sourceUrl;
 }
 
-function isTrustedVenueContact(
-  email: string,
-  sourceValue: string | null | undefined,
-  venue: Pick<VenueRow, "official_website_url">
-) {
-  return isValidOutreachEmail(email) && hasOfficialContactSource(sourceValue, venue.official_website_url);
-}
-
-function hasOfficialContactSource(sourceValue: string | null | undefined, websiteValue: string | null | undefined) {
-  const sourceUrl = validPublicUrl(sourceValue);
-  const websiteUrl = validPublicUrl(websiteValue);
-  if (!sourceUrl || !websiteUrl) return false;
-  const sourceHost = normalizedHostname(sourceUrl);
-  const websiteHost = normalizedHostname(websiteUrl);
-  return sourceHost === websiteHost || sourceHost.endsWith(`.${websiteHost}`) || websiteHost.endsWith(`.${sourceHost}`);
-}
-
-function validPublicUrl(value: string | null | undefined) {
-  if (!value || value.length > 2048) return null;
-  try {
-    const url = new URL(value);
-    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) return null;
-    if (url.hostname === "localhost" || url.hostname.endsWith(".local")) return null;
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-function normalizedHostname(value: string) {
-  return new URL(value).hostname.toLowerCase().replace(/^www\./, "");
-}
-
 function sameRecipientSnapshot(current: OutreachCandidate[], approved: OutreachCandidate[]) {
   const snapshot = (recipients: OutreachCandidate[]) =>
     recipients
@@ -924,19 +1039,6 @@ function requireAdminClient() {
   const client = createAdminClient();
   if (!client) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for outreach campaigns.");
   return client;
-}
-
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function isValidOutreachEmail(email: string) {
-  if (!emailPattern.test(email)) return false;
-  const [localPart, domain] = email.split("@");
-  const normalizedLocalPart = localPart.replace(/[+._-].*$/, "");
-  const placeholderLocalParts = new Set(["test", "testing", "sample", "example", "xxx", "dummy", "fake"]);
-  const placeholderDomains = new Set(["example.com", "test.com", "invalid"]);
-  return !placeholderLocalParts.has(normalizedLocalPart) && !placeholderDomains.has(domain);
 }
 
 function hashToken(token: string) {
