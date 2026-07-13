@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { GoogleAnalyticsController } from "@/components/analytics/google-analytics-controller";
 import { CookieBanner } from "@/components/privacy/cookie-banner";
 import { absoluteUrl } from "@/lib/utils";
 
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         />
         <main id="main-content">{children}</main>
         <Footer />
+        <GoogleAnalyticsController measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         <CookieBanner />
       </body>
     </html>
