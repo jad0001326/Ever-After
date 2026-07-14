@@ -233,6 +233,34 @@ describe("enrichment website research", () => {
     expect(result.publishedPrices[0]).toMatchObject({ amount: 6500, basis: "exclusive_use", unit: "per_event" });
   });
 
+  it("does not mark an active venue closed because a former on-site operation ceased trading", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const href = String(url);
+      if (href.endsWith("robots.txt")) return new Response("User-agent: *\nAllow: /", { headers: { "content-type": "text/plain" } });
+      if (href.endsWith("sitemap.xml")) return new Response("Not found", { status: 404, headers: { "content-type": "text/plain" } });
+      return new Response("<h1>Wedding bookings</h1><p>The golf club ceased trading in 2016. Enquire now about our wedding venue and availability.</p>", { headers: { "content-type": "text/html" } });
+    }) as unknown as typeof fetch;
+    const result = await researchOfficialWebsite(
+      { id: "venue-history", name: "Active Venue", officialWebsiteUrl: "https://venue.test/" },
+      { fetchImpl, lookupImpl: publicLookup, maxPages: 1, retries: 0, minimumHostDelayMs: 0 }
+    );
+    expect(result.businessStatus).toBe("likely_active");
+  });
+
+  it("still recognises an explicit first-person closure notice", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const href = String(url);
+      if (href.endsWith("robots.txt")) return new Response("User-agent: *\nAllow: /", { headers: { "content-type": "text/plain" } });
+      if (href.endsWith("sitemap.xml")) return new Response("Not found", { status: 404, headers: { "content-type": "text/plain" } });
+      return new Response("<h1>Closure notice</h1><p>We have ceased trading and are no longer accepting wedding bookings.</p>", { headers: { "content-type": "text/html" } });
+    }) as unknown as typeof fetch;
+    const result = await researchOfficialWebsite(
+      { id: "venue-closed", name: "Closed Venue", officialWebsiteUrl: "https://venue.test/" },
+      { fetchImpl, lookupImpl: publicLookup, maxPages: 1, retries: 0, minimumHostDelayMs: 0 }
+    );
+    expect(result.businessStatus).toBe("closed");
+  });
+
   it("extracts classified prices from a directly linked official PDF brochure", async () => {
     const pdf = minimalPdf("Wedding package starts from GBP 6,250 per event.");
     const fetchImpl = vi.fn(async (url: string | URL | Request) => {

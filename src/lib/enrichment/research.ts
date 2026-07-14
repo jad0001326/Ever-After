@@ -971,7 +971,9 @@ async function waitForHost(url: string, minimumDelayMs: number) {
 }
 
 function updateBusinessStatus(result: WebsiteResearchResult, lowerText: string) {
-  if (/permanently\s+closed|we\s+(?:have\s+)?closed|ceased\s+trading|no\s+longer\s+trading/.test(lowerText)) result.businessStatus = "closed";
+  const definitiveClosureNotice = /\b(?:we|our business|this business|the business|our venue|this venue|the venue|our company|this company|the company)\s+(?:(?:have|has|are|is)\s+)?(?:permanently\s+closed|closed\s+permanently|ceased\s+trading|no\s+longer\s+trading)\b/.test(lowerText)
+    || /\bwe\s+(?:have\s+)?closed\s+(?:our\s+)?(?:business|venue|doors)\b/.test(lowerText);
+  if (definitiveClosureNotice) result.businessStatus = "closed";
   else if (/temporarily\s+closed|closed\s+for\s+(?:renovation|refurbishment|winter)/.test(lowerText) && result.businessStatus !== "closed") result.businessStatus = "temporarily_closed";
   else if (/formerly\s+known\s+as|now\s+trading\s+as|we\s+have\s+rebranded/.test(lowerText) && !["closed", "temporarily_closed"].includes(result.businessStatus)) result.businessStatus = "rebranded";
 }
