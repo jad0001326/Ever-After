@@ -1858,6 +1858,35 @@ grant execute on function public.verify_enrichment_contact(uuid, text, text, tex
 
 
 
+-- Repair the regular expressions in the final contact-verification function
+-- body. The previous version used two backslashes where PostgreSQL needs one.
+do $$
+declare
+  v_definition text;
+begin
+  select pg_get_functiondef(procedure.oid)
+  into v_definition
+  from pg_proc procedure
+  join pg_namespace namespace on namespace.oid = procedure.pronamespace
+  where namespace.nspname = 'public'
+    and procedure.proname = 'verify_enrichment_contact'
+    and pg_get_function_identity_arguments(procedure.oid) = 'p_enrichment_record_id uuid, p_email text, p_source_url text, p_verification_method text, p_verification_note text, p_reviewer_id uuid, p_expected_updated_at timestamp with time zone';
+
+  if v_definition is null then
+    raise exception 'verify_enrichment_contact function was not found';
+  end if;
+
+  v_definition := replace(
+    v_definition,
+    '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$',
+    '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+  );
+  v_definition := replace(v_definition, '^www\\.', '^www\.');
+
+  execute v_definition;
+end;
+$$;
+
 -- Phase 10: reviewable, idempotent business enrichment workflow.
 -- Run after the base schema. Dry-run research can remain filesystem-only; these
 -- private tables hold staged evidence and approved changes after review.
