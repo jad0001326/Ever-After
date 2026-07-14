@@ -1887,6 +1887,36 @@ begin
 end;
 $$;
 
+-- The final version of manual contact verification allows a confirmed shared
+-- operator inbox. Campaign sending is still deduplicated by email.
+do $$
+declare
+  v_definition text;
+  v_duplicate_blocker text := '  if v_duplicate_email then v_blockers := array_append(v_blockers, ''duplicate_email''); end if;';
+begin
+  select pg_get_functiondef(procedure.oid)
+  into v_definition
+  from pg_proc procedure
+  join pg_namespace namespace on namespace.oid = procedure.pronamespace
+  where namespace.nspname = 'public'
+    and procedure.proname = 'verify_enrichment_contact'
+    and pg_get_function_identity_arguments(procedure.oid) = 'p_enrichment_record_id uuid, p_email text, p_source_url text, p_verification_method text, p_verification_note text, p_reviewer_id uuid, p_expected_updated_at timestamp with time zone';
+
+  if v_definition is null then
+    raise exception 'verify_enrichment_contact function was not found';
+  end if;
+  if position(v_duplicate_blocker in v_definition) = 0 then
+    raise exception 'verify_enrichment_contact did not contain the expected duplicate-email blocker';
+  end if;
+
+  v_definition := replace(v_definition, v_duplicate_blocker || chr(10), '');
+  execute v_definition;
+end;
+$$;
+
+revoke execute on function public.verify_enrichment_contact(uuid, text, text, text, text, uuid, timestamptz) from public, anon, authenticated;
+grant execute on function public.verify_enrichment_contact(uuid, text, text, text, text, uuid, timestamptz) to service_role;
+
 -- Phase 10: reviewable, idempotent business enrichment workflow.
 -- Run after the base schema. Dry-run research can remain filesystem-only; these
 -- private tables hold staged evidence and approved changes after review.

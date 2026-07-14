@@ -128,7 +128,6 @@ export type VenueAuditSummary = {
 
 type EligibilityContext = {
   country?: string;
-  duplicateEmail?: boolean;
   suppressedEmails?: ReadonlySet<string>;
   existingOutreach?: boolean;
 };
@@ -157,7 +156,6 @@ export function evaluateInitialInviteBlockers(venue: AuditableVenue, context: El
   } else if (!isTrustedVenueContact(email, venue.vendor_contact_source_url, venue)) {
     blockers.push("unverified_contact");
   } else {
-    if (context.duplicateEmail) blockers.push("duplicate_email");
     if (context.suppressedEmails?.has(email)) blockers.push("suppressed");
     if (context.existingOutreach) blockers.push("existing_outreach");
   }
@@ -178,19 +176,13 @@ export function auditVenueRecords(venues: readonly AuditableVenue[], options: Ve
     }
   }
 
-  const seenTrustedEmails = new Set<string>();
   const maxRecipients = clampInteger(options.maxRecipients ?? 100, 1, 100);
   let eligibleCount = 0;
 
   const audits = venues.map((venue): VenueAudit => {
     const email = normalizeEmail(venue.vendor_contact_email ?? "");
-    const trustedEmail = Boolean(email && isTrustedVenueContact(email, venue.vendor_contact_source_url, venue));
-    const duplicateEmail = trustedEmail && seenTrustedEmails.has(email);
-    if (trustedEmail) seenTrustedEmails.add(email);
-
     const blockers = evaluateInitialInviteBlockers(venue, {
       country: options.country,
-      duplicateEmail,
       suppressedEmails,
       existingOutreach: existingOutreachVenueIds.has(venue.id)
     });
@@ -200,7 +192,11 @@ export function auditVenueRecords(venues: readonly AuditableVenue[], options: Ve
     }
 
     const matches = matchesByVenue.get(venue.id) ?? [];
-    const qualityIssues = detectDataQualityIssues(venue, matches.length > 0);
+    // A central operator may legitimately manage several wedding venues with
+    // one published inbox. Only identity signals can make a venue look like a
+    // duplicate business; shared-email signals remain audit evidence only.
+    const hasBusinessDuplicateSignal = matches.some((match) => match.kind !== "email");
+    const qualityIssues = detectDataQualityIssues(venue, hasBusinessDuplicateSignal);
     const requiresManualReview = qualityIssues.some((issue) => manualReviewIssues.has(issue));
     const eligibleUnderCurrentRules = blockers.length === 0;
 

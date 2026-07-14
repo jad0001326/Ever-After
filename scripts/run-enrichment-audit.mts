@@ -179,7 +179,11 @@ const historyByVenue = groupHistory(recipientHistory);
 const initialAuditById = new Map(initial.audits.map((audit) => [audit.venueId, audit]));
 const projectedAuditById = new Map(projected.audits.map((audit) => [audit.venueId, audit]));
 const researchById = new Map(researchResults.map((result) => [result.targetId, result]));
-const duplicateIds = new Set(projected.duplicateMatches.flatMap((match) => match.venueIds));
+// A shared operator inbox is not evidence that two venues are the same
+// business. Keep it in the audit evidence, but only identity signals require
+// duplicate review.
+const businessDuplicateMatches = projected.duplicateMatches.filter((match) => match.kind !== "email");
+const duplicateIds = new Set(businessDuplicateMatches.flatMap((match) => match.venueIds));
 
 const records = venues.map((venue) => {
   const before = initialAuditById.get(venue.id)!;
@@ -306,7 +310,7 @@ const summary = {
   newlyEligibleBeforeCampaignCap,
   newlyRecommendedSafe,
   manualReview: allReviewRecords.filter((record) => record.requiresManualReview).length,
-  duplicateSignalGroups: projected.duplicateMatches.length,
+  duplicateSignalGroups: businessDuplicateMatches.length,
   duplicateSignalRows: duplicateIds.size,
   publicEmailsFound: publicEmailsFound.length,
   uniquePublicEmailsFound: uniquePublicEmails.size,

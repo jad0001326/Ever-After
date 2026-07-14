@@ -269,7 +269,11 @@ function buildReviewRecords(records: Row[], proposals: Row[], emailChecks: Row[]
     const emailStatus = text(emailCheck?.status) || (email ? "unverified" : "not_found");
     const entityId = text(record.entity_id);
     const entityType = text(record.entity_type) || "venue";
-    const duplicate = duplicates.some((candidate) => (text(candidate.left_entity_id) === entityId || text(candidate.right_entity_id) === entityId) && text(candidate.status) !== "not_duplicate");
+    const duplicate = duplicates.some((candidate) => (
+      (text(candidate.left_entity_id) === entityId || text(candidate.right_entity_id) === entityId)
+      && text(candidate.status) !== "not_duplicate"
+      && isBusinessDuplicateCandidate(candidate)
+    ));
     const pricingStatus = pricingStatusFor(record, recordProposals, profile);
     const sourceLinks = uniqueSources(recordProposals).slice(0, 3);
     const requiresManualReview = bool(record.requires_manual_review);
@@ -342,6 +346,7 @@ function uniqueSources(proposals: Row[]) {
 }
 
 function groupBy(items: Row[], key: string) { const grouped = new Map<string, Row[]>(); for (const item of items) { const value = text(item[key]); if (!value) continue; grouped.set(value, [...(grouped.get(value) ?? []), item]); } return grouped; }
+function isBusinessDuplicateCandidate(candidate: Row) { return strings(candidate.match_reasons).some((reason) => reason.startsWith("name_location:") || reason.startsWith("website_domain:")); }
 function entityKey(type: string, id: string) { return `${type}:${id}`; }
 function runHref(runId: string, values: Record<string, string>) { const query = new URLSearchParams({ run: runId, ...values }); return `/admin/enrichment?${query.toString()}`; }
 function rows(value: unknown): Row[] { return Array.isArray(value) ? value.filter((item): item is Row => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : []; }

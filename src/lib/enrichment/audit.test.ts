@@ -74,16 +74,24 @@ describe("initial outreach blocker audit", () => {
     expect(result.audits[0].actualEligibilityBlockers).toContain("existing_outreach");
   });
 
-  it("detects duplicate email as an actual batch blocker and broader duplicate signals as quality issues", () => {
+  it("allows a shared operator inbox while retaining identity duplicates as quality signals", () => {
     const records = [
       venue(),
-      venue({ id: "venue-2", slug: "rose-hall-estate", name: "Rose Hall", vendor_contact_email: "weddings@rosehall.co.uk" })
+      venue({ id: "venue-2", slug: "fern-barn", name: "Fern Barn", official_website_url: "https://fernbarn.co.uk", vendor_contact_email: "weddings@rosehall.co.uk", vendor_contact_source_url: "https://fernbarn.co.uk/contact" })
     ];
     const result = auditVenues(records);
     expect(result.audits[0].actualEligibilityBlockers).not.toContain("duplicate_email");
-    expect(result.audits[1].actualEligibilityBlockers).toContain("duplicate_email");
+    expect(result.audits[1].actualEligibilityBlockers).not.toContain("duplicate_email");
+    expect(result.audits.every((audit) => !audit.dataQualityIssues.includes("possible_duplicate"))).toBe(true);
+    expect(result.duplicateMatches).toContainEqual(expect.objectContaining({ kind: "email", venueIds: ["venue-1", "venue-2"] }));
+  });
+
+  it("still flags matching venue identity signals as possible duplicates", () => {
+    const result = auditVenues([
+      venue(),
+      venue({ id: "venue-2", slug: "rose-hall-estate", name: "Rose Hall", vendor_contact_email: "weddings@rosehall.co.uk" })
+    ]);
     expect(result.audits.every((audit) => audit.dataQualityIssues.includes("possible_duplicate"))).toBe(true);
-    expect(result.duplicateMatches.map((match) => match.kind)).toEqual(expect.arrayContaining(["name_location", "website_domain", "email"]));
   });
 
   it("detects normalized name and location duplicates without requiring matching emails", () => {
