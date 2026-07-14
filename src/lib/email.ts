@@ -61,6 +61,15 @@ type VendorUpdateNotification = {
   requestedMessage: string;
 };
 
+type VendorUpdateReviewedNotification = {
+  requestId: string;
+  venueName: string;
+  venueSlug: string;
+  vendorEmail: string | null;
+  status: "approved" | "rejected";
+  adminNotes: string | null;
+};
+
 export type VenueImagesSubmittedNotification = {
   submissionId: string;
   venueName: string;
@@ -363,10 +372,34 @@ export async function notifyVendorUpdateRequested(input: VendorUpdateNotificatio
       "",
       input.requestedMessage,
       "",
-      `Admin dashboard: ${absoluteUrl("/admin")}`,
+      `Review request: ${absoluteUrl("/admin/updates?status=pending")}`,
       `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}`
     ].filter((line): line is string => line !== null).join("\n"),
     idempotencyKey: `vendor-update-${input.requestId}`
+  });
+}
+
+export async function notifyVendorUpdateReviewed(input: VendorUpdateReviewedNotification) {
+  if (!input.vendorEmail) return;
+
+  const approved = input.status === "approved";
+  await sendEmail({
+    to: input.vendorEmail,
+    subject: approved
+      ? `Your updates to ${input.venueName} are now live`
+      : `Your updates to ${input.venueName} have been reviewed`,
+    text: [
+      "Hello,",
+      "",
+      approved
+        ? `Your requested updates to ${input.venueName} have been approved and published on EverAft.`
+        : `Your requested updates to ${input.venueName} were not approved at this stage. You can review the note below and submit revised details from your vendor dashboard.`,
+      input.adminNotes ? `Admin note: ${input.adminNotes}` : null,
+      "",
+      `Vendor dashboard: ${absoluteUrl("/vendor")}`,
+      approved ? `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}` : null
+    ].filter((line): line is string => line !== null).join("\n"),
+    idempotencyKey: `vendor-update-${input.status}-${input.requestId}`
   });
 }
 

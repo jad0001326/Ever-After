@@ -220,6 +220,8 @@ export type Database = {
           requested_message: string;
           status: "pending" | "approved" | "rejected";
           admin_notes: string | null;
+          previous_values: Json | null;
+          applied_values: Json | null;
           created_at: string;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -714,6 +716,16 @@ export type Database = {
       rollback_enrichment_proposal: {
         Args: { p_proposal_id: string; p_reviewer_id: string };
         Returns: Database["public"]["Tables"]["enrichment_field_proposals"]["Row"];
+      };
+      review_vendor_update_request: {
+        Args: { p_request_id: string; p_decision: "approved" | "rejected"; p_admin_notes?: string | null };
+        Returns: Array<{
+          reviewed_request_id: string;
+          reviewed_venue_id: string;
+          venue_slug: string;
+          review_status: "approved" | "rejected";
+          vendor_user_id: string;
+        }>;
       };
       claim_enrichment_records: {
         Args: { p_run_id: string; p_worker_id: string; p_limit?: number };
