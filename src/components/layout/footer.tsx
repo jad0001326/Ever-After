@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { CookieSettingsButton } from "@/components/privacy/cookie-settings-button";
+import { SocialLinks } from "@/components/social/social-links";
 
 export function Footer() {
   return (
@@ -11,6 +12,7 @@ export function Footer() {
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
             A growing wedding directory for couples planning celebrations across the UK.
           </p>
+          <SocialLinks className="mt-5" showLabels={false} tone="dark" />
         </div>
         <div>
           <p className="text-sm font-semibold tracking-[0.16em] text-[#d19a72]">Explore</p>

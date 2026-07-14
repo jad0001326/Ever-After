@@ -22,13 +22,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const venue = await getVenueListingBySlug(slug);
   if (!venue) return {};
-  const usesPassport = shouldUseVenuePassport(venue);
 
   return buildMetadata({
     title: `${venue.name} wedding venue, ${venue.town}`,
-    description: venue.summary,
+    description: `${venue.summary} Explore capacity, pricing and venue details on EverAft.`,
     path: `/venues/${venue.slug}`,
-    ...(usesPassport ? {} : { image: venue.heroImage }),
+    image: absoluteUrl(`/venues/${venue.slug}/opengraph-image`),
     keywords: [
       `${venue.name} wedding venue`,
       `${venue.town} wedding venue`,

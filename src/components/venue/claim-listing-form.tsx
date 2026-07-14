@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import { submitVenueClaim } from "@/app/actions/claims";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { FollowEverAft } from "@/components/social/follow-everaft";
 
 export function ClaimListingForm({ venueId, venueSlug }: { venueId: string; venueSlug: string }) {
   const [state, formAction, pending] = useActionState(submitVenueClaim, null);
@@ -57,6 +58,7 @@ export function ClaimListingForm({ venueId, venueSlug }: { venueId: string; venu
           {state.ok ? <p className="mt-2">We will review your evidence and update your vendor dashboard once the claim is approved.</p> : null}
         </div>
       ) : null}
+      {state?.ok ? <FollowEverAft className="mt-5 bg-[#fbf8f3]" compact /> : null}
 
       <Button className="mt-5 w-full" disabled={pending || state?.ok} type="submit">
         <ShieldCheck size={16} />

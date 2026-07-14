@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { submitSupplierApplication } from "@/app/actions/supplier-application";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { FollowEverAft } from "@/components/social/follow-everaft";
 import { supplierCategories } from "@/data/supplier-categories";
 
 export function SupplierApplicationForm() {
@@ -68,6 +69,7 @@ export function SupplierApplicationForm() {
         <span>I confirm that I can represent this business and that EverAft may review the information I provide in line with the <a className="font-semibold text-[var(--brand)] underline underline-offset-2" href="/supplier-terms">Supplier Terms</a>.</span>
       </label>
       {state?.message ? <p aria-live="polite" className={state.ok ? "mt-5 text-sm text-[#285237]" : "mt-5 text-sm text-[#9e341f]"}>{state.message}</p> : null}
+      {state?.ok ? <FollowEverAft className="mt-5 bg-[#fbf8f3]" compact /> : null}
       <Button className="mt-6 w-full" disabled={pending || state?.ok} type="submit">
         {pending ? "Sending application…" : state?.ok ? "Application received" : "Send my application"}
       </Button>

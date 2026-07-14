@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/contact-form";
+import { FollowEverAft } from "@/components/social/follow-everaft";
 
 export const metadata: Metadata = {
   title: "Contact EverAft",
@@ -14,6 +15,7 @@ export default function ContactPage() {
         <p className="text-sm font-semibold tracking-[0.16em] text-[#95502b]">Contact EverAft</p>
         <h1 className="mt-4 font-display text-6xl font-semibold leading-[0.9] tracking-[-0.05em] sm:text-7xl">Let’s make it useful.</h1>
         <p className="mt-7 max-w-md text-lg leading-8 text-[var(--muted)]">Ask about the directory, a supplier application or a listing you manage. We’ll make sure your message reaches the right person.</p>
+        <FollowEverAft className="mt-8" compact />
       </div>
       <div className="mt-10 lg:mt-0"><ContactForm /></div>
     </section>
