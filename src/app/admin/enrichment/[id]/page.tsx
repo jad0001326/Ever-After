@@ -74,6 +74,18 @@ export default async function AdminEnrichmentRecordPage({
   const snapshot = object(record.entity_snapshot);
   const businessName = enrichmentBusinessName(snapshot, profile) || `${formatEnrichmentLabel(entityType)} record`;
   const researchStatus = text(record.research_status) || "pending";
+  const currentBusinessStatus = text(profile?.business_status) || text(record.business_status) || "uncertain";
+  const eligibilityBlockers = strings(record.eligibility_blockers);
+  const isCurrentlyEligible = bool(record.before_outreach_eligible);
+  const isEligibleAfterChanges = bool(record.after_outreach_eligible);
+  const isWaitingForNextCampaign = eligibilityBlockers.length === 1 && eligibilityBlockers[0] === "over_campaign_limit";
+  const eligibilityLabel = isCurrentlyEligible
+    ? "Currently eligible"
+    : isWaitingForNextCampaign
+      ? "Eligible — next campaign"
+      : isEligibleAfterChanges
+        ? "Eligible after approved changes"
+        : "Outreach blocked";
 
   return (
     <DetailShell>
@@ -83,8 +95,8 @@ export default async function AdminEnrichmentRecordPage({
           <h1 className="mt-3 font-display text-5xl font-semibold">{businessName}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <EnrichmentStatus tone={researchStatus === "verified" ? "success" : bool(record.requires_manual_review) ? "warning" : "neutral"}>{formatEnrichmentLabel(researchStatus)}</EnrichmentStatus>
-            <EnrichmentStatus tone={bool(record.before_outreach_eligible) ? "success" : bool(record.after_outreach_eligible) ? "info" : "danger"}>{bool(record.before_outreach_eligible) ? "Currently eligible" : bool(record.after_outreach_eligible) ? "Eligible after approved changes" : "Outreach blocked"}</EnrichmentStatus>
-            <EnrichmentStatus tone={text(record.business_status) === "closed" ? "danger" : text(record.business_status) === "active" ? "success" : "warning"}>{formatEnrichmentLabel(text(record.business_status) || "uncertain")}</EnrichmentStatus>
+            <EnrichmentStatus tone={isCurrentlyEligible ? "success" : isWaitingForNextCampaign || isEligibleAfterChanges ? "info" : "danger"}>{eligibilityLabel}</EnrichmentStatus>
+            <EnrichmentStatus tone={currentBusinessStatus === "closed" ? "danger" : currentBusinessStatus === "active" ? "success" : "warning"}>{formatEnrichmentLabel(currentBusinessStatus)}</EnrichmentStatus>
           </div>
           <p className="mt-3 text-sm text-[var(--muted)]">Last checked {formatEnrichmentDate(text(record.updated_at) || text(record.created_at))}</p>
         </div>
