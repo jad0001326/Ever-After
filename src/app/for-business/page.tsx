@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Check, FileCheck2, HeartHandshake, ShieldCheck } from "lucide-react";
+import { FollowEverAft } from "@/components/social/follow-everaft";
 import { SupplierApplicationForm } from "@/components/supplier/supplier-application-form";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function ForBusinessPage() {
             <p className="flex gap-3"><FileCheck2 className="mt-0.5 shrink-0 text-[#95502b]" size={17} />You retain ownership of your work; only approved listing content is displayed.</p>
             <p className="flex gap-3"><HeartHandshake className="mt-0.5 shrink-0 text-[#95502b]" size={17} />We’re opening the directory gradually to protect quality for couples and businesses.</p>
           </div>
+          <FollowEverAft className="mt-8" compact />
         </div>
         <div className="mt-12 lg:mt-0">
           <SupplierApplicationForm />

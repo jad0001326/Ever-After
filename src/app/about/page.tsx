@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FollowEverAft } from "@/components/social/follow-everaft";
 
 export const metadata: Metadata = {
   title: "About EverAft",
@@ -29,6 +30,9 @@ export default function AboutPage() {
           <Link className="mt-6 inline-flex text-sm font-semibold text-[var(--brand)] underline underline-offset-4" href="/for-business">Apply to join EverAft</Link>
         </div>
       </section>
+      <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+        <FollowEverAft />
+      </div>
     </div>
   );
 }

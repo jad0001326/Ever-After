@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { GoogleAnalyticsController } from "@/components/analytics/google-analytics-controller";
 import { CookieBanner } from "@/components/privacy/cookie-banner";
+import { socialProfileUrls } from "@/lib/social";
 import { absoluteUrl } from "@/lib/utils";
 
 const sans = Inter({
@@ -72,7 +73,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                   "@type": "Organization",
                   name: "EverAft",
                   url: absoluteUrl(),
-                  areaServed: "United Kingdom"
+                  areaServed: "United Kingdom",
+                  ...(socialProfileUrls.length > 0 ? { sameAs: socialProfileUrls } : {})
                 }
               ]
             })
