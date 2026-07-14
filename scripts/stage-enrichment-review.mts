@@ -42,6 +42,7 @@ type DryRunReport = {
     businessStatus: string;
     emails?: Array<Row & {
       email: string;
+      sourceUrl?: string;
       verification: Row & {
         syntaxValid: boolean;
         domainExists: boolean | null;
@@ -139,6 +140,9 @@ try {
     requires_manual_review: requiresManualReview,
     before_outreach_eligible: record.eligibleUnderCurrentRulesBefore,
     after_outreach_eligible: record.eligibleUnderCurrentRulesAfter,
+    current_outreach_eligible: record.eligibleUnderCurrentRulesAfter,
+    current_eligibility_blockers: record.exactEligibilityBlockersAfter,
+    eligibility_recalculated_at: new Date().toISOString(),
     next_attempt_at: requiresManualReview ? null : new Date().toISOString()
     };
   });
@@ -168,6 +172,7 @@ try {
   });
   await restPost("enrichment_field_proposals", proposalRows, "proposal_fingerprint", false, true);
 
+  const currentCandidateByRecord = new Set<string>();
   const emailCheckRows = (report.researchResults ?? []).flatMap((research) => {
     const enrichmentRecordId = recordIdByEntity.get(`venue:${research.targetId}`);
     if (!enrichmentRecordId) return [];
@@ -176,6 +181,11 @@ try {
       const emailKey = finding.email.trim().toLowerCase();
       const safety = report.emailSafety?.[emailKey];
       const finalStatus = safety?.optedOut ? "opted_out" : safety?.hardBounce ? "hard_bounce" : safety?.suppressed ? "suppressed" : verification.status;
+      const candidateRole = verification.domainAssociated ? "venue_contact" : "third_party_reference";
+      const canBeCurrentCandidate = candidateRole === "venue_contact"
+        && ["verified", "likely_valid"].includes(finalStatus)
+        && !currentCandidateByRecord.has(enrichmentRecordId);
+      if (canBeCurrentCandidate) currentCandidateByRecord.add(enrichmentRecordId);
       return {
         enrichment_record_id: enrichmentRecordId,
         email: finding.email,
@@ -194,7 +204,10 @@ try {
         status: finalStatus,
         verification_method: verification.method,
         details: { source: "official-site dry run", suppressionReason: safety?.suppressionReason ?? null, historyStatuses: safety?.historyStatuses ?? [] },
-        checked_at: verification.checkedAt
+        checked_at: verification.checkedAt,
+        candidate_role: candidateRole,
+        is_current_candidate: canBeCurrentCandidate,
+        source_url: finding.sourceUrl ?? null
       };
     });
   });

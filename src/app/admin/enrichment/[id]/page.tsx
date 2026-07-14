@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, History, RotateCcw, SearchCheck } from "lucide-react";
 import {
   applyEnrichmentProposal,
-  approveEnrichmentProposal,
+  approveAndApplyEnrichmentProposal,
   editEnrichmentProposal,
   markEnrichmentForManualResearch,
   rejectEnrichmentProposal,
   requeueEnrichmentVerification,
-  rollbackEnrichmentChange
+  rollbackEnrichmentChange,
+  verifyEnrichmentContact
 } from "@/app/actions/enrichment";
 import {
   EnrichmentSetupBanner,
@@ -49,17 +50,21 @@ export default async function AdminEnrichmentRecordPage({
   const entityType = text(record.entity_type);
   const entityId = text(record.entity_id);
 
-  const [proposalsResult, emailChecksResult, duplicatesResult, profileResult, changesResult, outreachResult] = await Promise.all([
+  const [proposalsResult, emailChecksResult, duplicatesResult, profileResult, changesResult, outreachResult, venueResult] = await Promise.all([
     database.from("enrichment_field_proposals").select("*").eq("enrichment_record_id", id).order("created_at", { ascending: true }),
     database.from("enrichment_email_checks").select("*").eq("enrichment_record_id", id).order("checked_at", { ascending: false }),
     database.from("enrichment_duplicate_candidates").select("*").eq("run_id", text(record.run_id)).order("match_score", { ascending: false }),
     database.from("business_enrichment_profiles").select("*").eq("entity_type", entityType).eq("entity_id", entityId).maybeSingle(),
     database.from("enrichment_change_log").select("*").eq("enrichment_record_id", id).order("created_at", { ascending: false }),
     entityType === "venue"
-      ? database.from("outreach_campaign_recipients").select("id, campaign_id, email, status, sent_at, delivered_at, error_message, created_at").eq("venue_id", entityId).order("created_at", { ascending: false }).limit(100)
+      ? database.from("outreach_campaign_recipients").select("id, campaign_id, email, status, sent_at, delivered_at, error_message, bounce_type, bounce_subtype, bounce_message, created_at").eq("venue_id", entityId).order("created_at", { ascending: false }).limit(100)
       : Promise.resolve({ data: [], error: null })
+    ,
+    entityType === "venue"
+      ? database.from("venues").select("id, vendor_contact_email, vendor_contact_source_url, vendor_contact_verified_at, official_website_url").eq("id", entityId).maybeSingle()
+      : Promise.resolve({ data: null, error: null })
   ]);
-  const loadError = [proposalsResult.error, emailChecksResult.error, duplicatesResult.error, profileResult.error, changesResult.error, outreachResult.error].find(Boolean);
+  const loadError = [proposalsResult.error, emailChecksResult.error, duplicatesResult.error, profileResult.error, changesResult.error, outreachResult.error, venueResult.error].find(Boolean);
   if (loadError) return <DetailShell><EnrichmentSetupBanner message={`The record could not be loaded safely: ${loadError.message}`} /></DetailShell>;
 
   const proposals = rows(proposalsResult.data);
@@ -71,12 +76,17 @@ export default async function AdminEnrichmentRecordPage({
   const profile = profileResult.data as Row | null;
   const changes = rows(changesResult.data);
   const outreach = rows(outreachResult.data);
+  const venue = venueResult.data as Row | null;
   const snapshot = object(record.entity_snapshot);
   const businessName = enrichmentBusinessName(snapshot, profile) || `${formatEnrichmentLabel(entityType)} record`;
   const researchStatus = text(record.research_status) || "pending";
   const currentBusinessStatus = text(profile?.business_status) || text(record.business_status) || "uncertain";
-  const eligibilityBlockers = strings(record.eligibility_blockers);
-  const isCurrentlyEligible = bool(record.before_outreach_eligible);
+  const eligibilityBlockers = hasBoolean(record.current_outreach_eligible)
+    ? strings(record.current_eligibility_blockers)
+    : strings(record.eligibility_blockers);
+  const isCurrentlyEligible = hasBoolean(record.current_outreach_eligible)
+    ? bool(record.current_outreach_eligible)
+    : bool(record.before_outreach_eligible);
   const isEligibleAfterChanges = bool(record.after_outreach_eligible);
   const isWaitingForNextCampaign = eligibilityBlockers.length === 1 && eligibilityBlockers[0] === "over_campaign_limit";
   const eligibilityLabel = isCurrentlyEligible
@@ -115,10 +125,12 @@ export default async function AdminEnrichmentRecordPage({
       {message ? <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
 
       <section className="mt-7 grid gap-4 lg:grid-cols-3">
-        <SummaryPanel label="Exact eligibility blockers"><EnrichmentTags empty="No current send blockers" tone="danger" values={strings(record.eligibility_blockers)} /></SummaryPanel>
+        <SummaryPanel label="Exact eligibility blockers"><EnrichmentTags empty="No current send blockers" tone="danger" values={eligibilityBlockers} /></SummaryPanel>
         <SummaryPanel label="Quality blockers"><EnrichmentTags empty="No quality blockers" tone="warning" values={strings(record.quality_blockers)} /></SummaryPanel>
         <SummaryPanel label="Missing fields"><EnrichmentTags empty="No missing fields" values={strings(record.missing_fields)} /></SummaryPanel>
       </section>
+
+      {entityType === "venue" ? <ContactVerification record={record} venue={venue} checks={emailChecks} /> : null}
 
       <section className="mt-7 rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -151,18 +163,46 @@ function SummaryPanel({ children, label }: { children: React.ReactNode; label: s
   return <div className="rounded-3xl border border-[var(--line)] bg-white p-5"><p className="mb-4 text-sm font-semibold text-[#4a443c]">{label}</p>{children}</div>;
 }
 
+function ContactVerification({ checks, record, venue }: { checks: Row[]; record: Row; venue: Row | null }) {
+  const currentContact = checks.find((check) => check.is_current_candidate === true) ?? checks.find((check) => text(check.candidate_role) === "venue_contact");
+  const currentEmail = text(venue?.vendor_contact_email) || text(currentContact?.email);
+  const currentSourceUrl = text(venue?.vendor_contact_source_url) || text(currentContact?.source_url);
+  const hasVerifiedContact = Boolean(text(venue?.vendor_contact_verified_at));
+  return (
+    <section className="mt-7 rounded-3xl border border-[#cad9c8] bg-[#f3f8f1] p-5 sm:p-6" id="contact-verification">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#35533e]">Contact verification</p><h2 className="mt-2 font-display text-4xl font-semibold">Correct, verify and recalculate</h2></div>
+        <EnrichmentStatus tone={currentContact?.status === "verified" ? "success" : "warning"}>{currentContact?.status === "verified" ? "Verified contact on file" : "Needs verification"}</EnrichmentStatus>
+      </div>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-[#4b5d4f]">This one action saves the official contact, records your source, updates the evidence and immediately recalculates campaign eligibility. It never removes real suppressions, bounces, opt-outs or previous-contact restrictions.</p>
+      {hasVerifiedContact ? <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm text-[#715622] ring-1 ring-[#e5d5b7]">You are replacing a previously verified contact. Save only when the new address is published by, or confirmed by, this venue.</p> : null}
+      <form action={verifyEnrichmentContact} className="mt-6 grid gap-4 lg:grid-cols-2">
+        <input name="recordId" type="hidden" value={text(record.id)} />
+        <input name="expectedUpdatedAt" type="hidden" value={text(record.updated_at)} />
+        <label className="grid gap-2 text-sm font-medium text-[#314337]">Business email<input className="focus-ring h-11 rounded-xl border border-[#b9cbb9] bg-white px-3" defaultValue={currentEmail} name="email" placeholder="hello@venue.co.uk" required type="email" /></label>
+        <label className="grid gap-2 text-sm font-medium text-[#314337]">Official source URL<input className="focus-ring h-11 rounded-xl border border-[#b9cbb9] bg-white px-3" defaultValue={currentSourceUrl} name="sourceUrl" placeholder="https://venue.co.uk/contact" required type="url" /></label>
+        <label className="grid gap-2 text-sm font-medium text-[#314337]">How you verified it<select className="focus-ring h-11 rounded-xl border border-[#b9cbb9] bg-white px-3" defaultValue="official_contact_page" name="verificationMethod"><option value="official_website">Official website</option><option value="official_contact_page">Official contact page</option><option value="venue_confirmation">Venue confirmation</option><option value="manual_admin_verification">Manual admin verification</option></select></label>
+        <label className="grid gap-2 text-sm font-medium text-[#314337]">Verification note <span className="font-normal text-[#5d6a60]">(optional)</span><Textarea className="min-h-11 border-[#b9cbb9] bg-white" name="verificationNote" placeholder="For example: published on the wedding enquiries page." /></label>
+        <div className="lg:col-span-2"><Button type="submit"><CheckCircle2 size={17} /> Save and mark verified</Button></div>
+      </form>
+    </section>
+  );
+}
+
 function ProposalCard({ proposal, recordId }: { proposal: Row; recordId: string }) {
   const status = text(proposal.status) || "pending";
   const proposalId = text(proposal.id);
   const field = text(proposal.target_field);
+  const needsContactVerification = ["vendor_contact_email", "vendor_contact_source_url", "vendor_contact_verified_at", "public_email", "contact_page_url"].includes(field);
   const sourceUrl = safeEnrichmentUrl(text(proposal.source_url));
   return (
     <article className="rounded-3xl border border-[var(--line)] bg-[#fbf8f3] p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-3xl font-semibold">{formatEnrichmentLabel(field)}</h3><EnrichmentStatus tone={proposalTone(status)}>{formatEnrichmentLabel(status)}</EnrichmentStatus><EnrichmentStatus tone={text(proposal.confidence) === "high" ? "success" : text(proposal.confidence) === "low" ? "danger" : "warning"}>{formatEnrichmentLabel(text(proposal.confidence))} confidence</EnrichmentStatus></div><p className="mt-2 text-sm leading-6 text-[var(--muted)]">{text(proposal.reason)}</p></div>
         <div className="flex flex-wrap gap-2">
-          {status === "pending" ? <><ProposalDecision action={approveEnrichmentProposal} label="Approve" proposalId={proposalId} recordId={recordId} status={status} /><ProposalDecision action={rejectEnrichmentProposal} label="Reject" proposalId={proposalId} recordId={recordId} status={status} secondary /></> : null}
-          {status === "approved" ? <form action={applyEnrichmentProposal}><input name="recordId" type="hidden" value={recordId} /><input name="proposalId" type="hidden" value={proposalId} /><label className="flex items-center gap-2 text-xs text-[var(--muted)]"><input className="size-4 accent-[#24432f]" name="applyConfirmed" type="checkbox" />Confirm</label><Button className="mt-2" type="submit"><CheckCircle2 size={16} /> Apply</Button></form> : null}
+          {needsContactVerification && ["pending", "approved"].includes(status) ? <a className="inline-flex items-center rounded-full bg-[#24432f] px-4 py-2 text-sm font-semibold text-white" href="#contact-verification">Verify contact</a> : null}
+          {!needsContactVerification && status === "pending" ? <><ProposalDecision action={approveAndApplyEnrichmentProposal} label="Approve and apply" proposalId={proposalId} recordId={recordId} status={status} /><ProposalDecision action={rejectEnrichmentProposal} label="Reject" proposalId={proposalId} recordId={recordId} status={status} secondary /></> : null}
+          {!needsContactVerification && status === "approved" ? <form action={applyEnrichmentProposal}><input name="recordId" type="hidden" value={recordId} /><input name="proposalId" type="hidden" value={proposalId} /><Button type="submit"><CheckCircle2 size={16} /> Apply</Button></form> : null}
           {status === "applied" ? <form action={rollbackEnrichmentChange}><input name="recordId" type="hidden" value={recordId} /><input name="proposalId" type="hidden" value={proposalId} /><label className="flex items-center gap-2 text-xs text-[var(--muted)]"><input className="size-4 accent-[#8a3c19]" name="rollbackConfirmed" type="checkbox" />Confirm</label><Button className="mt-2" type="submit" variant="secondary"><RotateCcw size={16} /> Roll back</Button></form> : null}
         </div>
       </div>
@@ -194,7 +234,7 @@ function ValuePanel({ label, value }: { label: string; value: unknown }) {
 }
 
 function EmailChecks({ checks }: { checks: Row[] }) {
-  return <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Email verification</p><h2 className="mt-2 font-display text-4xl font-semibold">Contact checks</h2><div className="mt-5 grid gap-4">{checks.map((check) => <div className="rounded-2xl bg-[#fbf8f3] p-4" key={text(check.id)}><div className="flex flex-wrap items-center justify-between gap-3"><p className="break-all font-semibold">{text(check.email)}</p><EnrichmentStatus tone={["verified", "likely_valid"].includes(text(check.status)) ? "success" : ["invalid", "hard_bounce", "suppressed", "opted_out"].includes(text(check.status)) ? "danger" : "warning"}>{formatEnrichmentLabel(text(check.status))}</EnrichmentStatus></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3"><Info label="Syntax" value={yesNo(check.syntax_valid)} /><Info label="Domain" value={yesNo(check.domain_exists)} /><Info label="MX records" value={yesNo(check.has_mx)} /><Info label="Domain associated" value={yesNo(check.domain_associated)} /><Info label="Prior outreach" value={yesNo(check.has_prior_outreach)} /><Info label="Checked" value={formatEnrichmentDate(text(check.checked_at))} /></dl></div>)}{checks.length === 0 ? <p className="text-sm text-[var(--muted)]">No email verification result has been recorded.</p> : null}</div></section>;
+  return <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Email verification</p><h2 className="mt-2 font-display text-4xl font-semibold">Contact checks</h2><p className="mt-2 text-sm text-[var(--muted)]">Only the current venue contact can affect campaign eligibility. Other emails are retained as third-party page references.</p><div className="mt-5 grid gap-4">{checks.map((check) => <div className="rounded-2xl bg-[#fbf8f3] p-4" key={text(check.id)}><div className="flex flex-wrap items-center justify-between gap-3"><p className="break-all font-semibold">{text(check.email)}</p><div className="flex flex-wrap gap-2"><EnrichmentStatus tone={check.is_current_candidate === true ? "success" : "neutral"}>{check.is_current_candidate === true ? "Current venue contact" : formatEnrichmentLabel(text(check.candidate_role) || "unknown")}</EnrichmentStatus><EnrichmentStatus tone={["verified", "likely_valid"].includes(text(check.status)) ? "success" : ["invalid", "hard_bounce", "suppressed", "opted_out"].includes(text(check.status)) ? "danger" : "warning"}>{formatEnrichmentLabel(text(check.status))}</EnrichmentStatus></div></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3"><Info label="Syntax" value={yesNo(check.syntax_valid)} /><Info label="Domain" value={yesNo(check.domain_exists)} /><Info label="MX records" value={yesNo(check.has_mx)} /><Info label="Domain associated" value={yesNo(check.domain_associated)} /><Info label="Prior outreach" value={yesNo(check.has_prior_outreach)} /><Info label="Checked" value={formatEnrichmentDate(text(check.checked_at))} /></dl></div>)}{checks.length === 0 ? <p className="text-sm text-[var(--muted)]">No email verification result has been recorded.</p> : null}</div></section>;
 }
 
 function DuplicateWarnings({ duplicates, entityId }: { duplicates: Row[]; entityId: string }) {
@@ -223,5 +263,6 @@ function object(value: unknown): Row { return value && typeof value === "object"
 function strings(value: unknown): string[] { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []; }
 function text(value: unknown) { return typeof value === "string" ? value : value == null ? "" : String(value); }
 function bool(value: unknown) { return value === true; }
+function hasBoolean(value: unknown) { return value === true || value === false; }
 function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function yesNo(value: unknown) { return value == null ? "Not checked" : value === true ? "Yes" : "No"; }

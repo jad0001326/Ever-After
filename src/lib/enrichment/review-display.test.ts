@@ -12,6 +12,12 @@ describe("enrichment review display", () => {
     expect(selectPrimaryEmailCheck([unrelated, preferred], ["weddings@venue.example"])).toBe(preferred);
   });
 
+  it("always prefers the explicitly classified current venue contact", () => {
+    const current = { email: "enquiries@venue.example", syntax_valid: true, domain_associated: true, status: "verified", candidate_role: "venue_contact", is_current_candidate: true };
+    const thirdParty = { email: "supplier@other.example", syntax_valid: true, domain_associated: true, status: "verified", candidate_role: "third_party_reference", is_current_candidate: false };
+    expect(selectPrimaryEmailCheck([thirdParty, current], ["supplier@other.example"])).toBe(current);
+  });
+
   it("falls back only to a syntactically valid official-domain address", () => {
     const associated = { email: "hello@venue.example", syntax_valid: true, domain_associated: true, status: "likely_valid" };
     const malformed = { email: "info@venue.examplecall", syntax_valid: false, domain_associated: false, status: "invalid" };

@@ -82,7 +82,7 @@ export default async function AdminOutreachPage({
                 <span className="block font-semibold text-[#29251f]">{campaign.name}</span>
                 <span className="mt-1 block text-xs text-[var(--muted)]">{campaign.kind.replaceAll("_", " ")} · {campaign.source} · {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(campaign.created_at))}</span>
               </span>
-              <span className="text-sm text-[var(--muted)]">{campaign.sent_count}/{campaign.recipient_count} sent</span>
+              <span className="text-right text-sm text-[var(--muted)]"><span className="block">{campaign.delivery.delivered}/{campaign.delivery.accepted} delivered</span><span className={campaign.delivery.bounced || campaign.delivery.unsubscribed ? "text-xs text-[#8a3c19]" : "text-xs"}>{campaign.delivery.bounced} bounced · {campaign.delivery.unsubscribed} unsubscribed</span></span>
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#35533e]">{campaign.status.replaceAll("_", " ")} <ArrowRight size={16} /></span>
             </Link>
           ))}

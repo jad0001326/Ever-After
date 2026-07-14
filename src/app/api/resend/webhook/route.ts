@@ -15,7 +15,7 @@ const handledEvents = new Set([
 type ResendEvent = {
   type: string;
   created_at?: string;
-  data: { email_id?: string };
+  data: { email_id?: string; [key: string]: unknown };
 };
 
 export async function POST(request: Request) {
@@ -46,7 +46,8 @@ export async function POST(request: Request) {
         eventId,
         eventType: event.type,
         eventCreatedAt: event.created_at,
-        resendEmailId
+        resendEmailId,
+        eventData: deliveryEvidence(event.data)
       });
     }
     return new NextResponse(null, { status: 204 });
@@ -54,4 +55,22 @@ export async function POST(request: Request) {
     console.error("Could not process Resend webhook", error);
     return new NextResponse("Webhook processing failed", { status: 500 });
   }
+}
+
+function deliveryEvidence(data: Record<string, unknown>) {
+  const bounce = object(data.bounce);
+  const details = object(data.details);
+  return {
+    bounce_type: text(bounce.type ?? data.bounce_type ?? data.type),
+    bounce_subtype: text(bounce.subtype ?? data.bounce_subtype ?? data.subtype),
+    diagnostic_message: text(bounce.message ?? bounce.reason ?? details.message ?? data.reason ?? data.message)
+  };
+}
+
+function object(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function text(value: unknown) {
+  return typeof value === "string" ? value.slice(0, 2_000) : "";
 }

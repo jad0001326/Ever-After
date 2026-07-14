@@ -4,6 +4,7 @@ import { absoluteUrl } from "@/lib/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailNotificationsEnabled, sendEmailBatch, type EmailInput } from "@/lib/email";
 import { buildOutreachEmail, type OutreachCopy } from "@/lib/outreach-email";
+import { summarizeOutreachDelivery, type OutreachDeliverySummary } from "@/lib/outreach-delivery";
 import { approvalFingerprint, createOutreachApprovalToken, verifyOutreachApprovalToken } from "@/lib/outreach-approval";
 import {
   hasOfficialContactSource,
@@ -70,6 +71,8 @@ export type CampaignSendSummary = {
   failedCount: number;
   skippedCount: number;
 };
+
+export { summarizeOutreachDelivery, type OutreachDeliverySummary } from "@/lib/outreach-delivery";
 
 export async function listOutreachCandidates(
   filter: OutreachAudienceFilter,
@@ -758,7 +761,20 @@ export async function listRecentOutreachCampaigns(limit = 12) {
     .order("created_at", { ascending: false })
     .limit(clampInteger(limit, 1, 50));
   if (error) throw new Error(`Could not load campaigns: ${error.message}`);
-  return data ?? [];
+  const campaigns = data ?? [];
+  if (campaigns.length === 0) return campaigns.map((campaign) => ({ ...campaign, delivery: summarizeOutreachDelivery([]) }));
+  const { data: recipientRows, error: recipientError } = await supabase
+    .from("outreach_campaign_recipients")
+    .select("campaign_id, status")
+    .in("campaign_id", campaigns.map((campaign) => campaign.id));
+  if (recipientError) throw new Error(`Could not load campaign delivery outcomes: ${recipientError.message}`);
+  const statusesByCampaign = new Map<string, Array<Pick<CampaignRecipient, "status">>>();
+  for (const recipient of recipientRows ?? []) {
+    const statuses = statusesByCampaign.get(recipient.campaign_id) ?? [];
+    statuses.push(recipient as Pick<CampaignRecipient, "status">);
+    statusesByCampaign.set(recipient.campaign_id, statuses);
+  }
+  return campaigns.map((campaign) => ({ ...campaign, delivery: summarizeOutreachDelivery(statusesByCampaign.get(campaign.id) ?? []) }));
 }
 
 export async function getOutreachCampaign(campaignId: string) {
@@ -773,7 +789,8 @@ export async function getOutreachCampaign(campaignId: string) {
   ]);
   if (campaignError) throw new Error(`Could not load campaign: ${campaignError.message}`);
   if (recipientError) throw new Error(`Could not load recipients: ${recipientError.message}`);
-  return { campaign, recipients: (recipients ?? []) as CampaignRecipient[] };
+  const normalizedRecipients = (recipients ?? []) as CampaignRecipient[];
+  return { campaign, recipients: normalizedRecipients, delivery: summarizeOutreachDelivery(normalizedRecipients) };
 }
 
 export async function unsubscribeOutreachRecipient(recipientId: string, token: string) {
@@ -853,61 +870,24 @@ export async function processResendOutreachEvent({
   eventId,
   eventType,
   eventCreatedAt,
-  resendEmailId
+  resendEmailId,
+  eventData = {}
 }: {
   eventId: string;
   eventType: string;
   eventCreatedAt?: string;
   resendEmailId: string;
+  eventData?: Json;
 }) {
   const supabase = requireAdminClient();
-  const { data: existing } = await supabase.from("outreach_email_events").select("id").eq("id", eventId).maybeSingle();
-  if (existing) return;
-
-  const { data: recipient } = await supabase
-    .from("outreach_campaign_recipients")
-    .select("id, venue_id, email")
-    .eq("resend_email_id", resendEmailId)
-    .maybeSingle();
-  if (!recipient) return;
-
-  const update: Database["public"]["Tables"]["outreach_campaign_recipients"]["Update"] = {};
-  let suppressionReason: SuppressionReason | null = null;
-  if (eventType === "email.delivered") {
-    update.status = "delivered";
-    update.delivered_at = eventCreatedAt ?? new Date().toISOString();
-  } else if (eventType === "email.bounced") {
-    update.status = "bounced";
-    suppressionReason = "bounced";
-  } else if (eventType === "email.complained") {
-    update.status = "complained";
-    suppressionReason = "complained";
-  } else if (eventType === "email.suppressed") {
-    update.status = "suppressed";
-    suppressionReason = "provider_suppressed";
-  } else if (eventType === "email.failed") {
-    update.status = "failed";
-    update.error_message = "Resend reported a delivery failure.";
-  }
-
-  if (Object.keys(update).length > 0) {
-    await supabase.from("outreach_campaign_recipients").update(update).eq("id", recipient.id);
-  }
-  if (suppressionReason) {
-    await supabase
-      .from("outreach_suppressions")
-      .upsert({ email: recipient.email, reason: suppressionReason, source: "resend_webhook" }, { onConflict: "normalized_email" });
-  }
-  if (recipient.venue_id && (eventType === "email.bounced" || eventType === "email.suppressed")) {
-    await supabase.from("venues").update({ invite_status: "bounced" }).eq("id", recipient.venue_id);
-  }
-
-  await supabase.from("outreach_email_events").insert({
-    id: eventId,
-    resend_email_id: resendEmailId,
-    event_type: eventType,
-    event_created_at: eventCreatedAt ?? null
+  const { error } = await supabase.rpc("record_outreach_email_event", {
+    p_event_id: eventId,
+    p_resend_email_id: resendEmailId,
+    p_event_type: eventType,
+    p_event_created_at: eventCreatedAt ?? null,
+    p_event_data: eventData
   });
+  if (error) throw new Error(`Could not record Resend delivery event: ${error.message}`);
 }
 
 async function persistCampaign({
@@ -1058,17 +1038,43 @@ async function saveResearchedContacts(candidates: OutreachCandidate[], adminUser
   if (researched.length === 0) return;
   const supabase = requireAdminClient();
   for (const candidate of researched) {
+    const contactSourceUrl = candidate.contactSourceUrl;
+    if (!contactSourceUrl) throw new Error(`The researched contact for ${candidate.name} has no official source URL.`);
     const { data: venue, error: loadError } = await supabase.from("venues").select("vendor_contact_email").eq("id", candidate.id).single();
     if (loadError) throw new Error(`Could not verify the researched contact for ${candidate.name}: ${loadError.message}`);
     const storedEmail = normalizeEmail(venue.vendor_contact_email ?? "");
     if (storedEmail && storedEmail !== normalizeEmail(candidate.email)) {
       throw new Error(`The contact for ${candidate.name} changed before approval. Generate a fresh preview.`);
     }
+    const { data: record, error: recordError } = await supabase
+      .from("enrichment_records")
+      .select("id, updated_at, enrichment_runs!inner(mode, status)")
+      .eq("entity_type", "venue")
+      .eq("entity_id", candidate.id)
+      .eq("enrichment_runs.mode", "review")
+      .eq("enrichment_runs.status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (recordError) throw new Error(`Could not load the enrichment review for ${candidate.name}: ${recordError.message}`);
+    if (record) {
+      const { error: verificationError } = await supabase.rpc("verify_enrichment_contact", {
+        p_enrichment_record_id: record.id,
+        p_email: candidate.email,
+        p_source_url: contactSourceUrl,
+        p_verification_method: "official_contact_page",
+        p_verification_note: "Official contact found during campaign preparation.",
+        p_reviewer_id: adminUserId,
+        p_expected_updated_at: record.updated_at
+      });
+      if (verificationError) throw new Error(`Could not verify the researched contact for ${candidate.name}: ${verificationError.message}`);
+      continue;
+    }
     let update = supabase
       .from("venues")
       .update({
         vendor_contact_email: candidate.email,
-        vendor_contact_source_url: candidate.contactSourceUrl,
+        vendor_contact_source_url: contactSourceUrl,
         vendor_contact_verified_at: new Date().toISOString(),
         vendor_contact_verified_by: adminUserId
       })

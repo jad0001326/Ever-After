@@ -437,6 +437,10 @@ export type Database = {
           error_message: string | null;
           sent_at: string | null;
           delivered_at: string | null;
+          last_event_at: string | null;
+          bounce_type: string | null;
+          bounce_subtype: string | null;
+          bounce_message: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -476,6 +480,7 @@ export type Database = {
           resend_email_id: string;
           event_type: string;
           event_created_at: string | null;
+          event_data: Json;
           received_at: string;
         };
         Insert: {
@@ -483,6 +488,7 @@ export type Database = {
           resend_email_id: string;
           event_type: string;
           event_created_at?: string | null;
+          event_data?: Json;
           received_at?: string;
         };
         Update: never;
@@ -526,6 +532,9 @@ export type Database = {
           requires_manual_review: boolean;
           before_outreach_eligible: boolean;
           after_outreach_eligible: boolean | null;
+          current_outreach_eligible: boolean | null;
+          current_eligibility_blockers: string[];
+          eligibility_recalculated_at: string | null;
           attempt_count: number;
           next_attempt_at: string | null;
           locked_by: string | null;
@@ -643,6 +652,11 @@ export type Database = {
           verification_method: string | null;
           details: Json;
           checked_at: string;
+          candidate_role: "venue_contact" | "third_party_reference" | "unknown";
+          is_current_candidate: boolean;
+          source_url: string | null;
+          superseded_at: string | null;
+          superseded_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -700,6 +714,28 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      enrichment_contact_verification_log: {
+        Row: {
+          id: string;
+          enrichment_record_id: string;
+          venue_id: string;
+          previous_email: string | null;
+          new_email: string;
+          previous_source_url: string | null;
+          new_source_url: string;
+          verification_method: string;
+          verification_note: string | null;
+          previous_blockers: string[];
+          new_blockers: string[];
+          previous_eligible: boolean | null;
+          new_eligible: boolean;
+          verified_by: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       budget_plans: {
         Row: { id: string; user_id: string; name: string; scenario_name: string; currency: "GBP" | "EUR" | "USD"; total_budget_pence: number; plan_json: Json; created_at: string; updated_at: string; };
         Insert: { id: string; user_id: string; name: string; scenario_name?: string; currency?: "GBP" | "EUR" | "USD"; total_budget_pence?: number; plan_json: Json; created_at?: string; updated_at?: string; };
@@ -730,6 +766,28 @@ export type Database = {
       claim_enrichment_records: {
         Args: { p_run_id: string; p_worker_id: string; p_limit?: number };
         Returns: Database["public"]["Tables"]["enrichment_records"]["Row"][];
+      };
+      verify_enrichment_contact: {
+        Args: {
+          p_enrichment_record_id: string;
+          p_email: string;
+          p_source_url: string;
+          p_verification_method: string;
+          p_verification_note: string | null;
+          p_reviewer_id: string;
+          p_expected_updated_at: string;
+        };
+        Returns: Json;
+      };
+      record_outreach_email_event: {
+        Args: {
+          p_event_id: string;
+          p_resend_email_id: string;
+          p_event_type: string;
+          p_event_created_at: string | null;
+          p_event_data?: Json;
+        };
+        Returns: Json;
       };
     };
     Enums: {

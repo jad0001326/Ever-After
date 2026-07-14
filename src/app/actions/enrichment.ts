@@ -11,6 +11,14 @@ import {
 } from "@/lib/enrichment/rpc-result";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const contactVerificationFields = new Set([
+  "vendor_contact_email",
+  "vendor_contact_source_url",
+  "vendor_contact_verified_at",
+  "public_email",
+  "contact_page_url"
+]);
+
 export async function approveEnrichmentProposal(formData: FormData) {
   const { user } = await requireAdmin();
   const proposalId = requiredId(formData, "proposalId");
@@ -30,6 +38,49 @@ export async function approveEnrichmentProposal(formData: FormData) {
   if (!data) returnToRecord(recordId, "This proposal changed while you were reviewing it. Reload and try again.");
   revalidateEnrichment(recordId);
   redirect(`/admin/enrichment/${recordId}?message=Proposal+approved`);
+}
+
+/**
+ * Keeps ordinary, high-confidence changes to one deliberate action. Contact
+ * fields are intentionally routed through verifyEnrichmentContact so email,
+ * evidence and eligibility cannot drift apart again.
+ */
+export async function approveAndApplyEnrichmentProposal(formData: FormData) {
+  const { user } = await requireAdmin();
+  const proposalId = requiredId(formData, "proposalId");
+  const recordId = requiredId(formData, "recordId");
+  const database = requireEnrichmentClient(recordId);
+  const { data: proposal, error: proposalError } = await database
+    .from("enrichment_field_proposals")
+    .select("id, target_field, status")
+    .eq("id", proposalId)
+    .eq("enrichment_record_id", recordId)
+    .maybeSingle();
+  if (proposalError) returnToRecord(recordId, proposalError.message);
+  if (!proposal) returnToRecord(recordId, "This proposal is no longer available. Reload and try again.");
+  if (contactVerificationFields.has(proposal.target_field)) {
+    returnToRecord(recordId, "Contact changes need the dedicated Contact verification control so email, source and eligibility stay in sync.");
+  }
+  if (proposal.status === "pending") {
+    const { data: approved, error: approveError } = await database
+      .from("enrichment_field_proposals")
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
+      .eq("id", proposalId)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (approveError) returnToRecord(recordId, approveError.message);
+    if (!approved) returnToRecord(recordId, "This proposal changed while you were reviewing it. Reload and try again.");
+  } else if (proposal.status !== "approved") {
+    returnToRecord(recordId, "Only pending or approved proposals can be applied.");
+  }
+
+  const { data, error } = await database.rpc("apply_enrichment_proposal", { p_proposal_id: proposalId, p_reviewer_id: user.id });
+  if (error) returnToRecord(recordId, error.message);
+  const feedback = inspectEnrichmentRpcResult("apply", data as EnrichmentProposalRpcResult | null, { proposalId, recordId });
+  if (!feedback.confirmed) returnToRecord(recordId, feedback.message);
+  revalidateEnrichment(recordId);
+  redirect(`/admin/enrichment/${recordId}?message=${encodeURIComponent("Approved and applied")}`);
 }
 
 export async function rejectEnrichmentProposal(formData: FormData) {
@@ -147,12 +198,77 @@ export async function batchApproveSafeEnrichmentProposals(formData: FormData) {
   redirect(`/admin/enrichment?message=${encodeURIComponent(`Approved ${safeIds.length} safe proposal${safeIds.length === 1 ? "" : "s"}`)}`);
 }
 
+/** Apply every pending, high-confidence non-sensitive proposal in the current review run. */
+export async function applyAllSafeEnrichmentProposals(formData: FormData) {
+  const { user } = await requireAdmin();
+  const runId = requiredId(formData, "runId");
+  if (formData.get("approvalConfirmed") !== "on") redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=Confirm+the+safe+changes+before+applying+them`);
+  const database = requireEnrichmentClient();
+  const { data: latestRun, error: latestRunError } = await database
+    .from("enrichment_runs")
+    .select("id")
+    .eq("mode", "review")
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestRunError || latestRun?.id !== runId) {
+    redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=Only+the+latest+completed+review+run+can+be+changed`);
+  }
+
+  const { data: proposals, error: loadError } = await database
+    .from("enrichment_field_proposals")
+    .select("id, enrichment_record_id, target_field, confidence, status, enrichment_records!inner(run_id)")
+    .eq("enrichment_records.run_id", runId)
+    .eq("status", "pending")
+    .limit(2_000);
+  if (loadError) redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=${encodeURIComponent(loadError.message)}`);
+
+  const safe = (proposals ?? []).filter((proposal) =>
+    isSafeBatchEnrichmentProposal({ confidence: proposal.confidence, status: proposal.status, targetField: proposal.target_field })
+  );
+  if (safe.length === 0) redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=There+are+no+safe+pending+changes+to+apply`);
+
+  const proposalIds = safe.map((proposal) => proposal.id);
+  const { data: approved, error: approveError } = await database
+    .from("enrichment_field_proposals")
+    .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
+    .in("id", proposalIds)
+    .eq("status", "pending")
+    .select("id, enrichment_record_id");
+  if (approveError || (approved ?? []).length !== safe.length) {
+    redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=Some+safe+proposals+changed+before+they+could+be+applied.+Reload+and+try+again`);
+  }
+
+  let applied = 0;
+  let conflicts = 0;
+  for (const proposal of approved ?? []) {
+    const { data, error } = await database.rpc("apply_enrichment_proposal", { p_proposal_id: proposal.id, p_reviewer_id: user.id });
+    if (error || !data || data.status !== "applied") conflicts += 1;
+    else applied += 1;
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/enrichment");
+  const suffix = conflicts ? `; ${conflicts} need a refresh because their source value changed` : "";
+  redirect(`/admin/enrichment?run=${encodeURIComponent(runId)}&message=${encodeURIComponent(`Applied ${applied} safe change${applied === 1 ? "" : "s"}${suffix}`)}`);
+}
+
 export async function applyEnrichmentProposal(formData: FormData) {
   const { user } = await requireAdmin();
   const recordId = requiredId(formData, "recordId");
   const proposalId = requiredId(formData, "proposalId");
-  if (formData.get("applyConfirmed") !== "on") returnToRecord(recordId, "Confirm the reviewed changes before applying them.");
   const database = requireEnrichmentClient(recordId);
+  const { data: proposal, error: proposalError } = await database
+    .from("enrichment_field_proposals")
+    .select("target_field")
+    .eq("id", proposalId)
+    .eq("enrichment_record_id", recordId)
+    .maybeSingle();
+  if (proposalError) returnToRecord(recordId, proposalError.message);
+  if (!proposal) returnToRecord(recordId, "This proposal is no longer available. Reload and try again.");
+  if (contactVerificationFields.has(proposal.target_field)) {
+    returnToRecord(recordId, "Use Contact verification for contact changes so email, source and eligibility stay in sync.");
+  }
   const { data, error } = await database.rpc("apply_enrichment_proposal", {
     p_proposal_id: proposalId,
     p_reviewer_id: user.id
@@ -167,6 +283,38 @@ export async function applyEnrichmentProposal(formData: FormData) {
   if (!feedback.confirmed) returnToRecord(recordId, feedback.message);
   revalidateEnrichment(recordId);
   redirect(`/admin/enrichment/${recordId}?message=${encodeURIComponent(feedback.message)}`);
+}
+
+export async function verifyEnrichmentContact(formData: FormData) {
+  const { user } = await requireAdmin();
+  const recordId = requiredId(formData, "recordId");
+  const email = formData.get("email")?.toString().trim() ?? "";
+  const sourceUrl = formData.get("sourceUrl")?.toString().trim() ?? "";
+  const verificationMethod = formData.get("verificationMethod")?.toString().trim() ?? "";
+  const verificationNote = formData.get("verificationNote")?.toString().trim() ?? "";
+  const expectedUpdatedAt = formData.get("expectedUpdatedAt")?.toString().trim() ?? "";
+  if (email.length > 254 || sourceUrl.length > 2048 || verificationNote.length > 2_000 || !expectedUpdatedAt) {
+    returnToRecord(recordId, "The contact verification form contains an invalid value. Reload and try again.");
+  }
+  const database = requireEnrichmentClient(recordId);
+  const { data, error } = await database.rpc("verify_enrichment_contact", {
+    p_enrichment_record_id: recordId,
+    p_email: email,
+    p_source_url: sourceUrl,
+    p_verification_method: verificationMethod,
+    p_verification_note: verificationNote || null,
+    p_reviewer_id: user.id,
+    p_expected_updated_at: expectedUpdatedAt
+  });
+  if (error) returnToRecord(recordId, error.message);
+  const result = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : {};
+  const blockers = Array.isArray(result.blockers) ? result.blockers.filter((value): value is string => typeof value === "string") : [];
+  const message = result.eligible === true
+    ? "Contact verified. This venue is eligible for the next campaign."
+    : `Contact verified. Remaining send blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((blocker) => blocker.replaceAll("_", " ")).join(", ") || "none"}.`;
+  revalidateEnrichment(recordId);
+  revalidatePath("/admin/outreach");
+  redirect(`/admin/enrichment/${recordId}?message=${encodeURIComponent(message)}`);
 }
 
 export async function rollbackEnrichmentChange(formData: FormData) {

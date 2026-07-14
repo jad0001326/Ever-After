@@ -20,7 +20,7 @@ export default async function CampaignApprovalPage({
 }) {
   await requireAdmin();
   const [{ id }, { message }] = await Promise.all([params, searchParams]);
-  const { campaign, recipients } = await getOutreachCampaign(id);
+  const { campaign, recipients, delivery } = await getOutreachCampaign(id);
   const sample = recipients[0];
   const preview = sample
     ? buildOutreachEmail({
@@ -55,11 +55,13 @@ export default async function CampaignApprovalPage({
 
       {message ? <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
 
-      <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={<Users size={18} />} label="Recipients" value={campaign.recipient_count} />
-        <Stat icon={<MailCheck size={18} />} label="Accepted" value={campaign.sent_count} />
-        <Stat icon={<AlertTriangle size={18} />} label="Failed" value={campaign.failed_count} />
-        <Stat icon={<ShieldCheck size={18} />} label="Suppressed" value={campaign.skipped_count} />
+      <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Stat icon={<Users size={18} />} label="Accepted" value={delivery.accepted} />
+        <Stat icon={<MailCheck size={18} />} label="Delivered" value={delivery.delivered} />
+        <Stat icon={<AlertTriangle size={18} />} label="Bounced" value={delivery.bounced} />
+        <Stat icon={<AlertTriangle size={18} />} label="Unsubscribed" value={delivery.unsubscribed} />
+        <Stat icon={<AlertTriangle size={18} />} label="Failed" value={delivery.failed} />
+        <Stat icon={<ShieldCheck size={18} />} label="Suppressed" value={delivery.suppressed} />
       </section>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -100,6 +102,7 @@ export default async function CampaignApprovalPage({
                           </form>
                         ) : null}
                       </div>
+                      {recipient.status === "bounced" && recipient.bounce_message ? <p className="mt-2 text-xs leading-5 text-[#8a3c19]">{recipient.bounce_message}</p> : null}
                     </div>
                     <span className="rounded-full bg-[#f4efe7] px-2 py-1 text-[11px] font-semibold text-[#5b5348]">{recipient.status}</span>
                   </div>

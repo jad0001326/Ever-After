@@ -34,7 +34,7 @@ export function selectPrimaryEmailCheck(checks: ReviewRow[], preferredEmails: un
     const email = normalizeEmail(check.email);
     if (!email) return false;
     if (!isValidOutreachEmail(email)) return false;
-    return preferred.has(email) || (check.syntax_valid === true && check.domain_associated === true);
+    return check.is_current_candidate === true || check.candidate_role === "venue_contact" || preferred.has(email) || (check.syntax_valid === true && check.domain_associated === true);
   });
 
   let best: ReviewRow | undefined;
@@ -42,7 +42,9 @@ export function selectPrimaryEmailCheck(checks: ReviewRow[], preferredEmails: un
   for (const check of candidates) {
     const email = normalizeEmail(check.email);
     const preferredIndex = preferred.get(email);
-    const score = (preferredIndex == null ? 0 : 1_000 - preferredIndex * 10)
+    const score = (check.is_current_candidate === true ? 10_000 : 0)
+      + (check.candidate_role === "venue_contact" ? 5_000 : 0)
+      + (preferredIndex == null ? 0 : 1_000 - preferredIndex * 10)
       + (check.syntax_valid === true ? 100 : 0)
       + (check.domain_associated === true ? 50 : 0)
       + (emailStatusPriority[firstText(check.status)] ?? 0);
