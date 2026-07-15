@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en-GB">
+    <html data-scroll-behavior="smooth" lang="en-GB">
       <body className={`${sans.variable} ${display.variable} antialiased`}>
         <Header />
         <script
