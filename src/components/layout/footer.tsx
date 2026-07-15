@@ -19,6 +19,7 @@ export function Footer() {
           <div className="mt-4 grid gap-3 text-sm text-white/75">
             <Link className="transition hover:text-white" href="/venues">Wedding venues</Link>
             <Link className="transition hover:text-white" href="/wedding-budget-planner">Wedding budget planner</Link>
+            <Link className="transition hover:text-white" href="/guides">Planning guides</Link>
             <Link className="transition hover:text-white" href="/wedding-venues/castles">Castles</Link>
             <Link className="transition hover:text-white" href="/wedding-venues/country-estates">Country estates</Link>
           </div>

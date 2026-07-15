@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { absoluteUrl } from "@/lib/utils";
 import { budgetStarters } from "@/lib/budget/starters";
 import { venueCollections } from "@/lib/venue-collections";
+import { planningGuides } from "@/lib/planning-guides";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -15,6 +16,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/"), lastModified: now, priority: 1 },
     { url: absoluteUrl("/venues"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/wedding-budget-planner"), lastModified: now, priority: 0.9 },
+    { url: absoluteUrl("/guides"), lastModified: now, priority: 0.9 },
+    ...planningGuides.map((guide) => ({
+      url: absoluteUrl(`/guides/${guide.slug}`),
+      lastModified: guide.updatedAt,
+      priority: guide.featured ? 0.85 : 0.8
+    })),
     ...budgetStarters.map((starter) => ({
       url: absoluteUrl(`/wedding-budget-planner/${starter.slug}`),
       lastModified: now,

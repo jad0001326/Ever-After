@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/search/search-bar";
 import { ButtonLink } from "@/components/ui/button";
 import { buildMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/utils";
+import { planningGuides } from "@/lib/planning-guides";
 
 export const metadata = buildMetadata({
   title: "Find Scottish Wedding Venues",
@@ -176,6 +177,29 @@ export default function Home() {
             <ButtonLink href="/wedding-venues/ayrshire" variant="secondary">Wedding venues in Ayrshire</ButtonLink>
             <ButtonLink href="/wedding-venues/castles" variant="secondary">Scottish castle wedding venues</ButtonLink>
             <ButtonLink href="/wedding-venues/country-estates" variant="secondary">Country estate venues</ButtonLink>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+        <div className="grid gap-8 lg:grid-cols-[0.55fr_1.45fr] lg:gap-14">
+          <div>
+            <p className="text-sm font-semibold tracking-[0.16em] text-[#95502b]">Planning guides</p>
+            <h2 className="mt-3 font-display text-5xl font-semibold leading-[0.95] tracking-[-0.04em] sm:text-6xl">Useful before you book.</h2>
+            <p className="mt-5 max-w-sm text-base leading-7 text-[var(--muted)]">Understand the venue, the package and the true cost before the deposit leaves your account.</p>
+            <ButtonLink className="mt-7" href="/guides" variant="secondary">Explore all guides <ArrowRight size={17} /></ButtonLink>
+          </div>
+          <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+            {planningGuides.filter((guide) => guide.featured).map((guide, index) => (
+              <Link className="focus-ring group grid gap-2 py-6 sm:grid-cols-[2rem_1fr_auto] sm:items-center sm:gap-5" href={`/guides/${guide.slug}`} key={guide.slug}>
+                <span className="text-xs font-semibold text-[#a08a72]">0{index + 1}</span>
+                <div>
+                  <h3 className="font-display text-3xl font-semibold tracking-[-0.03em]">{guide.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{guide.description}</p>
+                </div>
+                <ArrowRight className="hidden transition group-hover:translate-x-1 sm:block" size={18} />
+              </Link>
+            ))}
           </div>
         </div>
       </section>
