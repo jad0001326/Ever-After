@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { absoluteUrl } from "@/lib/utils";
+import { budgetStarters } from "@/lib/budget/starters";
 import { venueCollections } from "@/lib/venue-collections";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -14,6 +15,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/"), lastModified: now, priority: 1 },
     { url: absoluteUrl("/venues"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/wedding-budget-planner"), lastModified: now, priority: 0.9 },
+    ...budgetStarters.map((starter) => ({
+      url: absoluteUrl(`/wedding-budget-planner/${starter.slug}`),
+      lastModified: now,
+      priority: 0.8
+    })),
     ...venueCollections.map((collection) => ({
       url: absoluteUrl(`/wedding-venues/${collection.slug}`),
       lastModified: now,
