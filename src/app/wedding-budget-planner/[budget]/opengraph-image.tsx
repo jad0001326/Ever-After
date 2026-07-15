@@ -4,7 +4,6 @@ import { getBudgetStarter } from "@/lib/budget/starters";
 export const alt = "An editable EverAft wedding budget example";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const runtime = "edge";
 
 export default async function OpenGraphImage({ params }: { params: Promise<{ budget: string }> }) {
   const { budget } = await params;
