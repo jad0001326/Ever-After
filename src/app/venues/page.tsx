@@ -13,13 +13,14 @@ import type { VenueSearchParams } from "@/types/venue";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<VenueSearchParams> }): Promise<Metadata> {
   const params = await searchParams;
-  const canonical = buildVenueHref({ ...params, page: params.page === "1" ? undefined : params.page });
-  return buildMetadata({
+  const hasQuery = Object.values(params).some(Boolean);
+  const metadata = buildMetadata({
     title: "Search Scottish Wedding Venues",
     description: "Compare wedding venues in Scotland by location, budget, guest capacity and venue style.",
-    path: canonical,
+    path: "/venues",
     keywords: ["wedding venues Scotland", "Scottish wedding venue search"]
   });
+  return hasQuery ? { ...metadata, robots: { index: false, follow: true } } : metadata;
 }
 
 export default async function VenuesPage({ searchParams }: { searchParams: Promise<VenueSearchParams> }) {

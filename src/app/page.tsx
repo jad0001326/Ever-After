@@ -169,10 +169,10 @@ export default function Home() {
             Start with popular Scotland wedding searches and quickly jump into venue lists tailored to your day.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <ButtonLink href="/venues?location=Edinburgh" variant="secondary">Wedding venues in Edinburgh</ButtonLink>
-            <ButtonLink href="/venues?location=Glasgow" variant="secondary">Wedding venues in Glasgow</ButtonLink>
-            <ButtonLink href="/venues?type=Castle" variant="secondary">Scottish castle wedding venues</ButtonLink>
-            <ButtonLink href="/venues?type=Country Estate" variant="secondary">Country estate venues</ButtonLink>
+            <ButtonLink href="/wedding-venues/edinburgh" variant="secondary">Wedding venues in Edinburgh</ButtonLink>
+            <ButtonLink href="/wedding-venues/glasgow" variant="secondary">Wedding venues in Glasgow</ButtonLink>
+            <ButtonLink href="/wedding-venues/castles" variant="secondary">Scottish castle wedding venues</ButtonLink>
+            <ButtonLink href="/wedding-venues/country-estates" variant="secondary">Country estate venues</ButtonLink>
           </div>
         </div>
       </section>
