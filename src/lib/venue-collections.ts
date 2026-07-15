@@ -128,6 +128,75 @@ export const venueCollections: readonly VenueCollection[] = [
       { question: "How do we add a hotel package to the budget planner?", answer: "Choose the venue inside the planner and use its published estimate where available, or replace it with the tailored quote supplied by the hotel." }
     ],
     relatedSlugs: ["glasgow", "edinburgh", "country-estates"]
+  },
+  {
+    slug: "stirling",
+    eyebrow: "Stirling venue guide",
+    title: "Wedding venues in Stirling",
+    description: "Compare wedding venues in Stirling, from historic city settings to castles, hotels and countryside venues across the region.",
+    intro: [
+      "Stirling sits at a useful meeting point for guests travelling from across central Scotland. Couples can combine the practical transport links of the city with historic buildings, lochside settings and countryside venues throughout the wider council area.",
+      "This guide brings together the Stirling venues currently published on EverAft. Compare capacity, setting and available prices, then add a promising venue to the budget planner to understand the full cost alongside catering, photography and every other part of the day."
+    ],
+    searchParams: { location: "Stirling" },
+    browseLabel: "Browse all Stirling matches",
+    highlights: [
+      { title: "Check the travel radius", copy: "The Stirling region is broad, so compare journey times from rail stations, airports and likely guest accommodation." },
+      { title: "Plan around the setting", copy: "Historic, rural and lochside venues can have different access, supplier and wet-weather considerations." },
+      { title: "Compare complete costs", copy: "Include required catering, accommodation, transport and exclusive-use conditions rather than comparing hire fees alone." }
+    ],
+    faqs: [
+      { question: "What kinds of wedding venues are available in Stirling?", answer: "The area includes historic buildings, castles, hotels and countryside venues, with options in Stirling itself and across the wider region." },
+      { question: "Is Stirling convenient for wedding guests?", answer: "Stirling has strong road and rail connections, but rural venues can still require arranged transport. Map the full guest journey before booking." },
+      { question: "Can I compare Stirling venues in the EverAft budget planner?", answer: "Yes. Open a venue profile or search inside the free planner, then use its published estimate or replace it with your tailored quote." }
+    ],
+    relatedSlugs: ["edinburgh", "glasgow", "perthshire"]
+  },
+  {
+    slug: "perthshire",
+    eyebrow: "Perthshire venue guide",
+    title: "Wedding venues in Perthshire",
+    description: "Explore wedding venues across Perthshire and Perth and Kinross, including country estates, hotels, castles and rural celebrations.",
+    intro: [
+      "Perthshire offers a wide mix of wedding settings, from venues around Perth to estates, castles and hotels surrounded by some of Scotland's most recognisable countryside. It can work particularly well for couples looking for space, accommodation or a full wedding weekend.",
+      "EverAft searches the current Perth and Kinross catalogue for this guide so that modern regional records and the familiar Perthshire search term lead to the same useful shortlist. Compare the details carefully and test the likely total in the budget planner."
+    ],
+    searchParams: { location: "Perth and Kinross" },
+    browseLabel: "Browse all Perthshire matches",
+    highlights: [
+      { title: "Look beyond the venue name", copy: "Perthshire searches often span Perth and Kinross, so check the exact location and realistic guest journey for every option." },
+      { title: "Price the full weekend", copy: "Rural venues may combine exclusive use, accommodation and several days of access. Compare the complete stay, not only the wedding day." },
+      { title: "Check supplier logistics", copy: "Ask about access times, travel fees, local accommodation and any approved or required supplier lists." }
+    ],
+    faqs: [
+      { question: "Does this guide include Perth and Kinross wedding venues?", answer: "Yes. Perthshire is widely used as a search term, while many current venue records use Perth and Kinross. This guide brings those relevant listings together." },
+      { question: "Are Perthshire venues suitable for wedding weekends?", answer: "Many estates and rural venues offer accommodation or multi-day access, but inclusions and minimum stays vary. Ask for the complete written cost." },
+      { question: "How should we compare rural Perthshire venue prices?", answer: "Include accommodation, catering, transport, minimum stays, ceremony fees and required suppliers alongside the headline venue price." }
+    ],
+    relatedSlugs: ["stirling", "country-estates", "castles"]
+  },
+  {
+    slug: "ayrshire",
+    eyebrow: "Ayrshire venue guide",
+    title: "Wedding venues in Ayrshire",
+    description: "Find wedding venues across Ayrshire, including coastal hotels, castles, country estates and celebrations near Ayr, Kilmarnock and the west coast.",
+    intro: [
+      "Ayrshire gives couples a substantial range of settings across North, South and East Ayrshire. The catalogue includes coastal venues, hotels, estates and historic properties, with Glasgow still within practical reach for many guests.",
+      "Use this page to compare the Ayrshire venues currently published on EverAft. Check the exact council area, travel plan and package detail, then bring the strongest option into the budget planner alongside the rest of your wedding costs."
+    ],
+    searchParams: { location: "Ayrshire" },
+    browseLabel: "Browse all Ayrshire matches",
+    highlights: [
+      { title: "Check the exact area", copy: "Ayrshire covers three council areas and a wide coastline, so venue-to-hotel and late-night travel times can vary considerably." },
+      { title: "Plan for coastal weather", copy: "For coastal or outdoor settings, ask to see the ceremony, drinks and photography plan for poor weather." },
+      { title: "Read package inclusions", copy: "Hotels and estates may combine room hire, food, drinks and bedrooms differently. Build a like-for-like total before deciding." }
+    ],
+    faqs: [
+      { question: "Which areas are included in an Ayrshire wedding venue search?", answer: "Relevant listings may be in North Ayrshire, South Ayrshire or East Ayrshire, including places around Ayr, Kilmarnock and the coast." },
+      { question: "Is Ayrshire accessible from Glasgow?", answer: "Many Ayrshire venues are within practical travelling distance of Glasgow, but the region is broad. Check the exact route, public transport and late-night options." },
+      { question: "Can I add an Ayrshire venue to a starter wedding budget?", answer: "Yes. Open a venue in EverAft and add it to the planner, or begin with an editable £15,000, £20,000 or £30,000 example and replace the venue estimate." }
+    ],
+    relatedSlugs: ["glasgow", "country-estates", "luxury-hotels"]
   }
 ] as const;
 

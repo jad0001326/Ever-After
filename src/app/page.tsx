@@ -171,6 +171,9 @@ export default function Home() {
           <div className="mt-6 flex flex-wrap gap-3">
             <ButtonLink href="/wedding-venues/edinburgh" variant="secondary">Wedding venues in Edinburgh</ButtonLink>
             <ButtonLink href="/wedding-venues/glasgow" variant="secondary">Wedding venues in Glasgow</ButtonLink>
+            <ButtonLink href="/wedding-venues/stirling" variant="secondary">Wedding venues in Stirling</ButtonLink>
+            <ButtonLink href="/wedding-venues/perthshire" variant="secondary">Wedding venues in Perthshire</ButtonLink>
+            <ButtonLink href="/wedding-venues/ayrshire" variant="secondary">Wedding venues in Ayrshire</ButtonLink>
             <ButtonLink href="/wedding-venues/castles" variant="secondary">Scottish castle wedding venues</ButtonLink>
             <ButtonLink href="/wedding-venues/country-estates" variant="secondary">Country estate venues</ButtonLink>
           </div>
