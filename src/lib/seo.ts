@@ -14,7 +14,7 @@ export function buildMetadata({
   title: string;
   description: string;
   path?: string;
-  image?: string;
+  image?: string | null;
   keywords?: string[];
 }): Metadata {
   const url = absoluteUrl(path);
@@ -33,13 +33,13 @@ export function buildMetadata({
       description,
       siteName: SITE_NAME,
       locale: "en_GB",
-      images: [{ url: image, alt: `${title} | ${SITE_NAME}` }]
+      ...(image ? { images: [{ url: image, alt: `${title} | ${SITE_NAME}` }] } : {})
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image]
+      ...(image ? { images: [image] } : {})
     }
   };
 }
