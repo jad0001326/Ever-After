@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `£${formattedBudget} Wedding Budget Example`,
     description: `${starter.description} Open the free EverAft planner and adapt every estimate to your own wedding.`,
     path: `/wedding-budget-planner/${starter.slug}`,
+    image: null,
     keywords: [`£${formattedBudget} wedding budget`, `${formattedBudget} wedding budget breakdown`, "UK wedding budget example"]
   });
 }
