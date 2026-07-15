@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: collection.title,
     description: collection.description,
     path: `/wedding-venues/${collection.slug}`,
+    image: null,
     keywords: [collection.title, `${collection.title} prices`, "Scottish wedding venues"]
   });
 }
