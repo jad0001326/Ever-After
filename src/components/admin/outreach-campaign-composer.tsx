@@ -5,7 +5,7 @@ import { Eye, MailCheck, Users } from "lucide-react";
 import { createOutreachCampaignDraftAction } from "@/app/actions/outreach";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { buildOutreachEmail, defaultOutreachCopy, type OutreachCampaignKind } from "@/lib/outreach-email";
+import { buildOutreachEmail, defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
 import type { OutreachCandidate } from "@/lib/outreach-types";
 import { absoluteUrl } from "@/lib/utils";
 
@@ -13,14 +13,17 @@ export function OutreachCampaignComposer({
   candidates,
   country,
   kind,
+  audienceType,
   region
 }: {
   candidates: OutreachCandidate[];
   country: string;
   kind: OutreachCampaignKind;
+  audienceType: OutreachAudienceType;
   region?: string;
 }) {
-  const defaults = defaultOutreachCopy[kind];
+  const defaults = defaultOutreachCopyFor(audienceType, kind);
+  const audienceLabel = audienceType === "photographer" ? "photographer" : "venue";
   const [selected, setSelected] = useState(() => new Set(candidates.map((candidate) => candidate.id)));
   const [subject, setSubject] = useState(defaults.subject);
   const [preheader, setPreheader] = useState(defaults.preheader);
@@ -34,17 +37,18 @@ export function OutreachCampaignComposer({
             kind,
             copy: { subject, preheader, introText, offerText },
             recipient: {
+              audienceType,
               businessName: sample.name,
               town: sample.town,
-              venueSlug: sample.slug,
+              listingSlug: sample.slug,
               unsubscribeUrl: absoluteUrl("/outreach/unsubscribe?preview=1")
             }
           })
         : null,
-    [introText, kind, offerText, preheader, sample, subject]
+    [audienceType, introText, kind, offerText, preheader, sample, subject]
   );
 
-  function toggleVenue(id: string) {
+  function toggleBusiness(id: string) {
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -60,6 +64,7 @@ export function OutreachCampaignComposer({
   return (
     <form action={createOutreachCampaignDraftAction} className="grid gap-6">
       <input name="kind" type="hidden" value={kind} />
+      <input name="audienceType" type="hidden" value={audienceType} />
       <input name="country" type="hidden" value={country} />
       {region ? <input name="region" type="hidden" value={region} /> : null}
       <input name="followUpAfterDays" type="hidden" value="7" />
@@ -69,7 +74,7 @@ export function OutreachCampaignComposer({
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">1. Audience</p>
             <h2 className="mt-2 font-display text-4xl font-semibold">Choose the businesses</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Only published, unclaimed venues with valid, unsuppressed contact addresses are shown.</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{audienceType === "photographer" ? "Only unclaimed photographers with a verified eligible legal basis, official source and unsuppressed address are shown." : "Only published, unclaimed venues with valid, unsuppressed contact addresses are shown."}</p>
           </div>
           <div className="rounded-2xl bg-[#f4efe7] px-4 py-3 text-sm text-[#4a443c]">
             <Users className="mr-2 inline text-[#95502b]" size={17} />
@@ -87,8 +92,8 @@ export function OutreachCampaignComposer({
               <input
                 checked={selected.has(candidate.id)}
                 className="mt-1 size-4 accent-[#24432f]"
-                name="venueIds"
-                onChange={() => toggleVenue(candidate.id)}
+                name="entityIds"
+                onChange={() => toggleBusiness(candidate.id)}
                 type="checkbox"
                 value={candidate.id}
               />
@@ -99,7 +104,7 @@ export function OutreachCampaignComposer({
               <span className="col-start-2 break-all text-xs text-[var(--muted)] sm:col-start-auto sm:text-right">{candidate.email}</span>
             </label>
           ))}
-          {candidates.length === 0 ? <p className="px-5 py-8 text-sm text-[var(--muted)]">No eligible venues are available for this campaign type.</p> : null}
+          {candidates.length === 0 ? <p className="px-5 py-8 text-sm text-[var(--muted)]">No eligible {audienceLabel}s are available for this campaign type.</p> : null}
         </div>
       </section>
 
@@ -109,7 +114,7 @@ export function OutreachCampaignComposer({
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Use <code>{"{business_name}"}</code> and <code>{"{town}"}</code> for safe personalisation.</p>
         <div className="mt-6 grid gap-5">
           <Field label="Campaign name">
-            <Input name="campaignName" required defaultValue={kind === "follow_up" ? "Venue follow-up" : "Founding venue invitation"} maxLength={120} />
+            <Input name="campaignName" required defaultValue={`${audienceType === "photographer" ? "Photographer" : "Venue"} ${kind === "follow_up" ? "follow-up" : "founding invitation"}`} maxLength={120} />
           </Field>
           <Field label="Email subject">
             <Input name="subject" required maxLength={160} value={subject} onChange={(event) => setSubject(event.target.value)} />
@@ -140,14 +145,14 @@ export function OutreachCampaignComposer({
             <iframe className="h-[760px] w-full bg-[#f2ede4]" sandbox="" srcDoc={preview.html} title="EverAft outreach email preview" />
           </div>
         ) : (
-          <p className="mt-5 rounded-2xl bg-[#f4efe7] px-4 py-4 text-sm text-[var(--muted)]">Select a venue to generate the personalised preview.</p>
+          <p className="mt-5 rounded-2xl bg-[#f4efe7] px-4 py-4 text-sm text-[var(--muted)]">Select a {audienceLabel} to generate the personalised preview.</p>
         )}
       </section>
 
       <section className="rounded-3xl border border-[#d7c6aa] bg-[#fffaf0] p-5 sm:p-6">
         <label className="flex items-start gap-3 text-sm leading-6 text-[#4a443c]">
           <input className="mt-1 size-4 shrink-0 accent-[#24432f]" name="complianceConfirmed" required type="checkbox" />
-          <span>I confirm the selected addresses are appropriate business contacts and the recipients are corporate subscribers or EverAft otherwise has a valid basis to contact them. Suppressed addresses will still be removed automatically before sending.</span>
+          <span>I have reviewed the protected eligibility records and confirm each selected address has a recorded corporate-subscriber, consent, or soft-opt-in basis. Suppressed addresses will still be removed automatically before sending.</span>
         </label>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[var(--muted)]">This creates an approval draft. It does not send any email.</p>

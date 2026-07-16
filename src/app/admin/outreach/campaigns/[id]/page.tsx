@@ -32,9 +32,10 @@ export default async function CampaignApprovalPage({
           offerText: campaign.offer_text
         },
         recipient: {
+          audienceType: campaign.audience_type,
           businessName: sample.business_name,
           town: sample.town,
-          venueSlug: sample.venue_slug,
+          listingSlug: sample.listing_slug,
           unsubscribeUrl: absoluteUrl("/outreach/unsubscribe?preview=1")
         }
       })
@@ -120,7 +121,7 @@ export default async function CampaignApprovalPage({
                 <input name="campaignId" type="hidden" value={campaign.id} />
                 <label className="flex items-start gap-3 text-sm leading-6 text-[#4a443c]">
                   <input className="mt-1 size-4 shrink-0 accent-[#24432f]" name="approvalConfirmed" required type="checkbox" />
-                  <span>I have reviewed the recipient list, public contact sources, subject and HTML preview; confirmed these are eligible corporate business contacts rather than sole traders or personal subscribers; and approve sending this exact campaign to all {campaign.recipient_count} listed businesses.</span>
+                  <span>I have reviewed the recipient list, protected eligibility evidence, public contact sources, subject and HTML preview; confirmed each recipient has a recorded corporate-subscriber, consent, or soft-opt-in basis; and approve sending this exact campaign to all {campaign.recipient_count} listed businesses.</span>
                 </label>
                 <Button className="mt-5 w-full" disabled={!sendingEnabled} type="submit"><CheckCircle2 size={17} /> Approve and send campaign</Button>
               </form>

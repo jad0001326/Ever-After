@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { supplierDirectoryCategories } from "@/data/supplier-directory";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasOfficialContactSource, isValidOutreachEmail, normalizeEmail, validPublicUrl } from "@/lib/outreach-validation";
 
 function text(formData: FormData, key: string) { return formData.get(key)?.toString().trim() ?? ""; }
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
@@ -100,6 +101,38 @@ export async function saveSupplierListing(formData: FormData) {
     }, { onConflict: "supplier_id" });
     if (error) redirect(`/admin/suppliers/${result.data.id}/edit?message=${encodeURIComponent(error.message)}`);
   }
+
+  const outreachEmail = normalizeEmail(text(formData, "outreachEmail"));
+  const contactSourceUrl = validPublicUrl(text(formData, "contactSourceUrl"));
+  const businessStructureInput = text(formData, "businessStructure");
+  const businessStructure = ["unknown", "limited_company", "limited_liability_partnership", "scottish_partnership", "other_corporate", "sole_trader", "unincorporated_partnership"].includes(businessStructureInput) ? businessStructureInput : "unknown";
+  const legalBasisInput = text(formData, "legalBasis");
+  const legalBasis = ["unreviewed", "corporate_subscriber", "consent", "soft_opt_in", "not_eligible"].includes(legalBasisInput) ? legalBasisInput : "unreviewed";
+  const consentEvidenceUrl = validPublicUrl(text(formData, "consentEvidenceUrl"));
+  const eligible = ["corporate_subscriber", "consent", "soft_opt_in"].includes(legalBasis);
+  const corporateStructures = ["limited_company", "limited_liability_partnership", "scottish_partnership", "other_corporate"];
+  const contactRedirect = `/admin/suppliers/${result.data.id}/edit`;
+
+  if (outreachEmail && !isValidOutreachEmail(outreachEmail)) redirect(`${contactRedirect}?message=Use+a+valid+business+invitation+email`);
+  if (text(formData, "contactSourceUrl") && !contactSourceUrl) redirect(`${contactRedirect}?message=Use+a+valid+public+contact+source+URL`);
+  if (contactSourceUrl && !hasOfficialContactSource(contactSourceUrl, website)) redirect(`${contactRedirect}?message=The+invitation+contact+source+must+be+on+the+official+website`);
+  if (eligible && (!outreachEmail || !contactSourceUrl)) redirect(`${contactRedirect}?message=Eligible+contacts+need+an+email+and+official+source+URL`);
+  if (legalBasis === "corporate_subscriber" && !corporateStructures.includes(businessStructure)) redirect(`${contactRedirect}?message=Corporate+subscriber+basis+requires+a+verified+corporate+business+structure`);
+  if (["consent", "soft_opt_in"].includes(legalBasis) && !consentEvidenceUrl) redirect(`${contactRedirect}?message=Consent+or+soft+opt-in+requires+an+evidence+URL`);
+
+  const { error: outreachError } = await supabase.from("supplier_outreach_contacts").upsert({
+    supplier_id: result.data.id,
+    email: outreachEmail || null,
+    contact_source_url: contactSourceUrl,
+    business_structure: businessStructure as "unknown" | "limited_company" | "limited_liability_partnership" | "scottish_partnership" | "other_corporate" | "sole_trader" | "unincorporated_partnership",
+    company_number: text(formData, "companyNumber") || null,
+    legal_basis: legalBasis as "unreviewed" | "corporate_subscriber" | "consent" | "soft_opt_in" | "not_eligible",
+    consent_evidence_url: consentEvidenceUrl,
+    eligibility_notes: text(formData, "eligibilityNotes") || null,
+    verified_at: eligible ? new Date().toISOString() : null,
+    verified_by: eligible ? user.id : null
+  }, { onConflict: "supplier_id" });
+  if (outreachError) redirect(`${contactRedirect}?message=${encodeURIComponent(outreachError.message)}`);
 
   revalidatePath("/admin/suppliers");
   revalidatePath("/photographers");

@@ -6,8 +6,9 @@ import type { Database } from "@/types/database";
 
 type Supplier = Database["public"]["Tables"]["supplier_listings"]["Row"];
 type Photographer = Database["public"]["Tables"]["photographer_profiles"]["Row"];
+type OutreachContact = Database["public"]["Tables"]["supplier_outreach_contacts"]["Row"];
 
-export function SupplierForm({ supplier, photographer }: { supplier?: Supplier | null; photographer?: Photographer | null }) {
+export function SupplierForm({ supplier, photographer, outreachContact }: { supplier?: Supplier | null; photographer?: Photographer | null; outreachContact?: OutreachContact | null }) {
   return (
     <form action={saveSupplierListing} className="grid gap-6">
       {supplier ? <input name="id" type="hidden" value={supplier.id} /> : null}
@@ -28,6 +29,22 @@ export function SupplierForm({ supplier, photographer }: { supplier?: Supplier |
           <div className="sm:col-span-2"><Field label="Full description"><Textarea className="min-h-56" defaultValue={supplier?.description ?? ""} maxLength={5000} name="description" required /></Field></div>
           <div className="sm:col-span-2"><Field label="Services (one per line)"><Textarea defaultValue={supplier?.services.join("\n") ?? ""} name="services" /></Field></div>
         </div>
+      </section>
+
+      <section className="rounded-3xl border border-[#d7c6aa] bg-[#fffaf0] p-5 sm:p-7">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Private admin data</p>
+        <h2 className="mt-2 font-display text-3xl font-semibold">Invitation eligibility</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-[#665b4b]">These fields are never shown on the public profile. An address is only eligible for an invitation after its source and legal basis have been reviewed. Sole traders and unincorporated partnerships are not eligible for cold email without recorded consent or soft opt-in evidence.</p>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <Field label="Invitation email"><Input defaultValue={outreachContact?.email ?? ""} maxLength={254} name="outreachEmail" type="email" /></Field>
+          <Field label="Official contact source URL"><Input defaultValue={outreachContact?.contact_source_url ?? ""} name="contactSourceUrl" placeholder="Page on the official website" type="url" /></Field>
+          <Field label="Business structure"><Select defaultValue={outreachContact?.business_structure ?? "unknown"} name="businessStructure"><option value="unknown">Unknown / not checked</option><option value="limited_company">Limited company</option><option value="limited_liability_partnership">Limited liability partnership</option><option value="scottish_partnership">Scottish partnership</option><option value="other_corporate">Other corporate body</option><option value="sole_trader">Sole trader</option><option value="unincorporated_partnership">Unincorporated partnership</option></Select></Field>
+          <Field label="Companies House number"><Input defaultValue={outreachContact?.company_number ?? ""} maxLength={32} name="companyNumber" /></Field>
+          <Field label="Legal basis"><Select defaultValue={outreachContact?.legal_basis ?? "unreviewed"} name="legalBasis"><option value="unreviewed">Unreviewed — not eligible</option><option value="corporate_subscriber">Corporate subscriber</option><option value="consent">Recorded consent</option><option value="soft_opt_in">Recorded soft opt-in</option><option value="not_eligible">Not eligible</option></Select></Field>
+          <Field label="Consent / soft opt-in evidence URL"><Input defaultValue={outreachContact?.consent_evidence_url ?? ""} name="consentEvidenceUrl" placeholder="Required for consent or soft opt-in" type="url" /></Field>
+          <div className="sm:col-span-2"><Field label="Eligibility notes"><Textarea defaultValue={outreachContact?.eligibility_notes ?? ""} maxLength={2000} name="eligibilityNotes" placeholder="What was checked, when, and why this basis applies" /></Field></div>
+        </div>
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.15em] text-[#715622]">Invite status: {outreachContact?.invite_status?.replaceAll("_", " ") ?? "not sent"}</p>
       </section>
 
       <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7">

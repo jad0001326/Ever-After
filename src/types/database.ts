@@ -499,6 +499,80 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      supplier_outreach_contacts: {
+        Row: {
+          supplier_id: string;
+          email: string | null;
+          normalized_email: string | null;
+          contact_source_url: string | null;
+          business_structure: "unknown" | "limited_company" | "limited_liability_partnership" | "scottish_partnership" | "other_corporate" | "sole_trader" | "unincorporated_partnership";
+          company_number: string | null;
+          legal_basis: "unreviewed" | "corporate_subscriber" | "consent" | "soft_opt_in" | "not_eligible";
+          consent_evidence_url: string | null;
+          eligibility_notes: string | null;
+          invite_status: "not_sent" | "sent" | "bounced" | "replied" | "claimed" | "suppressed";
+          invite_sent_at: string | null;
+          verified_at: string | null;
+          verified_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_outreach_contacts"]["Row"]> & { supplier_id: string };
+        Update: Partial<Database["public"]["Tables"]["supplier_outreach_contacts"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_claims: {
+        Row: {
+          id: string;
+          supplier_id: string;
+          claimant_user_id: string;
+          claimant_name: string;
+          claimant_email: string;
+          claimant_role: string;
+          business_email: string;
+          business_phone: string;
+          message: string;
+          evidence_url: string | null;
+          status: "pending" | "approved" | "rejected";
+          permission_confirmed: boolean;
+          terms_accepted: boolean;
+          admin_notes: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_claims"]["Row"]> & {
+          supplier_id: string;
+          claimant_user_id: string;
+          claimant_name: string;
+          claimant_email: string;
+          claimant_role: string;
+          business_email: string;
+          business_phone: string;
+          message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_claims"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_claim_audit_log: {
+        Row: {
+          id: string;
+          claim_id: string;
+          supplier_id: string;
+          admin_user_id: string | null;
+          action: "approved" | "rejected" | "reopened";
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_claim_audit_log"]["Row"]> & {
+          claim_id: string;
+          supplier_id: string;
+          action: "approved" | "rejected" | "reopened";
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_claim_audit_log"]["Row"]>;
+        Relationships: [];
+      };
       newsletter_subscribers: {
         Row: {
           id: string;
@@ -519,6 +593,7 @@ export type Database = {
           id: string;
           name: string;
           kind: "initial_invite" | "follow_up";
+          audience_type: "venue" | "photographer";
           source: "admin" | "chatgpt";
           status: "draft" | "sending" | "sent" | "partially_sent" | "failed" | "cancelled";
           subject: string;
@@ -555,7 +630,10 @@ export type Database = {
           id: string;
           campaign_id: string;
           venue_id: string | null;
+          supplier_id: string | null;
+          subject_type: "venue" | "photographer";
           venue_slug: string;
+          listing_slug: string;
           business_name: string;
           town: string;
           region: string;

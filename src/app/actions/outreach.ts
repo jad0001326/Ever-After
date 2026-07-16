@@ -4,30 +4,34 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminCampaignDraft, recordOutreachRecipientAction, sendCampaignById, unsubscribeOutreachRecipient } from "@/lib/outreach";
-import { defaultOutreachCopy, type OutreachCampaignKind } from "@/lib/outreach-email";
+import { defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
 
 export async function createOutreachCampaignDraftAction(formData: FormData) {
   const { user } = await requireAdmin();
-  const venueIds = Array.from(new Set(formData.getAll("venueIds").map((value) => value.toString()).filter(Boolean))).slice(0, 100);
+  const entityIds = Array.from(new Set(formData.getAll("entityIds").map((value) => value.toString()).filter(Boolean))).slice(0, 100);
   const kind: OutreachCampaignKind = formData.get("kind")?.toString() === "follow_up" ? "follow_up" : "initial_invite";
-  const fallback = defaultOutreachCopy[kind];
+  const audienceType: OutreachAudienceType = formData.get("audienceType")?.toString() === "photographer" ? "photographer" : "venue";
+  const fallback = defaultOutreachCopyFor(audienceType, kind);
+  const returnUrl = `/admin/outreach?audience=${audienceType}&kind=${kind}`;
 
-  if (venueIds.length === 0) redirect("/admin/outreach?message=Select+at+least+one+eligible+venue");
+  if (entityIds.length === 0) redirect(`${returnUrl}&message=Select+at+least+one+eligible+business`);
   if (formData.get("complianceConfirmed") !== "on") {
-    redirect("/admin/outreach?message=Confirm+the+recipient+eligibility+and+opt-out+statement+before+creating+a+campaign");
+    redirect(`${returnUrl}&message=Confirm+the+recipient+eligibility+and+opt-out+statement+before+creating+a+campaign`);
   }
 
   try {
     const campaign = await createAdminCampaignDraft({
       adminUserId: user.id,
-      campaignName: formData.get("campaignName")?.toString() || `EverAft venue invitation ${new Date().toLocaleDateString("en-GB")}`,
+      campaignName: formData.get("campaignName")?.toString() || `EverAft ${audienceType} invitation ${new Date().toLocaleDateString("en-GB")}`,
       filter: {
         kind,
+        audienceType,
         country: formData.get("country")?.toString() || "Scotland",
         region: formData.get("region")?.toString() || undefined,
-        venueIds,
+        venueIds: audienceType === "venue" ? entityIds : undefined,
+        supplierIds: audienceType === "photographer" ? entityIds : undefined,
         followUpAfterDays: Number(formData.get("followUpAfterDays") || 7),
-        limit: venueIds.length
+        limit: entityIds.length
       },
       copy: {
         subject: formData.get("subject")?.toString() || fallback.subject,
@@ -40,7 +44,7 @@ export async function createOutreachCampaignDraftAction(formData: FormData) {
   } catch (error) {
     if (isNextRedirect(error)) throw error;
     const message = error instanceof Error ? error.message : "Could not create campaign.";
-    redirect(`/admin/outreach?message=${encodeURIComponent(message)}`);
+    redirect(`${returnUrl}&message=${encodeURIComponent(message)}`);
   }
 }
 

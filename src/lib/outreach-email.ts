@@ -1,6 +1,7 @@
 import { absoluteUrl } from "@/lib/utils";
 
 export type OutreachCampaignKind = "initial_invite" | "follow_up";
+export type OutreachAudienceType = "venue" | "photographer";
 
 export type OutreachCopy = {
   subject: string;
@@ -10,9 +11,10 @@ export type OutreachCopy = {
 };
 
 export type OutreachEmailRecipient = {
+  audienceType: OutreachAudienceType;
   businessName: string;
   town: string;
-  venueSlug: string;
+  listingSlug: string;
   unsubscribeUrl: string;
 };
 
@@ -35,6 +37,29 @@ export const defaultOutreachCopy: Record<OutreachCampaignKind, OutreachCopy> = {
   }
 };
 
+export const defaultPhotographerOutreachCopy: Record<OutreachCampaignKind, OutreachCopy> = {
+  initial_invite: {
+    subject: "An invitation for {business_name} from EverAft",
+    preheader: "Claim your complimentary founding photographer profile on EverAft.",
+    introText:
+      "We’re expanding EverAft to help couples find trusted wedding photographers through useful details such as style, location, travel coverage and pricing. We’ve prepared a complimentary draft profile for {business_name} and would like to invite you to claim it, check the information and decide whether you would like it published.",
+    offerText:
+      "Founding photographers can claim and review their profile without obligation. Nothing is published until the business details are checked, and portfolio images are only used with permission."
+  },
+  follow_up: {
+    subject: "A quick follow-up for {business_name} from EverAft",
+    preheader: "Your EverAft photographer invitation is still ready to review.",
+    introText:
+      "I wanted to follow up on the invitation for {business_name} to join EverAft’s founding photographer collection. Claiming the draft lets you correct the details, confirm the areas you cover and decide what may be published.",
+    offerText:
+      "The complimentary founding profile remains available during launch. There is no obligation to claim it, and no portfolio image will be displayed without permission."
+  }
+};
+
+export function defaultOutreachCopyFor(audienceType: OutreachAudienceType, kind: OutreachCampaignKind) {
+  return audienceType === "photographer" ? defaultPhotographerOutreachCopy[kind] : defaultOutreachCopy[kind];
+}
+
 export function renderOutreachTemplate(value: string, recipient: Pick<OutreachEmailRecipient, "businessName" | "town">) {
   return value
     .replaceAll("{business_name}", recipient.businessName)
@@ -54,11 +79,12 @@ export function buildOutreachEmail({
   const preheader = renderOutreachTemplate(copy.preheader, recipient);
   const introText = renderOutreachTemplate(copy.introText, recipient);
   const offerText = renderOutreachTemplate(copy.offerText, recipient);
-  const claimUrl = absoluteUrl(`/venues/${recipient.venueSlug}/claim`);
-  const listingUrl = absoluteUrl(`/venues/${recipient.venueSlug}`);
+  const isPhotographer = recipient.audienceType === "photographer";
+  const claimUrl = absoluteUrl(isPhotographer ? `/photographers/${recipient.listingSlug}/claim` : `/venues/${recipient.listingSlug}/claim`);
+  const listingUrl = isPhotographer ? null : absoluteUrl(`/venues/${recipient.listingSlug}`);
   const heroUrl = absoluteUrl("/images/everaft-wedding-reception.png");
   const privacyUrl = absoluteUrl("/privacy");
-  const headline = kind === "follow_up" ? "Your invitation is still open." : "A thoughtful introduction for your venue.";
+  const headline = kind === "follow_up" ? "Your invitation is still open." : isPhotographer ? "An invitation to join our founding collection." : "A thoughtful introduction for your venue.";
 
   const text = [
     `Hi ${recipient.businessName} team,`,
@@ -66,7 +92,7 @@ export function buildOutreachEmail({
     introText,
     "",
     `Review and claim your listing: ${claimUrl}`,
-    `View the current listing: ${listingUrl}`,
+    ...(listingUrl ? [`View the current listing: ${listingUrl}`] : []),
     "",
     offerText,
     "",
@@ -76,7 +102,7 @@ export function buildOutreachEmail({
     "james@everaft.co.uk",
     "",
     `Privacy: ${privacyUrl}`,
-    `Unsubscribe from venue invitations: ${recipient.unsubscribeUrl}`
+    `Unsubscribe from business invitations: ${recipient.unsubscribeUrl}`
   ].join("\n");
 
   const html = `<!doctype html>
@@ -96,14 +122,14 @@ export function buildOutreachEmail({
               <td align="center" style="padding:27px 28px 23px;background:#24432f;">
                 <div style="width:118px;height:13px;border-top:1px solid #bc845f;border-radius:50%;opacity:.9;"></div>
                 <div style="margin-top:-4px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:35px;font-weight:600;letter-spacing:2px;line-height:1;">EverAft</div>
-                <div style="margin-top:8px;color:#e8d4c0;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;">Wedding venue discovery</div>
+                <div style="margin-top:8px;color:#e8d4c0;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;">Wedding ${isPhotographer ? "supplier" : "venue"} discovery</div>
               </td>
             </tr>
-            <tr>
+            ${isPhotographer ? "" : `<tr>
               <td style="padding:0;">
                 <img src="${escapeAttribute(heroUrl)}" width="620" alt="An elegant wedding reception" style="display:block;width:100%;height:auto;max-height:300px;object-fit:cover;border:0;">
               </td>
-            </tr>
+            </tr>`}
             <tr>
               <td style="padding:42px 42px 20px;">
                 <div style="color:#9c542d;font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;">For ${escapeHtml(recipient.businessName)}</div>
@@ -116,7 +142,7 @@ export function buildOutreachEmail({
               <td align="center" style="padding:8px 42px 33px;">
                 <a href="${escapeAttribute(claimUrl)}" style="display:inline-block;padding:15px 26px;border-radius:999px;background:#24432f;color:#fff;font-size:15px;font-weight:700;text-decoration:none;">Review and claim your listing</a>
                 <div style="margin-top:16px;font-size:13px;line-height:1.6;color:#625f57;">
-                  <a href="${escapeAttribute(listingUrl)}" style="color:#35533e;font-weight:700;text-decoration:underline;text-underline-offset:3px;">View the current listing</a>
+                  ${listingUrl ? `<a href="${escapeAttribute(listingUrl)}" style="color:#35533e;font-weight:700;text-decoration:underline;text-underline-offset:3px;">View the current listing</a>` : "Your profile remains private until it has been claimed and reviewed."}
                 </div>
               </td>
             </tr>
@@ -139,8 +165,8 @@ export function buildOutreachEmail({
             </tr>
             <tr>
               <td style="padding:25px 34px;background:#ebe3d8;color:#625f57;font-size:11px;line-height:1.7;text-align:center;">
-                <strong style="color:#24432f;">EverAft</strong> · Curated wedding venue discovery<br>
-                Sent by EverAft because this address is published for ${escapeHtml(recipient.businessName)} or was supplied for venue contact.<br>
+                <strong style="color:#24432f;">EverAft</strong> · Curated wedding planning<br>
+                Sent by EverAft because this address is published for ${escapeHtml(recipient.businessName)} or was supplied for business contact.<br>
                 Reply to <a href="mailto:james@everaft.co.uk" style="color:#35533e;">james@everaft.co.uk</a> ·
                 <a href="${escapeAttribute(privacyUrl)}" style="color:#35533e;">Privacy</a> ·
                 <a href="${escapeAttribute(recipient.unsubscribeUrl)}" style="color:#35533e;">Unsubscribe</a>

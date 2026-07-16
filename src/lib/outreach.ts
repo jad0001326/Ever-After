@@ -25,6 +25,7 @@ import type { Database, Json } from "@/types/database";
 type Campaign = Database["public"]["Tables"]["outreach_campaigns"]["Row"];
 type CampaignRecipient = Database["public"]["Tables"]["outreach_campaign_recipients"]["Row"];
 type SuppressionReason = Database["public"]["Tables"]["outreach_suppressions"]["Row"]["reason"];
+type SupplierOutreachContact = Database["public"]["Tables"]["supplier_outreach_contacts"]["Row"];
 
 type VenueRow = Pick<
   Database["public"]["Tables"]["venues"]["Row"],
@@ -59,6 +60,7 @@ export type OutreachCandidateResult = {
     suppressed: number;
     existingOutreach: number;
     unverifiedContact: number;
+    ineligibleLegalBasis: number;
     overLimit: number;
   };
 };
@@ -219,7 +221,7 @@ export async function listOutreachCandidates(
 
   const candidates: OutreachCandidate[] = [];
   const seen = new Set<string>();
-  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, overLimit: 0 };
+  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, ineligibleLegalBasis: 0, overLimit: 0 };
 
   for (const item of prepared) {
     const { venue, email } = item;
@@ -253,6 +255,7 @@ export async function listOutreachCandidates(
       continue;
     }
     candidates.push({
+      audienceType: "venue",
       id: venue.id,
       slug: venue.slug,
       name: venue.name,
@@ -265,6 +268,57 @@ export async function listOutreachCandidates(
     });
   }
 
+  return { candidates, excluded };
+}
+
+export async function listSupplierOutreachCandidates(filter: OutreachAudienceFilter): Promise<OutreachCandidateResult> {
+  const supabase = requireAdminClient();
+  const limit = clampInteger(filter.limit ?? maxCampaignRecipients, 1, maxCampaignRecipients);
+  const country = filter.country?.trim() || "Scotland";
+  let query = supabase.from("supplier_listings")
+    .select("id, slug, name, base_town, region, country, official_website_url, listing_status, is_claimed")
+    .eq("category_slug", "photographer").eq("is_claimed", false).neq("listing_status", "archived")
+    .eq("country", country).order("name", { ascending: true }).limit(1000);
+  if (filter.region?.trim()) query = query.ilike("region", filter.region.trim());
+  if (filter.supplierIds?.length) query = query.in("id", Array.from(new Set(filter.supplierIds)).slice(0, maxCampaignRecipients));
+  const { data: suppliers, error } = await query;
+  if (error) throw new Error(`Could not load photographer outreach candidates: ${error.message}`);
+  const supplierIds = (suppliers ?? []).map((supplier) => supplier.id);
+  const { data: contacts, error: contactError } = supplierIds.length
+    ? await supabase.from("supplier_outreach_contacts").select("*").in("supplier_id", supplierIds)
+    : { data: [] as SupplierOutreachContact[], error: null };
+  if (contactError) throw new Error(`Could not load protected photographer contacts: ${contactError.message}`);
+  const contactBySupplier = new Map((contacts ?? []).map((contact) => [contact.supplier_id, contact as SupplierOutreachContact]));
+  const normalizedEmails = (contacts ?? []).map((contact) => normalizeEmail(contact.email ?? "")).filter(isValidOutreachEmail);
+  const suppressed = await currentSuppressions(normalizedEmails);
+  const existingSupplierIds = new Set<string>(); const existingEmails = new Set<string>();
+  if (supplierIds.length > 0) {
+    const statuses: CampaignRecipient["status"][] = filter.kind === "initial_invite" ? ["pending", "sent", "delivered", "replied"] : ["pending"];
+    const { data: history, error: historyError } = await supabase.from("outreach_campaign_recipients")
+      .select("supplier_id, normalized_email, outreach_campaigns!inner(status)")
+      .in("supplier_id", supplierIds)
+      .in("status", statuses)
+      .in("outreach_campaigns.status", filter.kind === "initial_invite" ? ["draft", "sending", "sent", "partially_sent", "failed"] : ["draft", "sending"]);
+    if (historyError) throw new Error(`Could not check photographer outreach history: ${historyError.message}`);
+    for (const row of history ?? []) { if (row.supplier_id) existingSupplierIds.add(row.supplier_id); existingEmails.add(row.normalized_email); }
+  }
+  const excluded = { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, ineligibleLegalBasis: 0, overLimit: 0 };
+  const candidates: OutreachCandidate[] = []; const seen = new Set<string>();
+  const cutoff = Date.now() - clampInteger(filter.followUpAfterDays ?? 7, 1, 90) * 86_400_000;
+  for (const supplier of suppliers ?? []) {
+    const contact = contactBySupplier.get(supplier.id); const email = normalizeEmail(contact?.email ?? "");
+    if (!contact || !email) { excluded.missingEmail += 1; continue; }
+    if (!isValidOutreachEmail(email)) { excluded.invalidEmail += 1; continue; }
+    if (!["corporate_subscriber", "consent", "soft_opt_in"].includes(contact.legal_basis)) { excluded.ineligibleLegalBasis += 1; continue; }
+    if (!contact.verified_at || !contact.contact_source_url || !hasOfficialContactSource(contact.contact_source_url, supplier.official_website_url)) { excluded.unverifiedContact += 1; continue; }
+    if (filter.kind === "initial_invite" && contact.invite_status !== "not_sent") { excluded.existingOutreach += 1; continue; }
+    if (filter.kind === "follow_up" && (contact.invite_status !== "sent" || !contact.invite_sent_at || Date.parse(contact.invite_sent_at) >= cutoff)) { excluded.existingOutreach += 1; continue; }
+    if (seen.has(email)) { excluded.duplicateEmail += 1; continue; } seen.add(email);
+    if (suppressed.has(email) || contact.invite_status === "suppressed") { excluded.suppressed += 1; continue; }
+    if (existingSupplierIds.has(supplier.id) || existingEmails.has(email)) { excluded.existingOutreach += 1; continue; }
+    if (candidates.length >= limit) { excluded.overLimit += 1; continue; }
+    candidates.push({ audienceType: "photographer", id: supplier.id, slug: supplier.slug, name: supplier.name, town: supplier.base_town, region: supplier.region, country: supplier.country, email, contactSourceUrl: contact.contact_source_url, contactWasResearched: false });
+  }
   return { candidates, excluded };
 }
 
@@ -341,7 +395,8 @@ export async function createOutreachPreview(input: OutreachPreviewInput) {
     recipient: {
       businessName: sample.name,
       town: sample.town,
-      venueSlug: sample.slug,
+      audienceType: "venue",
+      listingSlug: sample.slug,
       unsubscribeUrl: absoluteUrl("/outreach/unsubscribe?preview=1")
     }
   });
@@ -365,8 +420,8 @@ export async function createAdminCampaignDraft({
   copy,
   filter
 }: Omit<OutreachPreviewInput, "source" | "researchedContacts">) {
-  const result = await listOutreachCandidates(filter);
-  if (result.candidates.length === 0) throw new Error("No eligible venues remain after validation and suppression checks.");
+  const result = filter.audienceType === "photographer" ? await listSupplierOutreachCandidates(filter) : await listOutreachCandidates(filter);
+  if (result.candidates.length === 0) throw new Error(`No eligible ${filter.audienceType === "photographer" ? "photographers" : "venues"} remain after validation and suppression checks.`);
   return persistCampaign({
     adminUserId,
     campaignName: requiredText(campaignName, "Campaign name", 120),
@@ -455,6 +510,7 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
     return toSendSummary(campaign);
   }
   if (campaign.status !== "draft") throw new Error(`Campaign cannot be sent while its status is ${campaign.status}.`);
+  if (campaign.audience_type === "photographer") return sendPhotographerCampaign(campaign, adminUserId);
 
   const now = new Date().toISOString();
   const attempt = campaign.send_attempts + 1;
@@ -653,9 +709,10 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
         copy: campaignCopy(locked),
         kind: locked.kind,
         recipient: {
+          audienceType: "venue",
           businessName: recipient.business_name,
           town: recipient.town,
-          venueSlug: recipient.venue_slug,
+          listingSlug: recipient.listing_slug,
           unsubscribeUrl
         }
       });
@@ -753,11 +810,71 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
   }
 }
 
+async function sendPhotographerCampaign(campaign: Campaign, adminUserId: string): Promise<CampaignSendSummary> {
+  const supabase = requireAdminClient(); const now = new Date().toISOString(); const attempt = campaign.send_attempts + 1;
+  const { data: locked, error: lockError } = await supabase.from("outreach_campaigns").update({ status: "sending", send_attempts: attempt, approved_by: adminUserId, approved_at: now, started_at: now }).eq("id", campaign.id).eq("status", "draft").eq("send_attempts", campaign.send_attempts).select("*").maybeSingle();
+  if (lockError) throw new Error(`Could not approve photographer campaign: ${lockError.message}`);
+  if (!locked) throw new Error("This photographer campaign was already approved or is being sent.");
+  try {
+    const { data: rows, error: recipientError } = await supabase.from("outreach_campaign_recipients").select("*").eq("campaign_id", campaign.id).eq("status", "pending").order("business_name", { ascending: true });
+    if (recipientError) throw new Error(`Could not load photographer recipients: ${recipientError.message}`);
+    const recipients = (rows ?? []) as CampaignRecipient[]; const supplierIds = recipients.map((row) => row.supplier_id).filter((id): id is string => Boolean(id));
+    const [{ data: suppliers, error: supplierError }, { data: contacts, error: contactError }] = await Promise.all([
+      supplierIds.length ? supabase.from("supplier_listings").select("id, slug, name, base_town, region, country, official_website_url, listing_status, is_claimed").in("id", supplierIds) : Promise.resolve({ data: [], error: null }),
+      supplierIds.length ? supabase.from("supplier_outreach_contacts").select("*").in("supplier_id", supplierIds) : Promise.resolve({ data: [], error: null })
+    ]);
+    if (supplierError || contactError) throw new Error(`Could not re-check photographer eligibility: ${supplierError?.message ?? contactError?.message}`);
+    const supplierById = new Map((suppliers ?? []).map((supplier) => [supplier.id, supplier])); const contactById = new Map((contacts ?? []).map((contact) => [contact.supplier_id, contact]));
+    const audience = locked.audience_filter && typeof locked.audience_filter === "object" && !Array.isArray(locked.audience_filter) ? locked.audience_filter as Record<string, Json> : {};
+    const country = typeof audience.country === "string" && audience.country.trim() ? audience.country.trim() : "Scotland"; const region = typeof audience.region === "string" && audience.region.trim() ? audience.region.trim().toLowerCase() : null;
+    const cutoff = Date.now() - clampInteger(typeof audience.followUpAfterDays === "number" ? audience.followUpAfterDays : 7, 1, 90) * 86_400_000;
+    const invalid = new Map<string, string>();
+    for (const recipient of recipients) {
+      const supplier = recipient.supplier_id ? supplierById.get(recipient.supplier_id) : null; const contact = recipient.supplier_id ? contactById.get(recipient.supplier_id) : null;
+      if (!supplier || !contact) invalid.set(recipient.id, "The protected photographer record could not be reloaded.");
+      else if (supplier.is_claimed || supplier.listing_status === "archived") invalid.set(recipient.id, "The photographer is claimed or archived.");
+      else if (supplier.country !== country || (region && supplier.region.toLowerCase() !== region)) invalid.set(recipient.id, "The photographer moved outside the approved audience.");
+      else if (supplier.slug !== recipient.listing_slug || supplier.name !== recipient.business_name || supplier.base_town !== recipient.town || supplier.region !== recipient.region) invalid.set(recipient.id, "Photographer identity fields changed after approval.");
+      else if (normalizeEmail(contact.email ?? "") !== recipient.normalized_email) invalid.set(recipient.id, "The protected contact email changed after approval.");
+      else if (!["corporate_subscriber", "consent", "soft_opt_in"].includes(contact.legal_basis) || !contact.verified_at) invalid.set(recipient.id, "The photographer no longer has a verified eligible legal basis.");
+      else if (!contact.contact_source_url || !hasOfficialContactSource(contact.contact_source_url, supplier.official_website_url)) invalid.set(recipient.id, "The contact no longer has an official-site source.");
+      else if (locked.kind === "initial_invite" && contact.invite_status !== "not_sent") invalid.set(recipient.id, "The photographer invite state changed after approval.");
+      else if (locked.kind === "follow_up" && (contact.invite_status !== "sent" || !contact.invite_sent_at || Date.parse(contact.invite_sent_at) >= cutoff)) invalid.set(recipient.id, "The follow-up interval is no longer satisfied.");
+    }
+    const { data: conflicts, error: conflictError } = supplierIds.length ? await supabase.from("outreach_campaign_recipients").select("supplier_id, normalized_email").neq("campaign_id", campaign.id).in("supplier_id", supplierIds).in("status", locked.kind === "initial_invite" ? ["pending", "sent", "delivered", "replied"] : ["pending"]) : { data: [], error: null };
+    if (conflictError) throw new Error(`Could not re-check photographer campaign conflicts: ${conflictError.message}`);
+    const conflictIds = new Set((conflicts ?? []).map((row) => row.supplier_id)); for (const recipient of recipients) if (recipient.supplier_id && conflictIds.has(recipient.supplier_id)) invalid.set(recipient.id, "Another campaign already contains this photographer.");
+    if (invalid.size) {
+      const results = await Promise.all(recipients.filter((row) => invalid.has(row.id)).map((row) => supabase.from("outreach_campaign_recipients").update({ status: "failed", error_message: invalid.get(row.id)! }).eq("id", row.id).eq("status", "pending")));
+      const error = results.find((result) => result.error)?.error; if (error) throw new Error(`Could not record photographer eligibility changes: ${error.message}`);
+    }
+    const eligible = recipients.filter((row) => !invalid.has(row.id)); const suppressions = await currentSuppressions(eligible.map((row) => row.normalized_email));
+    const suppressed = eligible.filter((row) => suppressions.has(row.normalized_email));
+    if (suppressed.length) await Promise.all(suppressed.map((row) => supabase.from("outreach_campaign_recipients").update({ status: "suppressed", error_message: "Address is on the EverAft suppression list." }).eq("id", row.id).eq("status", "pending")));
+    const prepared = eligible.filter((row) => !suppressions.has(row.normalized_email)).map((recipient) => {
+      const token = randomBytes(32).toString("base64url"); const unsubscribeUrl = absoluteUrl(`/outreach/unsubscribe?id=${encodeURIComponent(recipient.id)}&token=${encodeURIComponent(token)}`); const oneClickUrl = absoluteUrl(`/api/outreach/unsubscribe?id=${encodeURIComponent(recipient.id)}&token=${encodeURIComponent(token)}`);
+      const email = buildOutreachEmail({ copy: campaignCopy(locked), kind: locked.kind, recipient: { audienceType: "photographer", businessName: recipient.business_name, town: recipient.town, listingSlug: recipient.listing_slug, unsubscribeUrl } });
+      const message: EmailInput = { to: recipient.email, subject: email.subject, text: email.text, html: email.html, headers: { "List-Unsubscribe": `<${oneClickUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }, tags: [{ name: "category", value: "photographer_outreach" }, { name: "campaign_id", value: campaign.id }] };
+      return { recipient, tokenHash: hashToken(token), message };
+    });
+    const tokenResults = await Promise.all(prepared.map((item) => supabase.from("outreach_campaign_recipients").update({ unsubscribe_token_hash: item.tokenHash }).eq("id", item.recipient.id).eq("status", "pending").select("id").maybeSingle()));
+    const tokenError = tokenResults.find((result) => result.error)?.error; if (tokenError) throw new Error(`Could not prepare photographer unsubscribe links: ${tokenError.message}`);
+    let ready = prepared.filter((_, index) => Boolean(tokenResults[index]?.data)); const lastMinute = await currentSuppressions(ready.map((item) => item.recipient.normalized_email));
+    if (lastMinute.size) { await Promise.all(ready.filter((item) => lastMinute.has(item.recipient.normalized_email)).map((item) => supabase.from("outreach_campaign_recipients").update({ status: "suppressed", error_message: "Address was suppressed before delivery." }).eq("id", item.recipient.id).eq("status", "pending"))); ready = ready.filter((item) => !lastMinute.has(item.recipient.normalized_email)); }
+    const results = await sendEmailBatch(ready.map((item) => item.message), `photographer-outreach-${campaign.id}-${attempt}`); const sentAt = new Date().toISOString();
+    const updates = await Promise.all(ready.map(({ recipient }, index) => supabase.from("outreach_campaign_recipients").update(results[index].ok ? { status: "sent", resend_email_id: results[index].id ?? null, error_message: null, sent_at: sentAt } : { status: "failed", error_message: results[index].error ?? "Email delivery failed." }).eq("id", recipient.id).eq("status", "pending")));
+    const updateError = updates.find((result) => result.error)?.error; if (updateError) throw new Error(`Could not record photographer deliveries: ${updateError.message}`);
+    return finalizeCampaign(campaign.id);
+  } catch (error) {
+    await supabase.from("outreach_campaigns").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", campaign.id).eq("status", "sending"); throw error;
+  }
+}
+
 export async function listRecentOutreachCampaigns(limit = 12) {
   const supabase = requireAdminClient();
   const { data, error } = await supabase
     .from("outreach_campaigns")
-    .select("id, name, kind, source, status, recipient_count, sent_count, failed_count, skipped_count, created_at, completed_at")
+    .select("id, name, kind, audience_type, source, status, recipient_count, sent_count, failed_count, skipped_count, created_at, completed_at")
     .order("created_at", { ascending: false })
     .limit(clampInteger(limit, 1, 50));
   if (error) throw new Error(`Could not load campaigns: ${error.message}`);
@@ -829,7 +946,7 @@ export async function recordOutreachRecipientAction({
   const supabase = requireAdminClient();
   const { data: recipient, error } = await supabase
     .from("outreach_campaign_recipients")
-    .select("id, venue_id, email, normalized_email")
+    .select("id, venue_id, supplier_id, email, normalized_email")
     .eq("id", recipientId)
     .single();
   if (error) throw new Error(`Could not load the campaign recipient: ${error.message}`);
@@ -863,6 +980,10 @@ export async function recordOutreachRecipientAction({
   if (recipient.venue_id) {
     const { error: venueError } = await supabase.from("venues").update({ invite_status: "replied" }).eq("id", recipient.venue_id);
     if (venueError) throw new Error(`Could not update the venue reply status: ${venueError.message}`);
+  }
+  if (recipient.supplier_id) {
+    const { error: supplierError } = await supabase.from("supplier_outreach_contacts").update({ invite_status: "replied" }).eq("supplier_id", recipient.supplier_id).neq("invite_status", "claimed");
+    if (supplierError) throw new Error(`Could not update the supplier reply status: ${supplierError.message}`);
   }
 }
 
@@ -913,6 +1034,7 @@ async function persistCampaign({
     .insert({
       name: campaignName,
       kind: filter.kind,
+      audience_type: filter.audienceType === "photographer" ? "photographer" : "venue",
       source,
       status: "draft",
       subject: copy.subject,
@@ -931,8 +1053,11 @@ async function persistCampaign({
   const { error: recipientError } = await supabase.from("outreach_campaign_recipients").insert(
     candidates.map((candidate) => ({
       campaign_id: campaign.id,
-      venue_id: candidate.id,
+      venue_id: candidate.audienceType === "venue" ? candidate.id : null,
+      supplier_id: candidate.audienceType === "photographer" ? candidate.id : null,
+      subject_type: candidate.audienceType,
       venue_slug: candidate.slug,
+      listing_slug: candidate.slug,
       business_name: candidate.name,
       town: candidate.town,
       region: candidate.region,

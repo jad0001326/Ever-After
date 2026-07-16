@@ -1,15 +1,18 @@
-import type { OutreachCampaignKind, OutreachCopy } from "@/lib/outreach-email";
+import type { OutreachAudienceType, OutreachCampaignKind, OutreachCopy } from "@/lib/outreach-email";
 
 export type OutreachAudienceFilter = {
   kind: OutreachCampaignKind;
+  audienceType?: OutreachAudienceType;
   country?: string;
   region?: string;
   venueIds?: string[];
+  supplierIds?: string[];
   followUpAfterDays?: number;
   limit?: number;
 };
 
 export type OutreachCandidate = {
+  audienceType: OutreachAudienceType;
   id: string;
   slug: string;
   name: string;
