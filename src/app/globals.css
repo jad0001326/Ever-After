@@ -80,6 +80,7 @@ textarea {
   header, footer, .print\:hidden { display: none !important; }
   body { background: #fff; color: #111; }
   main { padding: 0 !important; }
+  .table-planner-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; }
   .print\:break-inside-avoid { break-inside: avoid; }
   @page { size: A4; margin: 14mm; }
 }

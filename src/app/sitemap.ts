@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/"), lastModified: now, priority: 1 },
     { url: absoluteUrl("/venues"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/wedding-budget-planner"), lastModified: now, priority: 0.9 },
+    { url: absoluteUrl("/wedding-table-planner"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/guides"), lastModified: now, priority: 0.9 },
     ...planningGuides.map((guide) => ({
       url: absoluteUrl(`/guides/${guide.slug}`),
