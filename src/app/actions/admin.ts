@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
+import { supplierCategorySlugFromLabel } from "@/data/supplier-directory";
 import type { Database } from "@/types/database";
 
 type VenueUpdate = Database["public"]["Tables"]["venues"]["Update"];
@@ -233,6 +234,58 @@ export async function reviewSupplierApplication(formData: FormData) {
   const supabase = createAdminClient();
   if (!supabase) redirect("/admin/applications?message=Configure+the+Supabase+service+role+key+to+review+applications");
 
+  const { data: application, error: applicationError } = await supabase
+    .from("supplier_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (applicationError || !application) redirect(`/admin/applications?message=${encodeURIComponent(applicationError?.message ?? "Application not found or already reviewed")}`);
+
+  let draftCreated = false;
+  const categorySlug = supplierCategorySlugFromLabel(application.category);
+  if (status === "approved" && categorySlug) {
+    const locationParts = application.location.split(",").map((part) => part.trim()).filter(Boolean);
+    const baseTown = locationParts[0] ?? application.location;
+    const region = locationParts.slice(1).join(", ") || baseTown;
+    const baseSlug = slugify(application.business_name) || `supplier-${application.id.slice(0, 8)}`;
+    const { data: slugOwner } = await supabase.from("supplier_listings").select("id, application_id").eq("slug", baseSlug).maybeSingle();
+    const listingSlug = slugOwner && slugOwner.application_id !== application.id ? `${baseSlug}-${application.id.slice(0, 6)}` : baseSlug;
+    const instagramUrl = application.instagram_handle
+      ? optionalHttpUrl(application.instagram_handle) ?? `https://www.instagram.com/${application.instagram_handle.replace(/^@/, "").replace(/\/$/, "")}/`
+      : null;
+    const services = application.services.split(/[\n,]+/).map((service) => service.trim()).filter(Boolean);
+    const { data: listing, error: listingError } = await supabase.from("supplier_listings").upsert({
+      application_id: application.id,
+      category_slug: categorySlug,
+      slug: listingSlug,
+      name: application.business_name,
+      base_town: baseTown,
+      region,
+      country: "Scotland",
+      service_areas: [application.location],
+      travel_radius_miles: application.coverage_radius_miles,
+      summary: application.description.slice(0, 500),
+      description: application.description,
+      services,
+      official_website_url: optionalHttpUrl(application.website_url),
+      instagram_url: instagramUrl,
+      facebook_url: optionalHttpUrl(application.facebook_url),
+      source_url: optionalHttpUrl(application.website_url),
+      pricing_summary: application.pricing,
+      listing_status: "draft",
+      image_permission_status: "representative"
+    }, { onConflict: "application_id" }).select("id").single();
+
+    if (listingError || !listing) redirect(`/admin/applications?message=${encodeURIComponent(listingError?.message ?? "Draft supplier listing could not be created")}`);
+    if (categorySlug === "photographer") {
+      const { error: photographerError } = await supabase.from("photographer_profiles").upsert({ supplier_id: listing.id }, { onConflict: "supplier_id" });
+      if (photographerError) redirect(`/admin/applications?message=${encodeURIComponent(photographerError.message)}`);
+    }
+    draftCreated = true;
+  }
+
   const { error } = await supabase
     .from("supplier_applications")
     .update({ status, admin_notes: adminNotes, reviewed_at: new Date().toISOString(), reviewed_by: user.id })
@@ -241,5 +294,6 @@ export async function reviewSupplierApplication(formData: FormData) {
 
   if (error) redirect(`/admin/applications?message=${encodeURIComponent(error.message)}`);
   revalidatePath("/admin/applications");
-  redirect(`/admin/applications?message=Application+${status}`);
+  revalidatePath("/admin/suppliers");
+  redirect(`/admin/applications?message=${encodeURIComponent(draftCreated ? "Application approved and a draft supplier profile was created" : `Application ${status}`)}`);
 }

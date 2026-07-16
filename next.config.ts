@@ -13,7 +13,7 @@ const supabaseImagePattern = (() => {
     return {
       protocol: "https" as const,
       hostname: url.hostname,
-      pathname: "/storage/v1/object/public/venue-images/**"
+      pathname: "/storage/v1/object/public/**"
     };
   } catch {
     return null;

@@ -3,7 +3,7 @@ import { formatMoney } from "./calculations";
 import { formatPriceValidity, hasUnresolvedTaxLabel } from "@/lib/venue-pricing";
 
 export function formatPlannerListingPrice(listing: PlannerListing) {
-  if (listing.pricingStatus === "quote_required") return "Contact venue for pricing";
+  if (listing.pricingStatus === "quote_required") return "Contact business for pricing";
   if (listing.priceFromPence == null && listing.priceToPence == null) return "Pricing being confirmed";
   const from = listing.priceFromPence;
   const to = listing.priceToPence;
@@ -37,7 +37,7 @@ export function plannerListingToBudgetItem(listing: PlannerListing, plan: Budget
 
   return {
     id: crypto.randomUUID(),
-    categoryId: "venue",
+    categoryId: listing.categoryId,
     listingId: listing.id,
     listingType: listing.type,
     listingUrl: listing.listingUrl,

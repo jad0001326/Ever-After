@@ -9,6 +9,7 @@ function listing(overrides: Partial<PlannerListing> = {}): PlannerListing {
     slug: "venue-one",
     name: "Venue One",
     type: "Country Estate",
+    categoryId: "venue",
     location: "Perth, Perthshire",
     imageUrl: "/venue.jpg",
     listingUrl: "/venues/venue-one",

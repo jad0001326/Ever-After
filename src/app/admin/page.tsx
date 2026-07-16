@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Archive, CheckCircle2, ClipboardList, DatabaseZap, Edit, FilePenLine, Images, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud } from "lucide-react";
+import { Archive, CheckCircle2, ClipboardList, DatabaseZap, Edit, FilePenLine, Images, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud, UsersRound } from "lucide-react";
 import { bulkUpdateVenues } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -97,6 +97,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </ButtonLink>
           <ButtonLink href="/admin/applications" variant="secondary">
             <ClipboardList size={17} /> Applications
+          </ButtonLink>
+          <ButtonLink href="/admin/suppliers" variant="secondary">
+            <UsersRound size={17} /> Suppliers
           </ButtonLink>
           <ButtonLink href="/admin/venues/new">
             <Plus size={17} /> Add venue

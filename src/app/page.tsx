@@ -35,7 +35,8 @@ const categoryCards: CategoryCard[] = [
   },
   {
     name: "Photography",
-    detail: "Joining the directory",
+    detail: "Explore photographers",
+    href: "/photographers",
     image: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1100&q=82"
   },
   {
@@ -118,7 +119,7 @@ export default function Home() {
               Find the people who make it unforgettable.
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-[#4c4a43] sm:text-xl">
-              Discover thoughtful wedding venues now, with trusted UK supplier categories opening alongside them.
+              Discover thoughtful wedding venues and photographers, with more trusted supplier categories opening alongside them.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/venues">
@@ -143,7 +144,7 @@ export default function Home() {
               The good ones, in one place.
             </h2>
           </div>
-          <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">The first collection is live now, with more wedding categories opening through 2026.</p>
+          <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">Venues and photographers are open now, with more wedding categories following through 2026.</p>
         </div>
         <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {categoryCards.map((category) => {

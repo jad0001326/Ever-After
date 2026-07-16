@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Check, FileCheck2, HeartHandshake, ShieldCheck } from "lucide-react";
 import { FollowEverAft } from "@/components/social/follow-everaft";
 import { SupplierApplicationForm } from "@/components/supplier/supplier-application-form";
+import { supplierCategories } from "@/data/supplier-categories";
 
 export const metadata: Metadata = {
   title: "List your wedding business",
@@ -15,7 +16,9 @@ const reasons = [
   ["A thoughtful review", "Every new business is reviewed before it appears in the directory."]
 ] as const;
 
-export default function ForBusinessPage() {
+export default async function ForBusinessPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const { category } = await searchParams;
+  const defaultCategory = supplierCategories.includes(category as (typeof supplierCategories)[number]) ? category : "";
   return (
     <div className="bg-[#f2ede4]">
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-14 sm:px-6 lg:grid lg:grid-cols-[0.82fr_1.18fr] lg:gap-14 lg:px-8 lg:pb-24 lg:pt-20">
@@ -42,7 +45,7 @@ export default function ForBusinessPage() {
           <FollowEverAft className="mt-8" compact />
         </div>
         <div className="mt-12 lg:mt-0">
-          <SupplierApplicationForm />
+          <SupplierApplicationForm defaultCategory={defaultCategory} />
         </div>
       </section>
     </div>

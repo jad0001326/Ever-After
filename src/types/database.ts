@@ -368,6 +368,137 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["supplier_applications"]["Row"]>;
         Relationships: [];
       };
+      supplier_categories: {
+        Row: {
+          slug: string;
+          name: string;
+          plural_name: string;
+          description: string;
+          budget_category_id: string | null;
+          sort_order: number;
+          is_live: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_categories"]["Row"]> & {
+          slug: string;
+          name: string;
+          plural_name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_categories"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_listings: {
+        Row: {
+          id: string;
+          vendor_id: string | null;
+          application_id: string | null;
+          category_slug: string;
+          slug: string;
+          name: string;
+          base_town: string;
+          region: string;
+          country: string;
+          service_areas: string[];
+          travel_radius_miles: number | null;
+          travels_nationwide: boolean;
+          summary: string;
+          description: string;
+          services: string[];
+          official_website_url: string | null;
+          instagram_url: string | null;
+          facebook_url: string | null;
+          enquiry_url: string | null;
+          source_url: string | null;
+          starting_price_pence: number | null;
+          typical_price_pence: number | null;
+          pricing_summary: string | null;
+          pricing_unit: "package" | "hour" | "person" | "item" | "event" | "quote";
+          hero_image_url: string | null;
+          image_credit: string | null;
+          image_permission_status: "representative" | "pending" | "approved" | "rejected";
+          listing_status: "draft" | "published" | "archived";
+          claim_status: "unclaimed" | "pending" | "approved" | "rejected";
+          is_claimed: boolean;
+          is_featured: boolean;
+          published_at: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_listings"]["Row"]> & {
+          category_slug: string;
+          slug: string;
+          name: string;
+          base_town: string;
+          region: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_listings"]["Row"]>;
+        Relationships: [];
+      };
+      photographer_profiles: {
+        Row: {
+          supplier_id: string;
+          styles: string[];
+          coverage_hours_min: number | null;
+          coverage_hours_max: number | null;
+          second_photographer_available: boolean | null;
+          engagement_shoot_available: boolean | null;
+          drone_available: boolean | null;
+          film_photography_available: boolean | null;
+          albums_available: boolean | null;
+          turnaround_weeks_min: number | null;
+          turnaround_weeks_max: number | null;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["photographer_profiles"]["Row"]> & { supplier_id: string };
+        Update: Partial<Database["public"]["Tables"]["photographer_profiles"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_images: {
+        Row: {
+          id: string;
+          supplier_id: string;
+          url: string;
+          alt: string;
+          credit_text: string | null;
+          permission_status: "pending" | "approved" | "rejected";
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_images"]["Row"]> & {
+          supplier_id: string;
+          url: string;
+          alt: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_images"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_venue_connections: {
+        Row: {
+          supplier_id: string;
+          venue_id: string;
+          connection_type: "worked_at" | "preferred_supplier" | "recommended";
+          status: "pending" | "verified" | "rejected";
+          source_url: string | null;
+          verified_at: string | null;
+          verified_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_venue_connections"]["Row"]> & {
+          supplier_id: string;
+          venue_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_venue_connections"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_favourites: {
+        Row: { user_id: string; supplier_id: string; created_at: string };
+        Insert: { user_id: string; supplier_id: string };
+        Update: never;
+        Relationships: [];
+      };
       newsletter_subscribers: {
         Row: {
           id: string;

@@ -7,7 +7,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { FollowEverAft } from "@/components/social/follow-everaft";
 import { supplierCategories } from "@/data/supplier-categories";
 
-export function SupplierApplicationForm() {
+export function SupplierApplicationForm({ defaultCategory = "" }: { defaultCategory?: string }) {
   const [state, action, pending] = useActionState(submitSupplierApplication, null);
 
   return (
@@ -27,7 +27,7 @@ export function SupplierApplicationForm() {
           <Input name="phone" required type="tel" placeholder="+44…" />
         </Field>
         <Field label="Category">
-          <Select defaultValue="" name="category" required>
+          <Select defaultValue={defaultCategory} name="category" required>
             <option disabled value="">Choose a category</option>
             {supplierCategories.map((category) => <option key={category} value={category}>{category}</option>)}
           </Select>

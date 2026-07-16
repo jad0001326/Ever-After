@@ -72,6 +72,7 @@ export type PlannerListing = {
   slug: string;
   name: string;
   type: string;
+  categoryId: string;
   location: string;
   imageUrl: string;
   listingUrl: string;
@@ -90,4 +91,3 @@ export type PlannerListing = {
   validTo?: string | null;
   verifiedAt?: string | null;
 };
-

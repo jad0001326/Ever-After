@@ -190,6 +190,7 @@ function plannerListingFromRow(
     slug: venue.slug,
     name: venue.name,
     type: venue.type,
+    categoryId: "venue",
     location: `${venue.town}, ${venue.region}`,
     imageUrl: imageUrlOrRepresentative(venue.hero_image, venue.type),
     listingUrl: `/venues/${venue.slug}`,

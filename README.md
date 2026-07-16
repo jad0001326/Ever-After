@@ -17,6 +17,9 @@ Ever After is a production-minded MVP for premium Scottish wedding venue discove
 - Supabase sign up, sign in, favourites, and enquiry persistence
 - Protected admin CMS for adding/editing venues, linking amenities, and uploading gallery images
 - Public supplier application flow with admin review queue
+- Public Scottish photographer directory with venue-first coverage search, style and budget filters
+- Reusable supplier profiles, category-specific photographer data, approved imagery and venue-work connections
+- Supplier listings available directly inside the wedding budget planner
 - Double-opt-in newsletter architecture and cookie-preference control
 - Approval-gated, branded business invitation campaigns with ChatGPT tools, unsubscribe handling and delivery tracking
 - PostgreSQL schema for profiles, venues, images, amenities, favourites, and enquiries
@@ -95,6 +98,7 @@ Open `http://localhost:3000`.
 5. Existing projects should also run `supabase/phase6_supplier_and_newsletter.sql` to add supplier applications and newsletter tables.
 6. Existing projects should run `supabase/phase7_outreach_campaigns.sql` to add campaign, recipient, suppression, delivery-event and sourced-contact records, then `supabase/phase8_mcp_origin.sql` to align OAuth with the canonical `www` domain.
 7. Confirm the `venue-images` Storage bucket exists and is public. The schema creates it automatically.
+8. Apply the timestamped migrations in `supabase/migrations`, including `supplier_directory_foundation` and `tune_supplier_directory_policies`, to add the reusable supplier directory.
 
 The schema creates:
 
@@ -106,6 +110,12 @@ The schema creates:
 - `public.favourites`
 - `public.enquiries`
 - `public.supplier_applications`
+- `public.supplier_categories`
+- `public.supplier_listings`
+- `public.photographer_profiles`
+- `public.supplier_images`
+- `public.supplier_venue_connections`
+- `public.supplier_favourites`
 - `public.newsletter_subscribers`
 - `public.outreach_campaigns`
 - `public.outreach_campaign_recipients`
@@ -155,6 +165,10 @@ Published venues appear on `/venues` and `/venues/[slug]`. Draft venues stay vis
 `/for-business` is a public supplier application flow. It includes server-side input validation, an anti-spam honeypot, a best-effort rate guard and a secure Supabase service-role write. The service-role key must be present only in Vercel/server environment variables; it is never used in browser code.
 
 New applications are visible in `/admin/applications` for an authenticated admin. Review and approval are intentionally separate from publishing a public profile so the team can verify the business first.
+
+Approving a non-venue supplier application now creates a draft supplier profile. Admins can complete and publish it from `/admin/suppliers`. Photographers appear on `/photographers` only after the profile has a useful summary, full description and official website. Portfolio imagery is optional and can be added only after display rights are confirmed.
+
+The photographer search can start from a selected EverAft venue. A photographer matches when the business covers the venue town or region, lists that service area, travels UK-wide, or has a verified connection showing that it has worked at the venue. Couples who have not booked a venue can continue to search by location, style and budget.
 
 The homepage newsletter uses a double-opt-in flow. It stores only a hashed, one-time confirmation token and sends the confirmation email through Resend. Newsletter confirmation requires both the Supabase service-role key and the Resend variables listed above.
 

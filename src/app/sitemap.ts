@@ -8,13 +8,17 @@ import { planningGuides } from "@/lib/planning-guides";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const supabase = await createClient();
-  const { data: venues } = supabase
-    ? await supabase.from("venues").select("slug, updated_at").eq("status", "published").order("updated_at", { ascending: false })
-    : { data: [] };
+  const [{ data: venues }, { data: photographers }] = supabase
+    ? await Promise.all([
+      supabase.from("venues").select("slug, updated_at").eq("status", "published").order("updated_at", { ascending: false }),
+      supabase.from("supplier_listings").select("slug, updated_at").eq("category_slug", "photographer").eq("listing_status", "published").order("updated_at", { ascending: false })
+    ])
+    : [{ data: [] }, { data: [] }];
 
   return [
     { url: absoluteUrl("/"), lastModified: now, priority: 1 },
     { url: absoluteUrl("/venues"), lastModified: now, priority: 0.9 },
+    { url: absoluteUrl("/photographers"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/wedding-budget-planner"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/wedding-table-planner"), lastModified: now, priority: 0.9 },
     { url: absoluteUrl("/guides"), lastModified: now, priority: 0.9 },
@@ -42,6 +46,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(venues ?? []).map((venue) => ({
       url: absoluteUrl(`/venues/${venue.slug}`),
       lastModified: venue.updated_at,
+      priority: 0.8
+    })),
+    ...(photographers ?? []).map((photographer) => ({
+      url: absoluteUrl(`/photographers/${photographer.slug}`),
+      lastModified: photographer.updated_at,
       priority: 0.8
     }))
   ];

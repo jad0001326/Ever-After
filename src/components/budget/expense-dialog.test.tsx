@@ -14,6 +14,7 @@ describe("ExpenseDialog", () => {
       slug: `venue-${index + 1}`,
       name: `Venue ${index + 1}`,
       type: "Country Estate",
+      categoryId: "venue",
       location: "Scotland",
       imageUrl: "/images/everaft-wedding-reception.png",
       listingUrl: `/venues/venue-${index + 1}`,
@@ -25,18 +26,18 @@ describe("ExpenseDialog", () => {
     render(<ExpenseDialog open plan={createEmptyBudgetPlan()} listings={listings} item={null} onClose={vi.fn()} onSave={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Select from EverAft" }));
 
-    expect(screen.getByText("Showing 24 of 30 venues")).toBeTruthy();
+    expect(screen.getByText("Showing 24 of 30 matching listings")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Venue 30/ })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show 6 more venues" }));
-    expect(screen.getByText("Showing 30 of 30 venues")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show 6 more listings" }));
+    expect(screen.getByText("Showing 30 of 30 matching listings")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Venue 30/ })).toBeTruthy();
   });
   it("adds a manual estimated expense without showing an imported-price warning", () => { const onSave = vi.fn(); render(<ExpenseDialog open plan={createEmptyBudgetPlan()} listings={[]} item={null} onClose={vi.fn()} onSave={onSave} />); expect(screen.queryByText(/does not currently display a price/i)).toBeNull(); fireEvent.change(screen.getByLabelText("Item name"), { target: { value: "Wedding photographer" } }); fireEvent.change(screen.getByLabelText("Estimated cost (£)"), { target: { value: "1250.50" } }); fireEvent.click(screen.getByRole("button", { name: "Add to budget" })); expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ itemName: "Wedding photographer", estimatedCostPence: 125_050, source: "manual" })); });
-  it("shows a manual-price fallback for an imported venue with no listed price", () => { const listing: PlannerListing = { id: "venue-1", slug: "ravenwood", name: "Ravenwood Hall", type: "Country Estate", location: "Perth, Perthshire", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/ravenwood", priceFromPence: null, priceToPence: null, pricingStatus: "unavailable" }; render(<ExpenseDialog open plan={createEmptyBudgetPlan()} listings={[listing]} item={null} onClose={vi.fn()} onSave={vi.fn()} />); fireEvent.click(screen.getByRole("button", { name: "Select from EverAft" })); fireEvent.click(screen.getByRole("button", { name: /Ravenwood Hall/ })); expect(screen.getByText(/does not currently display a price/i)).toBeTruthy(); expect(screen.getByLabelText("Estimated cost (£)")).toBeTruthy(); });
+  it("shows a manual-price fallback for an imported venue with no listed price", () => { const listing: PlannerListing = { id: "venue-1", slug: "ravenwood", name: "Ravenwood Hall", type: "Country Estate", categoryId: "venue", location: "Perth, Perthshire", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/ravenwood", priceFromPence: null, priceToPence: null, pricingStatus: "unavailable" }; render(<ExpenseDialog open plan={createEmptyBudgetPlan()} listings={[listing]} item={null} onClose={vi.fn()} onSave={vi.fn()} />); fireEvent.click(screen.getByRole("button", { name: "Select from EverAft" })); fireEvent.click(screen.getByRole("button", { name: /Ravenwood Hall/ })); expect(screen.getByText(/does not currently display a price/i)).toBeTruthy(); expect(screen.getByLabelText("Estimated cost (£)")).toBeTruthy(); });
   it("imports a per-person venue price using the plan guest count", () => {
     const onSave = vi.fn();
     const plan = { ...createEmptyBudgetPlan(), guestCount: 80 };
-    const listing: PlannerListing = { id: "venue-2", slug: "garden-house", name: "Garden House", type: "Country Estate", location: "Fife, Scotland", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/garden-house", priceFromPence: 9_500, priceToPence: null, pricingStatus: "per_person", pricingKind: "per_person", pricingLabel: "Wedding package", pricingUnit: "per_person" };
+    const listing: PlannerListing = { id: "venue-2", slug: "garden-house", name: "Garden House", type: "Country Estate", categoryId: "venue", location: "Fife, Scotland", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/garden-house", priceFromPence: 9_500, priceToPence: null, pricingStatus: "per_person", pricingKind: "per_person", pricingLabel: "Wedding package", pricingUnit: "per_person" };
     render(<ExpenseDialog open plan={plan} listings={[listing]} item={null} onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "Select from EverAft" }));
     fireEvent.click(screen.getByRole("button", { name: /Garden House/ }));
@@ -48,7 +49,7 @@ describe("ExpenseDialog", () => {
   });
   it("requires a tax-inclusive input instead of importing a VAT-exclusive base price", () => {
     const onSave = vi.fn();
-    const listing: PlannerListing = { id: "venue-3", slug: "taxed-hall", name: "Taxed Hall", type: "Country Estate", location: "Fife, Scotland", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/taxed-hall", priceFromPence: 199_500, priceToPence: null, pricingStatus: "starting_from", pricingKind: "venue_hire", pricingLabel: "Evening hire", pricingUnit: "total", taxLabel: "VAT additional" };
+    const listing: PlannerListing = { id: "venue-3", slug: "taxed-hall", name: "Taxed Hall", type: "Country Estate", categoryId: "venue", location: "Fife, Scotland", imageUrl: "/images/everaft-wedding-reception.png", listingUrl: "/venues/taxed-hall", priceFromPence: 199_500, priceToPence: null, pricingStatus: "starting_from", pricingKind: "venue_hire", pricingLabel: "Evening hire", pricingUnit: "total", taxLabel: "VAT additional" };
     render(<ExpenseDialog open plan={createEmptyBudgetPlan()} listings={[listing]} item={null} onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "Select from EverAft" }));
     fireEvent.click(screen.getByRole("button", { name: /Taxed Hall/ }));
