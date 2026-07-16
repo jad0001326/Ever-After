@@ -22,7 +22,7 @@ export function SupplierForm({ supplier, photographer }: { supplier?: Supplier |
           <Field label="Region"><Input defaultValue={supplier?.region ?? ""} name="region" required /></Field>
           <Field label="Country"><Input defaultValue={supplier?.country ?? "Scotland"} name="country" required /></Field>
           <Field label="Travel radius (miles)"><Input defaultValue={supplier?.travel_radius_miles ?? ""} min="0" name="travelRadiusMiles" type="number" /></Field>
-          <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2"><input defaultChecked={supplier?.travels_nationwide ?? false} className="size-4 accent-[#334235]" name="travelsNationwide" type="checkbox" />Available across the UK</label>
+          <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2"><input defaultChecked={supplier?.travels_nationwide ?? false} className="size-4 accent-[#334235]" name="travelsNationwide" type="checkbox" />Available throughout Scotland</label>
           <div className="sm:col-span-2"><Field label="Service areas (one per line)"><Textarea defaultValue={supplier?.service_areas.join("\n") ?? ""} name="serviceAreas" /></Field></div>
           <div className="sm:col-span-2"><Field label="Summary"><Textarea defaultValue={supplier?.summary ?? ""} maxLength={500} name="summary" required /></Field></div>
           <div className="sm:col-span-2"><Field label="Full description"><Textarea className="min-h-56" defaultValue={supplier?.description ?? ""} maxLength={5000} name="description" required /></Field></div>
@@ -72,4 +72,3 @@ export function SupplierForm({ supplier, photographer }: { supplier?: Supplier |
     </form>
   );
 }
-

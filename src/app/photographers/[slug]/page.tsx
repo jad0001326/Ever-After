@@ -40,7 +40,7 @@ export default async function PhotographerDetailPage({ params }: { params: Promi
     description: supplier.summary,
     url: absoluteUrl(`/photographers/${supplier.slug}`),
     sameAs: [supplier.officialWebsiteUrl, supplier.instagramUrl, supplier.facebookUrl].filter(Boolean),
-    areaServed: supplier.travelsNationwide ? "United Kingdom" : [supplier.region, ...supplier.serviceAreas],
+    areaServed: supplier.travelsNationwide ? "Scotland" : [supplier.region, ...supplier.serviceAreas],
     priceRange: supplier.startingPricePence == null ? undefined : `From ${gbp.format(supplier.startingPricePence / 100)}`,
     image: supplier.heroImageUrl ?? undefined
   };
@@ -68,7 +68,7 @@ export default async function PhotographerDetailPage({ params }: { params: Promi
             <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-[#95502b]">Wedding photographer</p>
             <h1 className="mt-3 font-display text-6xl font-semibold leading-[0.9] tracking-[-0.045em] sm:text-7xl">{supplier.name}</h1>
             <p className="mt-6 text-lg leading-8 text-[var(--muted)]">{supplier.summary}</p>
-            <p className="mt-5 flex items-center gap-2 text-sm font-medium text-[#4f4a43]"><MapPin className="text-[#9d7b45]" size={18} />Based in {supplier.baseTown}, {supplier.region}{supplier.travelsNationwide ? " · UK-wide coverage" : ""}</p>
+            <p className="mt-5 flex items-center gap-2 text-sm font-medium text-[#4f4a43]"><MapPin className="text-[#9d7b45]" size={18} />Based in {supplier.baseTown}, {supplier.region}{supplier.travelsNationwide ? " · Scotland-wide coverage" : ""}</p>
             <div className="mt-8 flex flex-wrap gap-3">{enquiryUrl ? <ButtonLink href={enquiryUrl} rel="noopener noreferrer" target="_blank">Visit website <ExternalLink size={16} /></ButtonLink> : null}<ButtonLink href={`/wedding-budget-planner?supplier=${encodeURIComponent(supplier.id)}`} variant="secondary"><Calculator size={16} /> Add to budget</ButtonLink></div>
             <div className="mt-7 flex gap-3">{supplier.instagramUrl ? <SocialLink href={supplier.instagramUrl} label="Instagram" /> : null}{supplier.facebookUrl ? <SocialLink href={supplier.facebookUrl} label="Facebook" /> : null}</div>
           </div>
@@ -90,7 +90,7 @@ export default async function PhotographerDetailPage({ params }: { params: Promi
             <Detail label="Pricing" icon={<Camera size={17} />} value={supplier.startingPricePence == null ? "Contact for current pricing" : `Packages from ${gbp.format(supplier.startingPricePence / 100)}`} />
             {photographer?.coverageHoursMin || photographer?.coverageHoursMax ? <Detail label="Coverage" icon={<Clock3 size={17} />} value={coverageLabel(photographer.coverageHoursMin, photographer.coverageHoursMax)} /> : null}
             {photographer?.turnaroundWeeksMin || photographer?.turnaroundWeeksMax ? <Detail label="Typical turnaround" icon={<Clock3 size={17} />} value={turnaroundLabel(photographer.turnaroundWeeksMin, photographer.turnaroundWeeksMax)} /> : null}
-            <Detail label="Travel" icon={<MapPin size={17} />} value={supplier.travelsNationwide ? "Available across the UK" : supplier.serviceAreas.length ? supplier.serviceAreas.join(", ") : `${supplier.region} and surrounding areas`} />
+            <Detail label="Travel" icon={<MapPin size={17} />} value={supplier.travelsNationwide ? "Available throughout Scotland" : supplier.serviceAreas.length ? supplier.serviceAreas.join(", ") : `${supplier.region} and surrounding areas`} />
           </dl>
           {supplier.pricingSummary ? <p className="mt-6 rounded-2xl bg-[#f7f3eb] p-4 text-sm leading-6 text-[var(--muted)]">{supplier.pricingSummary}</p> : null}
           {features.length ? <ul className="mt-6 grid gap-3 border-t border-[var(--line)] pt-5">{features.map(([, label]) => <li className="flex items-center gap-3 text-sm" key={label}><Check className="text-[#5d7758]" size={16} />{label}</li>)}</ul> : null}
