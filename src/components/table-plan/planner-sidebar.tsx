@@ -122,6 +122,20 @@ function GuestRow({ guest, tableName, isSelected, onSelect, onDelete }: { guest:
 }
 
 function TablePanel({ plan, onAddTable, onUpdateTable, onDeleteTable }: PlannerSidebarProps) {
+  const [capacityDrafts, setCapacityDrafts] = useState<Record<string, string>>({});
+
+  function commitCapacity(table: TablePlanTable) {
+    const draft = capacityDrafts[table.id];
+    const parsed = draft === undefined || draft === "" ? table.capacity : Number.parseInt(draft, 10);
+    const capacity = Math.max(2, Math.min(20, Number.isFinite(parsed) ? parsed : table.capacity));
+    onUpdateTable(table.id, { capacity });
+    setCapacityDrafts((current) => {
+      const next = { ...current };
+      delete next[table.id];
+      return next;
+    });
+  }
+
   return (
     <div className="p-4">
       <div className="space-y-3">
@@ -132,7 +146,22 @@ function TablePanel({ plan, onAddTable, onUpdateTable, onDeleteTable }: PlannerS
               <button aria-label={table.locked ? `Unlock ${table.name}` : `Lock ${table.name}`} className={cn("focus-ring grid size-10 place-items-center rounded-lg border", table.locked ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[var(--line)] bg-white text-[var(--muted)]")} onClick={() => onUpdateTable(table.id, { locked: !table.locked })} type="button">{table.locked ? <Lock size={16} /> : <Unlock size={16} />}</button>
               <button aria-label={`Delete ${table.name}`} className="focus-ring grid size-10 place-items-center rounded-lg border border-[var(--line)] bg-white text-[#8f3f2b] disabled:opacity-40" disabled={plan.tables.length === 1} onClick={() => onDeleteTable(table.id)} type="button"><Trash2 size={16} /></button>
             </div>
-            <label className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--muted)]">Capacity <input className="focus-ring min-h-9 w-20 rounded-lg border border-[var(--line)] bg-white px-2 text-center text-sm text-[var(--foreground)]" max={20} min={2} onChange={(event) => onUpdateTable(table.id, { capacity: Math.max(2, Math.min(20, Number(event.target.value) || 2)) })} type="number" value={table.capacity} /></label>
+            <label className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
+              Capacity
+              <input
+                aria-label={`Capacity for ${table.name}`}
+                className="focus-ring min-h-9 w-20 rounded-lg border border-[var(--line)] bg-white px-2 text-center text-sm text-[var(--foreground)]"
+                inputMode="numeric"
+                onBlur={() => commitCapacity(table)}
+                onChange={(event) => setCapacityDrafts((current) => ({ ...current, [table.id]: event.target.value.replace(/\D/g, "") }))}
+                onFocus={(event) => event.currentTarget.select()}
+                onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                onPointerUp={(event) => event.currentTarget.select()}
+                pattern="[0-9]*"
+                type="text"
+                value={capacityDrafts[table.id] ?? String(table.capacity)}
+              />
+            </label>
           </div>
         ))}
       </div>
