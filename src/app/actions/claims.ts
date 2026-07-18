@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { notifyClaimReviewed, notifyClaimSubmitted } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { reserveVenueForClaim } from "@/lib/venue-claim-reservation";
 
 export type ClaimState = { ok: boolean; message: string } | null;
 
@@ -15,7 +16,8 @@ function requiredText(formData: FormData, key: string) {
 
 export async function submitVenueClaim(_: ClaimState, formData: FormData): Promise<ClaimState> {
   const supabase = await createClient();
-  if (!supabase) return { ok: false, message: "Supabase is not configured, so claims cannot be stored yet." };
+  const admin = createAdminClient();
+  if (!supabase || !admin) return { ok: false, message: "Supabase is not configured, so claims cannot be stored yet." };
 
   const {
     data: { user }
@@ -72,12 +74,17 @@ export async function submitVenueClaim(_: ClaimState, formData: FormData): Promi
     terms_accepted: termsAccepted
   }).select("id").single();
 
-  if (error) return { ok: false, message: error.message };
+  if (error || !claim) return { ok: false, message: error?.message ?? "The claim could not be stored." };
 
-  await supabase.from("venues").update({ claim_status: "pending" }).eq("id", venueId).eq("claim_status", "unclaimed");
-  const { data: venue } = await supabase.from("venues").select("name, slug").eq("id", venueId).maybeSingle();
+  const reservation = await reserveVenueForClaim(admin, {
+    claimId: claim.id,
+    venueId,
+    slug
+  });
+  if (!reservation.ok) return reservation;
 
-  if (claim && venue) {
+  const venue = reservation.venue;
+  if (venue) {
     await notifyClaimSubmitted({
       claimId: claim.id,
       venueName: venue.name,
