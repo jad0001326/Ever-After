@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { INTERNAL_TEST_VENUE_SLUG_PREFIX } from "@/lib/internal-test-venue";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import { normaliseVenuePricingUnit, selectBudgetPriceOption, venuePriceOptionToImportedType } from "@/lib/venue-pricing";
 import type { Database } from "@/types/database";
@@ -32,7 +33,8 @@ export async function searchVenueListings(params: VenueSearchParams) {
     .from("venues")
     .select("*", { count: "exact" })
     .eq("status", "published")
-    .in("listing_status", ["published", "claimed"]);
+    .in("listing_status", ["published", "claimed"])
+    .not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`);
 
   if (params.location) {
     const value = `%${params.location}%`;
@@ -88,6 +90,7 @@ export async function getFeaturedVenueListings() {
     .select("*")
     .eq("status", "published")
     .in("listing_status", ["published", "claimed"])
+    .not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`)
     .eq("is_featured", true)
     .order("updated_at", { ascending: false })
     .limit(3);
@@ -125,7 +128,7 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
 export async function getBudgetPlannerVenueListings(): Promise<PlannerListing[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"]).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(1000);
+  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"]).not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(1000);
   const priceOptions = await fetchPublishedPriceOptions(supabase, (data ?? []).map((venue) => venue.id));
   return (data ?? []).map((venue) => ({
     ...plannerListingFromRow(venue, priceOptions.get(venue.id) ?? [])
