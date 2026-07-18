@@ -12,6 +12,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
 import { shouldUseVenuePassport } from "@/lib/venue-images";
 import { getPrimaryVenuePriceDisplay } from "@/lib/venue-pricing";
+import { isInternalTestVenueSlug } from "@/lib/internal-test-venue";
 import { absoluteUrl, formatCapacity } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueListingBySlug } from "@/lib/venues";
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const venue = await getVenueListingBySlug(slug);
   if (!venue) return {};
 
-  return buildMetadata({
+  const metadata = buildMetadata({
     title: `${venue.name} wedding venue, ${venue.town}`,
     description: `${venue.summary} Explore capacity, pricing and venue details on EverAft.`,
     path: `/venues/${venue.slug}`,
@@ -34,6 +35,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `${venue.type} wedding venue Scotland`
     ]
   });
+
+  return isInternalTestVenueSlug(slug)
+    ? { ...metadata, robots: { index: false, follow: false } }
+    : metadata;
 }
 
 export default async function VenuePage({ params }: PageProps) {

@@ -8,7 +8,8 @@ import { requireUser } from "@/lib/auth";
 import { getVenueListingBySlug } from "@/lib/venues";
 
 export const metadata: Metadata = {
-  title: "Claim venue listing"
+  title: "Claim venue listing",
+  robots: { index: false, follow: false }
 };
 
 export default async function ClaimVenuePage({ params }: { params: Promise<{ slug: string }> }) {
