@@ -114,9 +114,10 @@ export async function approveVenueClaim(formData: FormData) {
     .from("venue_claims")
     .select("*")
     .eq("id", claimId)
-    .single();
+    .eq("status", "pending")
+    .maybeSingle();
 
-  if (claimError || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(claimError?.message ?? "Claim not found")}`);
+  if (claimError || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(claimError?.message ?? "This claim is no longer awaiting review.")}`);
 
   const { data: venue } = await supabase.from("venues").select("id, name, slug").eq("id", claim.venue_id).single();
   const { data: vendor } = await supabase.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
@@ -153,12 +154,20 @@ export async function approveVenueClaim(formData: FormData) {
     invite_status: "claimed"
   }).eq("id", claim.venue_id);
 
-  await supabase.from("venue_claims").update({
+  const { data: approvedClaim, error: approvalError } = await supabase.from("venue_claims").update({
     status: "approved",
     admin_notes: adminNotes,
     reviewed_at: new Date().toISOString(),
     reviewed_by: user.id
-  }).eq("id", claim.id);
+  })
+    .eq("id", claim.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (approvalError || !approvedClaim) {
+    redirect(`/admin/claims/${claim.id}?message=${encodeURIComponent(approvalError?.message ?? "This claim was already reviewed. Refresh before trying again.")}`);
+  }
 
   await supabase.from("venue_claim_audit_log").insert({
     claim_id: claim.id,
@@ -193,16 +202,29 @@ export async function rejectVenueClaim(formData: FormData) {
 
   const claimId = requiredText(formData, "claimId");
   const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase.from("venue_claims").select("*").eq("id", claimId).single();
-  if (error || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
+  const { data: claim, error } = await supabase
+    .from("venue_claims")
+    .select("*")
+    .eq("id", claimId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (error || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(error?.message ?? "This claim is no longer awaiting review.")}`);
   const { data: venue } = await supabase.from("venues").select("id, name, slug").eq("id", claim.venue_id).maybeSingle();
 
-  await supabase.from("venue_claims").update({
+  const { data: rejectedClaim, error: rejectionError } = await supabase.from("venue_claims").update({
     status: "rejected",
     admin_notes: adminNotes,
     reviewed_at: new Date().toISOString(),
     reviewed_by: user.id
-  }).eq("id", claim.id);
+  })
+    .eq("id", claim.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (rejectionError || !rejectedClaim) {
+    redirect(`/admin/claims/${claim.id}?message=${encodeURIComponent(rejectionError?.message ?? "This claim was already reviewed. Refresh before trying again.")}`);
+  }
 
   await supabase.from("venues").update({
     is_claimed: false,
