@@ -8,16 +8,18 @@ import { SortSelect } from "@/components/search/sort-select";
 import { VenueCard } from "@/components/venue/venue-card";
 import { buildVenueHref } from "@/lib/search";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
+import { getVenueCollectionForSearchParams } from "@/lib/venue-collections";
 import { searchVenueListings } from "@/lib/venues";
 import type { VenueSearchParams } from "@/types/venue";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<VenueSearchParams> }): Promise<Metadata> {
   const params = await searchParams;
   const hasQuery = Object.values(params).some(Boolean);
+  const collection = getVenueCollectionForSearchParams(params);
   const metadata = buildMetadata({
-    title: "Search Scottish Wedding Venues",
-    description: "Compare wedding venues in Scotland by location, budget, guest capacity and venue style.",
-    path: "/venues",
+    title: collection?.title ?? "Search Scottish Wedding Venues",
+    description: collection?.description ?? "Compare wedding venues in Scotland by location, budget, guest capacity and venue style.",
+    path: collection ? `/wedding-venues/${collection.slug}` : "/venues",
     keywords: ["wedding venues Scotland", "Scottish wedding venue search"]
   });
   return hasQuery ? { ...metadata, robots: { index: false, follow: true } } : metadata;

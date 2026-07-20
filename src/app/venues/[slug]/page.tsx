@@ -10,6 +10,8 @@ import { VenueGallery } from "@/components/venue/venue-gallery";
 import { VenuePricingSection } from "@/components/venue/venue-pricing-section";
 import { ButtonLink } from "@/components/ui/button";
 import { buildBreadcrumbSchema, buildMetadata } from "@/lib/seo";
+import { getVenueLocationCollection, getVenueTypeCollection } from "@/lib/venue-collections";
+import { buildVenueFaqs, getVenueSeoCopy } from "@/lib/venue-seo";
 import { shouldUseVenuePassport } from "@/lib/venue-images";
 import { getPrimaryVenuePriceDisplay } from "@/lib/venue-pricing";
 import { isInternalTestVenueSlug } from "@/lib/internal-test-venue";
@@ -23,17 +25,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const venue = await getVenueListingBySlug(slug);
   if (!venue) return {};
+  const seo = getVenueSeoCopy(venue);
 
   const metadata = buildMetadata({
-    title: `${venue.name} wedding venue, ${venue.town}`,
-    description: `${venue.summary} Explore capacity, pricing and venue details on EverAft.`,
+    title: seo.title,
+    description: seo.description,
     path: `/venues/${venue.slug}`,
     image: absoluteUrl(`/venues/${venue.slug}/opengraph-image`),
-    keywords: [
-      `${venue.name} wedding venue`,
-      `${venue.town} wedding venue`,
-      `${venue.type} wedding venue Scotland`
-    ]
+    keywords: seo.keywords
   });
 
   return isInternalTestVenueSlug(slug)
@@ -61,23 +60,38 @@ export default async function VenuePage({ params }: PageProps) {
 
   const price = getPrimaryVenuePriceDisplay(venue.priceOptions);
   const usesPassport = shouldUseVenuePassport(venue);
+  const faqs = buildVenueFaqs(venue);
+  const locationCollection = getVenueLocationCollection(venue);
+  const typeCollection = getVenueTypeCollection(venue.type);
   const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venue.name}, ${venue.town}, ${venue.region}, Scotland`)}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": ["LocalBusiness", "EventVenue"],
-    additionalType: "https://schema.org/WeddingVenue",
-    name: venue.name,
-    description: venue.summary,
-    ...(usesPassport ? {} : { image: venue.images.map((image) => image.url) }),
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: venue.town,
-      addressRegion: venue.region,
-      addressCountry: "GB"
-    },
-    maximumAttendeeCapacity: venue.capacityMax,
-    url: absoluteUrl(`/venues/${venue.slug}`)
+    "@graph": [
+      {
+        "@type": ["LocalBusiness", "EventVenue"],
+        additionalType: "https://schema.org/WeddingVenue",
+        name: venue.name,
+        description: venue.summary,
+        ...(usesPassport ? {} : { image: venue.images.map((image) => image.url) }),
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: venue.town,
+          addressRegion: venue.region,
+          addressCountry: "GB"
+        },
+        maximumAttendeeCapacity: venue.capacityMax,
+        url: absoluteUrl(`/venues/${venue.slug}`)
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ question, answer }) => ({
+          "@type": "Question",
+          name: question,
+          acceptedAnswer: { "@type": "Answer", text: answer }
+        }))
+      }
+    ]
   };
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", path: "/" },
@@ -139,13 +153,13 @@ export default async function VenuePage({ params }: PageProps) {
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="grid gap-8">
           <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
-            <h2 className="font-display text-3xl font-semibold">About the venue</h2>
+            <h2 className="font-display text-3xl font-semibold">About {venue.name}</h2>
             <p className="mt-4 text-base leading-8 text-[var(--muted)]">{venue.description}</p>
             <div className="mt-5 flex flex-wrap gap-3 text-sm">
-              <Link className="font-semibold text-[#5c6b52] hover:underline" href={`/venues?location=${encodeURIComponent(venue.town)}`}>
+              <Link className="font-semibold text-[#5c6b52] hover:underline" href={locationCollection ? `/wedding-venues/${locationCollection.slug}` : `/venues?location=${encodeURIComponent(venue.town)}`}>
                 Explore more venues in {venue.town}
               </Link>
-              <Link className="font-semibold text-[#5c6b52] hover:underline" href={`/venues?type=${encodeURIComponent(venue.type)}`}>
+              <Link className="font-semibold text-[#5c6b52] hover:underline" href={typeCollection ? `/wedding-venues/${typeCollection.slug}` : `/venues?type=${encodeURIComponent(venue.type)}`}>
                 Browse more {venue.type.toLowerCase()} venues
               </Link>
             </div>
@@ -178,6 +192,18 @@ export default async function VenuePage({ params }: PageProps) {
             ) : (
               <p className="mt-4 text-sm leading-6 text-[var(--muted)]">Amenities are being confirmed with the venue.</p>
             )}
+          </section>
+
+          <section className="rounded-3xl border border-[var(--line)] bg-white p-6">
+            <h2 className="font-display text-3xl font-semibold">Questions about {venue.name}</h2>
+            <div className="mt-5 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+              {faqs.map(({ question, answer }) => (
+                <details className="group py-4" key={question}>
+                  <summary className="focus-ring cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">{question}</summary>
+                  <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{answer}</p>
+                </details>
+              ))}
+            </div>
           </section>
 
           <section className="rounded-3xl border border-[var(--line)] bg-white p-6">

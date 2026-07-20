@@ -21,6 +21,8 @@ export function Footer() {
             <Link className="transition hover:text-white" href="/wedding-budget-planner">Wedding budget planner</Link>
             <Link className="transition hover:text-white" href="/wedding-table-planner">Wedding table planner</Link>
             <Link className="transition hover:text-white" href="/guides">Planning guides</Link>
+            <Link className="transition hover:text-white" href="/wedding-venues/glasgow">Glasgow venues</Link>
+            <Link className="transition hover:text-white" href="/wedding-venues/edinburgh">Edinburgh venues</Link>
             <Link className="transition hover:text-white" href="/wedding-venues/castles">Castles</Link>
             <Link className="transition hover:text-white" href="/wedding-venues/country-estates">Country estates</Link>
           </div>
