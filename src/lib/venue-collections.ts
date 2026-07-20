@@ -203,3 +203,36 @@ export const venueCollections: readonly VenueCollection[] = [
 export function getVenueCollection(slug: string) {
   return venueCollections.find((collection) => collection.slug === slug);
 }
+
+export function getVenueCollectionForSearchParams(params: VenueSearchParams) {
+  if (params.guests || params.budget) return undefined;
+
+  return venueCollections.find((collection) => {
+    const location = collection.searchParams.location;
+    const type = collection.searchParams.type;
+
+    if (location) return !params.type && params.location === location;
+    if (type) return !params.location && params.type === type;
+    return false;
+  });
+}
+
+export function getVenueLocationCollection({ region, town }: { region: string; town: string }) {
+  const locations = [town, region].map(normaliseLocation);
+
+  return venueCollections.find((collection) => {
+    const location = collection.searchParams.location;
+    if (!location) return false;
+
+    const target = normaliseLocation(location);
+    return locations.some((value) => value === target || value.includes(target) || target.includes(value));
+  });
+}
+
+export function getVenueTypeCollection(type: string) {
+  return venueCollections.find((collection) => collection.searchParams.type === type);
+}
+
+function normaliseLocation(value: string) {
+  return value.trim().toLocaleLowerCase("en-GB");
+}
