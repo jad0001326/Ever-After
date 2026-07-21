@@ -106,9 +106,13 @@ export default async function GuidePage({ params }: PageProps) {
           <p className="mt-7 max-w-3xl text-lg leading-8 text-[#4c4a43] sm:text-xl">{guide.description}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/wedding-budget-planner"><Calculator size={17} /> Open budget planner</ButtonLink>
-            <ButtonLink href="/downloads/everaft-wedding-venue-viewing-checklist.pdf" prefetch={false} target="_blank" variant="secondary">
-              <Download size={17} /> Download venue checklist
-            </ButtonLink>
+            {isPhotographyGuide ? (
+              <ButtonLink href="/photographers" variant="secondary"><ArrowRight size={17} /> Browse photographers</ButtonLink>
+            ) : (
+              <ButtonLink href="/downloads/everaft-wedding-venue-viewing-checklist.pdf" prefetch={false} target="_blank" variant="secondary">
+                <Download size={17} /> Download venue checklist
+              </ButtonLink>
+            )}
           </div>
         </div>
       </header>
