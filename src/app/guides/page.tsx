@@ -105,7 +105,7 @@ export default function GuidesPage() {
           </div>
           <div className="lg:pl-8">
             <p className="max-w-xl text-base leading-7 text-[var(--muted)]">
-              New venue guides, clearer cost advice and thoughtful Scottish venue finds. No daily countdowns and no wedding spam.
+              New planning guides, clearer cost advice and thoughtful Scottish venue and supplier finds. No daily countdowns and no wedding spam.
             </p>
             <NewsletterForm />
           </div>
