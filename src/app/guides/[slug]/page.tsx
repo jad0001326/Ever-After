@@ -167,7 +167,7 @@ export default async function GuidePage({ params }: PageProps) {
                     </table>
                   </div>
                 ) : null}
-                {index === 1 ? <InlinePlannerCta /> : null}
+                {index === 1 ? <InlinePlannerCta isPhotographyGuide={isPhotographyGuide} /> : null}
               </section>
             ))}
           </div>
@@ -257,16 +257,20 @@ export default async function GuidePage({ params }: PageProps) {
   );
 }
 
-function InlinePlannerCta() {
+function InlinePlannerCta({ isPhotographyGuide }: { isPhotographyGuide: boolean }) {
   return (
     <aside className="mt-9 rounded-[1.5rem] bg-[var(--brand)] px-6 py-7 text-white sm:px-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d19a72]">Make it specific to your wedding</p>
       <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.03em]">Turn the advice into a live budget.</h3>
-      <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">Add a venue or start with an editable £15,000, £20,000 or £30,000 plan, then replace every estimate with your own quote.</p>
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">
+        {isPhotographyGuide
+          ? "Add a realistic photography allowance, then replace it with the complete quote, deposit and balance when you book."
+          : "Add a venue or start with an editable £15,000, £20,000 or £30,000 plan, then replace every estimate with your own quote."}
+      </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <ButtonLink className="bg-[#ad5d32] text-white hover:bg-[#914920]" href="/wedding-budget-planner">Open budget planner <ArrowRight size={16} /></ButtonLink>
-        <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10" href="/guides/wedding-venue-viewing-checklist">
-          Get the venue checklist
+        <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10" href={isPhotographyGuide ? "/photographers" : "/guides/wedding-venue-viewing-checklist"}>
+          {isPhotographyGuide ? "Browse photographers" : "Get the venue checklist"}
         </Link>
       </div>
     </aside>
