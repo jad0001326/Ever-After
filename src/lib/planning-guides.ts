@@ -25,7 +25,7 @@ export type PlanningGuide = {
   title: string;
   shortTitle: string;
   description: string;
-  category: "Costs" | "Choosing a venue" | "Venue practicalities";
+  category: "Costs" | "Choosing a venue" | "Venue practicalities" | "Photography";
   publishedAt: string;
   updatedAt: string;
   readMinutes: number;
@@ -972,6 +972,152 @@ export const planningGuides: readonly PlanningGuide[] = [
         answer:
           "A contingency of five to ten percent is a common planning range, but use a larger buffer where the venue, catering or logistics still contain many unknowns."
       }
+    ]
+  },
+  {
+    slug: "wedding-photographer-cost-scotland-2026",
+    title: "How much does a wedding photographer cost in Scotland in 2026?",
+    shortTitle: "Wedding photographer costs in Scotland",
+    description:
+      "Current wedding photography cost context for Scotland, what different packages include and how to compare quotes without losing sight of the whole budget.",
+    category: "Photography",
+    publishedAt: "2026-07-21",
+    updatedAt: "2026-07-21",
+    readMinutes: 9,
+    answer:
+      "Bridebook's 2026 data gives a UK average wedding photography spend of £1,484, while its Scotland cost guide suggests a typical figure around £1,560. Real quotes vary widely: coverage length, experience, a second photographer, travel, albums and delivery all change what you are buying.",
+    intro: [
+      "Photography is one of the larger supplier decisions in a wedding budget, but a price on its own tells you very little. A short digital-only package and full-day coverage with two photographers, an album and travel are not comparable purchases.",
+      "Use current averages as context rather than a target. The useful number is the complete price for the coverage, deliverables and safeguards you actually want."
+    ],
+    takeaways: [
+      "Bridebook's 2026 UK average is £1,484, with its Scotland guide suggesting a typical figure around £1,560.",
+      "Compare hours, photographers, deliverables, travel and usage rights before comparing totals.",
+      "Record the complete booking, deposit and remaining balance in the wider wedding budget."
+    ],
+    sections: [
+      {
+        heading: "What the 2026 figures say",
+        paragraphs: [
+          "Bridebook reports a UK average wedding photography spend of £1,484 from its 2026 data. Its Scotland wedding-cost guide places the typical Scottish figure at around £1,560 and gives broad examples ranging from £800–£1,200 for half-day coverage to £1,400–£2,500 for a full day.",
+          "Those figures describe a varied market, not a tariff. Location, date, coverage and the photographer's experience can all move the price. Treat any range as a planning allowance until you have a written quote for your own wedding."
+        ]
+      },
+      {
+        heading: "Useful package ranges — and what they may buy",
+        table: {
+          headers: ["Coverage", "Published 2026 context", "What to confirm"],
+          rows: [
+            ["Half day", "Roughly £800–£1,200", "Exact hours, which parts of the day are covered and image delivery"],
+            ["Full day", "Roughly £1,400–£2,500", "Start and finish time, evening coverage, travel and final gallery"],
+            ["Full day with a second photographer", "Roughly £2,000–£3,500", "Who the second photographer is and when two-person coverage is provided"],
+            ["Premium or destination coverage", "Often £3,000+", "Travel, accommodation, multi-day work, albums and additional events"]
+          ]
+        },
+        paragraphs: [
+          "The ranges above come from Bridebook's Scotland cost guide. They are useful for early budgeting, but they do not guarantee what an individual photographer will charge or include."
+        ]
+      },
+      {
+        heading: "What changes the price most",
+        bullets: [
+          "Coverage time: ceremony-only, half-day, full-day and multi-day packages require very different commitments.",
+          "Experience and demand: an established photographer with limited annual availability may charge more.",
+          "One photographer or two: a second photographer can cover simultaneous preparations, extra angles and larger guest groups.",
+          "Travel and accommodation: rural, island and destination weddings may require mileage, ferries, flights or an overnight stay.",
+          "Deliverables: edited digital images, previews, prints, albums and engagement sessions can be bundled or priced separately.",
+          "Date and timing: peak Saturdays, late finishes and extra hours can affect availability and price."
+        ]
+      },
+      {
+        heading: "Check what the package actually includes",
+        paragraphs: [
+          "Ask every photographer to quote the same version of the day. Give them the date, venue, likely timings, locations and the parts you most want covered. A clear brief makes the responses easier to compare."
+        ],
+        bullets: [
+          "The named photographer who will attend and any second photographer or assistant.",
+          "The precise number of coverage hours and the price of extra time.",
+          "An expected delivery window and how the finished gallery is supplied.",
+          "Whether the number of final edited images is fixed, estimated or uncapped.",
+          "Travel, accommodation, parking and ferry costs.",
+          "Prints, albums, preview images and engagement sessions.",
+          "Backup arrangements for equipment, files and photographer illness.",
+          "The personal-use licence and any permission requested for portfolio or social-media use."
+        ]
+      },
+      {
+        heading: "Costs that can sit outside the headline figure",
+        bullets: [
+          "Travel beyond an included radius, parking, ferries and accommodation.",
+          "Additional coverage when timings run late.",
+          "A second photographer or assistant.",
+          "Albums, parent albums, fine-art prints and postage.",
+          "An engagement or pre-wedding shoot.",
+          "Fast-turnaround previews or expedited full-gallery delivery.",
+          "Rescheduling, postponement or date-change charges under the contract."
+        ],
+        paragraphs: [
+          "Ask for the likely complete total rather than assuming an unmentioned cost is included. Keep optional album upgrades separate if you have not decided whether to buy them."
+        ]
+      },
+      {
+        heading: "Compare photographers like for like",
+        table: {
+          headers: ["Line to compare", "Question to answer"],
+          rows: [
+            ["Coverage", "Which hours, locations and parts of the day are included?"],
+            ["People", "Who attends, and is a second photographer included?"],
+            ["Gallery", "What is delivered, in what format and on what timescale?"],
+            ["Reliability", "What backup equipment, file protection and illness plan are in place?"],
+            ["Rights and privacy", "What may you do with the images, and may the photographer publish them?"],
+            ["Complete price", "What are the deposit, balance dates and every likely additional charge?"]
+          ]
+        },
+        paragraphs: [
+          "Look at complete galleries from weddings with conditions similar to yours, not only a small selection of highlights. A winter hotel, dark ceremony room and exposed Highland venue test different skills.",
+          "In the UK, the photographer will generally be the first copyright owner unless the contract assigns copyright or a legal exception applies. Your contract should clearly explain the personal-use permission you receive and how the photographer may use the images."
+        ]
+      },
+      {
+        heading: "Put the confirmed cost into the whole wedding plan",
+        paragraphs: [
+          "Add the full photography price to the EverAft budget planner, then record the deposit as a payment against that total. Keep the remaining balance and due date visible; a manageable deposit does not make the rest of the commitment disappear.",
+          "If a preferred photographer costs more than the planning allowance, decide deliberately whether photography is a priority, another category should change or the package can be adjusted. Avoid increasing the total by accident."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Browse Scottish wedding photographers", href: "/photographers" },
+      { label: "Open the wedding budget planner", href: "/wedding-budget-planner" },
+      { label: "Explore Scottish wedding venues", href: "/venues" }
+    ],
+    faqs: [
+      {
+        question: "What is the average cost of a wedding photographer in Scotland in 2026?",
+        answer:
+          "Bridebook's UK average is £1,484. Its 2026 Scotland cost guide suggests a typical Scottish figure around £1,560, but individual quotes vary substantially with hours, experience, travel, a second photographer and deliverables."
+      },
+      {
+        question: "How much should we budget for full-day wedding photography?",
+        answer:
+          "Bridebook's Scotland guide gives a broad full-day range of roughly £1,400–£2,500. Confirm the exact hours and inclusions before using that range because packages and weddings differ."
+      },
+      {
+        question: "Is a second wedding photographer worth paying for?",
+        answer:
+          "It can be useful when preparations happen in different places, guest numbers are large, the venue has several spaces or you want simultaneous angles. Ask the lead photographer what a second person would add to your specific timeline."
+      },
+      {
+        question: "Do we own the copyright in our wedding photographs?",
+        answer:
+          "Not automatically. In the UK, the photographer will generally be the first copyright owner unless copyright is assigned or a legal exception applies. The contract normally gives the couple a licence for agreed personal uses, so read the rights and publication terms carefully."
+      }
+    ],
+    sources: [
+      { label: "Bridebook: Wedding photography prices UK (2026)", href: "https://bridebook.com/uk/article/wedding-prices-photography" },
+      { label: "Bridebook: Average wedding cost in Scotland (2026)", href: "https://bridebook.com/uk/article/average-wedding-cost-scotland" },
+      { label: "Bridebook: UK Wedding Report 2026", href: "https://partners.bridebook.com/uk/wedding-report-2026" },
+      { label: "UK Intellectual Property Office: copyright in digital images and photographs", href: "https://www.gov.uk/government/publications/copyright-notice-digital-images-photographs-and-the-internet/copyright-notice-digital-images-photographs-and-the-internet" }
     ]
   }
 ] as const;
