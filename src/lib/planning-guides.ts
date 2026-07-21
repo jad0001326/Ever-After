@@ -1852,7 +1852,7 @@ export const planningGuides: readonly PlanningGuide[] = [
       },
       {
         "label": "Review venue cancellation terms",
-        "href": "/guides/wedding-venue-deposits-and-cancellation-terms"
+        "href": "/guides/wedding-venue-deposits-cancellation-terms"
       },
       {
         "label": "Compare Scottish wedding venues",
@@ -2415,7 +2415,7 @@ export const planningGuides: readonly PlanningGuide[] = [
       },
       {
         "label": "Check venue capacities and layouts",
-        "href": "/guides/wedding-venue-capacities-and-layouts"
+        "href": "/guides/wedding-venue-capacity-layouts"
       }
     ],
     "faqs": [
