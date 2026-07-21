@@ -25,7 +25,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: guide.description,
     path: `/guides/${guide.slug}`,
     image: null,
-    keywords: [guide.title, guide.shortTitle, "Scottish wedding planning", "wedding venue advice"]
+    keywords: [
+      guide.title,
+      guide.shortTitle,
+      "Scottish wedding planning",
+      guide.category === "Photography" ? "Scottish wedding photographers" : "wedding venue advice"
+    ]
   });
 
   return {
@@ -45,6 +50,7 @@ export default async function GuidePage({ params }: PageProps) {
   if (!guide) notFound();
 
   const path = `/guides/${guide.slug}`;
+  const isPhotographyGuide = guide.category === "Photography";
   const related = getRelatedGuides(guide);
   const schema = {
     "@context": "https://schema.org",
@@ -90,7 +96,9 @@ export default async function GuidePage({ params }: PageProps) {
             <span aria-hidden="true" className="size-1 rounded-full bg-[#c2ab92]" />
             <span className="normal-case tracking-normal text-[var(--muted)]">{guide.readMinutes} minute read</span>
             <span aria-hidden="true" className="size-1 rounded-full bg-[#c2ab92]" />
-            <time className="normal-case tracking-normal text-[var(--muted)]" dateTime={guide.updatedAt}>Updated 15 July 2026</time>
+            <time className="normal-case tracking-normal text-[var(--muted)]" dateTime={guide.updatedAt}>
+              Updated {new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${guide.updatedAt}T00:00:00Z`))}
+            </time>
           </div>
           <h1 className="mt-6 max-w-4xl font-display text-[clamp(3.5rem,8vw,6.8rem)] font-semibold leading-[0.88] tracking-[-0.05em] text-[var(--ink)]">
             {guide.title}
@@ -161,8 +169,8 @@ export default async function GuidePage({ params }: PageProps) {
           </div>
 
           <section className="mt-16 border-y border-[var(--line)] py-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Continue with real venues</p>
-            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.035em]">Put the guide to work.</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">{isPhotographyGuide ? "Build your shortlist" : "Continue with real venues"}</p>
+            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.035em]">{isPhotographyGuide ? "Turn the research into a booking." : "Put the guide to work."}</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {guide.venueLinks.map((venueLink) => (
                 <Link className="focus-ring group flex items-center justify-between gap-4 rounded-2xl bg-white px-5 py-4 text-sm font-semibold ring-1 ring-[var(--line)] transition hover:bg-[#f7f1e8]" href={venueLink.href} key={venueLink.href}>
@@ -212,8 +220,8 @@ export default async function GuidePage({ params }: PageProps) {
                 </li>
               ))}
             </ul>
-            <Link className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#35513c]" href="/guides/wedding-venue-viewing-checklist">
-              Use the viewing checklist <ArrowRight size={15} />
+            <Link className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#35513c]" href={isPhotographyGuide ? "/photographers" : "/guides/wedding-venue-viewing-checklist"}>
+              {isPhotographyGuide ? "Compare Scottish photographers" : "Use the viewing checklist"} <ArrowRight size={15} />
             </Link>
           </div>
         </aside>
