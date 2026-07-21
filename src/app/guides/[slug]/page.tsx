@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, ArrowUpRight, Calculator, Check, Download, ExternalLink } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Calculator, Check, ExternalLink } from "lucide-react";
 import { GuideCard } from "@/components/guides/guide-card";
 import { NewsletterForm } from "@/components/home/newsletter-form";
 import { ButtonLink } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       guide.title,
       guide.shortTitle,
       "Scottish wedding planning",
-      guide.category === "Photography" ? "Scottish wedding photographers" : "wedding venue advice"
+      guide.category === "Photography" ? "Scottish wedding photographers" : "Scottish wedding planning advice"
     ]
   });
 
@@ -50,7 +50,12 @@ export default async function GuidePage({ params }: PageProps) {
   if (!guide) notFound();
 
   const path = `/guides/${guide.slug}`;
-  const isPhotographyGuide = guide.category === "Photography";
+  const guideAction =
+    guide.category === "Photography"
+      ? { href: "/photographers", label: "Browse photographers" }
+      : guide.category === "Planning"
+        ? { href: "/wedding-table-planner", label: "Open table planner" }
+        : { href: "/venues", label: "Browse venues" };
   const related = getRelatedGuides(guide);
   const schema = {
     "@context": "https://schema.org",
@@ -106,13 +111,7 @@ export default async function GuidePage({ params }: PageProps) {
           <p className="mt-7 max-w-3xl text-lg leading-8 text-[#4c4a43] sm:text-xl">{guide.description}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/wedding-budget-planner"><Calculator size={17} /> Open budget planner</ButtonLink>
-            {isPhotographyGuide ? (
-              <ButtonLink href="/photographers" variant="secondary"><ArrowRight size={17} /> Browse photographers</ButtonLink>
-            ) : (
-              <ButtonLink href="/downloads/everaft-wedding-venue-viewing-checklist.pdf" prefetch={false} target="_blank" variant="secondary">
-                <Download size={17} /> Download venue checklist
-              </ButtonLink>
-            )}
+            <ButtonLink href={guideAction.href} variant="secondary"><ArrowRight size={17} /> {guideAction.label}</ButtonLink>
           </div>
         </div>
       </header>
@@ -167,14 +166,14 @@ export default async function GuidePage({ params }: PageProps) {
                     </table>
                   </div>
                 ) : null}
-                {index === 1 ? <InlinePlannerCta isPhotographyGuide={isPhotographyGuide} /> : null}
+                {index === 1 ? <InlinePlannerCta action={guideAction} category={guide.category} /> : null}
               </section>
             ))}
           </div>
 
           <section className="mt-16 border-y border-[var(--line)] py-10">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">{isPhotographyGuide ? "Build your shortlist" : "Continue with real venues"}</p>
-            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.035em]">{isPhotographyGuide ? "Turn the research into a booking." : "Put the guide to work."}</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Your next step</p>
+            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.035em]">Put the guide to work.</h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {guide.venueLinks.map((venueLink) => (
                 <Link className="focus-ring group flex items-center justify-between gap-4 rounded-2xl bg-white px-5 py-4 text-sm font-semibold ring-1 ring-[var(--line)] transition hover:bg-[#f7f1e8]" href={venueLink.href} key={venueLink.href}>
@@ -224,8 +223,8 @@ export default async function GuidePage({ params }: PageProps) {
                 </li>
               ))}
             </ul>
-            <Link className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#35513c]" href={isPhotographyGuide ? "/photographers" : "/guides/wedding-venue-viewing-checklist"}>
-              {isPhotographyGuide ? "Compare Scottish photographers" : "Use the viewing checklist"} <ArrowRight size={15} />
+            <Link className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#35513c]" href={guideAction.href}>
+              {guideAction.label} <ArrowRight size={15} />
             </Link>
           </div>
         </aside>
@@ -257,20 +256,29 @@ export default async function GuidePage({ params }: PageProps) {
   );
 }
 
-function InlinePlannerCta({ isPhotographyGuide }: { isPhotographyGuide: boolean }) {
+function InlinePlannerCta({
+  action,
+  category
+}: {
+  action: { href: string; label: string };
+  category: (typeof planningGuides)[number]["category"];
+}) {
+  const plannerCopy =
+    category === "Photography"
+      ? "Add a realistic photography allowance, then replace it with the complete quote, deposit and balance when you book."
+      : category === "Planning"
+        ? "Turn the decisions into one working guest, table or budget plan, then replace assumptions as details are confirmed."
+        : "Add the likely costs to your live plan, then replace every estimate with written quotes and confirmed dates.";
+
   return (
     <aside className="mt-9 rounded-[1.5rem] bg-[var(--brand)] px-6 py-7 text-white sm:px-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d19a72]">Make it specific to your wedding</p>
-      <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.03em]">Turn the advice into a live budget.</h3>
-      <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">
-        {isPhotographyGuide
-          ? "Add a realistic photography allowance, then replace it with the complete quote, deposit and balance when you book."
-          : "Add a venue or start with an editable £15,000, £20,000 or £30,000 plan, then replace every estimate with your own quote."}
-      </p>
+      <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.03em]">Turn the advice into a live plan.</h3>
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">{plannerCopy}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <ButtonLink className="bg-[#ad5d32] text-white hover:bg-[#914920]" href="/wedding-budget-planner">Open budget planner <ArrowRight size={16} /></ButtonLink>
-        <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10" href={isPhotographyGuide ? "/photographers" : "/guides/wedding-venue-viewing-checklist"}>
-          {isPhotographyGuide ? "Browse photographers" : "Get the venue checklist"}
+        <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-white/25 px-5 text-sm font-semibold text-white transition hover:bg-white/10" href={action.href}>
+          {action.label}
         </Link>
       </div>
     </aside>
