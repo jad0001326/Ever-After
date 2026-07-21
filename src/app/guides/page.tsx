@@ -9,13 +9,24 @@ import { planningGuides } from "@/lib/planning-guides";
 export const metadata = buildMetadata({
   title: "Wedding Planning Guides",
   description:
-    "Practical Scottish wedding planning guides for comparing venues and photographers, understanding costs and building a realistic wedding budget.",
+    "Practical Scottish wedding planning guides covering venues, photographers, legal steps, seasons, accessibility, guest lists, timelines and realistic budgets.",
   path: "/guides",
   image: null,
-  keywords: ["wedding planning guides", "Scottish wedding costs", "wedding venue checklist", "Scottish wedding photographers", "wedding budget guide"]
+  keywords: ["wedding planning guides", "Scottish wedding costs", "getting married in Scotland", "Scottish wedding photographers", "accessible wedding planning", "wedding budget guide"]
 });
 
-const categories = ["Costs", "Choosing a venue", "Venue practicalities", "Photography"] as const;
+const categories = ["Costs", "Choosing a venue", "Venue practicalities", "Photography", "Legal & ceremonies", "Seasons & outdoors", "Planning", "Accessibility"] as const;
+
+const categoryDescriptions: Record<(typeof categories)[number], string> = {
+  Costs: "Build a total you understand before the deposits begin.",
+  "Choosing a venue": "Turn beautiful viewings and very different brochures into a confident shortlist.",
+  "Venue practicalities": "Check the capacity, contract and logistics that make the day work.",
+  Photography: "Choose the right coverage, understand the quote and book with confidence.",
+  "Legal & ceremonies": "Understand the Scottish process, paperwork and ceremony choices.",
+  "Seasons & outdoors": "Choose the setting and season, then make the weather plan work.",
+  Planning: "Turn guest numbers and timings into a day that flows.",
+  Accessibility: "Plan a welcoming day around real access requirements."
+};
 
 export default function GuidesPage() {
   const featured = planningGuides.filter((guide) => guide.featured);
@@ -78,13 +89,7 @@ export default function GuidesPage() {
                   <div>
                     <h2 className="font-display text-4xl font-semibold tracking-[-0.035em]">{category}</h2>
                     <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                      {category === "Costs"
-                        ? "Build a total you understand before the deposits begin."
-                        : category === "Choosing a venue"
-                          ? "Turn beautiful viewings and very different brochures into a confident shortlist."
-                          : category === "Venue practicalities"
-                            ? "Check the capacity, contract and logistics that make the day work."
-                            : "Choose the right coverage, understand the quote and book with confidence."}
+                      {categoryDescriptions[category]}
                     </p>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
