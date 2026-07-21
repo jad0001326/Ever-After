@@ -9,13 +9,13 @@ import { planningGuides } from "@/lib/planning-guides";
 export const metadata = buildMetadata({
   title: "Wedding Planning Guides",
   description:
-    "Practical Scottish wedding planning guides for comparing venues, understanding costs and building a realistic wedding budget.",
+    "Practical Scottish wedding planning guides for comparing venues and photographers, understanding costs and building a realistic wedding budget.",
   path: "/guides",
   image: null,
-  keywords: ["wedding planning guides", "Scottish wedding costs", "wedding venue checklist", "wedding budget guide"]
+  keywords: ["wedding planning guides", "Scottish wedding costs", "wedding venue checklist", "Scottish wedding photographers", "wedding budget guide"]
 });
 
-const categories = ["Costs", "Choosing a venue", "Venue practicalities"] as const;
+const categories = ["Costs", "Choosing a venue", "Venue practicalities", "Photography"] as const;
 
 export default function GuidesPage() {
   const featured = planningGuides.filter((guide) => guide.featured);
@@ -37,12 +37,12 @@ export default function GuidesPage() {
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
             <div>
               <h1 className="max-w-4xl font-display text-[clamp(3.7rem,8vw,7.5rem)] font-semibold leading-[0.84] tracking-[-0.05em] text-[var(--ink)]">
-                Plan the venue. See the whole cost.
+                Plan the day. See the whole cost.
               </h1>
             </div>
             <div className="max-w-xl lg:pb-2">
               <p className="text-lg leading-8 text-[#4c4a43]">
-                Clear, practical guidance for the decisions that change your wedding: venue costs, packages, guest numbers and the contract you are about to sign.
+                Clear, practical guidance for the decisions that change your wedding: venues, suppliers, guest numbers, contracts and the complete cost.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <ButtonLink href="/wedding-budget-planner"><Calculator size={17} /> Open budget planner</ButtonLink>
@@ -82,7 +82,9 @@ export default function GuidesPage() {
                         ? "Build a total you understand before the deposits begin."
                         : category === "Choosing a venue"
                           ? "Turn beautiful viewings and very different brochures into a confident shortlist."
-                          : "Check the capacity, contract and logistics that make the day work."}
+                          : category === "Venue practicalities"
+                            ? "Check the capacity, contract and logistics that make the day work."
+                            : "Choose the right coverage, understand the quote and book with confidence."}
                     </p>
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
