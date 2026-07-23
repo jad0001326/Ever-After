@@ -70,23 +70,39 @@ No migration is applied by this branch. Any future partner-sharing, normalized p
 
 Completed on the clean integration branch:
 
-- full current test suite: 31 files and 159 tests passing;
+- full current test suite: 32 files and 162 tests passing;
 - focused Planning Hub and cookie-consent tests passing;
 - TypeScript check passing;
 - focused ESLint checks passing;
 - optimized Next.js production build passing, including 75 generated static pages;
 - read-only browser checks for paged results, on-demand detail and two-venue comparison;
-- mobile Lighthouse accessibility 100, best practices 100 and CLS 0.
+- small-iPhone browser checks at 390 × 844 for the first viewport, catalogue cards, compare, detail focus management and manual entry;
+- mobile Lighthouse accessibility 100, best practices 100 and CLS 0;
+- consent-gated Core Web Vitals reporting for production LCP, INP and CLS evidence.
 
-The mobile performance score has met 90 in repeat lab runs. LCP remains variable and above the 2.5-second target in the local throttled environment, so release approval remains gated on a stable production-like median and field Core Web Vitals. No deployment has occurred.
+The final full-data three-run mobile Lighthouse median is:
+
+| Metric | Median | Target |
+| --- | ---: | ---: |
+| Performance | 96 | at least 90 |
+| LCP | 2.303 s | below 2.5 s |
+| TBT (lab interaction proxy) | 166 ms | below 200 ms |
+| CLS | 0 | below 0.1 |
+| Accessibility | 100 | 100 |
+| Best practices | 100 | 100 |
+
+The test used the optimized production build with eight real venue results and the existing local Supabase configuration. Production INP still requires post-release field data; it is now reported to Google Analytics only after analytics consent. No deployment has occurred.
+
+The final mobile regression for the existing public `/venues` route scored performance 98, accessibility 96, best practices 100 and SEO 100, with LCP 2.258 s, TBT 91 ms and CLS 0.
+
+Read-only production inspection confirms that `budget_plans` has RLS enabled, four authenticated owner policies, no anonymous grants, the composite `(user_id, id)` primary key and the owner/update index. `supabase/tests/budget_plans_rls.sql` adds rollback-only owner A, unrelated user B and anonymous verification for a local database or disposable Supabase branch. It has not been run against production.
 
 ## Remaining release gates
 
-1. Establish a stable three-run mobile Lighthouse median for Planning Hub and the public venue route.
-2. Complete keyboard-only and mobile-device interaction checks for filter, compare, detail, manual entry and payment editing.
-3. Add authenticated RLS integration coverage for owner and unrelated-user plan access.
-4. Review the dependency audit findings without force-upgrading packages.
-5. Present the exact deployment and rollback plan for explicit approval.
+1. Run `supabase/tests/budget_plans_rls.sql` on a local database or disposable Supabase branch when that environment is available.
+2. Complete one physical Safari/iPhone smoke test and collect post-release field INP after an approved deployment.
+3. Review the dependency audit findings without force-upgrading packages.
+4. Present the exact deployment and rollback plan for explicit approval.
 
 ## Rollback
 
@@ -96,4 +112,3 @@ The route is isolated and unlinked. Application rollback is therefore:
 2. retain the public Budget Planner and catalogue routes;
 3. do not remove `budget_plans` data or migration history;
 4. revert the public venue filter-shell change only if it causes a measured regression.
-

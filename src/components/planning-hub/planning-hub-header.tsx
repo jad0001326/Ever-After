@@ -6,7 +6,7 @@ export function PlanningHubHeader() {
     <header className="border-b border-[#d9d0c3] bg-[#fbf8f2]">
       <div className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full text-sm font-semibold text-[#24432f]" href="/wedding-budget-planner">
+          <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full text-sm font-semibold text-[#24432f]" href="/wedding-budget-planner" prefetch={false}>
             <ArrowLeft size={17} /> Public Budget Planner
           </Link>
           <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#e8efe8] px-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#24432f]">

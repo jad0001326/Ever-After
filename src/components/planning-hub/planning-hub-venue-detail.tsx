@@ -18,7 +18,14 @@ export function PlanningHubVenueDetailPanel({
   if (!loading && !detail) return null;
 
   return (
-    <section aria-busy={loading} aria-live="polite" className="mb-6 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white" id="venue-detail">
+    <section
+      aria-busy={loading}
+      aria-label={loading ? "Loading venue details" : `${detail?.name ?? "Venue"} details`}
+      aria-live="polite"
+      className="focus-ring mb-6 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white"
+      id="venue-detail"
+      tabIndex={-1}
+    >
       {loading ? (
         <div className="grid min-h-80 place-items-center p-8 text-center">
           <div>
@@ -61,7 +68,7 @@ export function PlanningHubVenueDetailPanel({
               <p className="mt-5 inline-flex items-center gap-2 text-xs text-[#715622]"><ImageIcon size={15} /> Approved venue photography has not been supplied yet.</p>
             )}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="focus-ring inline-flex min-h-11 items-center rounded-full border border-[#173526] px-5 text-sm font-semibold text-[#173526]" href={`/venues/${detail.slug}`}>
+              <Link className="focus-ring inline-flex min-h-11 items-center rounded-full border border-[#173526] px-5 text-sm font-semibold text-[#173526]" href={`/venues/${detail.slug}`} prefetch={false}>
                 Full venue page
               </Link>
               {detail.officialWebsiteUrl ? (

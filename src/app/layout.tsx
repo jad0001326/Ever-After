@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -8,19 +7,6 @@ import { GoogleAnalyticsController } from "@/components/analytics/google-analyti
 import { CookieBanner } from "@/components/privacy/cookie-banner";
 import { socialProfileUrls } from "@/lib/social";
 import { absoluteUrl } from "@/lib/utils";
-
-const sans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap"
-});
-
-const display = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap"
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
@@ -51,7 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html data-scroll-behavior="smooth" lang="en-GB">
-      <body className={`${sans.variable} ${display.variable} antialiased`}>
+      <body className="antialiased">
         <Header />
         <script
           type="application/ld+json"

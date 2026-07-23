@@ -89,7 +89,7 @@ export function Logo({
   if (!href) return content;
 
   return (
-    <Link href={href} aria-label={ariaLabel} className="inline-flex items-center">
+    <Link href={href} aria-label={ariaLabel} className="inline-flex items-center" prefetch={false}>
       {content}
     </Link>
   );

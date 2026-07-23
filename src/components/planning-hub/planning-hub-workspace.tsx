@@ -51,6 +51,7 @@ export function PlanningHubWorkspace({
   const [saveMessage, setSaveMessage] = useState(userId ? "Changes are also kept on this device." : "Changes are saved on this device.");
   const [pending, startTransition] = useTransition();
   const detailRequestId = useRef(0);
+  const detailTriggerRef = useRef<HTMLElement | null>(null);
 
   const selectedVenue = results.venues.find((venue) => venue.id === selectedVenueId) ?? null;
   const selectedItem = findPlanningHubVenueItem(plan, selectedVenueId);
@@ -95,6 +96,7 @@ export function PlanningHubWorkspace({
   function openVenue(venueId: string) {
     const venue = results.venues.find((candidate) => candidate.id === venueId);
     if (!venue) return;
+    detailTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const item = findPlanningHubVenueItem(plan, venue.id);
     setSelectedVenueId(venue.id);
     setStatus(normaliseStatus(item?.bookingStatus));
@@ -112,8 +114,17 @@ export function PlanningHubWorkspace({
         setSaveMessage("Venue details could not be opened. The result remains available in your plan.");
         return;
       }
-      requestAnimationFrame(() => document.getElementById("venue-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() => {
+        const panel = document.getElementById("venue-detail");
+        panel?.focus({ preventScroll: true });
+        panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
+  }
+
+  function closeVenueDetail() {
+    setDetail(null);
+    requestAnimationFrame(() => detailTriggerRef.current?.focus());
   }
 
   function toggleCompare(venueId: string) {
@@ -204,7 +215,7 @@ export function PlanningHubWorkspace({
     <div className="grid min-w-0 gap-6 lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="min-w-0">
         <PlanningHubComparePanel onRemove={(venueId) => setComparedVenues((current) => current.filter((venue) => venue.id !== venueId))} venues={comparedVenues} />
-        <PlanningHubVenueDetailPanel detail={detail} loading={detailLoading || pending && detailLoading} onClose={() => setDetail(null)} />
+        <PlanningHubVenueDetailPanel detail={detail} loading={detailLoading || pending && detailLoading} onClose={closeVenueDetail} />
         <PlanningHubVenueResults
           comparedVenueIds={comparedIds}
           onCompare={toggleCompare}

@@ -63,11 +63,11 @@ async function PlanningHubContent({ searchParams }: { searchParams: Promise<Plan
 function PlanningHubWorkspaceFallback() {
   return (
     <div aria-busy="true" aria-label="Loading your planning workspace" className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)_20rem]">
-      <div className="h-[34rem] animate-pulse rounded-3xl bg-[#e7dfd2]" />
+      <div className="h-[34rem] rounded-3xl bg-[#e7dfd2]" />
       <div className="grid gap-4 sm:grid-cols-2">
-        {Array.from({ length: 6 }, (_, index) => <div className="h-80 animate-pulse rounded-3xl bg-[#e7dfd2]" key={index} />)}
+        {Array.from({ length: 6 }, (_, index) => <div className="h-80 rounded-3xl bg-[#e7dfd2]" key={index} />)}
       </div>
-      <div className="h-[30rem] animate-pulse rounded-3xl bg-[#e7dfd2]" />
+      <div className="h-[30rem] rounded-3xl bg-[#e7dfd2]" />
       <span className="sr-only">Loading venues and your connected plan.</span>
     </div>
   );
