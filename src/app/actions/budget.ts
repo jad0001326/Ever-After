@@ -12,7 +12,7 @@ export async function saveBudgetPlan(input: BudgetPlan) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: "Sign in to save this plan to your account." };
   const plan = { ...parsed.data, userId: user.id, updatedAt: new Date().toISOString() };
-  const { error } = await supabase.from("budget_plans").upsert({ id: plan.id, user_id: user.id, name: plan.name, scenario_name: plan.scenarioName, currency: plan.currency, total_budget_pence: plan.totalBudgetPence, plan_json: plan as unknown as Json, updated_at: plan.updatedAt }, { onConflict: "id" });
+  const { error } = await supabase.from("budget_plans").upsert({ id: plan.id, user_id: user.id, name: plan.name, scenario_name: plan.scenarioName, currency: plan.currency, total_budget_pence: plan.totalBudgetPence, plan_json: plan as unknown as Json, updated_at: plan.updatedAt }, { onConflict: "user_id,id" });
   if (error) return { ok: false, message: "Cloud save failed. Your latest changes remain saved on this device." };
   return { ok: true, savedAt: plan.updatedAt };
 }
