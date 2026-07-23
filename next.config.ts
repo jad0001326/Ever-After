@@ -32,7 +32,8 @@ const nextConfig: NextConfig = {
     ]
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"]
+    optimizePackageImports: ["lucide-react"],
+    webpackBuildWorker: process.env.EVERAFT_LOW_MEMORY_BUILD === "1" ? false : undefined
   }
 };
 
