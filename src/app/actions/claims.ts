@@ -105,12 +105,12 @@ export async function submitVenueClaim(_: ClaimState, formData: FormData): Promi
 
 export async function approveVenueClaim(formData: FormData) {
   const { user } = await requireAdmin();
-  const supabase = await createClient();
-  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
+  const admin = createAdminClient();
+  if (!admin) redirect("/login?message=Configure+Supabase+environment+variables+first");
 
   const claimId = requiredText(formData, "claimId");
   const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error: claimError } = await supabase
+  const { data: claim, error: claimError } = await admin
     .from("venue_claims")
     .select("*")
     .eq("id", claimId)
@@ -119,10 +119,10 @@ export async function approveVenueClaim(formData: FormData) {
 
   if (claimError || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(claimError?.message ?? "This claim is no longer awaiting review.")}`);
 
-  const { data: venue } = await supabase.from("venues").select("id, name, slug").eq("id", claim.venue_id).single();
-  const { data: vendor } = await supabase.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
+  const { data: venue } = await admin.from("venues").select("id, name, slug").eq("id", claim.venue_id).single();
+  const { data: vendor } = await admin.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
 
-  const vendorId = vendor?.id ?? (await supabase
+  const vendorId = vendor?.id ?? (await admin
     .from("vendors")
     .insert({
       name: venue?.name ?? claim.claimant_name,
@@ -133,7 +133,7 @@ export async function approveVenueClaim(formData: FormData) {
     .single()).data?.id;
 
   if (vendorId) {
-    await supabase.from("vendor_users").upsert({
+    await admin.from("vendor_users").upsert({
       vendor_id: vendorId,
       user_id: claim.claimant_user_id,
       role: claim.claimant_role || "owner",
@@ -141,7 +141,7 @@ export async function approveVenueClaim(formData: FormData) {
     });
   }
 
-  await supabase.from("venues").update({
+  await admin.from("venues").update({
     is_claimed: true,
     claim_status: "approved",
     listing_status: "claimed",
@@ -154,7 +154,7 @@ export async function approveVenueClaim(formData: FormData) {
     invite_status: "claimed"
   }).eq("id", claim.venue_id);
 
-  const { data: approvedClaim, error: approvalError } = await supabase.from("venue_claims").update({
+  const { data: approvedClaim, error: approvalError } = await admin.from("venue_claims").update({
     status: "approved",
     admin_notes: adminNotes,
     reviewed_at: new Date().toISOString(),
@@ -169,7 +169,7 @@ export async function approveVenueClaim(formData: FormData) {
     redirect(`/admin/claims/${claim.id}?message=${encodeURIComponent(approvalError?.message ?? "This claim was already reviewed. Refresh before trying again.")}`);
   }
 
-  await supabase.from("venue_claim_audit_log").insert({
+  await admin.from("venue_claim_audit_log").insert({
     claim_id: claim.id,
     venue_id: claim.venue_id,
     admin_user_id: user.id,
@@ -197,21 +197,21 @@ export async function approveVenueClaim(formData: FormData) {
 
 export async function rejectVenueClaim(formData: FormData) {
   const { user } = await requireAdmin();
-  const supabase = await createClient();
-  if (!supabase) redirect("/login?message=Configure+Supabase+environment+variables+first");
+  const admin = createAdminClient();
+  if (!admin) redirect("/login?message=Configure+Supabase+environment+variables+first");
 
   const claimId = requiredText(formData, "claimId");
   const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase
+  const { data: claim, error } = await admin
     .from("venue_claims")
     .select("*")
     .eq("id", claimId)
     .eq("status", "pending")
     .maybeSingle();
   if (error || !claim) redirect(`/admin/claims/${claimId}?message=${encodeURIComponent(error?.message ?? "This claim is no longer awaiting review.")}`);
-  const { data: venue } = await supabase.from("venues").select("id, name, slug").eq("id", claim.venue_id).maybeSingle();
+  const { data: venue } = await admin.from("venues").select("id, name, slug").eq("id", claim.venue_id).maybeSingle();
 
-  const { data: rejectedClaim, error: rejectionError } = await supabase.from("venue_claims").update({
+  const { data: rejectedClaim, error: rejectionError } = await admin.from("venue_claims").update({
     status: "rejected",
     admin_notes: adminNotes,
     reviewed_at: new Date().toISOString(),
@@ -226,14 +226,14 @@ export async function rejectVenueClaim(formData: FormData) {
     redirect(`/admin/claims/${claim.id}?message=${encodeURIComponent(rejectionError?.message ?? "This claim was already reviewed. Refresh before trying again.")}`);
   }
 
-  await supabase.from("venues").update({
+  await admin.from("venues").update({
     is_claimed: false,
     claim_status: "rejected",
     claimed_by: null,
     claimed_at: null
   }).eq("id", claim.venue_id).neq("claim_status", "approved");
 
-  await supabase.from("venue_claim_audit_log").insert({
+  await admin.from("venue_claim_audit_log").insert({
     claim_id: claim.id,
     venue_id: claim.venue_id,
     admin_user_id: user.id,
@@ -304,55 +304,5 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
   await admin.from("supplier_listings").update({ claim_status: "pending" }).eq("id", supplierId).eq("claim_status", "unclaimed");
   revalidatePath(`/photographers/${slug}/claim`);
   revalidatePath("/admin/supplier-claims");
-  return { ok: true, message: "Your claim has been submitted for review." };
-}
-
-export async function approveSupplierClaim(formData: FormData) {
-  const { user } = await requireAdmin();
-  const supabase = createAdminClient();
-  const claimId = requiredText(formData, "claimId");
-  if (!supabase) redirect(`/admin/supplier-claims/${claimId}?message=Configure+the+Supabase+service+role+key+first`);
-  const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase.from("supplier_claims").select("*").eq("id", claimId).single();
-  if (error || !claim) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
-  const { data: supplier } = await supabase.from("supplier_listings").select("id, name, slug, vendor_id").eq("id", claim.supplier_id).single();
-  if (!supplier) redirect(`/admin/supplier-claims/${claimId}?message=Supplier+not+found`);
-  const { data: existingVendor } = await supabase.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
-  const vendorId = existingVendor?.id ?? (await supabase.from("vendors").insert({ name: supplier.name, contact_email: claim.business_email, contact_phone: claim.business_phone }).select("id").single()).data?.id;
-  if (!vendorId) redirect(`/admin/supplier-claims/${claimId}?message=Could+not+create+vendor+access`);
-  const { error: membershipError } = await supabase.from("vendor_users").upsert({ vendor_id: vendorId, user_id: claim.claimant_user_id, role: claim.claimant_role || "owner", status: "active" });
-  if (membershipError) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(membershipError.message)}`);
-  const reviewedAt = new Date().toISOString();
-  const [{ error: supplierError }, { error: claimError }] = await Promise.all([
-    supabase.from("supplier_listings").update({ vendor_id: vendorId, is_claimed: true, claim_status: "approved", reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.supplier_id),
-    supabase.from("supplier_claims").update({ status: "approved", admin_notes: adminNotes, reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.id)
-  ]);
-  if (supplierError || claimError) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(supplierError?.message ?? claimError?.message ?? "Claim could not be approved")}`);
-  await Promise.all([
-    supabase.from("supplier_claim_audit_log").insert({ claim_id: claim.id, supplier_id: claim.supplier_id, admin_user_id: user.id, action: "approved", notes: adminNotes }),
-    supabase.from("supplier_outreach_contacts").update({ invite_status: "claimed" }).eq("supplier_id", claim.supplier_id)
-  ]);
-  revalidatePath("/admin/supplier-claims");
-  revalidatePath(`/admin/supplier-claims/${claim.id}`);
-  revalidatePath(`/photographers/${supplier.slug}`);
-  redirect(`/admin/supplier-claims/${claim.id}?message=Claim+approved`);
-}
-
-export async function rejectSupplierClaim(formData: FormData) {
-  const { user } = await requireAdmin();
-  const supabase = createAdminClient();
-  const claimId = requiredText(formData, "claimId");
-  if (!supabase) redirect(`/admin/supplier-claims/${claimId}?message=Configure+the+Supabase+service+role+key+first`);
-  const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase.from("supplier_claims").select("*").eq("id", claimId).single();
-  if (error || !claim) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
-  const reviewedAt = new Date().toISOString();
-  await Promise.all([
-    supabase.from("supplier_claims").update({ status: "rejected", admin_notes: adminNotes, reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.id),
-    supabase.from("supplier_listings").update({ is_claimed: false, claim_status: "rejected", vendor_id: null }).eq("id", claim.supplier_id).neq("claim_status", "approved"),
-    supabase.from("supplier_claim_audit_log").insert({ claim_id: claim.id, supplier_id: claim.supplier_id, admin_user_id: user.id, action: "rejected", notes: adminNotes })
-  ]);
-  revalidatePath("/admin/supplier-claims");
-  revalidatePath(`/admin/supplier-claims/${claim.id}`);
-  redirect(`/admin/supplier-claims/${claim.id}?message=Claim+rejected`);
+  return { ok: true, message: "Your photographer claim has been submitted for review." };
 }
