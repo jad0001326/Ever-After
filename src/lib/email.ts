@@ -1,4 +1,5 @@
 import { absoluteUrl } from "@/lib/utils";
+import { isValidEmailSyntax } from "@/lib/outreach-validation";
 
 export type EmailInput = {
   to: string | string[];
@@ -147,6 +148,17 @@ function textToHtml(text: string) {
     .join("");
 }
 
+export function isValidEmailRecipient(value: string) {
+  const trimmed = value.trim();
+  const displayNameMatch = trimmed.match(/^[^<>]+<([^<>]+)>$/);
+  return isValidEmailSyntax((displayNameMatch?.[1] ?? trimmed).trim().toLowerCase());
+}
+
+function hasValidRecipients(message: EmailInput) {
+  const recipients = Array.isArray(message.to) ? message.to : [message.to];
+  return recipients.length > 0 && recipients.every(isValidEmailRecipient);
+}
+
 export function emailNotificationsEnabled() {
   const { apiKey, from } = emailConfig();
   return Boolean(apiKey && from);
@@ -159,6 +171,10 @@ export async function sendEmail({ headers, html, idempotencyKey, replyTo, subjec
   if (!apiKey || !from || recipients.length === 0) {
     console.info(`Email skipped: ${subject}`);
     return { ok: false, skipped: true, error: "Email delivery is not configured." } satisfies EmailSendResult;
+  }
+  if (!recipients.every(isValidEmailRecipient)) {
+    console.error(`Email rejected before delivery: ${subject} (invalid recipient)`);
+    return { ok: false, skipped: false, error: "Invalid recipient email address." } satisfies EmailSendResult;
   }
 
   try {
@@ -199,8 +215,21 @@ export async function sendEmailBatch(messages: EmailInput[], idempotencyKey: str
 
   if (messages.length === 0) return [];
   if (messages.length > 100) throw new Error("Resend batches are limited to 100 emails.");
+  const results: EmailSendResult[] = messages.map(() => ({
+    ok: false,
+    skipped: false,
+    error: "Invalid recipient email address."
+  }));
+  const sendable = messages
+    .map((message, index) => ({ index, message }))
+    .filter(({ message }) => hasValidRecipients(message));
+
+  if (sendable.length === 0) return results;
   if (!apiKey || !from) {
-    return messages.map(() => ({ ok: false, skipped: true, error: "Email delivery is not configured." }));
+    for (const { index } of sendable) {
+      results[index] = { ok: false, skipped: true, error: "Email delivery is not configured." };
+    }
+    return results;
   }
 
   try {
@@ -212,7 +241,7 @@ export async function sendEmailBatch(messages: EmailInput[], idempotencyKey: str
         "Idempotency-Key": idempotencyKey
       },
       body: JSON.stringify(
-        messages.map(({ headers, html, replyTo, subject, tags, text, to }) => ({
+        sendable.map(({ message: { headers, html, replyTo, subject, tags, text, to } }) => ({
           from,
           to: Array.isArray(to) ? to : [to],
           subject,
@@ -227,19 +256,29 @@ export async function sendEmailBatch(messages: EmailInput[], idempotencyKey: str
 
     if (!response.ok) {
       console.error(`Email batch failed (${response.status})`);
-      return messages.map(() => ({ ok: false, skipped: false, error: `Resend returned ${response.status}.` }));
+      for (const { index } of sendable) {
+        results[index] = { ok: false, skipped: false, error: `Resend returned ${response.status}.` };
+      }
+      return results;
     }
 
     const data = (await response.json().catch(() => null)) as { data?: Array<{ id?: string }> } | null;
-    return messages.map((_, index) => ({
-      ok: Boolean(data?.data?.[index]?.id),
-      skipped: false,
-      id: data?.data?.[index]?.id,
-      error: data?.data?.[index]?.id ? undefined : "Resend did not return a delivery ID."
-    }));
+    sendable.forEach(({ index }, sendableIndex) => {
+      const id = data?.data?.[sendableIndex]?.id;
+      results[index] = {
+        ok: Boolean(id),
+        skipped: false,
+        id,
+        error: id ? undefined : "Resend did not return a delivery ID."
+      };
+    });
+    return results;
   } catch (error) {
     console.error("Email batch failed", error);
-    return messages.map(() => ({ ok: false, skipped: false, error: "The email batch request failed." }));
+    for (const { index } of sendable) {
+      results[index] = { ok: false, skipped: false, error: "The email batch request failed." };
+    }
+    return results;
   }
 }
 
