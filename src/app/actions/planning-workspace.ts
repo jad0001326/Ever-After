@@ -23,7 +23,8 @@ import {
   planningTableUpdateSchema,
   planningTaskInputSchema,
   planningTaskUpdateSchema,
-  planningWorkspaceIdSchema
+  planningWorkspaceIdSchema,
+  weddingProfileSchema
 } from "@/lib/planning-workspace/validation";
 import type { Json } from "@/types/database";
 
@@ -351,6 +352,7 @@ export async function createPlanningTaskAction(input: unknown) {
   const { data, error } = await context.supabase
     .from("planning_tasks")
     .insert({
+      ...(value.id ? { id: value.id } : {}),
       workspace_id: value.workspaceId,
       title: value.title,
       notes: value.notes,
@@ -365,6 +367,39 @@ export async function createPlanningTaskAction(input: unknown) {
   return error || !data
     ? ({ ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure)
     : ({ ok: true, task: data } as const);
+}
+
+export async function savePlanningWorkspaceProfileAction(workspaceId: unknown, input: unknown) {
+  const id = planningWorkspaceIdSchema.safeParse(workspaceId);
+  const profile = weddingProfileSchema.safeParse(input);
+  if (!id.success || !profile.success) {
+    return { ok: false, message: "Check the wedding profile and try again." } satisfies ActionFailure;
+  }
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+
+  const value = profile.data;
+  const { data, error } = await context.supabase
+    .from("planning_workspace_profiles")
+    .upsert({
+      workspace_id: id.data,
+      wedding_date: value.weddingDate,
+      guest_count: value.guestCount,
+      location: value.location,
+      date_flexibility: value.dateFlexibility,
+      location_flexible: value.locationFlexible,
+      priorities: value.priorities,
+      venue_styles: value.venueStyles,
+      photography_styles: value.photographyStyles,
+      vision: value.vision,
+      updated_at: value.updatedAt,
+    }, { onConflict: "workspace_id" })
+    .select("*")
+    .single();
+
+  return error || !data
+    ? ({ ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure)
+    : ({ ok: true, profile: data } as const);
 }
 
 export async function updatePlanningTaskAction(taskId: unknown, input: unknown) {

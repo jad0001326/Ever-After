@@ -3,7 +3,7 @@
 import { CalendarCheck2, Check, Circle, Clock3, LockKeyhole, Plus, UsersRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningPartnerAccess } from "@/components/planning-hub/planning-partner-access";
@@ -62,7 +62,9 @@ export function PlanningHubOrganiseWorkspace({
   const [cloudSnapshot, setCloudSnapshot] = useState(initialCloudSnapshot);
   const [ready, setReady] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [tablePlannerOpen, setTablePlannerOpen] = useState(false);
+  const [, startCloudTransition] = useTransition();
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -154,6 +156,14 @@ export function PlanningHubOrganiseWorkspace({
 
   function saveProfile(profile: WeddingProfile, totalBudgetPence: number) {
     const now = profile.updatedAt;
+    const nextBudgetPlan = {
+      ...budgetPlan,
+      totalBudgetPence,
+      weddingDate: profile.weddingDate,
+      guestCount: profile.guestCount,
+      location: profile.location,
+      updatedAt: now,
+    };
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setBudgetPlan((current) => ({
       ...current,
@@ -168,17 +178,54 @@ export function PlanningHubOrganiseWorkspace({
       profile,
       updatedAt: now,
     } : current);
+    if (activeWorkspaceId) {
+      setSyncFeedback("Saving profile to the shared plan…");
+      startCloudTransition(async () => {
+        const actions = await import("@/app/actions/planning-workspace");
+        const [budgetResult, profileResult] = await Promise.all([
+          actions.saveConnectedBudgetPlanAction(activeWorkspaceId, nextBudgetPlan),
+          actions.savePlanningWorkspaceProfileAction(activeWorkspaceId, profile),
+        ]);
+        setSyncFeedback(
+          budgetResult.ok && profileResult.ok
+            ? "Wedding profile saved to the shared plan."
+            : "The profile remains safe on this device, but the shared copy could not be fully updated.",
+        );
+      });
+    }
   }
 
   function addTask() {
     if (!taskTitle.trim()) return;
+    const task = createPlanningTask(taskTitle, { sortOrder: workspace?.tasks.length ?? 0 });
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current ? {
       ...current,
-      tasks: [...current.tasks, createPlanningTask(taskTitle, { sortOrder: current.tasks.length })],
+      tasks: [...current.tasks, task],
       updatedAt: new Date().toISOString(),
     } : current);
     setTaskTitle("");
+    if (activeWorkspaceId) {
+      setSyncFeedback("Saving task to the shared plan…");
+      startCloudTransition(async () => {
+        const { createPlanningTaskAction } = await import("@/app/actions/planning-workspace");
+        const result = await createPlanningTaskAction({
+          id: task.id,
+          workspaceId: activeWorkspaceId,
+          title: task.title,
+          notes: task.notes,
+          category: task.category,
+          status: task.status,
+          dueDate: task.dueDate,
+          sortOrder: task.sortOrder,
+        });
+        setSyncFeedback(
+          result.ok
+            ? "Task saved to the shared plan."
+            : "The task remains safe on this device, but the shared copy could not be updated.",
+        );
+      });
+    }
   }
 
   function setTaskStatus(taskId: string, status: PlanningTaskStatus) {
@@ -189,6 +236,18 @@ export function PlanningHubOrganiseWorkspace({
       tasks: current.tasks.map((task) => task.id === taskId ? { ...task, status, updatedAt: now } : task),
       updatedAt: now,
     } : current);
+    if (activeWorkspaceId) {
+      setSyncFeedback("Updating the shared task…");
+      startCloudTransition(async () => {
+        const { updatePlanningTaskAction } = await import("@/app/actions/planning-workspace");
+        const result = await updatePlanningTaskAction(taskId, { status });
+        setSyncFeedback(
+          result.ok
+            ? "Task status updated in the shared plan."
+            : "The status remains safe on this device, but the shared copy could not be updated.",
+        );
+      });
+    }
   }
 
   return (
@@ -314,7 +373,7 @@ export function PlanningHubOrganiseWorkspace({
         </section>
       )}
       <p className="text-center text-xs leading-5 text-[#58705f]" role="status">
-        {workspaceStatusMessage(workspaceMode, cloudEnabled)}
+        {syncFeedback ?? workspaceStatusMessage(workspaceMode, cloudEnabled)}
       </p>
     </div>
   );

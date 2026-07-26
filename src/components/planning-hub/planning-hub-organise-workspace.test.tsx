@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createPlanningTaskAction } from "@/app/actions/planning-workspace";
 import {
   BUDGET_STORAGE_KEY,
   createEmptyBudgetPlan,
@@ -10,6 +11,15 @@ import {
   serializePlanningWorkspace,
 } from "@/lib/planning-workspace/workspace";
 import { PlanningHubOrganiseWorkspace } from "./planning-hub-organise-workspace";
+
+vi.mock("@/app/actions/planning-workspace", () => ({
+  createPlanningTaskAction: vi.fn(async () => ({ ok: true })),
+  updatePlanningTaskAction: vi.fn(async () => ({ ok: true })),
+  saveConnectedBudgetPlanAction: vi.fn(async () => ({ ok: true })),
+  savePlanningWorkspaceProfileAction: vi.fn(async () => ({ ok: true })),
+  createPlanningWorkspaceInviteAction: vi.fn(async () => ({ ok: false, message: "Not used" })),
+  revokePlanningWorkspaceInviteAction: vi.fn(async () => ({ ok: false, message: "Not used" })),
+}));
 
 describe("PlanningHubOrganiseWorkspace", () => {
   beforeEach(() => window.localStorage.clear());
@@ -106,5 +116,46 @@ describe("PlanningHubOrganiseWorkspace", () => {
     expect(screen.queryByText("Plan health")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open guest & table planner" }));
     expect(await screen.findByText("Plan health")).toBeTruthy();
+  });
+
+  it("writes a connected task through workspace RLS while retaining its device copy", async () => {
+    const budgetPlan = { ...createEmptyBudgetPlan("owner-1"), id: "budget-1" };
+    render(
+      <PlanningHubOrganiseWorkspace
+        cloudEnabled
+        connectedWorkspaceId="60000000-0000-4000-8000-000000000006"
+        initialBudgetPlan={budgetPlan}
+        initialCloudSnapshot={{
+          workspace: {
+            id: "60000000-0000-4000-8000-000000000006",
+            owner_id: "owner-1",
+            budget_plan_id: "budget-1",
+            name: "Shared wedding plan",
+            created_at: "2026-07-26T10:00:00.000Z",
+            updated_at: "2026-07-26T10:00:00.000Z",
+          },
+          profile: null,
+          members: [],
+          invites: [],
+          tasks: [],
+          guests: [],
+          tables: [],
+          seats: [],
+          seatingRules: [],
+        }}
+        userId="partner-1"
+      />,
+    );
+    await screen.findByText("Your tasks");
+    fireEvent.change(screen.getByPlaceholderText("e.g. Confirm final venue numbers"), {
+      target: { value: "Confirm shared numbers" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add task" }));
+
+    await waitFor(() => expect(createPlanningTaskAction).toHaveBeenCalledWith(expect.objectContaining({
+      workspaceId: "60000000-0000-4000-8000-000000000006",
+      title: "Confirm shared numbers",
+    })));
+    expect(screen.getByText("Confirm shared numbers")).toBeTruthy();
   });
 });

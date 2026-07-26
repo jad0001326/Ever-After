@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createClient } from "@/lib/supabase/server";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import {
+  createPlanningTaskAction,
   importPlanningWorkspaceSnapshotAction,
+  savePlanningWorkspaceProfileAction,
   saveConnectedBudgetPlanAction,
 } from "./planning-workspace";
 
@@ -121,16 +123,62 @@ describe("planning workspace server actions", () => {
     expect(budgetQuery.eq).toHaveBeenCalledWith("user_id", "owner-1");
     expect(budgetQuery.eq).toHaveBeenCalledWith("id", "budget-1");
   });
+
+  it("keeps the optimistic task id when writing to a shared workspace", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const taskQuery = chain({ data: { id: "70000000-0000-4000-8000-000000000007" }, error: null });
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      from: vi.fn(() => taskQuery),
+    } as never);
+
+    const result = await createPlanningTaskAction({
+      id: "70000000-0000-4000-8000-000000000007",
+      workspaceId: "60000000-0000-4000-8000-000000000006",
+      title: "Confirm final numbers",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(taskQuery.insert).toHaveBeenCalledWith(expect.objectContaining({
+      id: "70000000-0000-4000-8000-000000000007",
+      workspace_id: "60000000-0000-4000-8000-000000000006",
+    }));
+  });
+
+  it("upserts a validated profile through workspace RLS", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const profileQuery = chain({ data: { workspace_id: "60000000-0000-4000-8000-000000000006" }, error: null });
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      from: vi.fn(() => profileQuery),
+    } as never);
+
+    const result = await savePlanningWorkspaceProfileAction(
+      "60000000-0000-4000-8000-000000000006",
+      validSnapshot.profile,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(profileQuery.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      location_flexible: false,
+      priorities: [],
+    }), { onConflict: "workspace_id" });
+  });
 });
 
 function chain(result: { data: unknown; error: unknown }) {
   const query = {
     select: vi.fn(),
+    insert: vi.fn(),
+    upsert: vi.fn(),
     update: vi.fn(),
     eq: vi.fn(),
     maybeSingle: vi.fn(async () => result),
+    single: vi.fn(async () => result),
   };
   query.select.mockReturnValue(query);
+  query.insert.mockReturnValue(query);
+  query.upsert.mockReturnValue(query);
   query.update.mockReturnValue(query);
   query.eq.mockReturnValue(query);
   return query;

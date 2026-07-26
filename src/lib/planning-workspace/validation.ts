@@ -11,6 +11,7 @@ export const ensurePlanningWorkspaceSchema = z.object({
 });
 
 export const planningTaskInputSchema = z.object({
+  id: planningRecordIdSchema.optional(),
   workspaceId: planningWorkspaceIdSchema,
   title: z.string().trim().min(1).max(240),
   notes: z.string().trim().max(5000).nullable().default(null),
@@ -21,7 +22,7 @@ export const planningTaskInputSchema = z.object({
 });
 
 export const planningTaskUpdateSchema = planningTaskInputSchema
-  .omit({ workspaceId: true })
+  .omit({ id: true, workspaceId: true })
   .partial()
   .refine((value) => Object.keys(value).length > 0, "At least one task field is required.");
 
@@ -127,7 +128,7 @@ const planningImportRuleSchema = z.object({
   type: z.enum(["must_next_to", "prefer_next_to", "must_not_next_to", "must_separate"])
 });
 
-const weddingProfileSchema = z.object({
+export const weddingProfileSchema = z.object({
   schemaVersion: z.literal(1),
   weddingDate: z.iso.date().nullable(),
   guestCount: z.number().int().min(1).max(10000).nullable(),
