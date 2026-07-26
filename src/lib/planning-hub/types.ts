@@ -1,5 +1,5 @@
 import type { VenueSearchParams } from "@/types/venue";
-import type { PhotographerSearchParams } from "@/types/supplier";
+import type { PhotographerSearchParams, SupplierCategorySlug } from "@/types/supplier";
 
 export type PlanningHubVenue = {
   id: string;
@@ -76,6 +76,51 @@ export type PlanningHubPhotographySearchParams = PhotographerSearchParams & {
 
 export type PlanningHubPhotographerResults = {
   photographers: PlanningHubPhotographer[];
+  total: number;
+  page: number;
+  totalPages: number;
+  error?: string;
+};
+
+export type PlanningHubSupplier = {
+  id: string;
+  categorySlug: SupplierCategorySlug;
+  slug: string;
+  name: string;
+  baseTown: string;
+  region: string;
+  summary: string;
+  heroImageUrl: string;
+  hasApprovedPhoto: boolean;
+  startingPricePence: number | null;
+  typicalPricePence: number | null;
+  pricingSummary: string | null;
+  pricingUnit: string;
+  isClaimed: boolean;
+  travelsNationwide: boolean;
+};
+
+export type PlanningHubSupplierDetail = PlanningHubSupplier & {
+  description: string;
+  services: string[];
+  officialWebsiteUrl: string | null;
+  enquiryUrl: string | null;
+  imageCredit: string | null;
+  gallery: Array<{ id: string; url: string; alt: string }>;
+};
+
+export type PlanningHubSupplierSearchParams = {
+  search?: string;
+  venue?: string;
+  location?: string;
+  budget?: string;
+  sort?: "price-asc" | "price-desc" | "name" | "newest";
+  page?: string;
+  workspace?: string;
+};
+
+export type PlanningHubSupplierResults = {
+  suppliers: PlanningHubSupplier[];
   total: number;
   page: number;
   totalPages: number;
