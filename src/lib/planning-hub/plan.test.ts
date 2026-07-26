@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { PlanningHubPhotographer, PlanningHubVenue } from "./types";
+import type { PlanningHubPhotographer, PlanningHubSupplier, PlanningHubVenue } from "./types";
 import {
+  addManualPlanningHubSupplier,
   addManualPlanningHubPhotographer,
   addManualPlanningHubVenue,
   calculatePlanningHubPlan,
   choosePlanningHubVenue,
   createPlanningHubStarterPlan,
   findPlanningHubPhotographyItem,
+  findPlanningHubSupplierItem,
   findPlanningHubVenueItem,
   getPhotographyNextHref,
   updatePlanningHubItemInstallments,
   updatePlanningHubPhotographerPayment,
   updatePlanningHubVenuePayment,
+  upsertPlanningHubSupplier,
   upsertPlanningHubPhotographer,
   upsertPlanningHubVenue
 } from "./plan";
@@ -48,6 +51,24 @@ const photographer: PlanningHubPhotographer = {
   pricingUnit: "quote",
   isClaimed: true,
   travelsNationwide: true
+};
+
+const videographer: PlanningHubSupplier = {
+  id: "videographer-1",
+  categorySlug: "videographer",
+  slug: "videographer-one",
+  name: "Videographer One",
+  baseTown: "Glasgow",
+  region: "Strathclyde",
+  summary: "Wedding films.",
+  heroImageUrl: "/everaft-logo-mark.svg",
+  hasApprovedPhoto: false,
+  startingPricePence: 180_000,
+  typicalPricePence: 240_000,
+  pricingSummary: "Full-day films",
+  pricingUnit: "package",
+  isClaimed: false,
+  travelsNationwide: true,
 };
 
 describe("Planning Hub plan", () => {
@@ -120,6 +141,71 @@ describe("Planning Hub plan", () => {
       itemName: "A family friend"
     });
     expect(findPlanningHubPhotographyItem(plan, plan.items[0].id)).toBe(plan.items[0]);
+  });
+
+  it("maps any known supplier category into the connected budget model", () => {
+    const plan = upsertPlanningHubSupplier(
+      createPlanningHubStarterPlan(null),
+      videographer,
+      210_000,
+      "quoted",
+    );
+
+    expect(plan.items[0]).toMatchObject({
+      categoryId: "videography",
+      listingId: "videographer-1",
+      listingType: "Videographer",
+      listingUrl: "/suppliers/videographer/videographer-one",
+      confirmedCostPence: 210_000,
+      importedPricePence: 180_000,
+      importedPriceToPence: 240_000,
+      importedPriceType: "range",
+      bookingStatus: "quoted",
+    });
+    expect(findPlanningHubSupplierItem(plan, "videographer", videographer.id)).toBe(plan.items[0]);
+  });
+
+  it("keeps manual entry category-neutral for future supplier stages", () => {
+    const plan = addManualPlanningHubSupplier(
+      createPlanningHubStarterPlan(null),
+      "florist",
+      "A local florist",
+      90_000,
+      "shortlisted",
+    );
+
+    expect(plan.items[0]).toMatchObject({
+      categoryId: "flowers",
+      source: "manual",
+      supplierType: "Florist",
+      itemName: "A local florist",
+      estimatedCostPence: 90_000,
+    });
+    expect(findPlanningHubSupplierItem(plan, "florist", plan.items[0].id)).toBe(plan.items[0]);
+  });
+
+  it("distinguishes supplier types that share one budget category", () => {
+    const withBand = addManualPlanningHubSupplier(
+      createPlanningHubStarterPlan(null),
+      "band-musician",
+      "The Ceilidh Band",
+      140_000,
+      "shortlisted",
+    );
+    const withDj = addManualPlanningHubSupplier(
+      withBand,
+      "dj",
+      "Evening DJ",
+      80_000,
+      "shortlisted",
+    );
+
+    expect(withDj.items.map((item) => item.categoryId)).toEqual(["dj-band", "dj-band"]);
+    expect(findPlanningHubSupplierItem(withDj, "band-musician", withBand.items[0].id)?.itemName)
+      .toBe("The Ceilidh Band");
+    expect(findPlanningHubSupplierItem(withDj, "dj", withDj.items[1].id)?.itemName)
+      .toBe("Evening DJ");
+    expect(findPlanningHubSupplierItem(withDj, "dj", withBand.items[0].id)).toBeNull();
   });
 
   it("derives partial and paid states from deposits and instalments", () => {

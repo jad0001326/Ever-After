@@ -1,8 +1,10 @@
+import { supplierCategoryBySlug } from "@/data/supplier-directory";
 import { calculateBudget, getItemPlanningCost, getPaymentStatus } from "@/lib/budget/calculations";
 import { plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
 import type { BookingStatus, BudgetItem, BudgetPlan, PaymentInstallment, PlannerListing } from "@/lib/budget/types";
-import type { PlanningHubPhotographer, PlanningHubVenue } from "./types";
+import type { SupplierCategorySlug } from "@/types/supplier";
+import type { PlanningHubPhotographer, PlanningHubSupplier, PlanningHubVenue } from "./types";
 
 export type PlanningHubVenueStatus = Exclude<BookingStatus, "cancelled">;
 export type PlanningHubItemStatus = PlanningHubVenueStatus;
@@ -39,11 +41,11 @@ export function upsertPlanningHubPhotographer(
   planningCostPence: number,
   status: PlanningHubItemStatus
 ) {
-  return upsertPlanningHubListing(
+  return upsertPlanningHubSupplier(
     plan,
-    planningHubPhotographerToListing(photographer),
+    { ...photographer, categorySlug: "photographer" },
     planningCostPence,
-    status
+    status,
   );
 }
 
@@ -53,7 +55,53 @@ export function addManualPlanningHubPhotographer(
   planningCostPence: number,
   status: PlanningHubItemStatus
 ) {
-  return addManualPlanningHubItem(plan, "photography", "Photographer", name, planningCostPence, status);
+  return addManualPlanningHubSupplier(
+    plan,
+    "photographer",
+    name,
+    planningCostPence,
+    status,
+  );
+}
+
+export function upsertPlanningHubSupplier(
+  plan: BudgetPlan,
+  supplier: PlanningHubSupplier,
+  planningCostPence: number,
+  status: PlanningHubItemStatus,
+) {
+  const category = supplierCategoryBySlug(supplier.categorySlug);
+  if (!category) return plan;
+  return upsertPlanningHubListing(
+    plan,
+    planningHubSupplierToListing(
+      supplier,
+      category.budgetCategoryId,
+      category.label,
+    ),
+    planningCostPence,
+    status,
+  );
+}
+
+export function addManualPlanningHubSupplier(
+  plan: BudgetPlan,
+  categorySlug: SupplierCategorySlug,
+  name: string,
+  planningCostPence: number,
+  status: PlanningHubItemStatus,
+) {
+  const category = supplierCategoryBySlug(categorySlug);
+  return category
+    ? addManualPlanningHubItem(
+        plan,
+        category.budgetCategoryId,
+        category.label,
+        name,
+        planningCostPence,
+        status,
+      )
+    : plan;
 }
 
 export function choosePlanningHubVenue(plan: BudgetPlan, venueId: string) {
@@ -187,10 +235,21 @@ export function findPlanningHubVenueItem(plan: BudgetPlan, venueId: string | nul
 }
 
 export function findPlanningHubPhotographyItem(plan: BudgetPlan, photographerId: string | null | undefined) {
-  if (!photographerId) return null;
+  return findPlanningHubSupplierItem(plan, "photographer", photographerId);
+}
+
+export function findPlanningHubSupplierItem(
+  plan: BudgetPlan,
+  categorySlug: SupplierCategorySlug,
+  supplierId: string | null | undefined,
+) {
+  if (!supplierId) return null;
+  const category = supplierCategoryBySlug(categorySlug);
+  if (!category) return null;
   return plan.items.find((item) => (
-    item.categoryId === "photography"
-    && (item.listingId === photographerId || item.id === photographerId)
+    item.categoryId === category.budgetCategoryId
+    && item.supplierType === category.label
+    && (item.listingId === supplierId || item.id === supplierId)
   )) ?? null;
 }
 
@@ -339,29 +398,43 @@ function planningHubVenueToListing(venue: PlanningHubVenue): PlannerListing {
   };
 }
 
-function planningHubPhotographerToListing(photographer: PlanningHubPhotographer): PlannerListing {
+function planningHubSupplierToListing(
+  supplier: PlanningHubSupplier,
+  budgetCategoryId: string,
+  categoryLabel: string,
+): PlannerListing {
+  const pricingUnit = planningHubSupplierPricingUnit(supplier.pricingUnit);
   return {
-    id: photographer.id,
-    categoryId: "photography",
-    slug: photographer.slug,
-    name: photographer.name,
-    type: "Photographer",
-    location: `${photographer.baseTown}, ${photographer.region}`,
-    imageUrl: photographer.heroImageUrl,
-    listingUrl: `/photographers/${photographer.slug}`,
-    priceFromPence: photographer.startingPricePence,
-    priceToPence: photographer.typicalPricePence,
-    pricingStatus: photographer.pricingUnit === "quote"
+    id: supplier.id,
+    categoryId: budgetCategoryId,
+    slug: supplier.slug,
+    name: supplier.name,
+    type: categoryLabel,
+    location: `${supplier.baseTown}, ${supplier.region}`,
+    imageUrl: supplier.heroImageUrl,
+    listingUrl: supplier.categorySlug === "photographer"
+      ? `/photographers/${supplier.slug}`
+      : `/suppliers/${supplier.categorySlug}/${supplier.slug}`,
+    priceFromPence: supplier.startingPricePence,
+    priceToPence: supplier.typicalPricePence,
+    pricingStatus: pricingUnit === "quote"
       ? "quote_required"
-      : photographer.startingPricePence == null
+      : supplier.startingPricePence == null
         ? "unavailable"
-        : photographer.typicalPricePence != null && photographer.typicalPricePence > photographer.startingPricePence
+        : supplier.typicalPricePence != null && supplier.typicalPricePence > supplier.startingPricePence
           ? "range"
           : "starting_from",
     pricingKind: "supplier_package",
-    pricingLabel: photographer.startingPricePence == null ? null : "Packages from",
-    pricingUnit: photographer.pricingUnit,
-    priceQualifier: photographer.startingPricePence == null ? "quote" : "from",
-    pricingDescription: photographer.pricingSummary
+    pricingLabel: supplier.startingPricePence == null ? null : "Packages from",
+    pricingUnit,
+    priceQualifier: supplier.startingPricePence == null ? "quote" : "from",
+    pricingDescription: supplier.pricingSummary,
   };
+}
+
+function planningHubSupplierPricingUnit(pricingUnit: string) {
+  if (pricingUnit === "person") return "per_person";
+  if (pricingUnit === "hour") return "per_hour";
+  if (pricingUnit === "event") return "per_event";
+  return pricingUnit;
 }

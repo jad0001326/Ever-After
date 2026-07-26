@@ -34,6 +34,23 @@ Photography is now a specialization over those contracts. It adds:
 - coverage and turnaround detail;
 - the existing photography-specific cards, filters and planning interface.
 
+## Connected budget business logic
+
+Known supplier categories now share the same reusable plan conversion:
+
+- map the directory category to its existing Budget Planner category;
+- retain source listing identity, imported prices and future listing URL;
+- record researching, shortlisted, quoted and booked states consistently;
+- preserve deposits, instalments and payment deadlines when a listing is
+  updated;
+- support manual entry through the same category mapping;
+- distinguish supplier types that intentionally share a budget category, such
+  as DJs and bands.
+
+Photography keeps its existing wrapper functions, so this refactor does not
+change the current route or browser interface. Future web and native clients can
+call the category-neutral business rules directly.
+
 ## Activation rules
 
 A second supplier stage must not be enabled merely because its category mapping
@@ -67,7 +84,7 @@ categories. They remain unavailable to users.
 
 ## Verification
 
-- 46 test files and 225 tests passing;
+- 46 test files and 228 tests passing;
 - focused category-normalization and Photography-specialization tests passing;
 - TypeScript check passing;
 - ESLint passing with one pre-existing unrelated Open Graph image warning;
