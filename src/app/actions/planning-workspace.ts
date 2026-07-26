@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { absoluteUrl } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import { budgetPlanSchema } from "@/lib/budget/validation";
 import {
   planningInviteCookieOptions,
   PLANNING_INVITE_COOKIE
@@ -140,6 +141,87 @@ export async function loadPlanningWorkspaceAction(workspaceId: unknown) {
   if (!context.ok) return context;
 
   return loadPlanningWorkspaceSnapshot(context.supabase, parsed.data);
+}
+
+export async function loadPlanningWorkspaceContextAction(workspaceId: unknown) {
+  const parsed = planningWorkspaceIdSchema.safeParse(workspaceId);
+  if (!parsed.success) {
+    return { ok: false, message: "That connected plan could not be found." } satisfies ActionFailure;
+  }
+
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+
+  const snapshot = await loadPlanningWorkspaceSnapshot(context.supabase, parsed.data);
+  if (!snapshot.ok) return snapshot;
+  if (!snapshot.workspace.budget_plan_id) {
+    return { ok: false, message: "That workspace is not linked to a wedding budget." } satisfies ActionFailure;
+  }
+
+  const { data, error } = await context.supabase
+    .from("budget_plans")
+    .select("plan_json")
+    .eq("user_id", snapshot.workspace.owner_id)
+    .eq("id", snapshot.workspace.budget_plan_id)
+    .maybeSingle();
+  const budgetPlan = budgetPlanSchema.safeParse(data?.plan_json);
+  if (error || !budgetPlan.success) {
+    return { ok: false, message: "The connected wedding budget is unavailable." } satisfies ActionFailure;
+  }
+
+  return {
+    ok: true,
+    budgetPlan: { ...budgetPlan.data, userId: snapshot.workspace.owner_id },
+    isOwner: snapshot.workspace.owner_id === context.user.id,
+    snapshot,
+  } as const;
+}
+
+export async function saveConnectedBudgetPlanAction(workspaceId: unknown, input: unknown) {
+  const parsedWorkspaceId = planningWorkspaceIdSchema.safeParse(workspaceId);
+  const parsedPlan = budgetPlanSchema.safeParse(input);
+  if (!parsedWorkspaceId.success || !parsedPlan.success) {
+    return { ok: false, message: "The connected budget contains invalid data and remains saved on this device." } satisfies ActionFailure;
+  }
+
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+  const { data: workspace, error: workspaceError } = await context.supabase
+    .from("planning_workspaces")
+    .select("owner_id, budget_plan_id")
+    .eq("id", parsedWorkspaceId.data)
+    .maybeSingle();
+
+  if (
+    workspaceError
+    || !workspace
+    || !workspace.budget_plan_id
+    || workspace.budget_plan_id !== parsedPlan.data.id
+  ) {
+    return { ok: false, message: "That budget does not belong to this connected workspace." } satisfies ActionFailure;
+  }
+
+  const updatedAt = new Date().toISOString();
+  const plan = { ...parsedPlan.data, userId: workspace.owner_id, updatedAt };
+  const { data, error } = await context.supabase
+    .from("budget_plans")
+    .update({
+      name: plan.name,
+      scenario_name: plan.scenarioName,
+      currency: plan.currency,
+      total_budget_pence: plan.totalBudgetPence,
+      plan_json: plan as unknown as Json,
+      updated_at: updatedAt,
+    })
+    .eq("user_id", workspace.owner_id)
+    .eq("id", workspace.budget_plan_id)
+    .select("updated_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return { ok: false, message: "Cloud save failed. Your latest changes remain saved on this device." } satisfies ActionFailure;
+  }
+  return { ok: true, savedAt: data.updated_at } as const;
 }
 
 async function loadPlanningWorkspaceSnapshot(

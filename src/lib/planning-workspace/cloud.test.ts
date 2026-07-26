@@ -11,6 +11,8 @@ import {
 } from "./workspace";
 
 const cloudSnapshot: PlanningWorkspaceCloudSnapshot = {
+  members: [],
+  invites: [],
   workspace: {
     id: "60000000-0000-4000-8000-000000000006",
     owner_id: "30000000-0000-4000-8000-000000000003",

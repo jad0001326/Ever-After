@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningHubPhotographerDetailAction } from "@/app/actions/planning-hub";
-import { BUDGET_STORAGE_KEY, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
+import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
   addManualPlanningHubPhotographer,
@@ -26,15 +26,18 @@ import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 
 export function PlanningHubPhotographyWorkspace({
   initialPlan,
+  connectedWorkspaceId = null,
   results,
   searchParams,
   userId
 }: {
   initialPlan: BudgetPlan;
+  connectedWorkspaceId?: string | null;
   results: ResultData;
   searchParams: PlanningHubPhotographySearchParams;
   userId: string | null;
 }) {
+  const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
   const firstPhotographer = findInitialPhotographer(initialPlan, results.photographers);
   const firstItem = findPlanningHubPhotographyItem(initialPlan, firstPhotographer?.id);
   const [plan, setPlan] = useState(initialPlan);
@@ -58,7 +61,7 @@ export function PlanningHubPhotographyWorkspace({
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
       try {
-        const localPlan = restoreBudgetPlan(window.localStorage.getItem(BUDGET_STORAGE_KEY));
+        const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
         if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
           const restored = { ...localPlan, userId };
           setPlan(restored);
@@ -78,19 +81,19 @@ export function PlanningHubPhotographyWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.photographers, userId]);
+  }, [initialPlan.updatedAt, results.photographers, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;
     try {
-      window.localStorage.setItem(BUDGET_STORAGE_KEY, serializeBudgetPlan(plan));
+      window.localStorage.setItem(storageKey, serializeBudgetPlan(plan));
     } catch {
       queueMicrotask(() => {
         setSaveState("error");
         setSaveMessage("This browser could not save the latest local changes.");
       });
     }
-  }, [plan, ready]);
+  }, [plan, ready, storageKey]);
 
   function openPhotographer(photographerId: string) {
     const photographer = results.photographers.find((candidate) => candidate.id === photographerId);
@@ -171,7 +174,9 @@ export function PlanningHubPhotographyWorkspace({
     setSaveState("saving");
     setSaveMessage("Saving to your account…");
     startTransition(async () => {
-      const result = await saveBudgetPlan(nextPlan);
+      const result = connectedWorkspaceId
+        ? await (await import("@/app/actions/planning-workspace")).saveConnectedBudgetPlanAction(connectedWorkspaceId, nextPlan)
+        : await saveBudgetPlan(nextPlan);
       setSaveState(result.ok ? "saved" : "error");
       setSaveMessage(result.ok ? successMessage : result.message ?? "Cloud save failed. Your changes remain on this device.");
     });

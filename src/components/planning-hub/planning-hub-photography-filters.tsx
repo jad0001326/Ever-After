@@ -38,6 +38,7 @@ export function PlanningHubPhotographyFilters({
       </div>
 
       <form action="/planning-hub/photography" className="mt-5 grid gap-4">
+        {params.workspace ? <input name="workspace" type="hidden" value={params.workspace} /> : null}
         {params.venue ? <input name="venue" type="hidden" value={params.venue} /> : null}
         <Field label="Photographer name">
           <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={params.search ?? ""} maxLength={120} name="search" placeholder="Search by name" />
@@ -70,7 +71,7 @@ export function PlanningHubPhotographyFilters({
           <Camera size={16} /> Find photographers
         </button>
         {hasFilters ? (
-          <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl border border-[#cfc3b3] px-4 text-sm font-semibold text-[#173526]" href="/planning-hub/photography" prefetch={false}>
+          <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl border border-[#cfc3b3] px-4 text-sm font-semibold text-[#173526]" href={params.workspace ? `/planning-hub/photography?workspace=${encodeURIComponent(params.workspace)}` : "/planning-hub/photography"} prefetch={false}>
             Reset filters
           </Link>
         ) : null}

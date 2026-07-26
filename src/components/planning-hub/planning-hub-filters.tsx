@@ -22,6 +22,7 @@ export function PlanningHubFilters({
           <SlidersHorizontal className="text-[#9c542d] lg:hidden" size={18} />
         </summary>
         <form action="/planning-hub" className="grid gap-4 border-t border-[#e4ddd2] p-5" method="get">
+          {params.workspace ? <input name="workspace" type="hidden" value={params.workspace} /> : null}
           <Field label="Search">
             <Input defaultValue={params.search ?? ""} maxLength={100} name="search" placeholder="Venue, town or style" />
           </Field>
@@ -44,7 +45,7 @@ export function PlanningHubFilters({
             <Search size={17} /> Search venues
           </button>
           {Object.values(params).some(Boolean) ? (
-            <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-full text-sm font-semibold text-[#6b583e] underline underline-offset-4" href="/planning-hub">
+            <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-full text-sm font-semibold text-[#6b583e] underline underline-offset-4" href={params.workspace ? `/planning-hub?workspace=${encodeURIComponent(params.workspace)}` : "/planning-hub"}>
               Clear filters
             </Link>
           ) : null}

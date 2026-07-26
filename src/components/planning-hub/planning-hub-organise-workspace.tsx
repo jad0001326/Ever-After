@@ -6,9 +6,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
+import { PlanningPartnerAccess } from "@/components/planning-hub/planning-partner-access";
 import { PlanningWorkspaceCloudImport } from "@/components/planning-hub/planning-workspace-cloud-import";
 import {
-  BUDGET_STORAGE_KEY,
+  planningHubBudgetStorageKey,
   restoreBudgetPlan,
   serializeBudgetPlan,
 } from "@/lib/budget/persistence";
@@ -26,7 +27,7 @@ import {
   createEmptyPlanningWorkspace,
   createPlanningTask,
   getPlanningRecommendation,
-  PLANNING_WORKSPACE_STORAGE_KEY,
+  planningWorkspaceStorageKey,
   restorePlanningWorkspace,
   serializePlanningWorkspace,
 } from "@/lib/planning-workspace/workspace";
@@ -41,25 +42,31 @@ const EmbeddedTablePlanner = dynamic(
 
 export function PlanningHubOrganiseWorkspace({
   cloudEnabled = false,
+  connectedWorkspaceId = null,
   initialBudgetPlan,
   initialCloudSnapshot = null,
   userId,
 }: {
   cloudEnabled?: boolean;
+  connectedWorkspaceId?: string | null;
   initialBudgetPlan: BudgetPlan;
   initialCloudSnapshot?: PlanningWorkspaceCloudSnapshot | null;
   userId: string | null;
 }) {
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(connectedWorkspaceId);
+  const budgetStorageKey = planningHubBudgetStorageKey(activeWorkspaceId);
+  const workspaceStorageKey = planningWorkspaceStorageKey(activeWorkspaceId);
   const [budgetPlan, setBudgetPlan] = useState(initialBudgetPlan);
   const [workspace, setWorkspace] = useState<PlanningWorkspace | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<PlanningWorkspaceStartupMode>("device_only");
+  const [cloudSnapshot, setCloudSnapshot] = useState(initialCloudSnapshot);
   const [ready, setReady] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [tablePlannerOpen, setTablePlannerOpen] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
-      const localBudgetPlan = restoreBudgetPlan(readLocalStorage(BUDGET_STORAGE_KEY));
+      const localBudgetPlan = restoreBudgetPlan(readLocalStorage(budgetStorageKey));
       const activeBudgetPlan = localBudgetPlan
         && Date.parse(localBudgetPlan.updatedAt) > Date.parse(initialBudgetPlan.updatedAt)
         ? { ...localBudgetPlan, userId }
@@ -70,7 +77,7 @@ export function PlanningHubOrganiseWorkspace({
           : null;
       const fallbackProfile = createWeddingProfile(activeBudgetPlan);
       const restored = restorePlanningWorkspace(
-        readLocalStorage(PLANNING_WORKSPACE_STORAGE_KEY),
+        readLocalStorage(workspaceStorageKey),
         fallbackProfile,
       );
       const legacyTablePlan = restoreTablePlan(readLocalStorage(TABLE_PLAN_STORAGE_KEY));
@@ -94,13 +101,13 @@ export function PlanningHubOrganiseWorkspace({
       setWorkspaceMode(startup.mode);
       setReady(true);
     });
-  }, [cloudEnabled, initialBudgetPlan, initialCloudSnapshot, userId]);
+  }, [budgetStorageKey, cloudEnabled, initialBudgetPlan, initialCloudSnapshot, userId, workspaceStorageKey]);
 
   useEffect(() => {
     if (!ready || !workspace) return;
-    writeLocalStorage(PLANNING_WORKSPACE_STORAGE_KEY, serializePlanningWorkspace(workspace));
-    writeLocalStorage(BUDGET_STORAGE_KEY, serializeBudgetPlan(budgetPlan));
-  }, [budgetPlan, ready, workspace]);
+    writeLocalStorage(workspaceStorageKey, serializePlanningWorkspace(workspace));
+    writeLocalStorage(budgetStorageKey, serializeBudgetPlan(budgetPlan));
+  }, [budgetPlan, budgetStorageKey, ready, workspace, workspaceStorageKey]);
 
   const updateTablePlan = useCallback((tablePlan: TablePlan) => {
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
@@ -109,7 +116,10 @@ export function PlanningHubOrganiseWorkspace({
       : current);
   }, []);
 
-  function resolveCloudWorkspace(resolvedWorkspace: PlanningWorkspace) {
+  function resolveCloudWorkspace(
+    resolvedWorkspace: PlanningWorkspace,
+    resolvedSnapshot: PlanningWorkspaceCloudSnapshot,
+  ) {
     setBudgetPlan((current) => ({
       ...current,
       weddingDate: resolvedWorkspace.profile.weddingDate,
@@ -118,7 +128,12 @@ export function PlanningHubOrganiseWorkspace({
       updatedAt: resolvedWorkspace.profile.updatedAt,
     }));
     setWorkspace(resolvedWorkspace);
+    setCloudSnapshot(resolvedSnapshot);
+    setActiveWorkspaceId(resolvedSnapshot.workspace.id);
     setWorkspaceMode("cloud_loaded");
+    const url = new URL(window.location.href);
+    url.searchParams.set("workspace", resolvedSnapshot.workspace.id);
+    window.history.replaceState(null, "", url);
   }
 
   const openTasks = useMemo(
@@ -126,8 +141,8 @@ export function PlanningHubOrganiseWorkspace({
     [workspace?.tasks],
   );
   const activeCloudSnapshot =
-    initialCloudSnapshot?.workspace.budget_plan_id === budgetPlan.id
-      ? initialCloudSnapshot
+    cloudSnapshot?.workspace.budget_plan_id === budgetPlan.id
+      ? cloudSnapshot
       : null;
 
   if (!ready || !workspace) {
@@ -260,6 +275,11 @@ export function PlanningHubOrganiseWorkspace({
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-[#625f57]">
             {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>
+          <PlanningPartnerAccess
+            cloudEnabled={cloudEnabled}
+            snapshot={activeCloudSnapshot}
+            userId={userId}
+          />
           <PlanningWorkspaceCloudImport
             budgetPlan={budgetPlan}
             cloudEnabled={cloudEnabled}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { loadLatestBudgetPlan } from "@/app/actions/budget";
+import { loadPlanningWorkspaceContextAction } from "@/app/actions/planning-workspace";
 import { PlanningHubFilters } from "@/components/planning-hub/planning-hub-filters";
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubWorkspace } from "@/components/planning-hub/planning-hub-workspace";
@@ -15,17 +16,18 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-export default function PlanningHubPage({
+export default async function PlanningHubPage({
   searchParams
 }: {
   searchParams: Promise<PlanningHubSearchParams>;
 }) {
+  const params = await searchParams;
   return (
     <>
-      <PlanningHubHeader />
+      <PlanningHubHeader workspaceId={params.workspace} />
       <main className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
         <Suspense fallback={<PlanningHubWorkspaceFallback />}>
-          <PlanningHubContent searchParams={searchParams} />
+          <PlanningHubContent searchParams={Promise.resolve(params)} />
         </Suspense>
       </main>
     </>
@@ -35,21 +37,24 @@ export default function PlanningHubPage({
 async function PlanningHubContent({ searchParams }: { searchParams: Promise<PlanningHubSearchParams> }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const [results, cloudPlan, authResult] = await Promise.all([
+  const [results, cloudPlan, authResult, connectedResult] = await Promise.all([
     searchPlanningHubVenues(params),
     loadLatestBudgetPlan(),
-    supabase?.auth.getUser() ?? Promise.resolve({ data: { user: null } })
+    supabase?.auth.getUser() ?? Promise.resolve({ data: { user: null } }),
+    params.workspace ? loadPlanningWorkspaceContextAction(params.workspace) : Promise.resolve(null),
   ]);
   const user = authResult.data.user;
   const { data: favourites } = user && supabase
     ? await supabase.from("favourites").select("venue_id").eq("user_id", user.id)
     : { data: [] };
-  const initialPlan = cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
+  const connectedContext = connectedResult?.ok ? connectedResult : null;
+  const initialPlan = connectedContext?.budgetPlan ?? cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_20rem]">
       <PlanningHubFilters params={params} resultCount={results.total} />
       <PlanningHubWorkspace
+        connectedWorkspaceId={connectedContext?.snapshot.workspace.id ?? null}
         initialPlan={initialPlan}
         initialSavedVenueIds={(favourites ?? []).map((favourite) => favourite.venue_id)}
         results={results}

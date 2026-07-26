@@ -2,7 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles } from "lucide-react";
 
-export function PlanningHubHeader({ stage = "venue" }: { stage?: "venue" | "photography" | "organise" }) {
+export function PlanningHubHeader({
+  stage = "venue",
+  workspaceId = null,
+}: {
+  stage?: "venue" | "photography" | "organise";
+  workspaceId?: string | null;
+}) {
   const photography = stage === "photography";
   const organise = stage === "organise";
   return (
@@ -30,13 +36,19 @@ export function PlanningHubHeader({ stage = "venue" }: { stage?: "venue" | "phot
           </p>
         </div>
         <nav aria-label="Planning stages" className="mt-6 flex gap-2 overflow-x-auto pb-1">
-          <StageLink active={stage === "venue"} href="/planning-hub" icon={<MapPinned size={16} />} label="Venue" />
-          <StageLink active={photography} href="/planning-hub/photography" icon={<Camera size={16} />} label="Photography" />
-          <StageLink active={organise} href="/planning-hub/organise" icon={<CalendarCheck2 size={16} />} label="Organise" />
+          <StageLink active={stage === "venue"} href={withPlanningWorkspace("/planning-hub", workspaceId)} icon={<MapPinned size={16} />} label="Venue" />
+          <StageLink active={photography} href={withPlanningWorkspace("/planning-hub/photography", workspaceId)} icon={<Camera size={16} />} label="Photography" />
+          <StageLink active={organise} href={withPlanningWorkspace("/planning-hub/organise", workspaceId)} icon={<CalendarCheck2 size={16} />} label="Organise" />
         </nav>
       </div>
     </header>
   );
+}
+
+export function withPlanningWorkspace(href: string, workspaceId?: string | null) {
+  if (!workspaceId) return href;
+  const separator = href.includes("?") ? "&" : "?";
+  return `${href}${separator}workspace=${encodeURIComponent(workspaceId)}`;
 }
 
 function StageLink({

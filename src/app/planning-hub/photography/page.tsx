@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { loadLatestBudgetPlan } from "@/app/actions/budget";
+import { loadPlanningWorkspaceContextAction } from "@/app/actions/planning-workspace";
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubPhotographyFilters } from "@/components/planning-hub/planning-hub-photography-filters";
 import { PlanningHubPhotographyWorkspace } from "@/components/planning-hub/planning-hub-photography-workspace";
@@ -15,17 +16,18 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-export default function PlanningHubPhotographyPage({
+export default async function PlanningHubPhotographyPage({
   searchParams
 }: {
   searchParams: Promise<PlanningHubPhotographySearchParams>;
 }) {
+  const params = await searchParams;
   return (
     <>
-      <PlanningHubHeader stage="photography" />
+      <PlanningHubHeader stage="photography" workspaceId={params.workspace} />
       <main className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
         <Suspense fallback={<PhotographyWorkspaceFallback />}>
-          <PlanningHubPhotographyContent searchParams={searchParams} />
+          <PlanningHubPhotographyContent searchParams={Promise.resolve(params)} />
         </Suspense>
       </main>
     </>
@@ -39,12 +41,14 @@ async function PlanningHubPhotographyContent({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const [cloudPlan, authResult] = await Promise.all([
+  const [cloudPlan, authResult, connectedResult] = await Promise.all([
     loadLatestBudgetPlan(),
-    supabase?.auth.getUser() ?? Promise.resolve({ data: { user: null } })
+    supabase?.auth.getUser() ?? Promise.resolve({ data: { user: null } }),
+    params.workspace ? loadPlanningWorkspaceContextAction(params.workspace) : Promise.resolve(null),
   ]);
   const user = authResult.data.user;
-  const initialPlan = cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
+  const connectedContext = connectedResult?.ok ? connectedResult : null;
+  const initialPlan = connectedContext?.budgetPlan ?? cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
   const effectiveParams: PlanningHubPhotographySearchParams = {
     ...params,
     venue: params.venue ?? initialPlan.selectedVenueId ?? undefined,
@@ -65,6 +69,7 @@ async function PlanningHubPhotographyContent({
         weddingDate={initialPlan.weddingDate}
       />
       <PlanningHubPhotographyWorkspace
+        connectedWorkspaceId={connectedContext?.snapshot.workspace.id ?? null}
         initialPlan={initialPlan}
         results={results}
         searchParams={effectiveParams}

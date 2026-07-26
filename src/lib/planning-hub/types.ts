@@ -28,6 +28,7 @@ export type PlanningHubVenueDetail = PlanningHubVenue & {
 
 export type PlanningHubSearchParams = VenueSearchParams & {
   search?: string;
+  workspace?: string;
 };
 
 export type PlanningHubVenueResults = {
@@ -70,6 +71,7 @@ export type PlanningHubPhotographerDetail = PlanningHubPhotographer & {
 
 export type PlanningHubPhotographySearchParams = PhotographerSearchParams & {
   search?: string;
+  workspace?: string;
 };
 
 export type PlanningHubPhotographerResults = {

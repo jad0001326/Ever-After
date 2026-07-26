@@ -4,6 +4,11 @@ import type { PlanningWorkspace } from "./types";
 import { createEmptyPlanningWorkspace } from "./workspace";
 
 type PlanningWorkspaceRow = Database["public"]["Tables"]["planning_workspaces"]["Row"];
+type PlanningWorkspaceMemberRow = Database["public"]["Tables"]["planning_workspace_members"]["Row"];
+type PlanningWorkspaceInviteRow = Pick<
+  Database["public"]["Tables"]["planning_workspace_invites"]["Row"],
+  "id" | "workspace_id" | "email_normalized" | "role" | "expires_at" | "accepted_at" | "accepted_by" | "revoked_at" | "created_at"
+>;
 type PlanningWorkspaceProfileRow = Database["public"]["Tables"]["planning_workspace_profiles"]["Row"];
 type PlanningTaskRow = Database["public"]["Tables"]["planning_tasks"]["Row"];
 type PlanningGuestRow = Database["public"]["Tables"]["planning_guests"]["Row"];
@@ -14,6 +19,8 @@ type PlanningSeatingRuleRow = Database["public"]["Tables"]["planning_seating_rul
 export type PlanningWorkspaceCloudSnapshot = {
   workspace: PlanningWorkspaceRow;
   profile: PlanningWorkspaceProfileRow | null;
+  members: PlanningWorkspaceMemberRow[];
+  invites: PlanningWorkspaceInviteRow[];
   tasks: PlanningTaskRow[];
   guests: PlanningGuestRow[];
   tables: PlanningTableRow[];

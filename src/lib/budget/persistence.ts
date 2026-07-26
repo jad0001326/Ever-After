@@ -2,6 +2,11 @@ import { createDefaultCategories } from "./categories";
 import type { BudgetPlan } from "./types";
 
 export const BUDGET_STORAGE_KEY = "everaft:wedding-budget:v1";
+export function planningHubBudgetStorageKey(workspaceId?: string | null) {
+  return workspaceId
+    ? `${BUDGET_STORAGE_KEY}:workspace:${workspaceId}`
+    : BUDGET_STORAGE_KEY;
+}
 function randomId() { return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
 export function createEmptyBudgetPlan(userId: string | null = null): BudgetPlan {

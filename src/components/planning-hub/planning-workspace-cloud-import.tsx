@@ -30,7 +30,10 @@ export function PlanningWorkspaceCloudImport({
   cloudEnabled: boolean;
   cloudSnapshot: PlanningWorkspaceCloudSnapshot | null;
   mode: PlanningWorkspaceStartupMode;
-  onWorkspaceResolved: (workspace: PlanningWorkspace) => void;
+  onWorkspaceResolved: (
+    workspace: PlanningWorkspace,
+    snapshot: PlanningWorkspaceCloudSnapshot,
+  ) => void;
   userId: string | null;
   workspace: PlanningWorkspace;
 }) {
@@ -54,7 +57,7 @@ export function PlanningWorkspaceCloudImport({
       PLANNING_WORKSPACE_BACKUP_STORAGE_KEY,
       serializePlanningWorkspace(workspace),
     );
-    onWorkspaceResolved(planningWorkspaceFromCloud(cloudSnapshot));
+    onWorkspaceResolved(planningWorkspaceFromCloud(cloudSnapshot), cloudSnapshot);
     setFeedback("The cloud copy is now open. Your previous device copy was saved as a local backup.");
     setReviewOpen(false);
   }
@@ -89,13 +92,15 @@ export function PlanningWorkspaceCloudImport({
         const importedSnapshot: PlanningWorkspaceCloudSnapshot = {
           workspace: result.snapshot.workspace,
           profile: result.snapshot.profile,
+          members: result.snapshot.members,
+          invites: result.snapshot.invites,
           tasks: result.snapshot.tasks,
           guests: result.snapshot.guests,
           tables: result.snapshot.tables,
           seats: result.snapshot.seats,
           seatingRules: result.snapshot.seatingRules,
         };
-        onWorkspaceResolved(planningWorkspaceFromCloud(importedSnapshot));
+        onWorkspaceResolved(planningWorkspaceFromCloud(importedSnapshot), importedSnapshot);
         setFeedback("Your device plan is now connected to the secure cloud workspace.");
         setReviewOpen(false);
       } catch {

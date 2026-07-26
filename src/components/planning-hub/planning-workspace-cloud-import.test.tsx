@@ -10,6 +10,8 @@ import {
 import { PlanningWorkspaceCloudImport } from "./planning-workspace-cloud-import";
 
 const cloudSnapshot: PlanningWorkspaceCloudSnapshot = {
+  members: [],
+  invites: [],
   workspace: {
     id: "60000000-0000-4000-8000-000000000006",
     owner_id: "30000000-0000-4000-8000-000000000003",
@@ -87,9 +89,12 @@ describe("PlanningWorkspaceCloudImport", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the cloud copy on this device" }));
 
     expect(window.localStorage.getItem(PLANNING_WORKSPACE_BACKUP_STORAGE_KEY)).toContain("Device-only task");
-    expect(onWorkspaceResolved).toHaveBeenCalledWith(expect.objectContaining({
-      cloudWorkspaceId: cloudSnapshot.workspace.id,
-      name: "Cloud wedding plan",
-    }));
+    expect(onWorkspaceResolved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudWorkspaceId: cloudSnapshot.workspace.id,
+        name: "Cloud wedding plan",
+      }),
+      cloudSnapshot,
+    );
   });
 });

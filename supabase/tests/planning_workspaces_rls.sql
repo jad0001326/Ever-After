@@ -232,6 +232,14 @@ begin
   ) <> 0 then
     raise exception 'RLS failure: partner can read owner invitation tokens';
   end if;
+
+  if (
+    select count(*) from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+  ) <> 1 then
+    raise exception 'RLS failure: partner cannot read the linked budget plan';
+  end if;
 end
 $$;
 
@@ -252,6 +260,35 @@ begin
   if not found then
     raise exception 'RLS failure: partner cannot update the shared wedding profile';
   end if;
+
+  update public.budget_plans
+  set name = 'Partner-updated planning budget'
+  where user_id = '30000000-0000-4000-8000-000000000003'
+    and id = 'planning-budget-1';
+
+  if not found then
+    raise exception 'RLS failure: partner cannot update the linked budget plan';
+  end if;
+
+  begin
+    update public.budget_plans
+    set user_id = '40000000-0000-4000-8000-000000000004'
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1';
+    raise exception 'Grant failure: partner changed linked budget ownership';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    update public.budget_plans
+    set id = 'partner-stolen-budget'
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1';
+    raise exception 'Grant failure: partner changed the linked budget identifier';
+  exception
+    when insufficient_privilege then null;
+  end;
 
   begin
     update public.planning_workspaces
@@ -345,6 +382,22 @@ begin
     where workspace_id = '60000000-0000-4000-8000-000000000006'
   ) <> 0 then
     raise exception 'RLS failure: outsider can read the private wedding profile';
+  end if;
+
+  if (
+    select count(*) from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+  ) <> 0 then
+    raise exception 'RLS failure: outsider can read the linked budget plan';
+  end if;
+
+  update public.budget_plans
+  set name = 'Outsider update'
+  where user_id = '30000000-0000-4000-8000-000000000003'
+    and id = 'planning-budget-1';
+  if found then
+    raise exception 'RLS failure: outsider updated the linked budget plan';
   end if;
 
   begin
@@ -614,6 +667,13 @@ begin
   begin
     perform 1 from public.planning_workspaces limit 1;
     raise exception 'Grant failure: anonymous role can read planning workspaces';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform 1 from public.budget_plans limit 1;
+    raise exception 'Grant failure: anonymous role can read linked budget plans';
   exception
     when insufficient_privilege then null;
   end;

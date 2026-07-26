@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createClient } from "@/lib/supabase/server";
-import { importPlanningWorkspaceSnapshotAction } from "./planning-workspace";
+import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import {
+  importPlanningWorkspaceSnapshotAction,
+  saveConnectedBudgetPlanAction,
+} from "./planning-workspace";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
@@ -62,4 +66,72 @@ describe("planning workspace server actions", () => {
     });
     expect(createClient).not.toHaveBeenCalled();
   });
+
+  it("rejects a budget that is not linked to the requested workspace", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const workspaceQuery = chain({
+      data: { owner_id: "owner-1", budget_plan_id: "different-budget" },
+      error: null,
+    });
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      from: vi.fn(() => workspaceQuery),
+    } as never);
+
+    const result = await saveConnectedBudgetPlanAction(
+      "60000000-0000-4000-8000-000000000006",
+      createPlanningHubStarterPlan("owner-1"),
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: "That budget does not belong to this connected workspace.",
+    });
+  });
+
+  it("updates only the owner and plan linked to an accessible workspace", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const plan = { ...createPlanningHubStarterPlan("owner-1"), id: "budget-1" };
+    const workspaceQuery = chain({
+      data: { owner_id: "owner-1", budget_plan_id: "budget-1" },
+      error: null,
+    });
+    const budgetQuery = chain({
+      data: { updated_at: "2026-07-26T20:00:00.000Z" },
+      error: null,
+    });
+    const from = vi.fn((table: string) => (
+      table === "planning_workspaces" ? workspaceQuery : budgetQuery
+    ));
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      from,
+    } as never);
+
+    const result = await saveConnectedBudgetPlanAction(
+      "60000000-0000-4000-8000-000000000006",
+      plan,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(budgetQuery.update).toHaveBeenCalledWith(expect.objectContaining({
+      name: plan.name,
+      plan_json: expect.objectContaining({ id: "budget-1", userId: "owner-1" }),
+    }));
+    expect(budgetQuery.eq).toHaveBeenCalledWith("user_id", "owner-1");
+    expect(budgetQuery.eq).toHaveBeenCalledWith("id", "budget-1");
+  });
 });
+
+function chain(result: { data: unknown; error: unknown }) {
+  const query = {
+    select: vi.fn(),
+    update: vi.fn(),
+    eq: vi.fn(),
+    maybeSingle: vi.fn(async () => result),
+  };
+  query.select.mockReturnValue(query);
+  query.update.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  return query;
+}

@@ -19,6 +19,11 @@ import type {
 } from "./types";
 
 export const PLANNING_WORKSPACE_STORAGE_KEY = "everaft:planning-workspace:v1";
+export function planningWorkspaceStorageKey(workspaceId?: string | null) {
+  return workspaceId
+    ? `${PLANNING_WORKSPACE_STORAGE_KEY}:workspace:${workspaceId}`
+    : PLANNING_WORKSPACE_STORAGE_KEY;
+}
 export const PLANNING_WORKSPACE_BACKUP_STORAGE_KEY = "everaft:planning-workspace:backup:v1";
 
 function randomId() {

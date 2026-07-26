@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { toggleFavourite } from "@/app/actions/favourites";
 import { loadPlanningHubVenueDetailAction } from "@/app/actions/planning-hub";
-import { BUDGET_STORAGE_KEY, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
+import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
   addManualPlanningHubVenue,
@@ -24,16 +24,19 @@ import { PlanningHubVenueResults } from "./planning-hub-venue-results";
 export function PlanningHubWorkspace({
   initialPlan,
   initialSavedVenueIds,
+  connectedWorkspaceId = null,
   results,
   searchParams,
   userId
 }: {
   initialPlan: BudgetPlan;
+  connectedWorkspaceId?: string | null;
   initialSavedVenueIds: string[];
   results: PlanningHubVenueResultData;
   searchParams: PlanningHubSearchParams;
   userId: string | null;
 }) {
+  const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
   const firstVenue = results.venues.find((venue) => venue.id === initialPlan.selectedVenueId) ?? results.venues[0] ?? null;
   const firstItem = findPlanningHubVenueItem(initialPlan, firstVenue?.id);
   const [plan, setPlan] = useState(initialPlan);
@@ -60,7 +63,7 @@ export function PlanningHubWorkspace({
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
       try {
-        const localPlan = restoreBudgetPlan(window.localStorage.getItem(BUDGET_STORAGE_KEY));
+        const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
         if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
           setPlan({ ...localPlan, userId });
           setSaveMessage("Restored newer changes from this device.");
@@ -79,19 +82,19 @@ export function PlanningHubWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.venues, userId]);
+  }, [initialPlan.updatedAt, results.venues, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;
     try {
-      window.localStorage.setItem(BUDGET_STORAGE_KEY, serializeBudgetPlan(plan));
+      window.localStorage.setItem(storageKey, serializeBudgetPlan(plan));
     } catch {
       queueMicrotask(() => {
         setSaveState("error");
         setSaveMessage("This browser could not save the latest local changes.");
       });
     }
-  }, [plan, ready]);
+  }, [plan, ready, storageKey]);
 
   function openVenue(venueId: string) {
     const venue = results.venues.find((candidate) => candidate.id === venueId);
@@ -205,7 +208,9 @@ export function PlanningHubWorkspace({
     setSaveState("saving");
     setSaveMessage("Saving to your account…");
     startTransition(async () => {
-      const result = await saveBudgetPlan(nextPlan);
+      const result = connectedWorkspaceId
+        ? await (await import("@/app/actions/planning-workspace")).saveConnectedBudgetPlanAction(connectedWorkspaceId, nextPlan)
+        : await saveBudgetPlan(nextPlan);
       setSaveState(result.ok ? "saved" : "error");
       setSaveMessage(result.ok ? successMessage : result.message ?? "Cloud save failed. Your changes remain on this device.");
     });
