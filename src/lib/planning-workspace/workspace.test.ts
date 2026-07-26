@@ -68,10 +68,24 @@ describe("planning workspace", () => {
   it("recommends venue, photography, guests and tables in planning order", () => {
     const budget = createEmptyBudgetPlan();
     const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    budget.location = "Perthshire";
+    budget.guestCount = 90;
+    budget.totalBudgetPence = 2_500_000;
+    workspace.profile = {
+      ...workspace.profile,
+      location: "Perthshire",
+      guestCount: 90,
+      priorities: ["venue", "photography"],
+      photographyStyles: ["Documentary"],
+    };
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("venue");
+    expect(getPlanningRecommendation(budget, workspace).href)
+      .toBe("/planning-hub?location=Perthshire&guests=90&budget=25000");
 
     budget.items = [budgetItem("venue")];
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("photography");
+    expect(getPlanningRecommendation(budget, workspace).href)
+      .toContain("style=Documentary");
 
     budget.items.push(budgetItem("photography"));
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("guests");

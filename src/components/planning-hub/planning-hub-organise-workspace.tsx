@@ -5,7 +5,13 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningWorkspaceCloudImport } from "@/components/planning-hub/planning-workspace-cloud-import";
+import {
+  BUDGET_STORAGE_KEY,
+  restoreBudgetPlan,
+  serializeBudgetPlan,
+} from "@/lib/budget/persistence";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
   resolvePlanningWorkspaceStartup,
@@ -14,6 +20,8 @@ import type {
   PlanningWorkspaceCloudSnapshot,
   PlanningWorkspaceStartupMode,
 } from "@/lib/planning-workspace/cloud";
+import { createWeddingProfile } from "@/lib/planning-workspace/profile";
+import type { WeddingProfile } from "@/lib/planning-workspace/profile";
 import {
   createEmptyPlanningWorkspace,
   createPlanningTask,
@@ -42,6 +50,7 @@ export function PlanningHubOrganiseWorkspace({
   initialCloudSnapshot?: PlanningWorkspaceCloudSnapshot | null;
   userId: string | null;
 }) {
+  const [budgetPlan, setBudgetPlan] = useState(initialBudgetPlan);
   const [workspace, setWorkspace] = useState<PlanningWorkspace | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<PlanningWorkspaceStartupMode>("device_only");
   const [ready, setReady] = useState(false);
@@ -50,32 +59,48 @@ export function PlanningHubOrganiseWorkspace({
 
   useEffect(() => {
     queueMicrotask(() => {
-      const restored = restorePlanningWorkspace(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY));
-      const legacyTablePlan = restoreTablePlan(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY));
-      const deviceWorkspace = restored?.budgetPlanId === initialBudgetPlan.id
+      const localBudgetPlan = restoreBudgetPlan(readLocalStorage(BUDGET_STORAGE_KEY));
+      const activeBudgetPlan = localBudgetPlan
+        && Date.parse(localBudgetPlan.updatedAt) > Date.parse(initialBudgetPlan.updatedAt)
+        ? { ...localBudgetPlan, userId }
+        : initialBudgetPlan;
+      const compatibleCloudSnapshot =
+        initialCloudSnapshot?.workspace.budget_plan_id === activeBudgetPlan.id
+          ? initialCloudSnapshot
+          : null;
+      const fallbackProfile = createWeddingProfile(activeBudgetPlan);
+      const restored = restorePlanningWorkspace(
+        readLocalStorage(PLANNING_WORKSPACE_STORAGE_KEY),
+        fallbackProfile,
+      );
+      const legacyTablePlan = restoreTablePlan(readLocalStorage(TABLE_PLAN_STORAGE_KEY));
+      const deviceWorkspace = restored?.budgetPlanId === activeBudgetPlan.id
         ? restored
         : createEmptyPlanningWorkspace({
           ownerId: userId,
-          budgetPlanId: initialBudgetPlan.id,
+          budgetPlanId: activeBudgetPlan.id,
+          profile: fallbackProfile,
           tablePlan: legacyTablePlan ?? undefined,
         });
       const startup = resolvePlanningWorkspaceStartup({
         cloudEnabled,
-        cloudSnapshot: initialCloudSnapshot,
+        cloudSnapshot: compatibleCloudSnapshot,
         deviceWorkspace,
         ownerId: userId,
-        budgetPlanId: initialBudgetPlan.id,
+        budgetPlanId: activeBudgetPlan.id,
       });
+      setBudgetPlan(activeBudgetPlan);
       setWorkspace(startup.workspace);
       setWorkspaceMode(startup.mode);
       setReady(true);
     });
-  }, [cloudEnabled, initialBudgetPlan.id, initialCloudSnapshot, userId]);
+  }, [cloudEnabled, initialBudgetPlan, initialCloudSnapshot, userId]);
 
   useEffect(() => {
     if (!ready || !workspace) return;
-    window.localStorage.setItem(PLANNING_WORKSPACE_STORAGE_KEY, serializePlanningWorkspace(workspace));
-  }, [ready, workspace]);
+    writeLocalStorage(PLANNING_WORKSPACE_STORAGE_KEY, serializePlanningWorkspace(workspace));
+    writeLocalStorage(BUDGET_STORAGE_KEY, serializeBudgetPlan(budgetPlan));
+  }, [budgetPlan, ready, workspace]);
 
   const updateTablePlan = useCallback((tablePlan: TablePlan) => {
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
@@ -85,6 +110,13 @@ export function PlanningHubOrganiseWorkspace({
   }, []);
 
   function resolveCloudWorkspace(resolvedWorkspace: PlanningWorkspace) {
+    setBudgetPlan((current) => ({
+      ...current,
+      weddingDate: resolvedWorkspace.profile.weddingDate,
+      guestCount: resolvedWorkspace.profile.guestCount,
+      location: resolvedWorkspace.profile.location,
+      updatedAt: resolvedWorkspace.profile.updatedAt,
+    }));
     setWorkspace(resolvedWorkspace);
     setWorkspaceMode("cloud_loaded");
   }
@@ -93,13 +125,35 @@ export function PlanningHubOrganiseWorkspace({
     () => workspace?.tasks.filter((task) => task.status !== "done").length ?? 0,
     [workspace?.tasks],
   );
+  const activeCloudSnapshot =
+    initialCloudSnapshot?.workspace.budget_plan_id === budgetPlan.id
+      ? initialCloudSnapshot
+      : null;
 
   if (!ready || !workspace) {
     return <div aria-busy="true" className="h-96 animate-pulse rounded-3xl bg-[#e7dfd2]"><span className="sr-only">Preparing your organised plan.</span></div>;
   }
 
-  const recommendation = getPlanningRecommendation(initialBudgetPlan, workspace);
+  const recommendation = getPlanningRecommendation(budgetPlan, workspace);
   const assignedGuests = workspace.tablePlan.guests.filter((guest) => guest.tableId).length;
+
+  function saveProfile(profile: WeddingProfile, totalBudgetPence: number) {
+    const now = profile.updatedAt;
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
+    setBudgetPlan((current) => ({
+      ...current,
+      totalBudgetPence,
+      weddingDate: profile.weddingDate,
+      guestCount: profile.guestCount,
+      location: profile.location,
+      updatedAt: now,
+    }));
+    setWorkspace((current) => current ? {
+      ...current,
+      profile,
+      updatedAt: now,
+    } : current);
+  }
 
   function addTask() {
     if (!taskTitle.trim()) return;
@@ -129,6 +183,12 @@ export function PlanningHubOrganiseWorkspace({
         <SummaryCard icon={<UsersRound size={19} />} label="Guests" value={String(workspace.tablePlan.guests.length)} />
         <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${assignedGuests}/${workspace.tablePlan.guests.length}`} />
       </section>
+
+      <PlanningHubProfile
+        onSave={saveProfile}
+        profile={workspace.profile}
+        totalBudgetPence={budgetPlan.totalBudgetPence}
+      />
 
       <section className="rounded-3xl border border-[#d8c7a7] bg-[#fff9ef] p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#95502b]">Recommended next</p>
@@ -201,9 +261,9 @@ export function PlanningHubOrganiseWorkspace({
             {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>
           <PlanningWorkspaceCloudImport
-            budgetPlan={initialBudgetPlan}
+            budgetPlan={budgetPlan}
             cloudEnabled={cloudEnabled}
-            cloudSnapshot={initialCloudSnapshot}
+            cloudSnapshot={activeCloudSnapshot}
             mode={workspaceMode}
             onWorkspaceResolved={resolveCloudWorkspace}
             userId={userId}
@@ -291,4 +351,20 @@ function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; v
       <p className="mt-1 text-sm text-[var(--muted)]">{label}</p>
     </div>
   );
+}
+
+function readLocalStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // The in-memory workspace remains usable if browser storage is unavailable.
+  }
 }

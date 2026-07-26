@@ -155,10 +155,11 @@ export function getVenuePlanningCost(venue: PlanningHubVenue | null | undefined,
   return ["total", "per_event", null].includes(venue.pricingUnit) ? venue.priceFromPence : null;
 }
 
-export function getPhotographyNextHref(plan: BudgetPlan) {
+export function getPhotographyNextHref(plan: BudgetPlan, preferredStyle?: string | null) {
   const params = new URLSearchParams();
   if (plan.selectedVenueId) params.set("venue", plan.selectedVenueId);
   if (plan.location) params.set("location", plan.location);
+  if (preferredStyle) params.set("style", preferredStyle);
   const remainingPence = Math.max(calculatePlanningHubPlan(plan).remainingPence, 0);
   if (remainingPence > 0) params.set("budget", String(Math.floor(remainingPence / 100)));
   return `/planning-hub/photography${params.size ? `?${params.toString()}` : ""}`;

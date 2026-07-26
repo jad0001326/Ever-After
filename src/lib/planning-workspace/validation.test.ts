@@ -17,6 +17,19 @@ const validImportSnapshot = {
   id: workspaceId,
   budgetPlanId: "budget-1",
   name: "Our wedding plan",
+  profile: {
+    schemaVersion: 1 as const,
+    weddingDate: "2027-06-12",
+    guestCount: 90,
+    location: "Perthshire",
+    dateFlexibility: "fixed" as const,
+    locationFlexible: false,
+    priorities: ["venue", "guest_experience"] as const,
+    venueStyles: ["Castle"],
+    photographyStyles: ["Documentary"],
+    vision: "A relaxed weekend with everyone together.",
+    updatedAt: "2026-07-26T10:00:00.000Z"
+  },
   tasks: [],
   guests: [{
     id: firstGuestId,
@@ -129,6 +142,24 @@ describe("planning workspace cloud validation", () => {
         { guestId: firstGuestId, tableId, seatIndex: 8 },
         { guestId: firstGuestId, tableId, seatIndex: 0 }
       ]
+    }).success).toBe(false);
+  });
+
+  it("rejects duplicate or unsupported private profile preferences", () => {
+    expect(planningWorkspaceImportSnapshotSchema.safeParse({
+      ...validImportSnapshot,
+      profile: {
+        ...validImportSnapshot.profile,
+        priorities: ["venue", "not-a-priority"]
+      }
+    }).success).toBe(false);
+
+    expect(planningWorkspaceImportSnapshotSchema.safeParse({
+      ...validImportSnapshot,
+      profile: {
+        ...validImportSnapshot.profile,
+        venueStyles: ["Castle", "Castle"]
+      }
     }).success).toBe(false);
   });
 });

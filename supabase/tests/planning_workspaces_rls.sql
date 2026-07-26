@@ -88,6 +88,29 @@ values (
   'Owner wedding plan'
 );
 
+insert into public.planning_workspace_profiles (
+  workspace_id,
+  wedding_date,
+  guest_count,
+  location,
+  date_flexibility,
+  priorities,
+  venue_styles,
+  photography_styles,
+  vision
+)
+values (
+  '60000000-0000-4000-8000-000000000006',
+  '2027-06-12',
+  90,
+  'Perthshire',
+  'fixed',
+  array['venue', 'guest_experience'],
+  array['Castle'],
+  array['Documentary'],
+  'A relaxed weekend with everyone together.'
+);
+
 do $$
 begin
   if (
@@ -196,6 +219,14 @@ begin
   end if;
 
   if (
+    select count(*) from public.planning_workspace_profiles
+    where workspace_id = '60000000-0000-4000-8000-000000000006'
+      and guest_count = 90
+  ) <> 1 then
+    raise exception 'RLS failure: partner cannot read the shared wedding profile';
+  end if;
+
+  if (
     select count(*) from public.planning_workspace_invites
     where workspace_id = '60000000-0000-4000-8000-000000000006'
   ) <> 0 then
@@ -212,6 +243,14 @@ begin
 
   if not found then
     raise exception 'RLS failure: partner cannot update shared tasks';
+  end if;
+
+  update public.planning_workspace_profiles
+  set photography_styles = array['Editorial', 'Documentary']
+  where workspace_id = '60000000-0000-4000-8000-000000000006';
+
+  if not found then
+    raise exception 'RLS failure: partner cannot update the shared wedding profile';
   end if;
 
   begin
@@ -243,11 +282,23 @@ begin
   end if;
 
   begin
-    perform public.import_planning_workspace_snapshot(
+    perform public.import_planning_workspace_snapshot_v2(
       jsonb_build_object(
         'id', '60000000-0000-4000-8000-000000000006',
         'budgetPlanId', 'planning-budget-1',
         'name', 'Injected partner snapshot',
+        'profile', jsonb_build_object(
+          'schemaVersion', 1,
+          'weddingDate', null,
+          'guestCount', 20,
+          'location', 'Injected location',
+          'dateFlexibility', 'not_set',
+          'locationFlexible', false,
+          'priorities', '[]'::jsonb,
+          'venueStyles', '[]'::jsonb,
+          'photographyStyles', '[]'::jsonb,
+          'vision', null
+        ),
         'tasks', '[]'::jsonb,
         'guests', '[]'::jsonb,
         'tables', '[]'::jsonb,
@@ -287,6 +338,13 @@ begin
     where workspace_id = '60000000-0000-4000-8000-000000000006'
   ) <> 0 then
     raise exception 'RLS failure: outsider can read private guest data';
+  end if;
+
+  if (
+    select count(*) from public.planning_workspace_profiles
+    where workspace_id = '60000000-0000-4000-8000-000000000006'
+  ) <> 0 then
+    raise exception 'RLS failure: outsider can read the private wedding profile';
   end if;
 
   begin
@@ -401,11 +459,23 @@ begin
 
   select result.workspace_id
   into imported_workspace_id
-  from public.import_planning_workspace_snapshot(
+  from public.import_planning_workspace_snapshot_v2(
     jsonb_build_object(
       'id', 'e0000000-0000-4000-8000-00000000000e',
       'budgetPlanId', 'planning-budget-1',
       'name', 'Imported owner plan',
+      'profile', jsonb_build_object(
+        'schemaVersion', 1,
+        'weddingDate', '2027-09-18',
+        'guestCount', 84,
+        'location', 'Fife',
+        'dateFlexibility', 'few_weeks',
+        'locationFlexible', true,
+        'priorities', jsonb_build_array('venue', 'photography'),
+        'venueStyles', jsonb_build_array('Country house'),
+        'photographyStyles', jsonb_build_array('Documentary'),
+        'vision', 'A warm autumn celebration.'
+      ),
       'tasks', jsonb_build_array(jsonb_build_object(
         'id', 'f0000000-0000-4000-8000-00000000000f',
         'title', 'Imported task',
@@ -463,12 +533,41 @@ begin
     raise exception 'Import failure: private guest details were not preserved';
   end if;
 
+  if (
+    select count(*)
+    from public.planning_workspace_profiles
+    where workspace_id = imported_workspace_id
+      and wedding_date = '2027-09-18'
+      and guest_count = 84
+      and location = 'Fife'
+      and date_flexibility = 'few_weeks'
+      and location_flexible
+      and priorities = array['venue', 'photography']
+      and venue_styles = array['Country house']
+      and photography_styles = array['Documentary']
+      and vision = 'A warm autumn celebration.'
+  ) <> 1 then
+    raise exception 'Import failure: wedding profile was not replaced atomically';
+  end if;
+
   begin
-    perform public.import_planning_workspace_snapshot(
+    perform public.import_planning_workspace_snapshot_v2(
       jsonb_build_object(
         'id', 'e0000000-0000-4000-8000-00000000000e',
         'budgetPlanId', 'planning-budget-1',
         'name', 'Stale overwrite attempt',
+        'profile', jsonb_build_object(
+          'schemaVersion', 1,
+          'weddingDate', null,
+          'guestCount', null,
+          'location', null,
+          'dateFlexibility', 'not_set',
+          'locationFlexible', false,
+          'priorities', '[]'::jsonb,
+          'venueStyles', '[]'::jsonb,
+          'photographyStyles', '[]'::jsonb,
+          'vision', null
+        ),
         'tasks', '[]'::jsonb,
         'guests', '[]'::jsonb,
         'tables', '[]'::jsonb,
@@ -527,6 +626,13 @@ begin
   end;
 
   begin
+    perform 1 from public.planning_workspace_profiles limit 1;
+    raise exception 'Grant failure: anonymous role can read private wedding profiles';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
     perform public.accept_planning_workspace_invite(
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
@@ -536,7 +642,7 @@ begin
   end;
 
   begin
-    perform public.import_planning_workspace_snapshot(
+    perform public.import_planning_workspace_snapshot_v2(
       '{}'::jsonb,
       null,
       null

@@ -29,6 +29,7 @@ export default async function PlanningHubOrganisePage() {
     if (workspaceResult.ok && workspaceResult.snapshot) {
       initialCloudSnapshot = {
         workspace: workspaceResult.snapshot.workspace,
+        profile: workspaceResult.snapshot.profile,
         tasks: workspaceResult.snapshot.tasks,
         guests: workspaceResult.snapshot.guests,
         tables: workspaceResult.snapshot.tables,

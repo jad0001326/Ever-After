@@ -148,6 +148,7 @@ async function loadPlanningWorkspaceSnapshot(
 ) {
   const [
     workspaceResult,
+    profileResult,
     memberResult,
     taskResult,
     guestResult,
@@ -157,6 +158,7 @@ async function loadPlanningWorkspaceSnapshot(
     inviteResult
   ] = await Promise.all([
     supabase.from("planning_workspaces").select("*").eq("id", id).maybeSingle(),
+    supabase.from("planning_workspace_profiles").select("*").eq("workspace_id", id).maybeSingle(),
     supabase.from("planning_workspace_members").select("*").eq("workspace_id", id),
     supabase.from("planning_tasks").select("*").eq("workspace_id", id).order("sort_order").order("created_at"),
     supabase.from("planning_guests").select("*").eq("workspace_id", id).order("sort_order").order("name"),
@@ -171,6 +173,7 @@ async function loadPlanningWorkspaceSnapshot(
 
   const error = [
     workspaceResult,
+    profileResult,
     memberResult,
     taskResult,
     guestResult,
@@ -187,6 +190,7 @@ async function loadPlanningWorkspaceSnapshot(
   return {
     ok: true,
     workspace: workspaceResult.data,
+    profile: profileResult.data,
     members: memberResult.data ?? [],
     tasks: taskResult.data ?? [],
     guests: guestResult.data ?? [],
@@ -217,7 +221,7 @@ export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
   if (!context.ok) return context;
 
   const { data, error } = await context.supabase.rpc(
-    "import_planning_workspace_snapshot",
+    "import_planning_workspace_snapshot_v2",
     {
       workspace_snapshot: parsed.data.snapshot as unknown as Json,
       target_workspace_id: parsed.data.targetWorkspaceId,

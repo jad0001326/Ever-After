@@ -127,10 +127,46 @@ const planningImportRuleSchema = z.object({
   type: z.enum(["must_next_to", "prefer_next_to", "must_not_next_to", "must_separate"])
 });
 
+const weddingProfileSchema = z.object({
+  schemaVersion: z.literal(1),
+  weddingDate: z.iso.date().nullable(),
+  guestCount: z.number().int().min(1).max(10000).nullable(),
+  location: z.string().trim().min(1).max(160).nullable(),
+  dateFlexibility: z.enum(["fixed", "few_days", "few_weeks", "season_only", "not_set"]),
+  locationFlexible: z.boolean(),
+  priorities: z.array(z.enum([
+    "venue",
+    "guest_experience",
+    "photography",
+    "food",
+    "music",
+    "style",
+    "accommodation",
+    "accessibility",
+    "sustainability",
+    "value"
+  ])).max(5),
+  venueStyles: z.array(z.string().trim().min(1).max(80)).max(8),
+  photographyStyles: z.array(z.string().trim().min(1).max(80)).max(8),
+  vision: z.string().trim().max(1000).nullable(),
+  updatedAt: z.iso.datetime({ offset: true })
+}).superRefine((profile, context) => {
+  for (const field of ["priorities", "venueStyles", "photographyStyles"] as const) {
+    if (new Set(profile[field]).size !== profile[field].length) {
+      context.addIssue({
+        code: "custom",
+        message: `${field} cannot contain duplicate choices.`,
+        path: [field]
+      });
+    }
+  }
+});
+
 export const planningWorkspaceImportSnapshotSchema = z.object({
   id: planningWorkspaceIdSchema,
   budgetPlanId: budgetPlanIdSchema,
   name: planningWorkspaceNameSchema,
+  profile: weddingProfileSchema,
   tasks: z.array(planningImportTaskSchema).max(500),
   guests: z.array(planningImportGuestSchema).max(1000),
   tables: z.array(planningImportTableSchema).max(200),

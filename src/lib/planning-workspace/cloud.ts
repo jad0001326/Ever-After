@@ -1,8 +1,10 @@
 import type { Database } from "@/types/database";
+import { createWeddingProfile, restoreWeddingProfile } from "./profile";
 import type { PlanningWorkspace } from "./types";
 import { createEmptyPlanningWorkspace } from "./workspace";
 
 type PlanningWorkspaceRow = Database["public"]["Tables"]["planning_workspaces"]["Row"];
+type PlanningWorkspaceProfileRow = Database["public"]["Tables"]["planning_workspace_profiles"]["Row"];
 type PlanningTaskRow = Database["public"]["Tables"]["planning_tasks"]["Row"];
 type PlanningGuestRow = Database["public"]["Tables"]["planning_guests"]["Row"];
 type PlanningTableRow = Database["public"]["Tables"]["planning_tables"]["Row"];
@@ -11,6 +13,7 @@ type PlanningSeatingRuleRow = Database["public"]["Tables"]["planning_seating_rul
 
 export type PlanningWorkspaceCloudSnapshot = {
   workspace: PlanningWorkspaceRow;
+  profile: PlanningWorkspaceProfileRow | null;
   tasks: PlanningTaskRow[];
   guests: PlanningGuestRow[];
   tables: PlanningTableRow[];
@@ -22,6 +25,7 @@ export type PlanningWorkspaceImportSnapshot = {
   id: string;
   budgetPlanId: string;
   name: string;
+  profile: PlanningWorkspace["profile"];
   tasks: Array<{
     id: string;
     title: string;
@@ -71,6 +75,7 @@ export type PlanningWorkspaceStartup = {
 function latestTimestamp(snapshot: PlanningWorkspaceCloudSnapshot) {
   const timestamps = [
     snapshot.workspace.updated_at,
+    ...(snapshot.profile ? [snapshot.profile.updated_at] : []),
     ...snapshot.tasks.map((task) => task.updated_at),
     ...snapshot.guests.map((guest) => guest.updated_at),
     ...snapshot.tables.map((table) => table.updated_at),
@@ -85,6 +90,27 @@ export function planningWorkspaceFromCloud(
   const seatsByGuest = new Map(
     snapshot.seats.map((seat) => [seat.guest_id, seat]),
   );
+  const fallbackProfile = createWeddingProfile({
+    weddingDate: null,
+    guestCount: null,
+    location: null,
+    updatedAt: snapshot.workspace.updated_at,
+  });
+  const profile = snapshot.profile
+    ? restoreWeddingProfile({
+      schemaVersion: 1,
+      weddingDate: snapshot.profile.wedding_date,
+      guestCount: snapshot.profile.guest_count,
+      location: snapshot.profile.location,
+      dateFlexibility: snapshot.profile.date_flexibility,
+      locationFlexible: snapshot.profile.location_flexible,
+      priorities: snapshot.profile.priorities,
+      venueStyles: snapshot.profile.venue_styles,
+      photographyStyles: snapshot.profile.photography_styles,
+      vision: snapshot.profile.vision,
+      updatedAt: snapshot.profile.updated_at,
+    }, fallbackProfile)
+    : fallbackProfile;
 
   return {
     schemaVersion: 1,
@@ -93,6 +119,7 @@ export function planningWorkspaceFromCloud(
     ownerId: snapshot.workspace.owner_id,
     budgetPlanId: snapshot.workspace.budget_plan_id ?? "",
     name: snapshot.workspace.name,
+    profile,
     tasks: snapshot.tasks.map((task) => ({
       id: task.id,
       title: task.title,
@@ -146,6 +173,7 @@ export function planningWorkspaceToImportSnapshot(
     id: workspace.id,
     budgetPlanId: workspace.budgetPlanId,
     name: workspace.name,
+    profile: workspace.profile,
     tasks: workspace.tasks.map((task) => ({
       id: task.id,
       title: task.title,
@@ -191,6 +219,15 @@ export function hasMeaningfulPlanningWorkspaceContent(workspace: PlanningWorkspa
     workspace.tasks.length > 0
     || workspace.tablePlan.guests.length > 0
     || workspace.tablePlan.rules.length > 0
+    || workspace.profile.weddingDate !== null
+    || workspace.profile.guestCount !== null
+    || workspace.profile.location !== null
+    || workspace.profile.dateFlexibility !== "not_set"
+    || workspace.profile.locationFlexible
+    || workspace.profile.priorities.length > 0
+    || workspace.profile.venueStyles.length > 0
+    || workspace.profile.photographyStyles.length > 0
+    || workspace.profile.vision !== null
   ) {
     return true;
   }

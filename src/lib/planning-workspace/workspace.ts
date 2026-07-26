@@ -1,10 +1,17 @@
 import type { BudgetPlan } from "@/lib/budget/types";
+import { getPhotographyNextHref } from "@/lib/planning-hub/plan";
 import {
   createEmptyTablePlan,
   restoreTablePlan,
   serializeTablePlan,
 } from "@/lib/table-plan/planner";
 import type { TablePlan } from "@/lib/table-plan/types";
+import {
+  createWeddingProfile,
+  profileVenueSearchHref,
+  restoreWeddingProfile,
+} from "./profile";
+import type { WeddingProfile } from "./profile";
 import type {
   PlanningRecommendation,
   PlanningTask,
@@ -24,10 +31,12 @@ export function createEmptyPlanningWorkspace({
   ownerId,
   budgetPlanId,
   tablePlan,
+  profile,
 }: {
   ownerId: string | null;
   budgetPlanId: string;
   tablePlan?: TablePlan;
+  profile?: WeddingProfile;
 }): PlanningWorkspace {
   const now = new Date().toISOString();
   return {
@@ -37,6 +46,7 @@ export function createEmptyPlanningWorkspace({
     ownerId,
     budgetPlanId,
     name: "Our wedding plan",
+    profile: profile ?? createWeddingProfile(),
     tasks: [],
     tablePlan: tablePlan ?? createEmptyTablePlan(),
     createdAt: now,
@@ -44,7 +54,10 @@ export function createEmptyPlanningWorkspace({
   };
 }
 
-export function restorePlanningWorkspace(raw: string | null): PlanningWorkspace | null {
+export function restorePlanningWorkspace(
+  raw: string | null,
+  fallbackProfile = createWeddingProfile(),
+): PlanningWorkspace | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<PlanningWorkspace>;
@@ -64,6 +77,7 @@ export function restorePlanningWorkspace(raw: string | null): PlanningWorkspace 
       cloudWorkspaceId: typeof parsed.cloudWorkspaceId === "string"
         ? parsed.cloudWorkspaceId
         : null,
+      profile: restoreWeddingProfile(parsed.profile, fallbackProfile),
       tablePlan,
     } as PlanningWorkspace;
   } catch {
@@ -102,8 +116,10 @@ export function getPlanningRecommendation(
     return {
       stage: "venue",
       title: "Choose the venue direction",
-      href: "/planning-hub",
-      reason: "Your venue anchors the date, location, capacity and the suppliers that fit.",
+      href: profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence),
+      reason: workspace.profile.priorities.includes("venue")
+        ? "You marked the venue as a priority. It anchors the date, location, capacity and suppliers that fit."
+        : "Your venue anchors the date, location, capacity and the suppliers that fit.",
     };
   }
 
@@ -112,8 +128,10 @@ export function getPlanningRecommendation(
     return {
       stage: "photography",
       title: "Shortlist your photographer",
-      href: "/planning-hub/photography",
-      reason: "Your venue is in the plan, so photography is the strongest next supplier decision.",
+      href: getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0]),
+      reason: workspace.profile.priorities.includes("photography")
+        ? "Photography is one of your priorities, and your venue context can now shape the shortlist."
+        : "Your venue is in the plan, so photography is the strongest next supplier decision.",
     };
   }
 

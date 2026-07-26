@@ -987,6 +987,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      planning_workspace_profiles: {
+        Row: {
+          workspace_id: string;
+          wedding_date: string | null;
+          guest_count: number | null;
+          location: string | null;
+          date_flexibility: "fixed" | "few_days" | "few_weeks" | "season_only" | "not_set";
+          location_flexible: boolean;
+          priorities: string[];
+          venue_styles: string[];
+          photography_styles: string[];
+          vision: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          workspace_id: string;
+          wedding_date?: string | null;
+          guest_count?: number | null;
+          location?: string | null;
+          date_flexibility?: Database["public"]["Tables"]["planning_workspace_profiles"]["Row"]["date_flexibility"];
+          location_flexible?: boolean;
+          priorities?: string[];
+          venue_styles?: string[];
+          photography_styles?: string[];
+          vision?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["planning_workspace_profiles"]["Insert"]>;
+        Relationships: [];
+      };
       planning_tasks: {
         Row: {
           id: string;
@@ -1203,6 +1235,17 @@ export type Database = {
         Returns: string;
       };
       import_planning_workspace_snapshot: {
+        Args: {
+          workspace_snapshot: Json;
+          target_workspace_id?: string | null;
+          expected_updated_at?: string | null;
+        };
+        Returns: Array<{
+          workspace_id: string;
+          workspace_updated_at: string;
+        }>;
+      };
+      import_planning_workspace_snapshot_v2: {
         Args: {
           workspace_snapshot: Json;
           target_workspace_id?: string | null;

@@ -88,6 +88,7 @@ export function PlanningWorkspaceCloudImport({
 
         const importedSnapshot: PlanningWorkspaceCloudSnapshot = {
           workspace: result.snapshot.workspace,
+          profile: result.snapshot.profile,
           tasks: result.snapshot.tasks,
           guests: result.snapshot.guests,
           tables: result.snapshot.tables,
