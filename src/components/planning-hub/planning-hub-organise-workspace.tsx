@@ -7,6 +7,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
+  resolvePlanningWorkspaceStartup,
+} from "@/lib/planning-workspace/cloud";
+import type {
+  PlanningWorkspaceCloudSnapshot,
+  PlanningWorkspaceStartupMode,
+} from "@/lib/planning-workspace/cloud";
+import {
   createEmptyPlanningWorkspace,
   createPlanningTask,
   getPlanningRecommendation,
@@ -24,13 +31,18 @@ const EmbeddedTablePlanner = dynamic(
 );
 
 export function PlanningHubOrganiseWorkspace({
+  cloudEnabled = false,
   initialBudgetPlan,
+  initialCloudSnapshot = null,
   userId,
 }: {
+  cloudEnabled?: boolean;
   initialBudgetPlan: BudgetPlan;
+  initialCloudSnapshot?: PlanningWorkspaceCloudSnapshot | null;
   userId: string | null;
 }) {
   const [workspace, setWorkspace] = useState<PlanningWorkspace | null>(null);
+  const [workspaceMode, setWorkspaceMode] = useState<PlanningWorkspaceStartupMode>("device_only");
   const [ready, setReady] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [tablePlannerOpen, setTablePlannerOpen] = useState(false);
@@ -38,19 +50,26 @@ export function PlanningHubOrganiseWorkspace({
   useEffect(() => {
     queueMicrotask(() => {
       const restored = restorePlanningWorkspace(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY));
-      if (restored && restored.budgetPlanId === initialBudgetPlan.id) {
-        setWorkspace({ ...restored, ownerId: userId ?? restored.ownerId });
-      } else {
-        const legacyTablePlan = restoreTablePlan(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY));
-        setWorkspace(createEmptyPlanningWorkspace({
+      const legacyTablePlan = restoreTablePlan(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY));
+      const deviceWorkspace = restored?.budgetPlanId === initialBudgetPlan.id
+        ? restored
+        : createEmptyPlanningWorkspace({
           ownerId: userId,
           budgetPlanId: initialBudgetPlan.id,
           tablePlan: legacyTablePlan ?? undefined,
-        }));
-      }
+        });
+      const startup = resolvePlanningWorkspaceStartup({
+        cloudEnabled,
+        cloudSnapshot: initialCloudSnapshot,
+        deviceWorkspace,
+        ownerId: userId,
+        budgetPlanId: initialBudgetPlan.id,
+      });
+      setWorkspace(startup.workspace);
+      setWorkspaceMode(startup.mode);
       setReady(true);
     });
-  }, [initialBudgetPlan.id, userId]);
+  }, [cloudEnabled, initialBudgetPlan.id, initialCloudSnapshot, userId]);
 
   useEffect(() => {
     if (!ready || !workspace) return;
@@ -58,6 +77,7 @@ export function PlanningHubOrganiseWorkspace({
   }, [ready, workspace]);
 
   const updateTablePlan = useCallback((tablePlan: TablePlan) => {
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current
       ? { ...current, tablePlan, updatedAt: new Date().toISOString() }
       : current);
@@ -77,6 +97,7 @@ export function PlanningHubOrganiseWorkspace({
 
   function addTask() {
     if (!taskTitle.trim()) return;
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current ? {
       ...current,
       tasks: [...current.tasks, createPlanningTask(taskTitle, { sortOrder: current.tasks.length })],
@@ -87,6 +108,7 @@ export function PlanningHubOrganiseWorkspace({
 
   function setTaskStatus(taskId: string, status: PlanningTaskStatus) {
     const now = new Date().toISOString();
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current ? {
       ...current,
       tasks: current.tasks.map((task) => task.id === taskId ? { ...task, status, updatedAt: now } : task),
@@ -170,7 +192,7 @@ export function PlanningHubOrganiseWorkspace({
           <h2 className="mt-4 font-display text-2xl font-semibold text-[#173526]">Partner access</h2>
           <p className="mt-2 text-sm leading-6 text-[#625f57]">Secure partner sharing is the next release gate. It will use signed-in membership and row-level access, never a public editable link.</p>
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-[#625f57]">
-            {userId ? "This local workspace is linked to your current budget plan. Cloud sharing stays off until the reviewed security migration is approved." : "Sign in before cloud sharing becomes available. This version remains saved on this device."}
+            {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>
         </aside>
       </div>
@@ -196,9 +218,45 @@ export function PlanningHubOrganiseWorkspace({
           </div>
         </section>
       )}
-      <p className="text-center text-xs leading-5 text-[#58705f]" role="status">Tasks, guests and tables are saved together on this device. No database migration or partner access has been enabled.</p>
+      <p className="text-center text-xs leading-5 text-[#58705f]" role="status">
+        {workspaceStatusMessage(workspaceMode)}
+      </p>
     </div>
   );
+}
+
+function partnerAccessMessage({
+  cloudEnabled,
+  userId,
+  workspaceMode,
+}: {
+  cloudEnabled: boolean;
+  userId: string | null;
+  workspaceMode: PlanningWorkspaceStartupMode;
+}) {
+  if (!userId) {
+    return "Sign in before cloud sharing becomes available. This version remains saved on this device.";
+  }
+  if (!cloudEnabled) {
+    return "This workspace is linked to your current budget plan on this device. Cloud sharing stays off until the reviewed security migration can be verified for free.";
+  }
+  if (workspaceMode === "review_required") {
+    return "A separate cloud copy was found. Your device plan was kept and will not be overwritten without a deliberate review.";
+  }
+  return "A secure cloud workspace is available, but new beta edits continue to keep a device copy until write-through verification is complete.";
+}
+
+function workspaceStatusMessage(workspaceMode: PlanningWorkspaceStartupMode) {
+  if (workspaceMode === "cloud_loaded") {
+    return "A secure cloud copy was loaded. New edits are also kept on this device while write-through remains in private testing.";
+  }
+  if (workspaceMode === "device_ahead") {
+    return "Your latest edits are safe on this device. They have not overwritten the older cloud copy.";
+  }
+  if (workspaceMode === "review_required") {
+    return "Your device copy was kept because it differs from the available cloud workspace. Nothing was overwritten.";
+  }
+  return "Tasks, guests and tables are saved together on this device. No database migration or partner access has been enabled.";
 }
 
 function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

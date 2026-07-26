@@ -32,6 +32,7 @@ export function createEmptyPlanningWorkspace({
   return {
     schemaVersion: 1,
     id: randomId(),
+    cloudWorkspaceId: null,
     ownerId,
     budgetPlanId,
     name: "Our wedding plan",
@@ -57,7 +58,13 @@ export function restorePlanningWorkspace(raw: string | null): PlanningWorkspace 
 
     const tablePlan = restoreTablePlan(serializeTablePlan(parsed.tablePlan));
     if (!tablePlan || !parsed.tasks.every(isPlanningTask)) return null;
-    return { ...parsed, tablePlan } as PlanningWorkspace;
+    return {
+      ...parsed,
+      cloudWorkspaceId: typeof parsed.cloudWorkspaceId === "string"
+        ? parsed.cloudWorkspaceId
+        : null,
+      tablePlan,
+    } as PlanningWorkspace;
   } catch {
     return null;
   }

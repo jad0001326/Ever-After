@@ -18,6 +18,7 @@ export type PlanningTask = {
 export type PlanningWorkspace = {
   schemaVersion: 1;
   id: string;
+  cloudWorkspaceId: string | null;
   ownerId: string | null;
   budgetPlanId: string;
   name: string;

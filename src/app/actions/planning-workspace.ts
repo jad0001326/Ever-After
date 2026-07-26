@@ -100,6 +100,34 @@ export async function ensurePlanningWorkspaceAction(input: unknown) {
   return { ok: true, workspace } as const;
 }
 
+export async function loadPlanningWorkspaceForBudgetAction(budgetPlanId: unknown) {
+  const parsed = ensurePlanningWorkspaceSchema
+    .pick({ budgetPlanId: true })
+    .safeParse({ budgetPlanId });
+  if (!parsed.success) {
+    return { ok: false, message: "That connected budget plan could not be found." } satisfies ActionFailure;
+  }
+
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+
+  const { data: workspace, error } = await context.supabase
+    .from("planning_workspaces")
+    .select("*")
+    .eq("budget_plan_id", parsed.data.budgetPlanId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure;
+  if (!workspace) return { ok: true, snapshot: null } as const;
+
+  const snapshot = await loadPlanningWorkspaceSnapshot(context.supabase, workspace.id);
+  return snapshot.ok
+    ? ({ ok: true, snapshot } as const)
+    : snapshot;
+}
+
 export async function loadPlanningWorkspaceAction(workspaceId: unknown) {
   const parsed = planningWorkspaceIdSchema.safeParse(workspaceId);
   if (!parsed.success) {
@@ -109,8 +137,13 @@ export async function loadPlanningWorkspaceAction(workspaceId: unknown) {
   const context = await getPlanningContext();
   if (!context.ok) return context;
 
-  const { supabase } = context;
-  const id = parsed.data;
+  return loadPlanningWorkspaceSnapshot(context.supabase, parsed.data);
+}
+
+async function loadPlanningWorkspaceSnapshot(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  id: string
+) {
   const [
     workspaceResult,
     memberResult,
