@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Camera, MapPinned, Sparkles } from "lucide-react";
+import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles } from "lucide-react";
 
-export function PlanningHubHeader({ stage = "venue" }: { stage?: "venue" | "photography" }) {
+export function PlanningHubHeader({ stage = "venue" }: { stage?: "venue" | "photography" | "organise" }) {
   const photography = stage === "photography";
+  const organise = stage === "organise";
   return (
     <header className="border-b border-[#d9d0c3] bg-[#fbf8f2]">
       <div className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6 lg:px-8">
@@ -18,17 +19,20 @@ export function PlanningHubHeader({ stage = "venue" }: { stage?: "venue" | "phot
         <div className="mt-6 max-w-4xl">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9c542d]">My EverAft</p>
           <h1 className="mt-2 font-[Georgia] text-4xl font-semibold leading-[0.95] tracking-[-0.04em] text-[#173526] sm:text-6xl">
-            {photography ? "Choose photography that fits your real plan." : "Turn venue browsing into your wedding plan."}
+            {organise ? "Keep every moving part in one calm place." : photography ? "Choose photography that fits your real plan." : "Turn venue browsing into your wedding plan."}
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-[#625f57] sm:text-base">
-            {photography
+            {organise
+              ? "Turn your next steps, guest list and table arrangement into one connected workspace built around the same wedding plan."
+              : photography
               ? "Find photographers who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget."
               : "Find a Scottish venue, compare the strongest options and keep every estimate, quote, booking and payment connected to your wedding budget."}
           </p>
         </div>
         <nav aria-label="Planning stages" className="mt-6 flex gap-2 overflow-x-auto pb-1">
-          <StageLink active={!photography} href="/planning-hub" icon={<MapPinned size={16} />} label="Venue" />
+          <StageLink active={stage === "venue"} href="/planning-hub" icon={<MapPinned size={16} />} label="Venue" />
           <StageLink active={photography} href="/planning-hub/photography" icon={<Camera size={16} />} label="Photography" />
+          <StageLink active={organise} href="/planning-hub/organise" icon={<CalendarCheck2 size={16} />} label="Organise" />
         </nav>
       </div>
     </header>

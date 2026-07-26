@@ -12,9 +12,19 @@ function randomId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function TablePlanner() {
-  const [plan, setPlan] = useState<TablePlan>(createEmptyTablePlan);
-  const [ready, setReady] = useState(false);
+export function TablePlanner({
+  initialPlan,
+  mode = "standalone",
+  onPlanChange,
+  storageKey = TABLE_PLAN_STORAGE_KEY,
+}: {
+  initialPlan?: TablePlan;
+  mode?: "standalone" | "embedded";
+  onPlanChange?: (plan: TablePlan) => void;
+  storageKey?: string | null;
+} = {}) {
+  const [plan, setPlan] = useState<TablePlan>(() => initialPlan ?? createEmptyTablePlan());
+  const [ready, setReady] = useState(Boolean(initialPlan || storageKey === null));
   const [activePanel, setActivePanel] = useState<PlannerPanel>("guests");
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [conflicts, setConflicts] = useState<RuleConflict[]>([]);
@@ -22,20 +32,25 @@ export function TablePlanner() {
   const generationRef = useRef(1);
 
   useEffect(() => {
+    if (initialPlan || storageKey === null) return;
     queueMicrotask(() => {
-      const restored = restoreTablePlan(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY));
+      const restored = restoreTablePlan(window.localStorage.getItem(storageKey));
       if (restored) {
         setPlan(restored);
         setConflicts(evaluateArrangement(restored));
       }
       setReady(true);
     });
-  }, []);
+  }, [initialPlan, storageKey]);
 
   useEffect(() => {
-    if (!ready) return;
-    window.localStorage.setItem(TABLE_PLAN_STORAGE_KEY, serializeTablePlan(plan));
-  }, [plan, ready]);
+    if (!ready || !storageKey) return;
+    window.localStorage.setItem(storageKey, serializeTablePlan(plan));
+  }, [plan, ready, storageKey]);
+
+  useEffect(() => {
+    if (ready) onPlanChange?.(plan);
+  }, [onPlanChange, plan, ready]);
 
   const assignedCount = useMemo(() => plan.guests.filter((guest) => guest.tableId).length, [plan.guests]);
 
@@ -155,12 +170,14 @@ export function TablePlanner() {
   }
 
   return (
-    <div className="mx-auto max-w-[96rem] px-4 pb-24 sm:px-6 lg:px-8">
-      <div className="print:hidden flex flex-col gap-5 pb-6 pt-8 lg:flex-row lg:items-end lg:justify-between lg:pt-10">
+    <div className={mode === "standalone" ? "mx-auto max-w-[96rem] px-4 pb-24 sm:px-6 lg:px-8" : "pb-8"}>
+      <div className={`print:hidden flex flex-col gap-5 pb-6 lg:flex-row lg:items-end lg:justify-between ${mode === "standalone" ? "pt-8 lg:pt-10" : "pt-2"}`}>
         <div className="lg:max-w-[31rem] lg:flex-none">
-          <h1 className="font-display text-4xl font-semibold leading-tight text-[var(--brand)] sm:text-5xl">Wedding table planner</h1>
+          {mode === "standalone"
+            ? <h1 className="font-display text-4xl font-semibold leading-tight text-[var(--brand)] sm:text-5xl">Wedding table planner</h1>
+            : <h2 className="font-display text-3xl font-semibold leading-tight text-[var(--brand)] sm:text-4xl">Guests and tables</h2>}
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] sm:text-base">Add your guests, set the relationships that matter and create a seating plan you can adjust.</p>
-          <p className="mt-3 text-xs font-medium text-[#58705f]">{ready ? "Saved on this device" : "Preparing your plan"}</p>
+          {mode === "standalone" ? <p className="mt-3 text-xs font-medium text-[#58705f]">{ready ? "Saved on this device" : "Preparing your plan"}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2 lg:w-[42rem] lg:justify-end">
           {plan.guests.length === 0 ? <button className="focus-ring min-h-11 rounded-full border border-[var(--line)] bg-white px-5 text-sm font-semibold text-[var(--foreground)]" onClick={loadExample} type="button">Try an example</button> : null}
