@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createPlanningTaskAction } from "@/app/actions/planning-workspace";
+import {
+  createPlanningTaskAction,
+  syncPlanningTablePlanAction,
+} from "@/app/actions/planning-workspace";
 import {
   BUDGET_STORAGE_KEY,
   createEmptyBudgetPlan,
@@ -17,6 +20,10 @@ vi.mock("@/app/actions/planning-workspace", () => ({
   updatePlanningTaskAction: vi.fn(async () => ({ ok: true })),
   saveConnectedBudgetPlanAction: vi.fn(async () => ({ ok: true })),
   savePlanningWorkspaceProfileAction: vi.fn(async () => ({ ok: true })),
+  syncPlanningTablePlanAction: vi.fn(async () => ({
+    ok: true,
+    updatedAt: "2026-07-26T11:00:00.000Z",
+  })),
   createPlanningWorkspaceInviteAction: vi.fn(async () => ({ ok: false, message: "Not used" })),
   revokePlanningWorkspaceInviteAction: vi.fn(async () => ({ ok: false, message: "Not used" })),
 }));
@@ -157,5 +164,47 @@ describe("PlanningHubOrganiseWorkspace", () => {
       title: "Confirm shared numbers",
     })));
     expect(screen.getByText("Confirm shared numbers")).toBeTruthy();
+  });
+
+  it("debounces a connected table-plan change into one atomic sync", async () => {
+    const budgetPlan = { ...createEmptyBudgetPlan("owner-1"), id: "budget-1" };
+    render(
+      <PlanningHubOrganiseWorkspace
+        cloudEnabled
+        connectedWorkspaceId="60000000-0000-4000-8000-000000000006"
+        initialBudgetPlan={budgetPlan}
+        initialCloudSnapshot={{
+          workspace: {
+            id: "60000000-0000-4000-8000-000000000006",
+            owner_id: "owner-1",
+            budget_plan_id: "budget-1",
+            name: "Shared wedding plan",
+            created_at: "2026-07-26T10:00:00.000Z",
+            updated_at: "2026-07-26T10:00:00.000Z",
+          },
+          profile: null,
+          members: [],
+          invites: [],
+          tasks: [],
+          guests: [],
+          tables: [],
+          seats: [],
+          seatingRules: [],
+        }}
+        userId="partner-1"
+      />,
+    );
+    await screen.findByText("Open the table editor when you need it");
+    fireEvent.click(screen.getByRole("button", { name: "Open guest & table planner" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Try an example" }));
+
+    await waitFor(() => expect(syncPlanningTablePlanAction).toHaveBeenCalledWith(
+      "60000000-0000-4000-8000-000000000006",
+      expect.objectContaining({
+        guests: expect.arrayContaining([expect.objectContaining({ name: "Amy Fraser" })]),
+      }),
+      "2026-07-26T10:00:00.000Z",
+    ), { timeout: 2500 });
+    expect(await screen.findByText("Guest and table changes saved to the shared plan.")).toBeTruthy();
   });
 });

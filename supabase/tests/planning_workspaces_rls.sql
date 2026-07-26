@@ -353,6 +353,43 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+
+  perform public.sync_planning_table_plan(
+    '60000000-0000-4000-8000-000000000006',
+    jsonb_build_object(
+      'schemaVersion', 1,
+      'id', 'shared-table-plan',
+      'name', 'Shared tables',
+      'guests', '[]'::jsonb,
+      'tables', '[]'::jsonb,
+      'rules', '[]'::jsonb,
+      'updatedAt', now()
+    ),
+    (
+      select updated_at
+      from public.planning_workspaces
+      where id = '60000000-0000-4000-8000-000000000006'
+    )
+  );
+
+  begin
+    perform public.sync_planning_table_plan(
+      '60000000-0000-4000-8000-000000000006',
+      jsonb_build_object(
+        'schemaVersion', 1,
+        'id', 'stale-table-plan',
+        'name', 'Stale tables',
+        'guests', '[]'::jsonb,
+        'tables', '[]'::jsonb,
+        'rules', '[]'::jsonb,
+        'updatedAt', now()
+      ),
+      '2020-01-01T00:00:00Z'
+    );
+    raise exception 'Sync failure: stale partner table plan replaced shared data';
+  exception
+    when serialization_failure then null;
+  end;
 end
 $$;
 
@@ -419,6 +456,21 @@ begin
     raise exception 'Invitation failure: a different verified email accepted the invitation';
   exception
     when invalid_parameter_value then null;
+  end;
+
+  begin
+    perform public.sync_planning_table_plan(
+      '60000000-0000-4000-8000-000000000006',
+      '{"guests":[],"tables":[],"rules":[]}'::jsonb,
+      (
+        select updated_at
+        from public.planning_workspaces
+        where id = '60000000-0000-4000-8000-000000000006'
+      )
+    );
+    raise exception 'RLS failure: outsider replaced the shared table plan';
+  exception
+    when insufficient_privilege then null;
   end;
 end
 $$;
@@ -667,6 +719,17 @@ begin
   begin
     perform 1 from public.planning_workspaces limit 1;
     raise exception 'Grant failure: anonymous role can read planning workspaces';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.sync_planning_table_plan(
+      '60000000-0000-4000-8000-000000000006',
+      '{"guests":[],"tables":[],"rules":[]}'::jsonb,
+      now()
+    );
+    raise exception 'Grant failure: anonymous role called table-plan sync';
   exception
     when insufficient_privilege then null;
   end;

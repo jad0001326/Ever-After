@@ -3,7 +3,7 @@
 import { CalendarCheck2, Check, Circle, Clock3, LockKeyhole, Plus, UsersRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningPartnerAccess } from "@/components/planning-hub/planning-partner-access";
@@ -32,7 +32,7 @@ import {
   serializePlanningWorkspace,
 } from "@/lib/planning-workspace/workspace";
 import type { PlanningTaskStatus, PlanningWorkspace } from "@/lib/planning-workspace/types";
-import { restoreTablePlan, TABLE_PLAN_STORAGE_KEY } from "@/lib/table-plan/planner";
+import { restoreTablePlan, serializeTablePlan, TABLE_PLAN_STORAGE_KEY } from "@/lib/table-plan/planner";
 import type { TablePlan } from "@/lib/table-plan/types";
 
 const EmbeddedTablePlanner = dynamic(
@@ -60,6 +60,9 @@ export function PlanningHubOrganiseWorkspace({
   const [workspace, setWorkspace] = useState<PlanningWorkspace | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<PlanningWorkspaceStartupMode>("device_only");
   const [cloudSnapshot, setCloudSnapshot] = useState(initialCloudSnapshot);
+  const cloudVersionRef = useRef(initialCloudSnapshot?.workspace.updated_at ?? null);
+  const lastTablePlanRef = useRef<string | null>(null);
+  const tableSyncTimerRef = useRef<number | null>(null);
   const [ready, setReady] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
@@ -100,6 +103,7 @@ export function PlanningHubOrganiseWorkspace({
       });
       setBudgetPlan(activeBudgetPlan);
       setWorkspace(startup.workspace);
+      lastTablePlanRef.current = serializeTablePlan(startup.workspace.tablePlan);
       setWorkspaceMode(startup.mode);
       setReady(true);
     });
@@ -111,12 +115,91 @@ export function PlanningHubOrganiseWorkspace({
     writeLocalStorage(budgetStorageKey, serializeBudgetPlan(budgetPlan));
   }, [budgetPlan, budgetStorageKey, ready, workspace, workspaceStorageKey]);
 
+  useEffect(() => () => {
+    if (tableSyncTimerRef.current !== null) {
+      window.clearTimeout(tableSyncTimerRef.current);
+    }
+  }, []);
+
   const updateTablePlan = useCallback((tablePlan: TablePlan) => {
+    const serializedTablePlan = serializeTablePlan(tablePlan);
+    if (lastTablePlanRef.current === serializedTablePlan) return;
+    lastTablePlanRef.current = serializedTablePlan;
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current
       ? { ...current, tablePlan, updatedAt: new Date().toISOString() }
       : current);
-  }, []);
+    if (activeWorkspaceId && cloudVersionRef.current) {
+      if (tableSyncTimerRef.current !== null) {
+        window.clearTimeout(tableSyncTimerRef.current);
+      }
+      setSyncFeedback("Guest and table changes are safe on this device and waiting to sync…");
+      tableSyncTimerRef.current = window.setTimeout(() => {
+        const expectedUpdatedAt = cloudVersionRef.current;
+        if (!expectedUpdatedAt) return;
+        startCloudTransition(async () => {
+          const { syncPlanningTablePlanAction } = await import("@/app/actions/planning-workspace");
+          const result = await syncPlanningTablePlanAction(
+            activeWorkspaceId,
+            tablePlan,
+            expectedUpdatedAt,
+          );
+          if (!result.ok) {
+            setSyncFeedback(result.message);
+            return;
+          }
+          cloudVersionRef.current = result.updatedAt;
+          setCloudSnapshot((current) => current ? {
+            ...current,
+            workspace: { ...current.workspace, updated_at: result.updatedAt },
+            guests: tablePlan.guests.map((guest, index) => ({
+              id: guest.id,
+              workspace_id: activeWorkspaceId,
+              name: guest.name,
+              email: guest.email ?? null,
+              rsvp_status: guest.rsvpStatus ?? "pending",
+              dietary_notes: guest.dietaryNotes ?? null,
+              sort_order: index,
+              created_at: result.updatedAt,
+              updated_at: result.updatedAt,
+            })),
+            tables: tablePlan.tables.map((table, index) => ({
+              id: table.id,
+              workspace_id: activeWorkspaceId,
+              name: table.name,
+              capacity: table.capacity,
+              locked: table.locked,
+              sort_order: index,
+              created_at: result.updatedAt,
+              updated_at: result.updatedAt,
+            })),
+            seats: tablePlan.guests.flatMap((guest) => (
+              guest.tableId !== null && guest.seatIndex !== null
+                ? [{
+                  workspace_id: activeWorkspaceId,
+                  guest_id: guest.id,
+                  table_id: guest.tableId,
+                  seat_index: guest.seatIndex,
+                  created_at: result.updatedAt,
+                  updated_at: result.updatedAt,
+                }]
+                : []
+            )),
+            seatingRules: tablePlan.rules.map((rule) => ({
+              id: rule.id,
+              workspace_id: activeWorkspaceId,
+              person_a_id: rule.personAId,
+              person_b_id: rule.personBId,
+              rule_type: rule.type,
+              created_at: result.updatedAt,
+            })),
+          } : current);
+          setWorkspaceMode("cloud_loaded");
+          setSyncFeedback("Guest and table changes saved to the shared plan.");
+        });
+      }, 800);
+    }
+  }, [activeWorkspaceId]);
 
   function resolveCloudWorkspace(
     resolvedWorkspace: PlanningWorkspace,
@@ -130,7 +213,9 @@ export function PlanningHubOrganiseWorkspace({
       updatedAt: resolvedWorkspace.profile.updatedAt,
     }));
     setWorkspace(resolvedWorkspace);
+    lastTablePlanRef.current = serializeTablePlan(resolvedWorkspace.tablePlan);
     setCloudSnapshot(resolvedSnapshot);
+    cloudVersionRef.current = resolvedSnapshot.workspace.updated_at;
     setActiveWorkspaceId(resolvedSnapshot.workspace.id);
     setWorkspaceMode("cloud_loaded");
     const url = new URL(window.location.href);
@@ -186,11 +271,15 @@ export function PlanningHubOrganiseWorkspace({
           actions.saveConnectedBudgetPlanAction(activeWorkspaceId, nextBudgetPlan),
           actions.savePlanningWorkspaceProfileAction(activeWorkspaceId, profile),
         ]);
-        setSyncFeedback(
-          budgetResult.ok && profileResult.ok
-            ? "Wedding profile saved to the shared plan."
-            : "The profile remains safe on this device, but the shared copy could not be fully updated.",
-        );
+        if (budgetResult.ok && profileResult.ok) {
+          setCloudSnapshot((current) => current
+            ? { ...current, profile: profileResult.profile }
+            : current);
+          setWorkspaceMode("cloud_loaded");
+          setSyncFeedback("Wedding profile saved to the shared plan.");
+        } else {
+          setSyncFeedback("The profile remains safe on this device, but the shared copy could not be fully updated.");
+        }
       });
     }
   }
@@ -219,11 +308,15 @@ export function PlanningHubOrganiseWorkspace({
           dueDate: task.dueDate,
           sortOrder: task.sortOrder,
         });
-        setSyncFeedback(
-          result.ok
-            ? "Task saved to the shared plan."
-            : "The task remains safe on this device, but the shared copy could not be updated.",
-        );
+        if (result.ok) {
+          setCloudSnapshot((current) => current
+            ? { ...current, tasks: [...current.tasks, result.task] }
+            : current);
+          setWorkspaceMode("cloud_loaded");
+          setSyncFeedback("Task saved to the shared plan.");
+        } else {
+          setSyncFeedback("The task remains safe on this device, but the shared copy could not be updated.");
+        }
       });
     }
   }
@@ -241,11 +334,16 @@ export function PlanningHubOrganiseWorkspace({
       startCloudTransition(async () => {
         const { updatePlanningTaskAction } = await import("@/app/actions/planning-workspace");
         const result = await updatePlanningTaskAction(taskId, { status });
-        setSyncFeedback(
-          result.ok
-            ? "Task status updated in the shared plan."
-            : "The status remains safe on this device, but the shared copy could not be updated.",
-        );
+        if (result.ok) {
+          setCloudSnapshot((current) => current ? {
+            ...current,
+            tasks: current.tasks.map((task) => task.id === result.task.id ? result.task : task),
+          } : current);
+          setWorkspaceMode("cloud_loaded");
+          setSyncFeedback("Task status updated in the shared plan.");
+        } else {
+          setSyncFeedback("The status remains safe on this device, but the shared copy could not be updated.");
+        }
       });
     }
   }

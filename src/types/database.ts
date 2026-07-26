@@ -1256,6 +1256,16 @@ export type Database = {
           workspace_updated_at: string;
         }>;
       };
+      sync_planning_table_plan: {
+        Args: {
+          target_workspace_id: string;
+          table_plan: Json;
+          expected_updated_at: string;
+        };
+        Returns: Array<{
+          workspace_updated_at: string;
+        }>;
+      };
     };
     Enums: {
       venue_status: "draft" | "published";

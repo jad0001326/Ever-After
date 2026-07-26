@@ -78,6 +78,50 @@ export const planningSeatingRuleInputSchema = z.object({
   message: "A seating rule needs two different guests."
 });
 
+export const planningTablePlanSyncSchema = z.object({
+  schemaVersion: z.literal(1),
+  id: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(120),
+  guests: z.array(z.object({
+    id: planningRecordIdSchema,
+    name: z.string().trim().min(1).max(160),
+    email: optionalPlanningEmailSchema.optional(),
+    rsvpStatus: z.enum(["pending", "accepted", "declined"]).optional(),
+    dietaryNotes: z.string().trim().max(2000).nullable().optional(),
+    tableId: planningRecordIdSchema.nullable(),
+    seatIndex: z.number().int().min(0).max(19).nullable(),
+  })).max(1000),
+  tables: z.array(z.object({
+    id: planningRecordIdSchema,
+    name: z.string().trim().min(1).max(120),
+    capacity: z.number().int().min(2).max(20),
+    locked: z.boolean(),
+  })).max(200),
+  rules: z.array(z.object({
+    id: planningRecordIdSchema,
+    personAId: planningRecordIdSchema,
+    personBId: planningRecordIdSchema,
+    type: z.enum(["must_next_to", "prefer_next_to", "must_not_next_to", "must_separate"]),
+  }).refine((value) => value.personAId !== value.personBId)).max(2000),
+  updatedAt: z.string(),
+}).superRefine((plan, context) => {
+  const tableIds = new Set(plan.tables.map((table) => table.id));
+  const guestIds = new Set(plan.guests.map((guest) => guest.id));
+  for (const guest of plan.guests) {
+    if ((guest.tableId === null) !== (guest.seatIndex === null)) {
+      context.addIssue({ code: "custom", message: "A guest needs both a table and seat, or neither." });
+    }
+    if (guest.tableId && !tableIds.has(guest.tableId)) {
+      context.addIssue({ code: "custom", message: "A guest references an unavailable table." });
+    }
+  }
+  for (const rule of plan.rules) {
+    if (!guestIds.has(rule.personAId) || !guestIds.has(rule.personBId)) {
+      context.addIssue({ code: "custom", message: "A seating rule references an unavailable guest." });
+    }
+  }
+});
+
 export const createPlanningInviteSchema = z.object({
   workspaceId: planningWorkspaceIdSchema,
   email: z.preprocess(

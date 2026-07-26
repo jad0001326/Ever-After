@@ -6,6 +6,7 @@ import {
   importPlanningWorkspaceSnapshotAction,
   savePlanningWorkspaceProfileAction,
   saveConnectedBudgetPlanAction,
+  syncPlanningTablePlanAction,
 } from "./planning-workspace";
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -163,6 +164,50 @@ describe("planning workspace server actions", () => {
       location_flexible: false,
       priorities: [],
     }), { onConflict: "workspace_id" });
+  });
+
+  it("sends a validated table plan through the atomic sync function", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const rpc = vi.fn(async () => ({
+      data: [{ workspace_updated_at: "2026-07-26T21:00:00.000Z" }],
+      error: null,
+    }));
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      rpc,
+    } as never);
+    const tablePlan = {
+      schemaVersion: 1 as const,
+      id: "table-plan-1",
+      name: "Our tables",
+      guests: [{
+        id: "80000000-0000-4000-8000-000000000008",
+        name: "Ailsa",
+        tableId: "90000000-0000-4000-8000-000000000009",
+        seatIndex: 0,
+      }],
+      tables: [{
+        id: "90000000-0000-4000-8000-000000000009",
+        name: "Top table",
+        capacity: 8,
+        locked: false,
+      }],
+      rules: [],
+      updatedAt: "2026-07-26T20:59:00.000Z",
+    };
+
+    const result = await syncPlanningTablePlanAction(
+      "60000000-0000-4000-8000-000000000006",
+      tablePlan,
+      "2026-07-26T20:00:00.000Z",
+    );
+
+    expect(result).toEqual({ ok: true, updatedAt: "2026-07-26T21:00:00.000Z" });
+    expect(rpc).toHaveBeenCalledWith("sync_planning_table_plan", {
+      target_workspace_id: "60000000-0000-4000-8000-000000000006",
+      table_plan: tablePlan,
+      expected_updated_at: "2026-07-26T20:00:00.000Z",
+    });
   });
 });
 

@@ -20,6 +20,7 @@ import {
   planningSeatInputSchema,
   planningSeatingRuleInputSchema,
   planningTableInputSchema,
+  planningTablePlanSyncSchema,
   planningTableUpdateSchema,
   planningTaskInputSchema,
   planningTaskUpdateSchema,
@@ -400,6 +401,44 @@ export async function savePlanningWorkspaceProfileAction(workspaceId: unknown, i
   return error || !data
     ? ({ ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure)
     : ({ ok: true, profile: data } as const);
+}
+
+export async function syncPlanningTablePlanAction(
+  workspaceId: unknown,
+  tablePlan: unknown,
+  expectedUpdatedAt: unknown,
+) {
+  const id = planningWorkspaceIdSchema.safeParse(workspaceId);
+  const plan = planningTablePlanSyncSchema.safeParse(tablePlan);
+  const version = typeof expectedUpdatedAt === "string" && !Number.isNaN(Date.parse(expectedUpdatedAt))
+    ? expectedUpdatedAt
+    : null;
+  if (!id.success || !plan.success || !version) {
+    return { ok: false, message: "Check the guest and table plan before syncing it." } satisfies ActionFailure;
+  }
+  if (JSON.stringify(plan.data).length > 1_000_000) {
+    return { ok: false, message: "This guest and table plan is too large to sync safely." } satisfies ActionFailure;
+  }
+
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+  const { data, error } = await context.supabase.rpc("sync_planning_table_plan", {
+    target_workspace_id: id.data,
+    table_plan: plan.data as unknown as Json,
+    expected_updated_at: version,
+  });
+
+  if (error?.code === "40001") {
+    return {
+      ok: false,
+      conflict: true,
+      message: "The shared guest plan changed on another device. Your version remains safe here; reload before choosing which copy to keep.",
+    } as const;
+  }
+  const synced = data?.[0];
+  return error || !synced
+    ? ({ ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure)
+    : ({ ok: true, updatedAt: synced.workspace_updated_at } as const);
 }
 
 export async function updatePlanningTaskAction(taskId: unknown, input: unknown) {

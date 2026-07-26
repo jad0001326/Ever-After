@@ -33,13 +33,13 @@ export function createEmptyTablePlan(): TablePlan {
 export function createExampleTablePlan(): TablePlan {
   const plan = createEmptyTablePlan();
   const names = ["Amy Fraser", "Ben Fraser", "Chloe Martin", "David Martin", "Erin Campbell", "Fraser Young", "Grace Mitchell", "Harry Wilson", "Isla Stewart", "Jack Morrison", "Kara Lewis", "Liam McLean"];
-  const guests = names.map<TablePlanGuest>((name, index) => ({ id: `example-guest-${index + 1}`, name, tableId: null, seatIndex: null }));
+  const guests = names.map<TablePlanGuest>((name) => ({ id: randomId(), name, tableId: null, seatIndex: null }));
   return {
     ...plan,
     guests,
     rules: [
-      { id: "example-rule-1", personAId: guests[0].id, personBId: guests[1].id, type: "prefer_next_to" },
-      { id: "example-rule-2", personAId: guests[5].id, personBId: guests[10].id, type: "must_separate" },
+      { id: randomId(), personAId: guests[0].id, personBId: guests[1].id, type: "prefer_next_to" },
+      { id: randomId(), personAId: guests[5].id, personBId: guests[10].id, type: "must_separate" },
     ],
   };
 }
