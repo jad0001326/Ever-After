@@ -78,9 +78,21 @@ non-recursive predicate.
 - `invited_by uuid`
 - `expires_at`, `accepted_at`, `revoked_at`, `created_at`
 
-Only a server action may create or accept invitations. Acceptance must
-re-authenticate the caller, compare their normalized verified email, validate
-expiry/revocation and consume the token once in a transaction.
+Only a server action may create or accept invitations. The raw 256-bit token is
+returned once; only its SHA-256 hash is stored. Acceptance re-authenticates the
+caller and invokes one narrowly granted database transaction that:
+
+1. reads the caller's confirmed email from `auth.users`;
+2. compares the normalized address and token hash;
+3. locks the unexpired, unrevoked invitation;
+4. marks it accepted by that exact user; and
+5. inserts only a `partner` membership.
+
+Invitees receive no direct table update permission for acceptance fields.
+Owners can create and revoke invitations but cannot manufacture an accepted
+invitation through the Data API. The acceptance function uses a fixed empty
+search path, rejects anonymous callers and has `PUBLIC`, `anon` and
+`service_role` execution revoked.
 
 ### Planning records
 
@@ -107,8 +119,9 @@ privileges. `authenticated` receives only the operations required by the app;
   caller's membership set.
 - Membership `select`: workspace owner or the member themselves.
 - Membership mutation: owner only; a user cannot promote themselves.
-- Invitation access and mutation: owner only. Partner acceptance is performed
-  by the narrow server-side transaction, not a broad client policy.
+- Invitation reads/inserts and revocation: owner only. Partner acceptance is
+  performed by the narrow transaction, not a broad client policy or
+  `service_role` client.
 
 All policies use `to authenticated`, explicit non-null identity checks and
 indexed membership/ownership columns. Update policies have both `using` and
@@ -169,3 +182,19 @@ or seating edits never re-render venue/photography result lists.
 Each PR must pass focused unit tests, typecheck, lint and production build.
 User-facing phases also require keyboard/screen-reader checks, 390px responsive
 QA and three-run mobile Lighthouse verification against the stated targets.
+
+## Current cloud activation gate
+
+The typed server actions live in `src/app/actions/planning-workspace.ts`. Every
+action validates its payload, calls `auth.getUser()` on the server and then
+relies on RLS for record-level authorization. Independent workspace reads run in
+parallel and return narrow planning payloads. Task, guest, table, seat, seating
+rule and invitation mutations write individual rows rather than replacing the
+whole plan.
+
+These actions remain dormant unless the server-only
+`PLANNING_WORKSPACE_CLOUD_ENABLED=true` flag is present. It is intentionally not
+a `NEXT_PUBLIC_` variable. Do not enable it until the migration and the
+transaction-safe RLS test have passed on a disposable Supabase branch. A join
+page must also set `noindex` and a no-referrer policy before invitation links
+are exposed in the interface.

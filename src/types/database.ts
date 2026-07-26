@@ -945,6 +945,206 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      planning_workspaces: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          budget_plan_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          name?: string;
+          budget_plan_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          budget_plan_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      planning_workspace_members: {
+        Row: {
+          workspace_id: string;
+          user_id: string;
+          role: "owner" | "partner";
+          created_at: string;
+        };
+        Insert: {
+          workspace_id: string;
+          user_id: string;
+          role: "owner" | "partner";
+          created_at?: string;
+        };
+        Update: {
+          role?: "owner" | "partner";
+        };
+        Relationships: [];
+      };
+      planning_tasks: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          title: string;
+          notes: string | null;
+          category: "venue" | "photography" | "budget" | "guests" | "tables" | "general";
+          status: "todo" | "in_progress" | "done";
+          due_date: string | null;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          title: string;
+          notes?: string | null;
+          category?: Database["public"]["Tables"]["planning_tasks"]["Row"]["category"];
+          status?: Database["public"]["Tables"]["planning_tasks"]["Row"]["status"];
+          due_date?: string | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["planning_tasks"]["Insert"]>;
+        Relationships: [];
+      };
+      planning_guests: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          email: string | null;
+          rsvp_status: "pending" | "accepted" | "declined";
+          dietary_notes: string | null;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          email?: string | null;
+          rsvp_status?: Database["public"]["Tables"]["planning_guests"]["Row"]["rsvp_status"];
+          dietary_notes?: string | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["planning_guests"]["Insert"]>;
+        Relationships: [];
+      };
+      planning_tables: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          capacity: number;
+          locked: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          capacity?: number;
+          locked?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["planning_tables"]["Insert"]>;
+        Relationships: [];
+      };
+      planning_seats: {
+        Row: {
+          workspace_id: string;
+          guest_id: string;
+          table_id: string;
+          seat_index: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          workspace_id: string;
+          guest_id: string;
+          table_id: string;
+          seat_index: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          table_id?: string;
+          seat_index?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      planning_seating_rules: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          person_a_id: string;
+          person_b_id: string;
+          rule_type: "must_next_to" | "prefer_next_to" | "must_not_next_to" | "must_separate";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          person_a_id: string;
+          person_b_id: string;
+          rule_type: Database["public"]["Tables"]["planning_seating_rules"]["Row"]["rule_type"];
+          created_at?: string;
+        };
+        Update: {
+          person_a_id?: string;
+          person_b_id?: string;
+          rule_type?: Database["public"]["Tables"]["planning_seating_rules"]["Row"]["rule_type"];
+        };
+        Relationships: [];
+      };
+      planning_workspace_invites: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          email_normalized: string;
+          token_hash: string;
+          role: "partner";
+          invited_by: string;
+          expires_at: string;
+          accepted_at: string | null;
+          accepted_by: string | null;
+          revoked_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          email_normalized: string;
+          token_hash: string;
+          role?: "partner";
+          invited_by: string;
+          expires_at: string;
+          accepted_at?: null;
+          accepted_by?: null;
+          revoked_at?: null;
+          created_at?: string;
+        };
+        Update: {
+          revoked_at?: string | null;
+        };
+        Relationships: [];
+      };
       budget_plans: {
         Row: { id: string; user_id: string; name: string; scenario_name: string; currency: "GBP" | "EUR" | "USD"; total_budget_pence: number; plan_json: Json; created_at: string; updated_at: string; };
         Insert: { id: string; user_id: string; name: string; scenario_name?: string; currency?: "GBP" | "EUR" | "USD"; total_budget_pence?: number; plan_json: Json; created_at?: string; updated_at?: string; };
@@ -997,6 +1197,10 @@ export type Database = {
           p_event_data?: Json;
         };
         Returns: Json;
+      };
+      accept_planning_workspace_invite: {
+        Args: { raw_token: string };
+        Returns: string;
       };
     };
     Enums: {

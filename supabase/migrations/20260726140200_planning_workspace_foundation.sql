@@ -125,12 +125,18 @@ create table public.planning_workspace_invites (
   revoked_at timestamptz,
   created_at timestamptz not null default now(),
   constraint planning_workspace_invites_email_length check (char_length(email_normalized) between 3 and 320 and email_normalized = lower(btrim(email_normalized))),
-  constraint planning_workspace_invites_token_hash_length check (char_length(token_hash) between 32 and 256),
+  constraint planning_workspace_invites_token_hash_format check (
+    char_length(token_hash) = 64
+    and token_hash ~ '^[0-9a-f]{64}$'
+  ),
   constraint planning_workspace_invites_role check (role = 'partner'),
   constraint planning_workspace_invites_expiry check (expires_at > created_at),
   constraint planning_workspace_invites_acceptance check (
     (accepted_at is null and accepted_by is null)
     or (accepted_at is not null and accepted_by is not null)
+  ),
+  constraint planning_workspace_invites_terminal_state check (
+    not (accepted_at is not null and revoked_at is not null)
   )
 );
 
@@ -187,10 +193,89 @@ as $$
     );
 $$;
 
+create or replace function private.current_verified_planning_email()
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select lower(btrim(auth_user.email))
+  from auth.users auth_user
+  where auth_user.id = (select auth.uid())
+    and auth_user.email_confirmed_at is not null
+    and auth_user.email is not null;
+$$;
+
 revoke all on function private.can_access_planning_workspace(uuid) from public;
 revoke all on function private.owns_planning_workspace(uuid) from public;
+revoke all on function private.current_verified_planning_email() from public, anon, authenticated, service_role;
 grant execute on function private.can_access_planning_workspace(uuid) to authenticated;
 grant execute on function private.owns_planning_workspace(uuid) to authenticated;
+
+create or replace function public.accept_planning_workspace_invite(raw_token text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_user_id uuid := (select auth.uid());
+  current_email text;
+  invite_record public.planning_workspace_invites%rowtype;
+begin
+  if current_user_id is null then
+    raise exception 'Authentication is required to accept this planning invitation'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  current_email := private.current_verified_planning_email();
+  if current_email is null then
+    raise exception 'A confirmed email address is required to accept this planning invitation'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  if raw_token is null
+    or char_length(raw_token) < 32
+    or char_length(raw_token) > 256
+  then
+    raise exception 'This planning invitation is not valid'
+      using errcode = 'invalid_parameter_value';
+  end if;
+
+  select invite.*
+  into invite_record
+  from public.planning_workspace_invites invite
+  where invite.token_hash = encode(
+      extensions.digest(pg_catalog.convert_to(raw_token, 'UTF8'), 'sha256'),
+      'hex'
+    )
+    and invite.email_normalized = current_email
+    and invite.accepted_at is null
+    and invite.revoked_at is null
+    and invite.expires_at > pg_catalog.now()
+  for update;
+
+  if not found then
+    raise exception 'This planning invitation is not valid or is no longer available'
+      using errcode = 'invalid_parameter_value';
+  end if;
+
+  update public.planning_workspace_invites
+  set accepted_at = pg_catalog.now(),
+      accepted_by = current_user_id
+  where id = invite_record.id;
+
+  insert into public.planning_workspace_members (workspace_id, user_id, role)
+  values (invite_record.workspace_id, current_user_id, 'partner')
+  on conflict (workspace_id, user_id) do nothing;
+
+  return invite_record.workspace_id;
+end;
+$$;
+
+revoke all on function public.accept_planning_workspace_invite(text) from public, anon, service_role;
+grant execute on function public.accept_planning_workspace_invite(text) to authenticated;
 
 create or replace function private.add_planning_workspace_owner()
 returns trigger
@@ -331,7 +416,8 @@ grant select, insert, update, delete on table public.planning_guests to authenti
 grant select, insert, update, delete on table public.planning_tables to authenticated;
 grant select, insert, update, delete on table public.planning_seats to authenticated;
 grant select, insert, update, delete on table public.planning_seating_rules to authenticated;
-grant select, insert, update, delete on table public.planning_workspace_invites to authenticated;
+grant select, insert on table public.planning_workspace_invites to authenticated;
+grant update (revoked_at) on table public.planning_workspace_invites to authenticated;
 
 grant all on table public.planning_workspaces to service_role;
 grant all on table public.planning_workspace_members to service_role;
@@ -450,6 +536,9 @@ create policy "Owners create workspace invites"
   on public.planning_workspace_invites for insert to authenticated
   with check (
     invited_by = (select auth.uid())
+    and accepted_at is null
+    and accepted_by is null
+    and revoked_at is null
     and (select private.owns_planning_workspace(workspace_id))
   );
 create policy "Owners update workspace invites"
@@ -459,6 +548,3 @@ create policy "Owners update workspace invites"
     invited_by = (select auth.uid())
     and (select private.owns_planning_workspace(workspace_id))
   );
-create policy "Owners delete workspace invites"
-  on public.planning_workspace_invites for delete to authenticated
-  using ((select private.owns_planning_workspace(workspace_id)));

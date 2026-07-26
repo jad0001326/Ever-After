@@ -35,6 +35,22 @@ values
     'planning-outsider@example.invalid',
     'not-a-real-password',
     now(), now(), now()
+  ),
+  (
+    'b0000000-0000-4000-8000-00000000000b',
+    'authenticated',
+    'authenticated',
+    'planning-invitee@example.invalid',
+    'not-a-real-password',
+    now(), now(), now()
+  ),
+  (
+    'c0000000-0000-4000-8000-00000000000c',
+    'authenticated',
+    'authenticated',
+    'planning-unconfirmed@example.invalid',
+    'not-a-real-password',
+    null, now(), now()
   )
 on conflict (id) do nothing;
 
@@ -42,7 +58,9 @@ insert into public.profiles (id, email, role)
 values
   ('30000000-0000-4000-8000-000000000003', 'planning-owner@example.invalid', 'user'),
   ('40000000-0000-4000-8000-000000000004', 'planning-partner@example.invalid', 'user'),
-  ('50000000-0000-4000-8000-000000000005', 'planning-outsider@example.invalid', 'user')
+  ('50000000-0000-4000-8000-000000000005', 'planning-outsider@example.invalid', 'user'),
+  ('b0000000-0000-4000-8000-00000000000b', 'planning-invitee@example.invalid', 'user'),
+  ('c0000000-0000-4000-8000-00000000000c', 'planning-unconfirmed@example.invalid', 'user')
 on conflict (id) do nothing;
 
 set local role authenticated;
@@ -112,8 +130,32 @@ insert into public.planning_workspace_invites (
 values (
   'a0000000-0000-4000-8000-00000000000a',
   '60000000-0000-4000-8000-000000000006',
-  'future-partner@example.invalid',
-  repeat('a', 64),
+  'planning-invitee@example.invalid',
+  encode(
+    extensions.digest(
+      convert_to('planning-invite-token-0000000000000001', 'UTF8'),
+      'sha256'
+    ),
+    'hex'
+  ),
+  '30000000-0000-4000-8000-000000000003',
+  now() + interval '7 days'
+);
+
+insert into public.planning_workspace_invites (
+  id, workspace_id, email_normalized, token_hash, invited_by, expires_at
+)
+values (
+  'd0000000-0000-4000-8000-00000000000d',
+  '60000000-0000-4000-8000-000000000006',
+  'planning-unconfirmed@example.invalid',
+  encode(
+    extensions.digest(
+      convert_to('unconfirmed-invite-token-00000000000001', 'UTF8'),
+      'sha256'
+    ),
+    'hex'
+  ),
   '30000000-0000-4000-8000-000000000003',
   now() + interval '7 days'
 );
@@ -220,6 +262,87 @@ begin
     when insufficient_privilege then null;
     when check_violation then null;
   end;
+
+  begin
+    perform public.accept_planning_workspace_invite(
+      'planning-invite-token-0000000000000001'
+    );
+    raise exception 'Invitation failure: a different verified email accepted the invitation';
+  exception
+    when invalid_parameter_value then null;
+  end;
+end
+$$;
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'c0000000-0000-4000-8000-00000000000c', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+do $$
+begin
+  begin
+    perform public.accept_planning_workspace_invite(
+      'unconfirmed-invite-token-00000000000001'
+    );
+    raise exception 'Invitation failure: an unconfirmed email accepted the invitation';
+  exception
+    when insufficient_privilege then null;
+  end;
+end
+$$;
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'b0000000-0000-4000-8000-00000000000b', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+do $$
+declare
+  accepted_workspace_id uuid;
+begin
+  accepted_workspace_id := public.accept_planning_workspace_invite(
+    'planning-invite-token-0000000000000001'
+  );
+
+  if accepted_workspace_id <> '60000000-0000-4000-8000-000000000006' then
+    raise exception 'Invitation failure: acceptance returned the wrong workspace';
+  end if;
+
+  if (
+    select role
+    from public.planning_workspace_members
+    where workspace_id = '60000000-0000-4000-8000-000000000006'
+      and user_id = 'b0000000-0000-4000-8000-00000000000b'
+  ) <> 'partner' then
+    raise exception 'Invitation failure: accepted invite did not create partner membership';
+  end if;
+
+  if (
+    select count(*)
+    from public.planning_workspaces
+    where id = '60000000-0000-4000-8000-000000000006'
+  ) <> 1 then
+    raise exception 'Invitation failure: accepted partner cannot read the workspace';
+  end if;
+
+  begin
+    perform public.accept_planning_workspace_invite(
+      'planning-invite-token-0000000000000001'
+    );
+    raise exception 'Invitation failure: an invitation token was reused';
+  exception
+    when invalid_parameter_value then null;
+  end;
+
+  begin
+    update public.planning_workspace_invites
+    set accepted_at = now()
+    where id = 'a0000000-0000-4000-8000-00000000000a';
+    raise exception 'Grant failure: invitee directly changed invitation acceptance state';
+  exception
+    when insufficient_privilege then null;
+  end;
 end
 $$;
 
@@ -269,6 +392,15 @@ begin
   begin
     perform 1 from public.planning_guests limit 1;
     raise exception 'Grant failure: anonymous role can read private guest data';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.accept_planning_workspace_invite(
+      'planning-invite-token-0000000000000001'
+    );
+    raise exception 'Grant failure: anonymous role called invitation acceptance';
   exception
     when insufficient_privilege then null;
   end;

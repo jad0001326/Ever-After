@@ -30,14 +30,21 @@ The additive migration draft was generated with the Supabase CLI:
 - `supabase/tests/planning_workspaces_rls.sql`
 
 The migration includes explicit Data API grants, no anonymous planning access,
-owner/partner RLS boundaries, owner-role integrity triggers, private
-security-definer membership checks with fixed search paths, hashed invitation
-tokens and owner-only invitation policies.
+owner/partner RLS boundaries, owner-role integrity triggers, fixed-search-path
+authorization helpers, hashed invitation tokens and owner-only invitation
+management. Invitation acceptance is an atomic, narrowly granted operation tied
+to the caller's confirmed `auth.users` email; invitees cannot directly update
+acceptance fields.
 
-The migration and RLS test files parse successfully as PostgreSQL (102 migration
-statements and 37 test statements). They were not executed because Docker/local
+The migration and RLS test files parse successfully as PostgreSQL (107 migration
+statements and 48 test statements). They were not executed because Docker/local
 Supabase is unavailable on this machine. They must run against a local database
 or disposable development branch before production approval.
+
+Typed, authenticated cloud actions are now prepared for workspace loading and
+individual task, guest, table, seat, seating-rule and invitation mutations. They
+remain unreachable from the interface and return a disabled response unless the
+server-only `PLANNING_WORKSPACE_CLOUD_ENABLED=true` flag is explicitly enabled.
 
 No migration was applied, no production data was changed and no deployment was
 performed.
@@ -87,8 +94,9 @@ evidence for retaining the deferred editor.
 1. Execute the new migration and RLS tests on a disposable database.
 2. Review the migration output and query plans before requesting production
    migration approval.
-3. Add focused server actions for workspace/task/guest/table rows.
+3. Add the noindex/no-referrer invitation join page and wire the already
+   prepared actions behind the disabled cloud flag.
 4. Dual-write only behind the Organise beta, with rollback to the local
    workspace.
-5. Implement invite creation, acceptance and revocation as a separate security
-   review. Raw tokens must never be stored.
+5. Run browser and end-to-end partner-sharing checks with two isolated test
+   accounts before asking to enable cloud sync.
