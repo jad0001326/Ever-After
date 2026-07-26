@@ -11,6 +11,7 @@ import {
 import {
   createPlanningInviteSchema,
   ensurePlanningWorkspaceSchema,
+  importPlanningWorkspaceSchema,
   planningGuestInputSchema,
   planningGuestUpdateSchema,
   planningInviteTokenSchema,
@@ -23,6 +24,7 @@ import {
   planningTaskUpdateSchema,
   planningWorkspaceIdSchema
 } from "@/lib/planning-workspace/validation";
+import type { Json } from "@/types/database";
 
 const CLOUD_DISABLED_MESSAGE =
   "Connected planning is still in private testing. Your current plan remains saved on this device.";
@@ -193,6 +195,64 @@ async function loadPlanningWorkspaceSnapshot(
     seatingRules: ruleResult.data ?? [],
     invites: inviteResult.data ?? []
   } as const;
+}
+
+export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
+  const parsed = importPlanningWorkspaceSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "This device plan is not ready for secure import. Review its tasks, guests and table seats first."
+    } satisfies ActionFailure;
+  }
+
+  if (JSON.stringify(parsed.data.snapshot).length > 1_000_000) {
+    return {
+      ok: false,
+      message: "This device plan is too large to import safely in one request."
+    } satisfies ActionFailure;
+  }
+
+  const context = await getPlanningContext();
+  if (!context.ok) return context;
+
+  const { data, error } = await context.supabase.rpc(
+    "import_planning_workspace_snapshot",
+    {
+      workspace_snapshot: parsed.data.snapshot as unknown as Json,
+      target_workspace_id: parsed.data.targetWorkspaceId,
+      expected_updated_at: parsed.data.expectedUpdatedAt
+    }
+  );
+
+  if (error) {
+    if (error.code === "40001") {
+      return {
+        ok: false,
+        message: "The cloud plan changed after this page loaded. Reload before choosing which copy to keep."
+      } satisfies ActionFailure;
+    }
+    if (error.code === "23505") {
+      return {
+        ok: false,
+        message: "A cloud plan now exists for this budget. Reload before trying again so nothing is overwritten."
+      } satisfies ActionFailure;
+    }
+    return { ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure;
+  }
+
+  const importedWorkspace = data?.[0];
+  if (!importedWorkspace) {
+    return { ok: false, message: SAVE_FAILED_MESSAGE } satisfies ActionFailure;
+  }
+
+  const snapshot = await loadPlanningWorkspaceSnapshot(
+    context.supabase,
+    importedWorkspace.workspace_id
+  );
+  return snapshot.ok
+    ? ({ ok: true, snapshot } as const)
+    : snapshot;
 }
 
 export async function createPlanningTaskAction(input: unknown) {

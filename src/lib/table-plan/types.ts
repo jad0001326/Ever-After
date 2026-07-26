@@ -3,6 +3,9 @@ export type SeatingRuleType = "must_next_to" | "prefer_next_to" | "must_not_next
 export type TablePlanGuest = {
   id: string;
   name: string;
+  email?: string | null;
+  rsvpStatus?: "pending" | "accepted" | "declined";
+  dietaryNotes?: string | null;
   tableId: string | null;
   seatIndex: number | null;
 };

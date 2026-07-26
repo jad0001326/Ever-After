@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { PlanningWorkspaceCloudImport } from "@/components/planning-hub/planning-workspace-cloud-import";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
   resolvePlanningWorkspaceStartup,
@@ -82,6 +83,11 @@ export function PlanningHubOrganiseWorkspace({
       ? { ...current, tablePlan, updatedAt: new Date().toISOString() }
       : current);
   }, []);
+
+  function resolveCloudWorkspace(resolvedWorkspace: PlanningWorkspace) {
+    setWorkspace(resolvedWorkspace);
+    setWorkspaceMode("cloud_loaded");
+  }
 
   const openTasks = useMemo(
     () => workspace?.tasks.filter((task) => task.status !== "done").length ?? 0,
@@ -194,6 +200,15 @@ export function PlanningHubOrganiseWorkspace({
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-[#625f57]">
             {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>
+          <PlanningWorkspaceCloudImport
+            budgetPlan={initialBudgetPlan}
+            cloudEnabled={cloudEnabled}
+            cloudSnapshot={initialCloudSnapshot}
+            mode={workspaceMode}
+            onWorkspaceResolved={resolveCloudWorkspace}
+            userId={userId}
+            workspace={workspace}
+          />
         </aside>
       </div>
 
@@ -219,7 +234,7 @@ export function PlanningHubOrganiseWorkspace({
         </section>
       )}
       <p className="text-center text-xs leading-5 text-[#58705f]" role="status">
-        {workspaceStatusMessage(workspaceMode)}
+        {workspaceStatusMessage(workspaceMode, cloudEnabled)}
       </p>
     </div>
   );
@@ -243,10 +258,16 @@ function partnerAccessMessage({
   if (workspaceMode === "review_required") {
     return "A separate cloud copy was found. Your device plan was kept and will not be overwritten without a deliberate review.";
   }
-  return "A secure cloud workspace is available, but new beta edits continue to keep a device copy until write-through verification is complete.";
+  if (workspaceMode === "device_only") {
+    return "Secure cloud connection is available for review, but this device plan has not been uploaded.";
+  }
+  return "Your latest edits remain on this device until you explicitly review the cloud update.";
 }
 
-function workspaceStatusMessage(workspaceMode: PlanningWorkspaceStartupMode) {
+function workspaceStatusMessage(
+  workspaceMode: PlanningWorkspaceStartupMode,
+  cloudEnabled: boolean,
+) {
   if (workspaceMode === "cloud_loaded") {
     return "A secure cloud copy was loaded. New edits are also kept on this device while write-through remains in private testing.";
   }
@@ -255,6 +276,9 @@ function workspaceStatusMessage(workspaceMode: PlanningWorkspaceStartupMode) {
   }
   if (workspaceMode === "review_required") {
     return "Your device copy was kept because it differs from the available cloud workspace. Nothing was overwritten.";
+  }
+  if (cloudEnabled) {
+    return "This plan is saved on this device. Use the review step before creating a secure cloud copy.";
   }
   return "Tasks, guests and tables are saved together on this device. No database migration or partner access has been enabled.";
 }

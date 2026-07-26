@@ -12,6 +12,7 @@ import type {
 } from "./types";
 
 export const PLANNING_WORKSPACE_STORAGE_KEY = "everaft:planning-workspace:v1";
+export const PLANNING_WORKSPACE_BACKUP_STORAGE_KEY = "everaft:planning-workspace:backup:v1";
 
 function randomId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto

@@ -12,6 +12,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
 
     expect(await screen.findByText("Choose the venue direction")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Continue planning" }).getAttribute("href")).toBe("/planning-hub");
+    expect(screen.queryByRole("button", { name: /Review.*cloud/i })).toBeNull();
   });
 
   it("adds tasks and persists them inside the same local workspace", async () => {

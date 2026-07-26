@@ -1202,6 +1202,17 @@ export type Database = {
         Args: { raw_token: string };
         Returns: string;
       };
+      import_planning_workspace_snapshot: {
+        Args: {
+          workspace_snapshot: Json;
+          target_workspace_id?: string | null;
+          expected_updated_at?: string | null;
+        };
+        Returns: Array<{
+          workspace_id: string;
+          workspace_updated_at: string;
+        }>;
+      };
     };
     Enums: {
       venue_status: "draft" | "published";

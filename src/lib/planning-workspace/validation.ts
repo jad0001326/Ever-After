@@ -88,3 +88,123 @@ export const createPlanningInviteSchema = z.object({
 export const planningInviteTokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{43}$/, "Invitation tokens must use the generated secure format.");
+
+const planningImportTaskSchema = z.object({
+  id: planningRecordIdSchema,
+  title: z.string().trim().min(1).max(240),
+  notes: z.string().trim().max(5000).nullable(),
+  category: z.enum(["venue", "photography", "budget", "guests", "tables", "general"]),
+  status: z.enum(["todo", "in_progress", "done"]),
+  dueDate: z.iso.date().nullable(),
+  sortOrder: z.number().int().min(0).max(100000)
+});
+
+const planningImportGuestSchema = z.object({
+  id: planningRecordIdSchema,
+  name: z.string().trim().min(1).max(160),
+  email: optionalPlanningEmailSchema,
+  rsvpStatus: z.enum(["pending", "accepted", "declined"]),
+  dietaryNotes: z.string().trim().max(2000).nullable()
+});
+
+const planningImportTableSchema = z.object({
+  id: planningRecordIdSchema,
+  name: z.string().trim().min(1).max(120),
+  capacity: z.number().int().min(2).max(20),
+  locked: z.boolean()
+});
+
+const planningImportSeatSchema = z.object({
+  guestId: planningRecordIdSchema,
+  tableId: planningRecordIdSchema,
+  seatIndex: z.number().int().min(0).max(19)
+});
+
+const planningImportRuleSchema = z.object({
+  id: planningRecordIdSchema,
+  personAId: planningRecordIdSchema,
+  personBId: planningRecordIdSchema,
+  type: z.enum(["must_next_to", "prefer_next_to", "must_not_next_to", "must_separate"])
+});
+
+export const planningWorkspaceImportSnapshotSchema = z.object({
+  id: planningWorkspaceIdSchema,
+  budgetPlanId: budgetPlanIdSchema,
+  name: planningWorkspaceNameSchema,
+  tasks: z.array(planningImportTaskSchema).max(500),
+  guests: z.array(planningImportGuestSchema).max(1000),
+  tables: z.array(planningImportTableSchema).max(200),
+  seats: z.array(planningImportSeatSchema).max(1000),
+  rules: z.array(planningImportRuleSchema).max(2000)
+}).superRefine((snapshot, context) => {
+  const ensureUnique = (values: string[], path: string, label: string) => {
+    if (new Set(values).size !== values.length) {
+      context.addIssue({
+        code: "custom",
+        message: `Duplicate ${label} identifiers are not allowed.`,
+        path: [path]
+      });
+    }
+  };
+
+  ensureUnique(snapshot.tasks.map((task) => task.id), "tasks", "task");
+  ensureUnique(snapshot.guests.map((guest) => guest.id), "guests", "guest");
+  ensureUnique(snapshot.tables.map((table) => table.id), "tables", "table");
+  ensureUnique(snapshot.rules.map((rule) => rule.id), "rules", "seating rule");
+
+  const guests = new Set(snapshot.guests.map((guest) => guest.id));
+  const tables = new Map(snapshot.tables.map((table) => [table.id, table]));
+  const seatedGuests = new Set<string>();
+  const occupiedSeats = new Set<string>();
+
+  snapshot.seats.forEach((seat, index) => {
+    if (!guests.has(seat.guestId)) {
+      context.addIssue({ code: "custom", message: "A seat references an unknown guest.", path: ["seats", index, "guestId"] });
+    }
+    const table = tables.get(seat.tableId);
+    if (!table) {
+      context.addIssue({ code: "custom", message: "A seat references an unknown table.", path: ["seats", index, "tableId"] });
+    } else if (seat.seatIndex >= table.capacity) {
+      context.addIssue({ code: "custom", message: "A seat is outside its table capacity.", path: ["seats", index, "seatIndex"] });
+    }
+    if (seatedGuests.has(seat.guestId)) {
+      context.addIssue({ code: "custom", message: "A guest can only have one seat.", path: ["seats", index, "guestId"] });
+    }
+    seatedGuests.add(seat.guestId);
+    const seatKey = `${seat.tableId}:${seat.seatIndex}`;
+    if (occupiedSeats.has(seatKey)) {
+      context.addIssue({ code: "custom", message: "A table seat can only hold one guest.", path: ["seats", index] });
+    }
+    occupiedSeats.add(seatKey);
+  });
+
+  snapshot.rules.forEach((rule, index) => {
+    if (!guests.has(rule.personAId) || !guests.has(rule.personBId)) {
+      context.addIssue({ code: "custom", message: "A seating rule references an unknown guest.", path: ["rules", index] });
+    }
+    if (rule.personAId === rule.personBId) {
+      context.addIssue({ code: "custom", message: "A seating rule needs two different guests.", path: ["rules", index] });
+    }
+  });
+});
+
+export const importPlanningWorkspaceSchema = z.object({
+  snapshot: planningWorkspaceImportSnapshotSchema,
+  targetWorkspaceId: planningWorkspaceIdSchema.nullable(),
+  expectedUpdatedAt: z.iso.datetime({ offset: true }).nullable()
+}).superRefine((input, context) => {
+  if (input.targetWorkspaceId && !input.expectedUpdatedAt) {
+    context.addIssue({
+      code: "custom",
+      message: "An existing cloud workspace needs a version token.",
+      path: ["expectedUpdatedAt"]
+    });
+  }
+  if (!input.targetWorkspaceId && input.expectedUpdatedAt) {
+    context.addIssue({
+      code: "custom",
+      message: "A new cloud workspace cannot have a previous version.",
+      path: ["expectedUpdatedAt"]
+    });
+  }
+});

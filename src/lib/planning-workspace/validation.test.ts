@@ -1,16 +1,43 @@
 import { describe, expect, it } from "vitest";
 import {
   createPlanningInviteSchema,
+  importPlanningWorkspaceSchema,
   planningGuestInputSchema,
   planningSeatInputSchema,
   planningSeatingRuleInputSchema,
-  planningTaskInputSchema
+  planningTaskInputSchema,
+  planningWorkspaceImportSnapshotSchema
 } from "./validation";
 
 const workspaceId = "60000000-0000-4000-8000-000000000006";
 const firstGuestId = "80000000-0000-4000-8000-000000000008";
 const secondGuestId = "b0000000-0000-4000-8000-00000000000b";
 const tableId = "90000000-0000-4000-8000-000000000009";
+const validImportSnapshot = {
+  id: workspaceId,
+  budgetPlanId: "budget-1",
+  name: "Our wedding plan",
+  tasks: [],
+  guests: [{
+    id: firstGuestId,
+    name: "Ailsa Grant",
+    email: null,
+    rsvpStatus: "pending" as const,
+    dietaryNotes: null
+  }],
+  tables: [{
+    id: tableId,
+    name: "Top table",
+    capacity: 8,
+    locked: false
+  }],
+  seats: [{
+    guestId: firstGuestId,
+    tableId,
+    seatIndex: 0
+  }],
+  rules: []
+};
 
 describe("planning workspace cloud validation", () => {
   it("normalizes invitation and optional guest email addresses", () => {
@@ -76,5 +103,32 @@ describe("planning workspace cloud validation", () => {
       personBId: secondGuestId,
       ruleType: "must_separate"
     }).success).toBe(true);
+  });
+
+  it("accepts a bounded import snapshot with consistent guest and seat references", () => {
+    expect(planningWorkspaceImportSnapshotSchema.safeParse(validImportSnapshot).success).toBe(true);
+    expect(importPlanningWorkspaceSchema.safeParse({
+      snapshot: validImportSnapshot,
+      targetWorkspaceId: workspaceId,
+      expectedUpdatedAt: "2026-07-26T10:00:00.000Z"
+    }).success).toBe(true);
+  });
+
+  it("rejects destructive imports without a cloud version token", () => {
+    expect(importPlanningWorkspaceSchema.safeParse({
+      snapshot: validImportSnapshot,
+      targetWorkspaceId: workspaceId,
+      expectedUpdatedAt: null
+    }).success).toBe(false);
+  });
+
+  it("rejects duplicate or out-of-capacity seating before contacting Supabase", () => {
+    expect(planningWorkspaceImportSnapshotSchema.safeParse({
+      ...validImportSnapshot,
+      seats: [
+        { guestId: firstGuestId, tableId, seatIndex: 8 },
+        { guestId: firstGuestId, tableId, seatIndex: 0 }
+      ]
+    }).success).toBe(false);
   });
 });

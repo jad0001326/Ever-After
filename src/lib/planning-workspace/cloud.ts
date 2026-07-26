@@ -18,6 +18,45 @@ export type PlanningWorkspaceCloudSnapshot = {
   seatingRules: PlanningSeatingRuleRow[];
 };
 
+export type PlanningWorkspaceImportSnapshot = {
+  id: string;
+  budgetPlanId: string;
+  name: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    notes: string | null;
+    category: PlanningTaskRow["category"];
+    status: PlanningTaskRow["status"];
+    dueDate: string | null;
+    sortOrder: number;
+  }>;
+  guests: Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    rsvpStatus: PlanningGuestRow["rsvp_status"];
+    dietaryNotes: string | null;
+  }>;
+  tables: Array<{
+    id: string;
+    name: string;
+    capacity: number;
+    locked: boolean;
+  }>;
+  seats: Array<{
+    guestId: string;
+    tableId: string;
+    seatIndex: number;
+  }>;
+  rules: Array<{
+    id: string;
+    personAId: string;
+    personBId: string;
+    type: PlanningSeatingRuleRow["rule_type"];
+  }>;
+};
+
 export type PlanningWorkspaceStartupMode =
   | "device_only"
   | "cloud_loaded"
@@ -74,6 +113,9 @@ export function planningWorkspaceFromCloud(
         return {
           id: guest.id,
           name: guest.name,
+          email: guest.email,
+          rsvpStatus: guest.rsvp_status,
+          dietaryNotes: guest.dietary_notes,
           tableId: seat?.table_id ?? null,
           seatIndex: seat?.seat_index ?? null,
         };
@@ -94,6 +136,53 @@ export function planningWorkspaceFromCloud(
     },
     createdAt: snapshot.workspace.created_at,
     updatedAt: latestTimestamp(snapshot),
+  };
+}
+
+export function planningWorkspaceToImportSnapshot(
+  workspace: PlanningWorkspace,
+): PlanningWorkspaceImportSnapshot {
+  return {
+    id: workspace.id,
+    budgetPlanId: workspace.budgetPlanId,
+    name: workspace.name,
+    tasks: workspace.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      notes: task.notes,
+      category: task.category,
+      status: task.status,
+      dueDate: task.dueDate,
+      sortOrder: task.sortOrder,
+    })),
+    guests: workspace.tablePlan.guests.map((guest) => ({
+      id: guest.id,
+      name: guest.name,
+      email: guest.email ?? null,
+      rsvpStatus: guest.rsvpStatus ?? "pending",
+      dietaryNotes: guest.dietaryNotes ?? null,
+    })),
+    tables: workspace.tablePlan.tables.map((table) => ({
+      id: table.id,
+      name: table.name,
+      capacity: table.capacity,
+      locked: table.locked,
+    })),
+    seats: workspace.tablePlan.guests.flatMap((guest) => (
+      guest.tableId && guest.seatIndex !== null
+        ? [{
+          guestId: guest.id,
+          tableId: guest.tableId,
+          seatIndex: guest.seatIndex,
+        }]
+        : []
+    )),
+    rules: workspace.tablePlan.rules.map((rule) => ({
+      id: rule.id,
+      personAId: rule.personAId,
+      personBId: rule.personBId,
+      type: rule.type,
+    })),
   };
 }
 

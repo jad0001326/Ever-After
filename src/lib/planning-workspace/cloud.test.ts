@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PlanningWorkspaceCloudSnapshot } from "./cloud";
 import {
   planningWorkspaceFromCloud,
+  planningWorkspaceToImportSnapshot,
   resolvePlanningWorkspaceStartup,
 } from "./cloud";
 import {
@@ -34,9 +35,9 @@ const cloudSnapshot: PlanningWorkspaceCloudSnapshot = {
     id: "80000000-0000-4000-8000-000000000008",
     workspace_id: "60000000-0000-4000-8000-000000000006",
     name: "Ailsa Grant",
-    email: null,
-    rsvp_status: "pending",
-    dietary_notes: null,
+    email: "ailsa@example.com",
+    rsvp_status: "accepted",
+    dietary_notes: "Vegetarian",
     sort_order: 0,
     created_at: "2026-07-26T10:02:00.000Z",
     updated_at: "2026-07-26T10:02:00.000Z",
@@ -70,10 +71,21 @@ describe("planning workspace cloud adapter", () => {
     expect(workspace.tasks[0].title).toBe("Confirm guest count");
     expect(workspace.tablePlan.guests[0]).toMatchObject({
       name: "Ailsa Grant",
+      email: "ailsa@example.com",
+      rsvpStatus: "accepted",
+      dietaryNotes: "Vegetarian",
       tableId: cloudSnapshot.tables[0].id,
       seatIndex: 0,
     });
     expect(workspace.updatedAt).toBe("2026-07-26T10:06:00.000Z");
+
+    expect(planningWorkspaceToImportSnapshot(workspace).guests[0]).toEqual({
+      id: cloudSnapshot.guests[0].id,
+      name: "Ailsa Grant",
+      email: "ailsa@example.com",
+      rsvpStatus: "accepted",
+      dietaryNotes: "Vegetarian",
+    });
   });
 
   it("does not inspect or replace the device workspace while cloud is disabled", () => {

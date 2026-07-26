@@ -67,10 +67,24 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '30000000-0000-4000-8000-000000000003', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
-insert into public.planning_workspaces (id, owner_id, name)
+insert into public.budget_plans (
+  id,
+  user_id,
+  name,
+  plan_json
+)
+values (
+  'planning-budget-1',
+  '30000000-0000-4000-8000-000000000003',
+  'Planning test budget',
+  '{}'::jsonb
+);
+
+insert into public.planning_workspaces (id, owner_id, budget_plan_id, name)
 values (
   '60000000-0000-4000-8000-000000000006',
   '30000000-0000-4000-8000-000000000003',
+  'planning-budget-1',
   'Owner wedding plan'
 );
 
@@ -227,6 +241,30 @@ begin
   if found then
     raise exception 'RLS failure: partner deleted the workspace';
   end if;
+
+  begin
+    perform public.import_planning_workspace_snapshot(
+      jsonb_build_object(
+        'id', '60000000-0000-4000-8000-000000000006',
+        'budgetPlanId', 'planning-budget-1',
+        'name', 'Injected partner snapshot',
+        'tasks', '[]'::jsonb,
+        'guests', '[]'::jsonb,
+        'tables', '[]'::jsonb,
+        'seats', '[]'::jsonb,
+        'rules', '[]'::jsonb
+      ),
+      '60000000-0000-4000-8000-000000000006',
+      (
+        select updated_at
+        from public.planning_workspaces
+        where id = '60000000-0000-4000-8000-000000000006'
+      )
+    );
+    raise exception 'Import failure: partner replaced the owner cloud snapshot';
+  exception
+    when insufficient_privilege then null;
+  end;
 end
 $$;
 
@@ -352,7 +390,99 @@ select set_config('request.jwt.claim.sub', '30000000-0000-4000-8000-000000000003
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
 do $$
+declare
+  previous_updated_at timestamptz;
+  imported_workspace_id uuid;
 begin
+  select updated_at
+  into previous_updated_at
+  from public.planning_workspaces
+  where id = '60000000-0000-4000-8000-000000000006';
+
+  select result.workspace_id
+  into imported_workspace_id
+  from public.import_planning_workspace_snapshot(
+    jsonb_build_object(
+      'id', 'e0000000-0000-4000-8000-00000000000e',
+      'budgetPlanId', 'planning-budget-1',
+      'name', 'Imported owner plan',
+      'tasks', jsonb_build_array(jsonb_build_object(
+        'id', 'f0000000-0000-4000-8000-00000000000f',
+        'title', 'Imported task',
+        'notes', null,
+        'category', 'general',
+        'status', 'todo',
+        'dueDate', null,
+        'sortOrder', 0
+      )),
+      'guests', jsonb_build_array(jsonb_build_object(
+        'id', '81000000-0000-4000-8000-000000000008',
+        'name', 'Imported guest',
+        'email', 'guest@example.invalid',
+        'rsvpStatus', 'accepted',
+        'dietaryNotes', 'Vegetarian'
+      )),
+      'tables', jsonb_build_array(jsonb_build_object(
+        'id', '91000000-0000-4000-8000-000000000009',
+        'name', 'Imported table',
+        'capacity', 8,
+        'locked', false
+      )),
+      'seats', jsonb_build_array(jsonb_build_object(
+        'guestId', '81000000-0000-4000-8000-000000000008',
+        'tableId', '91000000-0000-4000-8000-000000000009',
+        'seatIndex', 0
+      )),
+      'rules', '[]'::jsonb
+    ),
+    '60000000-0000-4000-8000-000000000006',
+    previous_updated_at
+  ) result;
+
+  if imported_workspace_id <> '60000000-0000-4000-8000-000000000006' then
+    raise exception 'Import failure: snapshot returned the wrong workspace';
+  end if;
+
+  if (
+    select count(*)
+    from public.planning_tasks
+    where workspace_id = imported_workspace_id
+      and title = 'Imported task'
+  ) <> 1 then
+    raise exception 'Import failure: owner snapshot tasks were not replaced atomically';
+  end if;
+
+  if (
+    select count(*)
+    from public.planning_guests
+    where workspace_id = imported_workspace_id
+      and email = 'guest@example.invalid'
+      and rsvp_status = 'accepted'
+      and dietary_notes = 'Vegetarian'
+  ) <> 1 then
+    raise exception 'Import failure: private guest details were not preserved';
+  end if;
+
+  begin
+    perform public.import_planning_workspace_snapshot(
+      jsonb_build_object(
+        'id', 'e0000000-0000-4000-8000-00000000000e',
+        'budgetPlanId', 'planning-budget-1',
+        'name', 'Stale overwrite attempt',
+        'tasks', '[]'::jsonb,
+        'guests', '[]'::jsonb,
+        'tables', '[]'::jsonb,
+        'seats', '[]'::jsonb,
+        'rules', '[]'::jsonb
+      ),
+      imported_workspace_id,
+      previous_updated_at
+    );
+    raise exception 'Import failure: stale snapshot overwrote newer cloud data';
+  exception
+    when serialization_failure then null;
+  end;
+
   begin
     update public.planning_workspace_members
     set role = 'partner'
@@ -401,6 +531,17 @@ begin
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
     raise exception 'Grant failure: anonymous role called invitation acceptance';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.import_planning_workspace_snapshot(
+      '{}'::jsonb,
+      null,
+      null
+    );
+    raise exception 'Grant failure: anonymous role called snapshot import';
   exception
     when insufficient_privilege then null;
   end;
