@@ -21,7 +21,16 @@ export function restoreBudgetPlan(raw: string | null): BudgetPlan | null {
     if (parsed.schemaVersion !== 1 || typeof parsed.id !== "string" || !Array.isArray(parsed.items)) return null;
     const defaults = createDefaultCategories();
     const existingIds = new Set((parsed.categories ?? []).map((category) => category.id));
-    return { ...createEmptyBudgetPlan(parsed.userId ?? null), ...parsed, categories: [...(parsed.categories ?? []), ...defaults.filter((category) => !existingIds.has(category.id))], items: parsed.items, schemaVersion: 1 } as BudgetPlan;
+    return {
+      ...createEmptyBudgetPlan(parsed.userId ?? null),
+      ...parsed,
+      categories: [...(parsed.categories ?? []), ...defaults.filter((category) => !existingIds.has(category.id))],
+      items: parsed.items.map((item) => ({
+        ...item,
+        installments: Array.isArray(item.installments) ? item.installments : [],
+      })),
+      schemaVersion: 1,
+    } as BudgetPlan;
   } catch { return null; }
 }
 export function serializeBudgetPlan(plan: BudgetPlan) { return JSON.stringify({ ...plan, schemaVersion: 1 }); }

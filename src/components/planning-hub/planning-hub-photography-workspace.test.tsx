@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import type { BudgetPlan } from "@/lib/budget/types";
+import { addManualPlanningHubPhotographer, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import type {
   PlanningHubPhotographer,
   PlanningHubPhotographerDetail,
@@ -136,15 +137,28 @@ describe("PlanningHubPhotographyWorkspace", () => {
     fireEvent.change(within(manual!).getByLabelText("Working cost"), { target: { value: "500" } });
     fireEvent.click(within(manual!).getByRole("button", { name: "Add manual photographer" }));
 
-    expect(await screen.findByText("A family friend")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "A family friend" })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toMatch(/added manually/i);
+  });
+
+  it("keeps the latest manual photographer active after reopening the workspace", () => {
+    const reopenedPlan = addManualPlanningHubPhotographer(
+      createPlanningHubStarterPlan(null),
+      "A family friend",
+      50_000,
+      "quoted",
+    );
+    renderWorkspace(reopenedPlan);
+
+    expect(screen.getByRole("heading", { name: "A family friend" })).toBeTruthy();
+    expect(screen.getByText("This manually added photographer is ready for payment planning.")).toBeTruthy();
   });
 });
 
-function renderWorkspace() {
+function renderWorkspace(initialPlan: BudgetPlan = createPlanningHubStarterPlan(null)) {
   return render(
     <PlanningHubPhotographyWorkspace
-      initialPlan={createPlanningHubStarterPlan(null)}
+      initialPlan={initialPlan}
       results={results}
       searchParams={{}}
       userId={null}

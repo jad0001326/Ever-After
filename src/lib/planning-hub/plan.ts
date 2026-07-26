@@ -1,7 +1,7 @@
 import { calculateBudget, getItemPlanningCost, getPaymentStatus } from "@/lib/budget/calculations";
 import { plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
-import type { BookingStatus, BudgetItem, BudgetPlan, PlannerListing } from "@/lib/budget/types";
+import type { BookingStatus, BudgetItem, BudgetPlan, PaymentInstallment, PlannerListing } from "@/lib/budget/types";
 import type { PlanningHubPhotographer, PlanningHubVenue } from "./types";
 
 export type PlanningHubVenueStatus = Exclude<BookingStatus, "cancelled">;
@@ -115,14 +115,83 @@ export function updatePlanningHubItemPayment(
   };
 }
 
+export function updatePlanningHubItemInstallments(
+  plan: BudgetPlan,
+  itemId: string,
+  installments: PaymentInstallment[],
+) {
+  const item = plan.items.find((candidate) => candidate.id === itemId);
+  if (!item) return plan;
+  const now = new Date().toISOString();
+  const normalized = installments.slice(0, 50).map((installment) => ({
+    ...installment,
+    label: installment.label.trim().slice(0, 120),
+    amountPence: installment.amountPence === null
+      ? null
+      : Math.max(0, Math.round(installment.amountPence)),
+    paidPence: Math.max(0, Math.round(installment.paidPence)),
+  })).filter((installment) => installment.label.length > 0);
+  const totalPaidPence = normalized.reduce((total, installment) => total + installment.paidPence, 0);
+  const depositPaidPence = normalized
+    .filter((installment) => installment.kind === "deposit")
+    .reduce((total, installment) => total + installment.paidPence, 0);
+  const nextDueDate = normalized
+    .filter((installment) => (
+      installment.dueDate
+      && (installment.amountPence === null || installment.paidPence < installment.amountPence)
+    ))
+    .map((installment) => installment.dueDate as string)
+    .sort()[0] ?? null;
+  const cost = getItemPlanningCost(item).amountPence;
+  const calculatedPaymentStatus = getPaymentStatus(cost, totalPaidPence);
+  const paymentStatus: BudgetItem["paymentStatus"] =
+    calculatedPaymentStatus === "partially_paid"
+      && depositPaidPence > 0
+      && totalPaidPence === depositPaidPence
+      ? "deposit_paid"
+      : calculatedPaymentStatus;
+  const costStatus: BudgetItem["costStatus"] = paymentStatus === "paid" || paymentStatus === "overpaid"
+    ? "paid"
+    : totalPaidPence > 0
+      ? depositPaidPence > 0 && totalPaidPence === depositPaidPence
+        ? "deposit_paid"
+        : "partially_paid"
+      : item.bookingStatus === "booked"
+        ? "booked"
+        : item.bookingStatus === "quoted"
+          ? "quoted"
+          : "estimated";
+
+  return {
+    ...plan,
+    updatedAt: now,
+    items: plan.items.map((candidate) => candidate.id === itemId ? {
+      ...candidate,
+      installments: normalized,
+      depositPaidPence,
+      totalPaidPence,
+      dueDate: nextDueDate,
+      paymentStatus,
+      costStatus,
+      updatedAt: now,
+    } : candidate),
+  };
+}
+
 export function findPlanningHubVenueItem(plan: BudgetPlan, venueId: string | null | undefined) {
   if (!venueId) return null;
-  return plan.items.find((item) => item.categoryId === "venue" && item.listingId === venueId) ?? null;
+  return plan.items.find((item) => (
+    item.categoryId === "venue"
+    && (item.listingId === venueId || item.id === venueId)
+  )) ?? null;
 }
 
 export function findPlanningHubPhotographyItem(plan: BudgetPlan, photographerId: string | null | undefined) {
   if (!photographerId) return null;
-  return plan.items.find((item) => item.categoryId === "photography" && item.listingId === photographerId) ?? null;
+  return plan.items.find((item) => (
+    item.categoryId === "photography"
+    && (item.listingId === photographerId || item.id === photographerId)
+  )) ?? null;
 }
 
 export function calculatePlanningHubPlan(plan: BudgetPlan) {
@@ -229,6 +298,7 @@ function addManualPlanningHubItem(
     guestCount: null,
     depositPaidPence: 0,
     totalPaidPence: 0,
+    installments: [],
     costStatus: status === "booked" ? "booked" : status === "quoted" ? "quoted" : "estimated",
     paymentStatus: "not_started",
     bookingStatus: status,

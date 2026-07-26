@@ -33,6 +33,7 @@ function budgetItem(categoryId: string): BudgetItem {
     guestCount: null,
     depositPaidPence: 0,
     totalPaidPence: 0,
+    installments: [],
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "shortlisted",

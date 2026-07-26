@@ -118,6 +118,7 @@ export function createStarterBudgetPlan(starter: BudgetStarter, userId: string |
     guestCount: null,
     depositPaidPence: 0,
     totalPaidPence: 0,
+    installments: [],
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "researching",

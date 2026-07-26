@@ -1,4 +1,4 @@
-import type { BudgetItem, BudgetPlan } from "./types";
+import type { BudgetItem, BudgetPlan, PaymentInstallment } from "./types";
 
 export type ItemCost = { amountPence: number | null; kind: "confirmed" | "estimated" | "per_person" | "missing" | "cancelled" };
 
@@ -42,6 +42,67 @@ export function getPaymentStatus(costPence: number | null, paidPence: number) {
   if (costPence == null || paidPence <= 0) return "not_started" as const;
   if (paidPence >= costPence) return paidPence > costPence ? "overpaid" as const : "paid" as const;
   return "partially_paid" as const;
+}
+
+export type PaymentDeadline = {
+  itemId: string;
+  itemName: string;
+  installmentId: string | null;
+  label: string;
+  dueDate: string;
+  amountPence: number | null;
+  outstandingPence: number | null;
+  urgency: "overdue" | "due_soon" | "upcoming";
+};
+
+export function getPaymentDeadlines(
+  plan: BudgetPlan,
+  referenceDate = new Date(),
+): PaymentDeadline[] {
+  const today = new Date(referenceDate);
+  today.setHours(0, 0, 0, 0);
+  const soon = new Date(today);
+  soon.setDate(soon.getDate() + 30);
+  const deadlines: PaymentDeadline[] = [];
+
+  for (const item of plan.items) {
+    if (item.bookingStatus === "cancelled" || item.costStatus === "cancelled") continue;
+    const installments = item.installments.length > 0
+      ? item.installments
+      : legacyDeadlineInstallments(item);
+    for (const installment of installments) {
+      if (!installment.dueDate) continue;
+      if (installment.amountPence !== null && installment.paidPence >= installment.amountPence) continue;
+      const due = new Date(`${installment.dueDate}T00:00:00`);
+      if (Number.isNaN(due.getTime())) continue;
+      deadlines.push({
+        itemId: item.id,
+        itemName: item.itemName,
+        installmentId: installment.id || null,
+        label: installment.label,
+        dueDate: installment.dueDate,
+        amountPence: installment.amountPence,
+        outstandingPence: installment.amountPence === null
+          ? null
+          : Math.max(installment.amountPence - installment.paidPence, 0),
+        urgency: due < today ? "overdue" : due <= soon ? "due_soon" : "upcoming",
+      });
+    }
+  }
+
+  return deadlines.sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+}
+
+function legacyDeadlineInstallments(item: BudgetItem): PaymentInstallment[] {
+  return item.dueDate ? [{
+    id: "",
+    kind: "other",
+    label: "Next payment",
+    amountPence: null,
+    paidPence: 0,
+    dueDate: item.dueDate,
+    paidAt: null,
+  }] : [];
 }
 
 export function parseMoneyToPence(value: string | number | null | undefined): number | null {

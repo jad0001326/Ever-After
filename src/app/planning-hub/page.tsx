@@ -59,6 +59,7 @@ async function PlanningHubContent({ searchParams }: { searchParams: Promise<Plan
         initialSavedVenueIds={(favourites ?? []).map((favourite) => favourite.venue_id)}
         results={results}
         searchParams={params}
+        today={new Date().toISOString().slice(0, 10)}
         userId={user?.id ?? null}
       />
     </div>

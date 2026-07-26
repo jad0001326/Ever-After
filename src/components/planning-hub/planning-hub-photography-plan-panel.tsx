@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, CreditCard, Plus, Save, UsersRound } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
 import type { BudgetItem, BudgetPlan } from "@/lib/budget/types";
+import type { PaymentInstallment } from "@/lib/budget/types";
 import { calculatePlanningHubPlan, type PlanningHubItemStatus } from "@/lib/planning-hub/plan";
 import type { PlanningHubPhotographer } from "@/lib/planning-hub/types";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
+import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
 
 export function PlanningHubPhotographyPlanPanel({
   plan,
@@ -18,11 +21,12 @@ export function PlanningHubPhotographyPlanPanel({
   saveState,
   status,
   onManualPhotographer,
-  onPaymentSave,
+  onInstallmentsSave,
   onPlanSave,
   onPlanningCostChange,
   onStatusChange,
-  onPhotographerSave
+  onPhotographerSave,
+  today,
 }: {
   plan: BudgetPlan;
   selectedItem: BudgetItem | null;
@@ -32,15 +36,26 @@ export function PlanningHubPhotographyPlanPanel({
   saveState: PlanningHubSaveState;
   status: PlanningHubItemStatus;
   onManualPhotographer: (name: string, costPence: number, status: PlanningHubItemStatus) => void;
-  onPaymentSave: (depositPence: number, paidPence: number, dueDate: string | null) => void;
+  onInstallmentsSave: (installments: PaymentInstallment[]) => void;
   onPlanSave: () => void;
   onPlanningCostChange: (pence: number) => void;
   onStatusChange: (status: PlanningHubItemStatus) => void;
   onPhotographerSave: () => void;
+  today: string;
 }) {
+  const [manualPhotographerOpen, setManualPhotographerOpen] = useState(false);
   const budget = calculatePlanningHubPlan(plan);
   const photographyItems = plan.items.filter((item) => item.categoryId === "photography" && item.bookingStatus !== "cancelled");
   const hasBookedPhotographer = photographyItems.some((item) => item.bookingStatus === "booked");
+
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#manual-photographer") setManualPhotographerOpen(true);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
 
   return (
     <aside aria-label="Connected wedding plan" className="self-start rounded-3xl border border-[#cfc3b3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -61,10 +76,11 @@ export function PlanningHubPhotographyPlanPanel({
           <ArrowLeft size={16} /> Review venue and wedding basics
         </Link>
       </div>
+      <PlanningHubDeadlineSummary plan={plan} today={today} />
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-photographer-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current photographer</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedPhotographer?.name ?? "Open a photographer to plan them"}</h3>
+        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedPhotographer?.name ?? selectedItem?.itemName ?? "Open a photographer to plan them"}</h3>
         {selectedPhotographer ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -84,6 +100,8 @@ export function PlanningHubPhotographyPlanPanel({
               {selectedItem ? "Update photography plan" : "Add photographer to plan"}
             </button>
           </div>
+        ) : selectedItem ? (
+          <p className="mt-3 text-sm leading-6 text-[#625f57]">This manually added photographer is ready for payment planning.</p>
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View &amp; plan” on a result to keep researching without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
@@ -93,26 +111,21 @@ export function PlanningHubPhotographyPlanPanel({
           <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
             Deposits &amp; payments <CreditCard size={18} />
           </summary>
-          <form className="grid gap-3 px-5 pb-5" key={`${selectedItem.id}-${selectedItem.updatedAt}`} onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            onPaymentSave(moneyFromForm(form.get("deposit")), moneyFromForm(form.get("paid")), String(form.get("dueDate") || "") || null);
-          }}>
-            <Label text="Deposit paid">
-              <MoneyField ariaLabel="Deposit paid" defaultValue={selectedItem.depositPaidPence} name="deposit" />
-            </Label>
-            <Label text="Total paid so far">
-              <MoneyField ariaLabel="Total paid so far" defaultValue={selectedItem.totalPaidPence} name="paid" />
-            </Label>
-            <Label text="Next payment due">
-              <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={selectedItem.dueDate ?? ""} name="dueDate" type="date" />
-            </Label>
-            <button className="focus-ring min-h-11 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526]" type="submit">Update payments</button>
-          </form>
+          <PlanningHubPaymentSchedule
+            currency={plan.currency}
+            item={selectedItem}
+            key={`${selectedItem.id}-${selectedItem.updatedAt}`}
+            onSave={onInstallmentsSave}
+          />
         </details>
       ) : null}
 
-      <details className="border-b border-[#e4ddd2]" id="manual-photographer">
+      <details
+        className="border-b border-[#e4ddd2]"
+        id="manual-photographer"
+        onToggle={(event) => setManualPhotographerOpen(event.currentTarget.open)}
+        open={manualPhotographerOpen}
+      >
         <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
           Photographer not listed? <Plus size={18} />
         </summary>

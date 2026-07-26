@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { calculateBudget, findDuplicateImportedListing, getItemPlanningCost, parseMoneyToPence } from "./calculations";
+import { calculateBudget, findDuplicateImportedListing, getItemPlanningCost, getPaymentDeadlines, parseMoneyToPence } from "./calculations";
 import { createEmptyBudgetPlan } from "./persistence";
 import type { BudgetItem } from "./types";
-function item(overrides: Partial<BudgetItem> = {}): BudgetItem { return { id: "item-1", categoryId: "venue", listingId: null, listingType: null, listingUrl: null, imageUrl: null, source: "manual", itemName: "Venue", supplierName: null, supplierType: null, description: null, estimatedCostPence: null, confirmedCostPence: null, importedPricePence: null, importedPriceToPence: null, importedPriceType: null, costPerPersonPence: null, guestCount: null, depositPaidPence: 0, totalPaidPence: 0, costStatus: "estimated", paymentStatus: "not_started", bookingStatus: "researching", dueDate: null, websiteUrl: null, notes: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", sortOrder: 0, ...overrides }; }
+function item(overrides: Partial<BudgetItem> = {}): BudgetItem { return { id: "item-1", categoryId: "venue", listingId: null, listingType: null, listingUrl: null, imageUrl: null, source: "manual", itemName: "Venue", supplierName: null, supplierType: null, description: null, estimatedCostPence: null, confirmedCostPence: null, importedPricePence: null, importedPriceToPence: null, importedPriceType: null, costPerPersonPence: null, guestCount: null, depositPaidPence: 0, totalPaidPence: 0, installments: [], costStatus: "estimated", paymentStatus: "not_started", bookingStatus: "researching", dueDate: null, websiteUrl: null, notes: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", sortOrder: 0, ...overrides }; }
 describe("budget calculations", () => {
   it("handles an empty budget and visibly tracks a missing cost", () => { const plan = createEmptyBudgetPlan(); expect(calculateBudget(plan)).toMatchObject({ allocatedPence: 0, remainingPence: 0, activeItemCount: 0 }); plan.items = [item()]; expect(calculateBudget(plan).missingPriceCount).toBe(1); });
   it("uses a confirmed cost instead of an estimate", () => expect(getItemPlanningCost(item({ estimatedCostPence: 100_000, confirmedCostPence: 125_000 }))).toEqual({ amountPence: 125_000, kind: "confirmed" }));
@@ -12,4 +12,18 @@ describe("budget calculations", () => {
   it("does not count cancelled items", () => { const plan = createEmptyBudgetPlan(); plan.totalBudgetPence = 1_000_000; plan.items = [item({ estimatedCostPence: 500_000, costStatus: "cancelled" })]; expect(calculateBudget(plan)).toMatchObject({ allocatedPence: 0, activeItemCount: 0 }); });
   it("parses decimal currency safely into pence", () => { expect(parseMoneyToPence("£1,234.56")).toBe(123_456); expect(parseMoneyToPence("-10")).toBeNull(); expect(parseMoneyToPence("12.345")).toBeNull(); });
   it("finds duplicate imported listings but excludes the item being edited", () => { const items = [item({ listingId: "venue-1" })]; expect(findDuplicateImportedListing(items, "venue-1")?.id).toBe("item-1"); expect(findDuplicateImportedListing(items, "venue-1", "item-1")).toBeUndefined(); });
+  it("orders overdue and upcoming unpaid instalments while excluding paid ones", () => {
+    const plan = createEmptyBudgetPlan();
+    plan.items = [item({
+      installments: [
+        { id: "deposit", kind: "deposit", label: "Deposit", amountPence: 100_000, paidPence: 100_000, dueDate: "2026-08-01", paidAt: "2026-07-20" },
+        { id: "middle", kind: "installment", label: "Second payment", amountPence: 200_000, paidPence: 50_000, dueDate: "2026-07-01", paidAt: null },
+        { id: "final", kind: "final", label: "Final balance", amountPence: 300_000, paidPence: 0, dueDate: "2026-08-10", paidAt: null },
+      ],
+    })];
+    expect(getPaymentDeadlines(plan, new Date("2026-07-26T12:00:00Z"))).toEqual([
+      expect.objectContaining({ label: "Second payment", outstandingPence: 150_000, urgency: "overdue" }),
+      expect.objectContaining({ label: "Final balance", outstandingPence: 300_000, urgency: "due_soon" }),
+    ]);
+  });
 });

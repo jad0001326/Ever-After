@@ -5,6 +5,17 @@ export type ImportedPriceType = "fixed" | "starting_from" | "per_person" | "pack
 export type CostStatus = "estimated" | "quoted" | "booked" | "deposit_paid" | "partially_paid" | "paid" | "cancelled";
 export type BookingStatus = "researching" | "shortlisted" | "quoted" | "booked" | "cancelled";
 export type PaymentStatus = "not_started" | "deposit_paid" | "partially_paid" | "paid" | "overpaid";
+export type PaymentInstallmentKind = "deposit" | "installment" | "final" | "other";
+
+export type PaymentInstallment = {
+  id: string;
+  kind: PaymentInstallmentKind;
+  label: string;
+  amountPence: number | null;
+  paidPence: number;
+  dueDate: string | null;
+  paidAt: string | null;
+};
 
 export type BudgetCategory = {
   id: string;
@@ -36,6 +47,7 @@ export type BudgetItem = {
   guestCount: number | null;
   depositPaidPence: number;
   totalPaidPence: number;
+  installments: PaymentInstallment[];
   costStatus: CostStatus;
   paymentStatus: PaymentStatus;
   bookingStatus: BookingStatus;

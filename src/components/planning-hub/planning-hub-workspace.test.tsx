@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import type { BudgetPlan } from "@/lib/budget/types";
+import { addManualPlanningHubVenue, choosePlanningHubVenue, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import type { PlanningHubVenue, PlanningHubVenueDetail, PlanningHubVenueResults } from "@/lib/planning-hub/types";
 import { PlanningHubWorkspace } from "./planning-hub-workspace";
 
@@ -124,16 +125,30 @@ describe("PlanningHubWorkspace", () => {
     fireEvent.change(within(manualVenue!).getByLabelText("Planning stage"), { target: { value: "booked" } });
     fireEvent.click(within(manualVenue!).getByRole("button", { name: "Add manual venue" }));
 
-    expect(await screen.findByText("Our village hall")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Our village hall" })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toMatch(/added manually/i);
     expect(screen.getAllByText("£3,250").length).toBeGreaterThan(0);
   });
+
+  it("keeps a manually chosen venue active after reopening the workspace", () => {
+    const manualPlan = addManualPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      "Our village hall",
+      325_000,
+      "booked",
+    );
+    const reopenedPlan = choosePlanningHubVenue(manualPlan, manualPlan.items[0].id);
+    renderWorkspace(reopenedPlan);
+
+    expect(screen.getByRole("heading", { name: "Our village hall" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "This is your chosen venue" })).toBeTruthy();
+  });
 });
 
-function renderWorkspace() {
+function renderWorkspace(initialPlan: BudgetPlan = createPlanningHubStarterPlan(null)) {
   return render(
     <PlanningHubWorkspace
-      initialPlan={createPlanningHubStarterPlan(null)}
+      initialPlan={initialPlan}
       initialSavedVenueIds={[]}
       results={results}
       searchParams={{}}

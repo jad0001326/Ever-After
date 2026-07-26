@@ -6,7 +6,10 @@ import {
   calculatePlanningHubPlan,
   choosePlanningHubVenue,
   createPlanningHubStarterPlan,
+  findPlanningHubPhotographyItem,
+  findPlanningHubVenueItem,
   getPhotographyNextHref,
+  updatePlanningHubItemInstallments,
   updatePlanningHubPhotographerPayment,
   updatePlanningHubVenuePayment,
   upsertPlanningHubPhotographer,
@@ -75,6 +78,7 @@ describe("Planning Hub plan", () => {
     const contextual = { ...plan, selectedVenueId: venue.id, location: "Perthshire" };
 
     expect(plan.items[0]).toMatchObject({ source: "manual", itemName: "Our local hall", bookingStatus: "booked" });
+    expect(findPlanningHubVenueItem(plan, plan.items[0].id)).toBe(plan.items[0]);
     expect(getPhotographyNextHref(contextual)).toContain("/planning-hub/photography?");
     expect(getPhotographyNextHref(contextual)).toContain("venue=venue-1");
     expect(getPhotographyNextHref(contextual)).toContain("location=Perthshire");
@@ -115,6 +119,7 @@ describe("Planning Hub plan", () => {
       supplierType: "Photographer",
       itemName: "A family friend"
     });
+    expect(findPlanningHubPhotographyItem(plan, plan.items[0].id)).toBe(plan.items[0]);
   });
 
   it("derives partial and paid states from deposits and instalments", () => {
@@ -132,5 +137,22 @@ describe("Planning Hub plan", () => {
     const paid = updatePlanningHubVenuePayment(partial, venue.id, 100_000, 700_000, null);
     expect(paid.items[0]).toMatchObject({ paymentStatus: "paid", costStatus: "paid" });
     expect(calculatePlanningHubPlan(paid).outstandingCommittedPence).toBe(0);
+  });
+
+  it("derives aggregate totals and the next deadline from a payment schedule", () => {
+    const booked = upsertPlanningHubVenue(createPlanningHubStarterPlan(null), venue, 700_000, "booked");
+    const updated = updatePlanningHubItemInstallments(booked, booked.items[0].id, [
+      { id: "deposit", kind: "deposit", label: "Deposit", amountPence: 100_000, paidPence: 100_000, dueDate: "2026-08-01", paidAt: "2026-07-20" },
+      { id: "middle", kind: "installment", label: "Second payment", amountPence: 250_000, paidPence: 50_000, dueDate: "2026-10-01", paidAt: null },
+      { id: "final", kind: "final", label: "Final balance", amountPence: 350_000, paidPence: 0, dueDate: "2027-03-01", paidAt: null },
+    ]);
+
+    expect(updated.items[0]).toMatchObject({
+      depositPaidPence: 100_000,
+      totalPaidPence: 150_000,
+      dueDate: "2026-10-01",
+      paymentStatus: "partially_paid",
+      costStatus: "partially_paid",
+    });
   });
 });

@@ -4,11 +4,11 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningHubPhotographerDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
-import type { BudgetPlan } from "@/lib/budget/types";
+import type { BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import {
   addManualPlanningHubPhotographer,
   findPlanningHubPhotographyItem,
-  updatePlanningHubPhotographerPayment,
+  updatePlanningHubItemInstallments,
   upsertPlanningHubPhotographer,
   type PlanningHubItemStatus
 } from "@/lib/planning-hub/plan";
@@ -29,20 +29,25 @@ export function PlanningHubPhotographyWorkspace({
   connectedWorkspaceId = null,
   results,
   searchParams,
+  today = "2026-07-26",
   userId
 }: {
   initialPlan: BudgetPlan;
   connectedWorkspaceId?: string | null;
   results: ResultData;
   searchParams: PlanningHubPhotographySearchParams;
+  today?: string;
   userId: string | null;
 }) {
   const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
-  const firstPhotographer = findInitialPhotographer(initialPlan, results.photographers);
-  const firstItem = findPlanningHubPhotographyItem(initialPlan, firstPhotographer?.id);
+  const firstPlannedItem = findLatestPhotographyItem(initialPlan);
+  const firstPhotographer = firstPlannedItem
+    ? results.photographers.find((photographer) => photographer.id === firstPlannedItem.listingId) ?? null
+    : results.photographers[0] ?? null;
+  const firstItem = firstPlannedItem ?? findPlanningHubPhotographyItem(initialPlan, firstPhotographer?.id);
   const [plan, setPlan] = useState(initialPlan);
   const [ready, setReady] = useState(false);
-  const [selectedPhotographerId, setSelectedPhotographerId] = useState<string | null>(firstPhotographer?.id ?? null);
+  const [selectedPhotographerId, setSelectedPhotographerId] = useState<string | null>(firstPhotographer?.id ?? firstItem?.id ?? null);
   const [status, setStatus] = useState<PlanningHubItemStatus>(normaliseStatus(firstItem?.bookingStatus));
   const [planningCostPence, setPlanningCostPence] = useState(getSavedItemCost(firstItem) ?? firstPhotographer?.startingPricePence ?? 0);
   const [comparedPhotographers, setComparedPhotographers] = useState<PlanningHubPhotographer[]>([]);
@@ -66,12 +71,14 @@ export function PlanningHubPhotographyWorkspace({
           const restored = { ...localPlan, userId };
           setPlan(restored);
           setSaveMessage("Restored newer changes from this device.");
-          const restoredPhotographer = findInitialPhotographer(restored, results.photographers);
-          if (restoredPhotographer) {
-            const restoredItem = findPlanningHubPhotographyItem(restored, restoredPhotographer.id);
-            setSelectedPhotographerId(restoredPhotographer.id);
+          const restoredItem = findLatestPhotographyItem(restored);
+          const restoredPhotographer = restoredItem?.listingId
+            ? results.photographers.find((photographer) => photographer.id === restoredItem.listingId) ?? null
+            : null;
+          if (restoredItem) {
+            setSelectedPhotographerId(restoredPhotographer?.id ?? restoredItem.id);
             setStatus(normaliseStatus(restoredItem?.bookingStatus));
-            setPlanningCostPence(getSavedItemCost(restoredItem) ?? restoredPhotographer.startingPricePence ?? 0);
+            setPlanningCostPence(getSavedItemCost(restoredItem) ?? restoredPhotographer?.startingPricePence ?? 0);
           }
         }
       } catch {
@@ -153,14 +160,21 @@ export function PlanningHubPhotographyWorkspace({
   }
 
   function addManualPhotographer(name: string, costPence: number, itemStatus: PlanningHubItemStatus) {
-    persistPlan(addManualPlanningHubPhotographer(plan, name, costPence, itemStatus), `${name} was added manually.`);
+    const nextPlan = addManualPlanningHubPhotographer(plan, name, costPence, itemStatus);
+    const addedItem = nextPlan.items.at(-1);
+    if (addedItem) {
+      setSelectedPhotographerId(addedItem.id);
+      setStatus(itemStatus);
+      setPlanningCostPence(costPence);
+    }
+    persistPlan(nextPlan, `${name} was added manually.`);
   }
 
-  function savePayments(depositPence: number, paidPence: number, dueDate: string | null) {
-    if (!selectedPhotographer) return;
+  function saveInstallments(installments: PaymentInstallment[]) {
+    if (!selectedItem) return;
     persistPlan(
-      updatePlanningHubPhotographerPayment(plan, selectedPhotographer.id, depositPence, paidPence, dueDate),
-      "Photography payments updated."
+      updatePlanningHubItemInstallments(plan, selectedItem.id, installments),
+      "Photography payment schedule updated."
     );
   }
 
@@ -198,7 +212,7 @@ export function PlanningHubPhotographyWorkspace({
       </div>
       <PlanningHubPhotographyPlanPanel
         onManualPhotographer={addManualPhotographer}
-        onPaymentSave={savePayments}
+        onInstallmentsSave={saveInstallments}
         onPhotographerSave={saveCurrentPhotographer}
         onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
         onPlanningCostChange={setPlanningCostPence}
@@ -210,14 +224,16 @@ export function PlanningHubPhotographyWorkspace({
         selectedItem={selectedItem}
         selectedPhotographer={selectedPhotographer}
         status={status}
+        today={today}
       />
     </div>
   );
 }
 
-function findInitialPhotographer(plan: BudgetPlan, photographers: PlanningHubPhotographer[]) {
-  const plannedIds = new Set(plan.items.filter((item) => item.categoryId === "photography" && item.listingId).map((item) => item.listingId));
-  return photographers.find((photographer) => plannedIds.has(photographer.id)) ?? photographers[0] ?? null;
+function findLatestPhotographyItem(plan: BudgetPlan) {
+  return [...plan.items].reverse().find((item) => (
+    item.categoryId === "photography" && item.bookingStatus !== "cancelled"
+  )) ?? null;
 }
 
 function normaliseStatus(status: string | undefined): PlanningHubItemStatus {

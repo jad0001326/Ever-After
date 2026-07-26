@@ -5,13 +5,13 @@ import { saveBudgetPlan } from "@/app/actions/budget";
 import { toggleFavourite } from "@/app/actions/favourites";
 import { loadPlanningHubVenueDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
-import type { BudgetPlan } from "@/lib/budget/types";
+import type { BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import {
   addManualPlanningHubVenue,
   choosePlanningHubVenue,
   findPlanningHubVenueItem,
   getVenuePlanningCost,
-  updatePlanningHubVenuePayment,
+  updatePlanningHubItemInstallments,
   upsertPlanningHubVenue,
   type PlanningHubVenueStatus
 } from "@/lib/planning-hub/plan";
@@ -27,6 +27,7 @@ export function PlanningHubWorkspace({
   connectedWorkspaceId = null,
   results,
   searchParams,
+  today = "2026-07-26",
   userId
 }: {
   initialPlan: BudgetPlan;
@@ -34,14 +35,17 @@ export function PlanningHubWorkspace({
   initialSavedVenueIds: string[];
   results: PlanningHubVenueResultData;
   searchParams: PlanningHubSearchParams;
+  today?: string;
   userId: string | null;
 }) {
   const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
-  const firstVenue = results.venues.find((venue) => venue.id === initialPlan.selectedVenueId) ?? results.venues[0] ?? null;
-  const firstItem = findPlanningHubVenueItem(initialPlan, firstVenue?.id);
+  const initiallySelectedItem = findPlanningHubVenueItem(initialPlan, initialPlan.selectedVenueId);
+  const firstVenue = results.venues.find((venue) => venue.id === initialPlan.selectedVenueId)
+    ?? (initiallySelectedItem ? null : results.venues[0] ?? null);
+  const firstItem = initiallySelectedItem ?? findPlanningHubVenueItem(initialPlan, firstVenue?.id);
   const [plan, setPlan] = useState(initialPlan);
   const [ready, setReady] = useState(false);
-  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(firstVenue?.id ?? null);
+  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(firstVenue?.id ?? firstItem?.id ?? null);
   const [status, setStatus] = useState<PlanningHubVenueStatus>(normaliseStatus(firstItem?.bookingStatus));
   const [planningCostPence, setPlanningCostPence] = useState(
     getSavedItemCost(firstItem) ?? getVenuePlanningCost(firstVenue, initialPlan.guestCount) ?? 0
@@ -68,11 +72,11 @@ export function PlanningHubWorkspace({
           setPlan({ ...localPlan, userId });
           setSaveMessage("Restored newer changes from this device.");
           const restoredVenue = results.venues.find((venue) => venue.id === localPlan.selectedVenueId);
-          if (restoredVenue) {
-            const restoredItem = findPlanningHubVenueItem(localPlan, restoredVenue.id);
-            setSelectedVenueId(restoredVenue.id);
+          const restoredItem = findPlanningHubVenueItem(localPlan, restoredVenue?.id ?? localPlan.selectedVenueId);
+          if (restoredItem) {
+            setSelectedVenueId(restoredVenue?.id ?? restoredItem.id);
             setStatus(normaliseStatus(restoredItem?.bookingStatus));
-            setPlanningCostPence(getSavedItemCost(restoredItem) ?? getVenuePlanningCost(restoredVenue, localPlan.guestCount) ?? 0);
+            setPlanningCostPence(getSavedItemCost(restoredItem) ?? getVenuePlanningCost(restoredVenue ?? null, localPlan.guestCount) ?? 0);
           }
         }
       } catch {
@@ -178,18 +182,30 @@ export function PlanningHubWorkspace({
   }
 
   function chooseCurrentVenue() {
-    if (!selectedVenue) return;
-    const withItem = selectedItem ? plan : upsertPlanningHubVenue(plan, selectedVenue, planningCostPence, status);
-    persistPlan(choosePlanningHubVenue(withItem, selectedVenue.id), `${selectedVenue.name} is now your chosen venue.`);
+    const venueReferenceId = selectedVenue?.id ?? selectedItem?.id;
+    if (!venueReferenceId) return;
+    const withItem = selectedItem || !selectedVenue ? plan : upsertPlanningHubVenue(plan, selectedVenue, planningCostPence, status);
+    const venueName = selectedVenue?.name ?? selectedItem?.itemName ?? "Your venue";
+    persistPlan(choosePlanningHubVenue(withItem, venueReferenceId), `${venueName} is now your chosen venue.`);
   }
 
   function addManualVenue(name: string, costPence: number, venueStatus: PlanningHubVenueStatus) {
-    persistPlan(addManualPlanningHubVenue(plan, name, costPence, venueStatus), `${name} was added manually.`);
+    const nextPlan = addManualPlanningHubVenue(plan, name, costPence, venueStatus);
+    const addedItem = nextPlan.items.at(-1);
+    if (addedItem) {
+      setSelectedVenueId(addedItem.id);
+      setStatus(venueStatus);
+      setPlanningCostPence(costPence);
+    }
+    persistPlan(nextPlan, `${name} was added manually.`);
   }
 
-  function savePayments(depositPence: number, paidPence: number, dueDate: string | null) {
-    if (!selectedVenue) return;
-    persistPlan(updatePlanningHubVenuePayment(plan, selectedVenue.id, depositPence, paidPence, dueDate), "Venue payments updated.");
+  function saveInstallments(installments: PaymentInstallment[]) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemInstallments(plan, selectedItem.id, installments),
+      "Venue payment schedule updated.",
+    );
   }
 
   function updatePlan(updates: Partial<BudgetPlan>) {
@@ -235,7 +251,7 @@ export function PlanningHubWorkspace({
       <PlanningHubPlanPanel
         onChooseVenue={chooseCurrentVenue}
         onManualVenue={addManualVenue}
-        onPaymentSave={savePayments}
+        onInstallmentsSave={saveInstallments}
         onPlanChange={updatePlan}
         onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
         onPlanningCostChange={setPlanningCostPence}
@@ -248,6 +264,7 @@ export function PlanningHubWorkspace({
         selectedItem={selectedItem}
         selectedVenue={selectedVenue}
         status={status}
+        today={today}
       />
     </div>
   );

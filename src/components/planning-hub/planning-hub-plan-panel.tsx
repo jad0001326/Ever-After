@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowRight, Check, Cloud, CreditCard, MapPinned, Plus, Save } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
 import type { BudgetItem, BudgetPlan } from "@/lib/budget/types";
+import type { PaymentInstallment } from "@/lib/budget/types";
 import type { PlanningHubVenueStatus } from "@/lib/planning-hub/plan";
 import { calculatePlanningHubPlan, getPhotographyNextHref } from "@/lib/planning-hub/plan";
 import type { PlanningHubVenue } from "@/lib/planning-hub/types";
+import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
 
 export type PlanningHubSaveState = "idle" | "saving" | "saved" | "error";
 
@@ -21,12 +24,13 @@ export function PlanningHubPlanPanel({
   status,
   onChooseVenue,
   onManualVenue,
-  onPaymentSave,
+  onInstallmentsSave,
   onPlanChange,
   onPlanSave,
   onPlanningCostChange,
   onStatusChange,
-  onVenueSave
+  onVenueSave,
+  today,
 }: {
   plan: BudgetPlan;
   selectedItem: BudgetItem | null;
@@ -37,15 +41,26 @@ export function PlanningHubPlanPanel({
   status: PlanningHubVenueStatus;
   onChooseVenue: () => void;
   onManualVenue: (name: string, costPence: number, status: PlanningHubVenueStatus) => void;
-  onPaymentSave: (depositPence: number, paidPence: number, dueDate: string | null) => void;
+  onInstallmentsSave: (installments: PaymentInstallment[]) => void;
   onPlanChange: (updates: Partial<BudgetPlan>) => void;
   onPlanSave: () => void;
   onPlanningCostChange: (pence: number) => void;
   onStatusChange: (status: PlanningHubVenueStatus) => void;
   onVenueSave: () => void;
+  today: string;
 }) {
+  const [manualVenueOpen, setManualVenueOpen] = useState(false);
   const budget = calculatePlanningHubPlan(plan);
   const venueItems = plan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
+
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#manual-venue") setManualVenueOpen(true);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
 
   return (
     <aside aria-label="Connected wedding plan" className="self-start rounded-3xl border border-[#cfc3b3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -63,6 +78,7 @@ export function PlanningHubPlanPanel({
           </div>
         </dl>
       </div>
+      <PlanningHubDeadlineSummary plan={plan} today={today} />
 
       <details className="border-b border-[#e4ddd2]" open>
         <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
@@ -86,7 +102,7 @@ export function PlanningHubPlanPanel({
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-venue-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current venue</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedVenue?.name ?? "Open a venue to plan it"}</h3>
+        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedVenue?.name ?? selectedItem?.itemName ?? "Open a venue to plan it"}</h3>
         {selectedVenue ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -110,6 +126,18 @@ export function PlanningHubPlanPanel({
               </button>
             ) : null}
           </div>
+        ) : selectedItem ? (
+          <div className="mt-4 grid gap-3">
+            <p className="text-sm leading-6 text-[#625f57]">This manually added venue is ready for payment planning.</p>
+            <button
+              aria-pressed={plan.selectedVenueId === selectedItem.id}
+              className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526]"
+              onClick={onChooseVenue}
+              type="button"
+            >
+              <MapPinned size={17} /> {plan.selectedVenueId === selectedItem.id ? "This is your chosen venue" : "Choose as main venue"}
+            </button>
+          </div>
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View” on a result to inspect it here without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
@@ -119,26 +147,21 @@ export function PlanningHubPlanPanel({
           <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
             Payments <CreditCard size={18} />
           </summary>
-          <form className="grid gap-3 px-5 pb-5" key={`${selectedItem.id}-${selectedItem.updatedAt}`} onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            onPaymentSave(moneyFromForm(form.get("deposit")), moneyFromForm(form.get("paid")), String(form.get("dueDate") || "") || null);
-          }}>
-            <Label text="Deposit paid">
-              <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={selectedItem.depositPaidPence / 100 || ""} inputMode="decimal" min={0} name="deposit" step="0.01" type="number" />
-            </Label>
-            <Label text="Total paid so far">
-              <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={selectedItem.totalPaidPence / 100 || ""} inputMode="decimal" min={0} name="paid" step="0.01" type="number" />
-            </Label>
-            <Label text="Next payment due">
-              <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={selectedItem.dueDate ?? ""} name="dueDate" type="date" />
-            </Label>
-            <button className="focus-ring min-h-11 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526]" type="submit">Update payments</button>
-          </form>
+          <PlanningHubPaymentSchedule
+            currency={plan.currency}
+            item={selectedItem}
+            key={`${selectedItem.id}-${selectedItem.updatedAt}`}
+            onSave={onInstallmentsSave}
+          />
         </details>
       ) : null}
 
-      <details className="border-b border-[#e4ddd2]" id="manual-venue">
+      <details
+        className="border-b border-[#e4ddd2]"
+        id="manual-venue"
+        onToggle={(event) => setManualVenueOpen(event.currentTarget.open)}
+        open={manualVenueOpen}
+      >
         <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
           Venue not listed? <Plus size={18} />
         </summary>

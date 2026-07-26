@@ -73,6 +73,7 @@ async function PlanningHubPhotographyContent({
         initialPlan={initialPlan}
         results={results}
         searchParams={effectiveParams}
+        today={new Date().toISOString().slice(0, 10)}
         userId={user?.id ?? null}
       />
     </div>
