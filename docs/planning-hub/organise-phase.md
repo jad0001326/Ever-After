@@ -39,12 +39,20 @@ acceptance fields.
 The migration and RLS test files parse successfully as PostgreSQL (107 migration
 statements and 48 test statements). They were not executed because Docker/local
 Supabase is unavailable on this machine. They must run against a local database
-or disposable development branch before production approval.
+before production approval. No billable Supabase development branch will be
+used. Until a free local PostgreSQL/Supabase runtime is available, the migration
+stays unapplied and cloud activation remains blocked by the server-only flag.
 
 Typed, authenticated cloud actions are now prepared for workspace loading and
 individual task, guest, table, seat, seating-rule and invitation mutations. They
 remain unreachable from the interface and return a disabled response unless the
 server-only `PLANNING_WORKSPACE_CLOUD_ENABLED=true` flag is explicitly enabled.
+
+The partner join route is also prepared locally. It converts the token-bearing
+URL into a clean URL plus a one-hour HttpOnly cookie before rendering, preserves
+the clean route through sign-in or account creation, and never sends the raw
+token to a client component. The acceptance control only appears for a signed-in
+user with a confirmed email while the server-only cloud flag is enabled.
 
 No migration was applied, no production data was changed and no deployment was
 performed.
@@ -52,12 +60,12 @@ performed.
 ## Validation
 
 - Focused Organise/workspace/Table Planner tests: passed.
-- Full suite: 35 files, 172 tests passed.
+- Full suite: 37 files, 179 tests passed.
 - TypeScript: passed.
 - ESLint: zero errors; one pre-existing unrelated `<img>` warning remains in
   `src/app/venues/[slug]/opengraph-image.tsx`.
-- Production build: passed; 77 static pages generated and Organise is statically
-  rendered.
+- Production build: passed; 77 static pages generated, Organise is statically
+  rendered, and both invitation routes are dynamic.
 - Browser QA:
   - correct route and title;
   - no framework overlay;
@@ -67,6 +75,14 @@ performed.
   - task/guest state survived reload;
   - full seating editor opened on demand;
   - 390 x 844 viewport had no page-level horizontal overflow.
+  - invitation tokens redirect to a clean URL and never appear in rendered
+    controls;
+  - production responses set `Secure`, `HttpOnly`, path-scoped invite cookies,
+    `no-store`, no-referrer, noindex and anti-framing protections;
+  - the compact 390 x 844 invitation screen exposes the primary sign-in action
+    without the full Planning Hub hero pushing it below the fold;
+  - invitation route and home route rendered without framework overlays or
+    browser errors.
 
 ## Mobile Lighthouse
 
@@ -94,8 +110,7 @@ evidence for retaining the deferred editor.
 1. Execute the new migration and RLS tests on a disposable database.
 2. Review the migration output and query plans before requesting production
    migration approval.
-3. Add the noindex/no-referrer invitation join page and wire the already
-   prepared actions behind the disabled cloud flag.
+3. Wire the prepared cloud actions into Organise behind the disabled cloud flag.
 4. Dual-write only behind the Organise beta, with rollback to the local
    workspace.
 5. Run browser and end-to-end partner-sharing checks with two isolated test

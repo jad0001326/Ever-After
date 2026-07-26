@@ -133,7 +133,7 @@ values (
   'planning-invitee@example.invalid',
   encode(
     extensions.digest(
-      convert_to('planning-invite-token-0000000000000001', 'UTF8'),
+      convert_to('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'UTF8'),
       'sha256'
     ),
     'hex'
@@ -151,7 +151,7 @@ values (
   'planning-unconfirmed@example.invalid',
   encode(
     extensions.digest(
-      convert_to('unconfirmed-invite-token-00000000000001', 'UTF8'),
+      convert_to('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'UTF8'),
       'sha256'
     ),
     'hex'
@@ -265,7 +265,7 @@ begin
 
   begin
     perform public.accept_planning_workspace_invite(
-      'planning-invite-token-0000000000000001'
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
     raise exception 'Invitation failure: a different verified email accepted the invitation';
   exception
@@ -283,7 +283,7 @@ do $$
 begin
   begin
     perform public.accept_planning_workspace_invite(
-      'unconfirmed-invite-token-00000000000001'
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
     );
     raise exception 'Invitation failure: an unconfirmed email accepted the invitation';
   exception
@@ -302,7 +302,7 @@ declare
   accepted_workspace_id uuid;
 begin
   accepted_workspace_id := public.accept_planning_workspace_invite(
-    'planning-invite-token-0000000000000001'
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
   );
 
   if accepted_workspace_id <> '60000000-0000-4000-8000-000000000006' then
@@ -328,7 +328,7 @@ begin
 
   begin
     perform public.accept_planning_workspace_invite(
-      'planning-invite-token-0000000000000001'
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
     raise exception 'Invitation failure: an invitation token was reused';
   exception
@@ -398,7 +398,7 @@ begin
 
   begin
     perform public.accept_planning_workspace_invite(
-      'planning-invite-token-0000000000000001'
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     );
     raise exception 'Grant failure: anonymous role called invitation acceptance';
   exception

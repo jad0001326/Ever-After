@@ -195,6 +195,13 @@ whole plan.
 These actions remain dormant unless the server-only
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true` flag is present. It is intentionally not
 a `NEXT_PUBLIC_` variable. Do not enable it until the migration and the
-transaction-safe RLS test have passed on a disposable Supabase branch. A join
-page must also set `noindex` and a no-referrer policy before invitation links
-are exposed in the interface.
+transaction-safe RLS test have passed on a disposable Supabase branch.
+
+Invitation links first enter a dedicated `/planning-hub/join/redeem` handler.
+The handler validates the generated 43-character base64url token, moves it into
+a one-hour, path-scoped `HttpOnly`, `SameSite=Lax` cookie and immediately
+redirects to the clean `/planning-hub/join` URL. The raw token is therefore
+never serialized into a React component, client bundle, form field or onward
+login/signup redirect. Both the redirect and production join response are
+`no-store` and apply no-referrer, noindex and anti-framing controls. Successful
+acceptance expires the same path-scoped cookie.

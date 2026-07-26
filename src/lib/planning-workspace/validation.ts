@@ -85,4 +85,6 @@ export const createPlanningInviteSchema = z.object({
   )
 });
 
-export const planningInviteTokenSchema = z.string().min(32).max(256);
+export const planningInviteTokenSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/, "Invitation tokens must use the generated secure format.");

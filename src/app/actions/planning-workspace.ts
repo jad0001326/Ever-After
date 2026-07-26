@@ -1,8 +1,13 @@
 "use server";
 
 import { createHash, randomBytes } from "node:crypto";
+import { cookies } from "next/headers";
 import { absoluteUrl } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import {
+  planningInviteCookieOptions,
+  PLANNING_INVITE_COOKIE
+} from "@/lib/planning-workspace/invite";
 import {
   createPlanningInviteSchema,
   ensurePlanningWorkspaceSchema,
@@ -25,6 +30,11 @@ const AUTH_REQUIRED_MESSAGE = "Sign in to use your connected wedding plan.";
 const SAVE_FAILED_MESSAGE = "That change could not be saved. Please try again.";
 
 type ActionFailure = { ok: false; message: string };
+export type PlanningInviteAcceptanceState = {
+  status: "idle" | "error" | "success";
+  message: string;
+  workspaceId?: string;
+};
 
 function isPlanningWorkspaceCloudEnabled() {
   return process.env.PLANNING_WORKSPACE_CLOUD_ENABLED === "true";
@@ -432,7 +442,7 @@ export async function createPlanningWorkspaceInviteAction(input: unknown) {
   return {
     ok: true,
     invite,
-    inviteUrl: absoluteUrl(`/planning-hub/join?token=${encodeURIComponent(rawToken)}`)
+    inviteUrl: absoluteUrl(`/planning-hub/join/redeem?token=${encodeURIComponent(rawToken)}`)
   } as const;
 }
 
@@ -456,7 +466,7 @@ export async function revokePlanningWorkspaceInviteAction(inviteId: unknown) {
     : ({ ok: true } as const);
 }
 
-export async function acceptPlanningWorkspaceInviteAction(rawToken: unknown) {
+async function acceptPlanningWorkspaceInvite(rawToken: unknown) {
   const parsed = planningInviteTokenSchema.safeParse(rawToken);
   if (!parsed.success) return { ok: false, message: "This invitation link is not valid." } satisfies ActionFailure;
   const context = await getPlanningContext();
@@ -474,6 +484,36 @@ export async function acceptPlanningWorkspaceInviteAction(rawToken: unknown) {
   return error || !workspaceId
     ? ({ ok: false, message: "This invitation is invalid, expired, already used, or belongs to another email address." } satisfies ActionFailure)
     : ({ ok: true, workspaceId } as const);
+}
+
+export async function acceptPlanningWorkspaceInviteFromCookieAction(
+  _previousState: PlanningInviteAcceptanceState,
+  _formData: FormData
+): Promise<PlanningInviteAcceptanceState> {
+  const cookieStore = await cookies();
+  const rawToken = cookieStore.get(PLANNING_INVITE_COOKIE)?.value;
+  if (!rawToken) {
+    return {
+      status: "error",
+      message: "Open the original invitation link again before accepting."
+    };
+  }
+
+  const result = await acceptPlanningWorkspaceInvite(rawToken);
+  if (!result.ok) {
+    return { status: "error", message: result.message };
+  }
+
+  cookieStore.set(PLANNING_INVITE_COOKIE, "", {
+    ...planningInviteCookieOptions(),
+    expires: new Date(0),
+    maxAge: 0
+  });
+  return {
+    status: "success",
+    message: "You now have secure partner access to this wedding plan.",
+    workspaceId: result.workspaceId
+  };
 }
 
 async function deletePlanningRecord(

@@ -236,8 +236,8 @@ begin
   end if;
 
   if raw_token is null
-    or char_length(raw_token) < 32
-    or char_length(raw_token) > 256
+    or char_length(raw_token) <> 43
+    or raw_token !~ '^[A-Za-z0-9_-]{43}$'
   then
     raise exception 'This planning invitation is not valid'
       using errcode = 'invalid_parameter_value';
