@@ -12,7 +12,7 @@ export function PlanningHubFilters({
   resultCount: number;
 }) {
   return (
-    <aside className="self-start rounded-3xl border border-[#d9d0c3] bg-white lg:sticky lg:top-24">
+    <aside aria-label="Venue filters" className="self-start rounded-3xl border border-[#d9d0c3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
       <details className="group" open>
         <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 lg:pointer-events-none">
           <span>

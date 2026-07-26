@@ -1,4 +1,5 @@
 import type { VenueSearchParams } from "@/types/venue";
+import type { PhotographerSearchParams } from "@/types/supplier";
 
 export type PlanningHubVenue = {
   id: string;
@@ -31,6 +32,48 @@ export type PlanningHubSearchParams = VenueSearchParams & {
 
 export type PlanningHubVenueResults = {
   venues: PlanningHubVenue[];
+  total: number;
+  page: number;
+  totalPages: number;
+  error?: string;
+};
+
+export type PlanningHubPhotographer = {
+  id: string;
+  slug: string;
+  name: string;
+  baseTown: string;
+  region: string;
+  summary: string;
+  styles: string[];
+  heroImageUrl: string;
+  hasApprovedPhoto: boolean;
+  startingPricePence: number | null;
+  typicalPricePence: number | null;
+  pricingSummary: string | null;
+  pricingUnit: string;
+  isClaimed: boolean;
+  travelsNationwide: boolean;
+};
+
+export type PlanningHubPhotographerDetail = PlanningHubPhotographer & {
+  description: string;
+  services: string[];
+  officialWebsiteUrl: string | null;
+  enquiryUrl: string | null;
+  gallery: Array<{ id: string; url: string; alt: string }>;
+  coverageHoursMin: number | null;
+  coverageHoursMax: number | null;
+  turnaroundWeeksMin: number | null;
+  turnaroundWeeksMax: number | null;
+};
+
+export type PlanningHubPhotographySearchParams = PhotographerSearchParams & {
+  search?: string;
+};
+
+export type PlanningHubPhotographerResults = {
+  photographers: PlanningHubPhotographer[];
   total: number;
   page: number;
   totalPages: number;

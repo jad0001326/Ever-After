@@ -70,7 +70,7 @@ No migration is applied by this branch. Any future partner-sharing, normalized p
 
 Completed on the clean integration branch:
 
-- full current test suite: 32 files and 162 tests passing;
+- full current test suite: 33 files and 167 tests passing;
 - focused Planning Hub and cookie-consent tests passing;
 - TypeScript check passing;
 - focused ESLint checks passing;
@@ -103,6 +103,8 @@ Read-only production inspection confirms that `budget_plans` has RLS enabled, fo
 2. Complete one physical Safari/iPhone smoke test and collect post-release field INP after an approved deployment.
 3. Review the dependency audit findings without force-upgrading packages.
 4. Present the exact deployment and rollback plan for explicit approval.
+
+Photography now continues inside the same beta workspace. Its architecture, verification evidence and rollback plan are recorded in `docs/planning-hub/photography-phase.md`.
 
 ## Rollback
 

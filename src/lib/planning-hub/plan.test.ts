@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { PlanningHubVenue } from "./types";
+import type { PlanningHubPhotographer, PlanningHubVenue } from "./types";
 import {
+  addManualPlanningHubPhotographer,
   addManualPlanningHubVenue,
   calculatePlanningHubPlan,
   choosePlanningHubVenue,
   createPlanningHubStarterPlan,
   getPhotographyNextHref,
+  updatePlanningHubPhotographerPayment,
   updatePlanningHubVenuePayment,
+  upsertPlanningHubPhotographer,
   upsertPlanningHubVenue
 } from "./plan";
 
@@ -24,6 +27,24 @@ const venue: PlanningHubVenue = {
   pricingLabel: "Venue hire",
   pricingUnit: "total",
   hasApprovedPhoto: false
+};
+
+const photographer: PlanningHubPhotographer = {
+  id: "photographer-1",
+  slug: "photographer-one",
+  name: "Photographer One",
+  baseTown: "Perth",
+  region: "Perthshire",
+  summary: "Natural wedding photography.",
+  styles: ["Documentary"],
+  heroImageUrl: "/everaft-logo-mark.svg",
+  hasApprovedPhoto: false,
+  startingPricePence: null,
+  typicalPricePence: null,
+  pricingSummary: "Quote required",
+  pricingUnit: "quote",
+  isClaimed: true,
+  travelsNationwide: true
 };
 
 describe("Planning Hub plan", () => {
@@ -54,8 +75,46 @@ describe("Planning Hub plan", () => {
     const contextual = { ...plan, selectedVenueId: venue.id, location: "Perthshire" };
 
     expect(plan.items[0]).toMatchObject({ source: "manual", itemName: "Our local hall", bookingStatus: "booked" });
+    expect(getPhotographyNextHref(contextual)).toContain("/planning-hub/photography?");
     expect(getPhotographyNextHref(contextual)).toContain("venue=venue-1");
     expect(getPhotographyNextHref(contextual)).toContain("location=Perthshire");
+  });
+
+  it("adds quote-only photography to the same connected budget and tracks payment", () => {
+    const plan = createPlanningHubStarterPlan("user-1");
+    const quoted = upsertPlanningHubPhotographer(plan, photographer, 180_000, "quoted");
+
+    expect(quoted.items[0]).toMatchObject({
+      categoryId: "photography",
+      listingId: "photographer-1",
+      confirmedCostPence: 180_000,
+      bookingStatus: "quoted"
+    });
+    expect(calculatePlanningHubPlan(quoted)).toMatchObject({
+      plannedPence: 180_000,
+      committedPence: 0,
+      remainingPence: 1_820_000
+    });
+
+    const booked = upsertPlanningHubPhotographer(quoted, photographer, 180_000, "booked");
+    const paid = updatePlanningHubPhotographerPayment(booked, photographer.id, 30_000, 30_000, "2027-02-01");
+    expect(paid.items[0]).toMatchObject({
+      bookingStatus: "booked",
+      paymentStatus: "partially_paid",
+      costStatus: "partially_paid",
+      dueDate: "2027-02-01"
+    });
+    expect(calculatePlanningHubPlan(paid).outstandingCommittedPence).toBe(150_000);
+  });
+
+  it("keeps manual photography available when no listing is suitable", () => {
+    const plan = addManualPlanningHubPhotographer(createPlanningHubStarterPlan(null), "A family friend", 50_000, "shortlisted");
+    expect(plan.items[0]).toMatchObject({
+      categoryId: "photography",
+      source: "manual",
+      supplierType: "Photographer",
+      itemName: "A family friend"
+    });
   });
 
   it("derives partial and paid states from deposits and instalments", () => {
