@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createPlanningTaskAction,
+  deletePlanningTaskAction,
   syncPlanningTablePlanAction,
 } from "@/app/actions/planning-workspace";
 import {
@@ -18,6 +19,7 @@ import { PlanningHubOrganiseWorkspace } from "./planning-hub-organise-workspace"
 
 vi.mock("@/app/actions/planning-workspace", () => ({
   createPlanningTaskAction: vi.fn(async () => ({ ok: true })),
+  deletePlanningTaskAction: vi.fn(async () => ({ ok: true })),
   updatePlanningTaskAction: vi.fn(async () => ({ ok: true })),
   saveConnectedBudgetPlanAction: vi.fn(async () => ({ ok: true })),
   savePlanningWorkspaceProfileAction: vi.fn(async () => ({ ok: true })),
@@ -134,7 +136,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
       .toBe("/planning-hub/organise#planning-tasks-title");
   });
 
-  it("adds tasks and persists them inside the same local workspace", async () => {
+  it("adds, edits and removes tasks inside the same local workspace", async () => {
     render(<PlanningHubOrganiseWorkspace initialBudgetPlan={createEmptyBudgetPlan()} userId="user-1" />);
     await screen.findByText("Your tasks");
 
@@ -167,6 +169,18 @@ describe("PlanningHubOrganiseWorkspace", () => {
     expect(screen.getByText("Confirm final caterer numbers")).toBeTruthy();
     await waitFor(() => {
       expect(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY)).toContain('"dueDate":"2026-08-15"');
+    });
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "Edit Confirm final caterer numbers",
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove task" }));
+
+    expect(screen.queryByText("Confirm final caterer numbers")).toBeNull();
+    await waitFor(() => {
+      expect(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY))
+        .not.toContain("Confirm final caterer numbers");
     });
   });
 
@@ -296,6 +310,77 @@ describe("PlanningHubOrganiseWorkspace", () => {
       dueDate: null,
     })));
     expect(screen.getByText("Confirm shared numbers")).toBeTruthy();
+  });
+
+  it("restores a failed connected deletion and removes the task on retry", async () => {
+    vi.mocked(deletePlanningTaskAction).mockClear();
+    vi.mocked(deletePlanningTaskAction)
+      .mockResolvedValueOnce({ ok: false, message: "Shared delete failed." })
+      .mockResolvedValueOnce({ ok: true });
+    const budgetPlan = { ...createEmptyBudgetPlan("owner-1"), id: "budget-1" };
+    const taskRow = {
+      id: "70000000-0000-4000-8000-000000000007",
+      workspace_id: "60000000-0000-4000-8000-000000000006",
+      title: "Remove obsolete task",
+      notes: null,
+      category: "general" as const,
+      status: "todo" as const,
+      due_date: null,
+      sort_order: 0,
+      created_at: "2026-07-26T10:00:00.000Z",
+      updated_at: "2026-07-26T10:00:00.000Z",
+    };
+    render(
+      <PlanningHubOrganiseWorkspace
+        cloudEnabled
+        connectedWorkspaceId="60000000-0000-4000-8000-000000000006"
+        initialBudgetPlan={budgetPlan}
+        initialCloudSnapshot={{
+          workspace: {
+            id: "60000000-0000-4000-8000-000000000006",
+            owner_id: "owner-1",
+            budget_plan_id: "budget-1",
+            name: "Shared wedding plan",
+            created_at: "2026-07-26T10:00:00.000Z",
+            updated_at: "2026-07-26T10:00:00.000Z",
+          },
+          profile: null,
+          members: [],
+          invites: [],
+          tasks: [taskRow],
+          guests: [],
+          tables: [],
+          seats: [],
+          seatingRules: [],
+        }}
+        userId="partner-1"
+      />,
+    );
+
+    expect(await screen.findByText("Remove obsolete task")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", {
+      name: "Edit Remove obsolete task",
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove task" }));
+
+    expect(await screen.findByText(
+      "The shared task could not be removed, so it was restored on this device.",
+    )).toBeTruthy();
+    expect(screen.getByText("Remove obsolete task")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "Edit Remove obsolete task",
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove task" }));
+
+    await waitFor(() => expect(deletePlanningTaskAction).toHaveBeenCalledTimes(2));
+    expect(deletePlanningTaskAction).toHaveBeenLastCalledWith(
+      "70000000-0000-4000-8000-000000000007",
+    );
+    expect(screen.queryByText("Remove obsolete task")).toBeNull();
+    expect(await screen.findByText("Task removed from the shared plan.")).toBeTruthy();
   });
 
   it("debounces a connected table-plan change into one atomic sync", async () => {

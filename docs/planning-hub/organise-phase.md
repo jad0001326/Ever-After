@@ -123,6 +123,10 @@ present in the shared task contract:
 
 - couples can create tasks with a planning category and optional due date;
 - task title, category and due date can be edited without recreating the task;
+- obsolete tasks can be removed only after an inline confirmation; local plans
+  persist immediately, while prepared connected mode uses the member-scoped
+  delete action and restores the device copy if the shared deletion fails;
+  keyboard focus returns to the stable task heading when the row disappears;
 - active tasks are ordered by overdue, due today, due within 30 days, later
   scheduled and unscheduled work, with completed tasks retained at the end;
 - overdue, due-today and due-soon counts come from shared domain logic suitable
@@ -137,7 +141,8 @@ present in the shared task contract:
 Form and row state are isolated into small client components, so typing into one
 task does not re-render the complete checklist. Existing local persistence and
 prepared owner/partner cloud actions continue to use the same task DTO and RLS
-boundary.
+boundary. The transaction verifier proves a partner can delete a task in the
+shared workspace while an outsider cannot.
 
 Updated local verification on 28 July 2026:
 

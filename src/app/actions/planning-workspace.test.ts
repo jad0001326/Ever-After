@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import {
   createPlanningTaskAction,
+  deletePlanningTaskAction,
   importPlanningWorkspaceSnapshotAction,
   savePlanningWorkspaceProfileAction,
   saveConnectedBudgetPlanAction,
@@ -144,6 +145,27 @@ describe("planning workspace server actions", () => {
       id: "70000000-0000-4000-8000-000000000007",
       workspace_id: "60000000-0000-4000-8000-000000000006",
     }));
+  });
+
+  it("deletes exactly one validated task through workspace RLS", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const eq = vi.fn(async () => ({ error: null, count: 1 }));
+    const remove = vi.fn(() => ({ eq }));
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      from: vi.fn(() => ({ delete: remove })),
+    } as never);
+
+    const result = await deletePlanningTaskAction(
+      "70000000-0000-4000-8000-000000000007",
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(remove).toHaveBeenCalledWith({ count: "exact" });
+    expect(eq).toHaveBeenCalledWith(
+      "id",
+      "70000000-0000-4000-8000-000000000007",
+    );
   });
 
   it("upserts a validated profile through workspace RLS", async () => {

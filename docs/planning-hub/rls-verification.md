@@ -33,8 +33,9 @@ search-path configuration or invoker/definer mode.
 The transaction scenario then covers owners, partners, outsiders, matching and
 non-matching invitees, unconfirmed email, anonymous access, linked and unlinked
 owner budgets, tasks, private guest data, tables, seats, profiles, invitations,
-snapshot imports and optimistic-concurrency failures. Synthetic records always
-roll back.
+snapshot imports and optimistic-concurrency failures. It now explicitly proves
+a partner can delete a task from the shared workspace while an outsider's
+delete affects no row. Synthetic records always roll back.
 
 ## Defects found by execution
 

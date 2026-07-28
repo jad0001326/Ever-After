@@ -416,6 +416,48 @@ export function PlanningHubOrganiseWorkspace({
     }
   }
 
+  function deleteTask(taskId: string) {
+    const removedTask = workspace?.tasks.find((task) => task.id === taskId);
+    if (!removedTask) return;
+    const now = new Date().toISOString();
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
+    setWorkspace((current) => current ? {
+      ...current,
+      tasks: current.tasks.filter((task) => task.id !== taskId),
+      updatedAt: now,
+    } : current);
+
+    if (!activeWorkspaceId) {
+      setSyncFeedback("Task removed from this plan.");
+      return;
+    }
+
+    setSyncFeedback("Removing task from the shared plan…");
+    startCloudTransition(async () => {
+      const { deletePlanningTaskAction } = await import("@/app/actions/planning-workspace");
+      const result = await deletePlanningTaskAction(taskId);
+      if (result.ok) {
+        setCloudSnapshot((current) => current ? {
+          ...current,
+          tasks: current.tasks.filter((task) => task.id !== taskId),
+        } : current);
+        setWorkspaceMode("cloud_loaded");
+        setSyncFeedback("Task removed from the shared plan.");
+        return;
+      }
+
+      setWorkspace((current) => {
+        if (!current || current.tasks.some((task) => task.id === taskId)) return current;
+        return {
+          ...current,
+          tasks: [...current.tasks, removedTask],
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      setSyncFeedback("The shared task could not be removed, so it was restored on this device.");
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3" aria-label="Planning overview">
@@ -458,6 +500,7 @@ export function PlanningHubOrganiseWorkspace({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <PlanningHubTaskList
           onAdd={addTask}
+          onDelete={deleteTask}
           onStatusChange={setTaskStatus}
           onUpdate={updateTaskDetails}
           tasks={workspace.tasks}

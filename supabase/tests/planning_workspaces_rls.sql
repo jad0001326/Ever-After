@@ -146,6 +146,14 @@ values (
   '70000000-0000-4000-8000-000000000007',
   '60000000-0000-4000-8000-000000000006',
   'Confirm the final guest count'
+), (
+  '71000000-0000-4000-8000-000000000007',
+  '60000000-0000-4000-8000-000000000006',
+  'Partner can remove this task'
+), (
+  '72000000-0000-4000-8000-000000000007',
+  '60000000-0000-4000-8000-000000000006',
+  'Outsider cannot remove this task'
 );
 
 insert into public.planning_guests (id, workspace_id, name)
@@ -224,7 +232,7 @@ begin
   if (
     select count(*) from public.planning_tasks
     where workspace_id = '60000000-0000-4000-8000-000000000006'
-  ) <> 1 then
+  ) <> 3 then
     raise exception 'RLS failure: partner cannot read shared tasks';
   end if;
 
@@ -269,6 +277,13 @@ begin
 
   if not found then
     raise exception 'RLS failure: partner cannot update shared tasks';
+  end if;
+
+  delete from public.planning_tasks
+  where id = '71000000-0000-4000-8000-000000000007';
+
+  if not found then
+    raise exception 'RLS failure: partner cannot delete shared tasks';
   end if;
 
   update public.planning_workspace_profiles
@@ -470,6 +485,12 @@ begin
     and id = 'planning-budget-1';
   if found then
     raise exception 'RLS failure: outsider updated the linked budget plan';
+  end if;
+
+  delete from public.planning_tasks
+  where id = '72000000-0000-4000-8000-000000000007';
+  if found then
+    raise exception 'RLS failure: outsider deleted a shared task';
   end if;
 
   begin

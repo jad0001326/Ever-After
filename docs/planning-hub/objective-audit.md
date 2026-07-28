@@ -16,7 +16,7 @@ release and secure cloud sharing remain deliberately gated.
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. |
 | Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items now track availability against the exact wedding date rather than inferring a calendar from directory data. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches. |
-| Organisation | Tasks, scheduled priorities, guest readiness, RSVP/dietary details, table planning and supplier date-readiness are connected in one Organise stage. |
+| Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
 | Reusable logic | Planning, budget, supplier, payment and workspace rules live outside page components and can support a future native client. |
 | Safe beta | The Planning Hub remains on separate no-index beta routes and the public planners remain available. |
@@ -58,12 +58,13 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 65 test files and 301 tests passing.
+- 65 test files and 304 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
-  update the shared budget but cannot read an unlinked owner budget or change
-  the workspace budget link.
+  update the shared budget and delete a shared task, but cannot read an unlinked
+  owner budget or change the workspace budget link; an outsider cannot delete
+  that task.
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.

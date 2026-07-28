@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, Circle, Clock3, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { Check, Circle, Clock3, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 import {
   formatPlanningTaskDate,
   getPlanningTaskCategoryLabel,
@@ -24,6 +24,7 @@ const taskCategories: PlanningTaskCategory[] = [
 
 export function PlanningHubTaskList({
   onAdd,
+  onDelete,
   onUpdate,
   onStatusChange,
   tasks,
@@ -34,6 +35,7 @@ export function PlanningHubTaskList({
     category: PlanningTaskCategory;
     dueDate: string | null;
   }) => void;
+  onDelete: (taskId: string) => void;
   onUpdate: (
     taskId: string,
     input: {
@@ -47,6 +49,12 @@ export function PlanningHubTaskList({
   today: string;
 }) {
   const overview = getPlanningTaskOverview(tasks, new Date(`${today}T12:00:00`));
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  function removeTask(taskId: string) {
+    titleRef.current?.focus();
+    onDelete(taskId);
+  }
 
   return (
     <section
@@ -57,7 +65,14 @@ export function PlanningHubTaskList({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#95502b]">Action list</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold text-[#173526]" id="planning-tasks-title">Your tasks</h2>
+          <h2
+            className="mt-2 font-display text-3xl font-semibold text-[#173526]"
+            id="planning-tasks-title"
+            ref={titleRef}
+            tabIndex={-1}
+          >
+            Your tasks
+          </h2>
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs font-semibold text-[#31533b]">
@@ -77,6 +92,7 @@ export function PlanningHubTaskList({
         {overview.tasks.map(({ task, urgency }) => (
           <PlanningTaskRow
             key={task.id}
+            onDelete={removeTask}
             onStatusChange={onStatusChange}
             onUpdate={onUpdate}
             task={task}
@@ -172,11 +188,13 @@ function NewTaskForm({
 type TaskUrgency = ReturnType<typeof getPlanningTaskOverview>["tasks"][number]["urgency"];
 
 function PlanningTaskRow({
+  onDelete,
   onStatusChange,
   onUpdate,
   task,
   urgency,
 }: {
+  onDelete: (taskId: string) => void;
   onStatusChange: (taskId: string, status: PlanningTaskStatus) => void;
   onUpdate: (
     taskId: string,
@@ -190,6 +208,7 @@ function PlanningTaskRow({
   urgency: TaskUrgency;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [category, setCategory] = useState(task.category);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
@@ -198,6 +217,7 @@ function PlanningTaskRow({
     setTitle(task.title);
     setCategory(task.category);
     setDueDate(task.dueDate ?? "");
+    setConfirmingDelete(false);
     setEditing(true);
   }
 
@@ -208,6 +228,7 @@ function PlanningTaskRow({
       category,
       dueDate: dueDate || null,
     });
+    setConfirmingDelete(false);
     setEditing(false);
   }
 
@@ -300,7 +321,7 @@ function PlanningTaskRow({
               value={dueDate}
             />
           </label>
-          <div className="flex gap-2 sm:col-span-2">
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
             <button
               className="focus-ring min-h-11 flex-1 rounded-xl bg-[#173526] px-4 text-sm font-semibold text-white"
               type="submit"
@@ -309,12 +330,52 @@ function PlanningTaskRow({
             </button>
             <button
               className="focus-ring min-h-11 rounded-xl border border-[var(--line)] px-4 text-sm font-semibold text-[#173526]"
-              onClick={() => setEditing(false)}
+              onClick={() => {
+                setConfirmingDelete(false);
+                setEditing(false);
+              }}
               type="button"
             >
               Cancel
             </button>
+            <button
+              className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b85445] px-4 text-sm font-semibold text-[#8f3427]"
+              onClick={() => setConfirmingDelete(true)}
+              type="button"
+            >
+              <Trash2 aria-hidden="true" size={16} />
+              Remove task
+            </button>
           </div>
+          {confirmingDelete ? (
+            <div
+              className="rounded-xl border border-[#efb7aa] bg-[#fff4ef] p-3 sm:col-span-2"
+              role="alert"
+            >
+              <p className="text-sm font-semibold text-[#8f3427]">
+                Remove {task.title}?
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[#6f4a42]">
+                This removes it from this wedding plan and cannot be undone.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className="focus-ring min-h-11 rounded-xl bg-[#8f3427] px-4 text-sm font-semibold text-white"
+                  onClick={() => onDelete(task.id)}
+                  type="button"
+                >
+                  Yes, remove task
+                </button>
+                <button
+                  className="focus-ring min-h-11 rounded-xl border border-[#b85445] bg-white px-4 text-sm font-semibold text-[#8f3427]"
+                  onClick={() => setConfirmingDelete(false)}
+                  type="button"
+                >
+                  Keep task
+                </button>
+              </div>
+            </div>
+          ) : null}
         </form>
       ) : null}
     </article>

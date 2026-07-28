@@ -24,6 +24,7 @@ describe("PlanningHubTaskList", () => {
     render(
       <PlanningHubTaskList
         onAdd={onAdd}
+        onDelete={vi.fn()}
         onStatusChange={vi.fn()}
         onUpdate={vi.fn()}
         tasks={[]}
@@ -49,6 +50,7 @@ describe("PlanningHubTaskList", () => {
     render(
       <PlanningHubTaskList
         onAdd={vi.fn()}
+        onDelete={vi.fn()}
         onStatusChange={onStatusChange}
         onUpdate={onUpdate}
         tasks={[task()]}
@@ -74,5 +76,38 @@ describe("PlanningHubTaskList", () => {
       category: "guests",
       dueDate: "2026-08-02",
     });
+  });
+
+  it("requires explicit confirmation before removing a task", () => {
+    const onDelete = vi.fn();
+    render(
+      <PlanningHubTaskList
+        onAdd={vi.fn()}
+        onDelete={onDelete}
+        onStatusChange={vi.fn()}
+        onUpdate={vi.fn()}
+        tasks={[task()]}
+        today="2026-07-28"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "Edit Confirm guest numbers",
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove task" }));
+
+    expect(screen.getByRole("alert").textContent)
+      .toContain("Remove Confirm guest numbers?");
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep task" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove task" }));
+    expect(onDelete).toHaveBeenCalledWith("task-1");
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Your tasks" }),
+    );
   });
 });
