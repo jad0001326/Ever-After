@@ -74,7 +74,9 @@ prioritises a chosen venue or photographer that still needs a date check,
 follow-up or replacement before recommending the next supplier stage. Its
 connected booking overview also groups the whole active plan into available,
 awaiting, unavailable and action-needed counts, while preserving the exact
-status and stage link for every visible item.
+status and stage link for every item. Long plans render six items initially and
+reveal subsequent six-item batches on demand, so the first DOM stays bounded
+without making later supplier decisions unreachable.
 
 This state is part of the existing versioned budget JSON contract, with
 validation and legacy restoration defaults. It adds no catalogue query, public
@@ -113,13 +115,14 @@ categories. They remain available for manual planning only.
 
 ## Verification
 
-- 65 test files and 299 tests passing after the availability command-centre
+- 65 test files and 300 tests passing after the reachable booking-pipeline
   slice;
 - focused category-normalization and supplier-continuity tests passing;
 - focused date-availability component, persistence, plan-domain,
   recommendation and workspace-persistence tests passing;
 - focused booking-overview domain and component tests cover aggregate counts,
-  stale answers, missing-date guidance, status labels and preserved stage links;
+  stale answers, missing-date guidance, status labels, preserved stage links
+  and progressive long-list expansion and collapse;
 - TypeScript check passing;
 - ESLint passing with one pre-existing unrelated Open Graph image warning;
 - optimized Next.js production build passing with 78 generated pages;

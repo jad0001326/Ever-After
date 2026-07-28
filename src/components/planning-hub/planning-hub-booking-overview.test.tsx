@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
 import type { BudgetItem } from "@/lib/budget/types";
@@ -92,5 +92,53 @@ describe("PlanningHubBookingOverview", () => {
     )).toBeTruthy();
     expect(screen.getByText("1 need action")).toBeTruthy();
     expect(screen.getByText("Set wedding date")).toBeTruthy();
+  });
+
+  it("batches a long booking list without making later items unreachable", () => {
+    const plan = createEmptyBudgetPlan();
+    plan.weddingDate = "2027-06-12";
+    plan.items = Array.from({ length: 14 }, (_, index) => {
+      const itemNumber = String(index + 1).padStart(2, "0");
+      return {
+        ...venue(),
+        id: `venue-${itemNumber}`,
+        listingId: `venue-${itemNumber}`,
+        itemName: `Venue ${itemNumber}`,
+        supplierName: `Venue ${itemNumber}`,
+      };
+    });
+
+    render(<PlanningHubBookingOverview plan={plan} />);
+
+    const pipeline = screen.getByRole("list", { name: "Booking pipeline" });
+    expect(within(pipeline).getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.queryByText("Venue 14")).toBeNull();
+
+    const showMore = screen.getByRole("button", {
+      name: "Show 6 more bookings",
+    });
+    expect(showMore.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(showMore);
+
+    expect(within(pipeline).getAllByRole("listitem")).toHaveLength(12);
+    expect(screen.queryByText("Venue 14")).toBeNull();
+    expect(screen.getByRole("button", { name: "Show 2 more bookings" }))
+      .toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show 2 more bookings" }));
+
+    expect(within(pipeline).getAllByRole("listitem")).toHaveLength(14);
+    expect(screen.getByText("Venue 14")).toBeTruthy();
+    expect(screen.getAllByText("Available for your date")).toHaveLength(14);
+    expect(screen.getAllByRole("link", { name: "Review booking stage" }))
+      .toHaveLength(14);
+
+    const showFewer = screen.getByRole("button", {
+      name: "Show fewer bookings",
+    });
+    expect(showFewer.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(showFewer);
+
+    expect(within(pipeline).getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.queryByText("Venue 14")).toBeNull();
   });
 });

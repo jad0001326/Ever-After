@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import {
   BriefcaseBusiness,
   CalendarCheck2,
@@ -15,6 +18,8 @@ import {
 } from "@/lib/planning-hub/bookings";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 
+const BOOKING_BATCH_SIZE = 6;
+
 export function PlanningHubBookingOverview({
   plan,
   workspaceId,
@@ -23,7 +28,12 @@ export function PlanningHubBookingOverview({
   workspaceId?: string | null;
 }) {
   const overview = getPlanningHubBookingOverview(plan, workspaceId);
-  const visibleItems = overview.items.slice(0, 6);
+  const [visibleCount, setVisibleCount] = useState(BOOKING_BATCH_SIZE);
+  const visibleItems = overview.items.slice(0, visibleCount);
+  const remainingItemCount = Math.max(
+    overview.items.length - visibleItems.length,
+    0,
+  );
   const progress = Math.min(Math.max(overview.budget.percentUsed, 0), 100);
 
   return (
@@ -115,7 +125,11 @@ export function PlanningHubBookingOverview({
               <CountPill label="unavailable" value={overview.availabilityUnavailableCount} />
             </div>
           </div>
-          <ol aria-label="Booking pipeline" className="mt-4 grid gap-3">
+          <ol
+            aria-label="Booking pipeline"
+            className="mt-4 grid gap-3"
+            id="planning-hub-booking-pipeline"
+          >
             {visibleItems.map((item) => (
               <li className="rounded-2xl border border-[#e4ddd2] bg-[#fbf8f2] p-4" key={item.itemId}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -153,10 +167,22 @@ export function PlanningHubBookingOverview({
               </li>
             ))}
           </ol>
-          {overview.items.length > visibleItems.length ? (
-            <p className="mt-3 text-xs text-[#625f57]">
-              {overview.items.length - visibleItems.length} more planned item{overview.items.length - visibleItems.length === 1 ? "" : "s"} remain in the connected budget.
-            </p>
+          {overview.items.length > BOOKING_BATCH_SIZE ? (
+            <button
+              aria-controls="planning-hub-booking-pipeline"
+              aria-expanded={visibleCount > BOOKING_BATCH_SIZE}
+              className="focus-ring mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-[#173526] px-4 text-sm font-semibold text-[#173526]"
+              onClick={() => setVisibleCount((current) => (
+                current >= overview.items.length
+                  ? BOOKING_BATCH_SIZE
+                  : Math.min(current + BOOKING_BATCH_SIZE, overview.items.length)
+              ))}
+              type="button"
+            >
+              {remainingItemCount > 0
+                ? `Show ${Math.min(remainingItemCount, BOOKING_BATCH_SIZE)} more booking${Math.min(remainingItemCount, BOOKING_BATCH_SIZE) === 1 ? "" : "s"}`
+                : "Show fewer bookings"}
+            </button>
           ) : null}
         </>
       ) : (

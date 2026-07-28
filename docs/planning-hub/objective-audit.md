@@ -12,7 +12,7 @@ release and secure cloud sharing remain deliberately gated.
 | Wedding profile | Budget, date, guest count, location and priorities drive the workspace and recommendations. |
 | Venue discovery | Server-side filters and pagination return lightweight cards; details and approved galleries load on demand. |
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. |
-| Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness. |
+| Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. |
 | Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items now track availability against the exact wedding date rather than inferring a calendar from directory data. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items. |
@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 65 test files and 299 tests passing.
+- 65 test files and 300 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -84,7 +84,8 @@ its public profile route and category-specific browser verification before its
   enquiry sent, available or unavailable against the exact wedding date;
   changing that date makes the prior response stale. Organise summarises
   available, awaiting, unavailable and action-needed items, labels every
-  visible booking, and recommends a recheck before advancing.
+  booking, progressively reveals long plans without an unbounded first render,
+  and recommends a recheck before advancing.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;
