@@ -53,7 +53,8 @@ they do not require rewriting or pushing it.
 | 10. Security proof | Add embedded PostgreSQL verification and correct the dormant profile import migration ambiguity. | `16b4534` | Must remain adjacent to the workspace migrations it verifies. |
 | 11. Dependency security | Patch production dependencies and record the residual dev-tool advisory. | `d9168c2` | Production audit is zero; do not run the forced ESLint downgrade. |
 | 12. Release audit | Correct gate messaging, perform final keyboard QA and record this release sequence. | `b048ef1` | Local commit only until push approval. |
-| 13. API verification | Add the fail-closed Auth/Data API smoke harness and document the missing local baseline prerequisite. | Current working slice | Dormant until a free prepared test stack exists. |
+| 13. API verification | Add the fail-closed Auth/Data API smoke harness and document its local baseline prerequisite. | `21fbb84` | Dormant until a free prepared test stack exists. |
+| 14. Local API bootstrap | Generate a checksummed disposable project from the exact baseline plus all timestamped migrations. | Current working slice | Local files only; requires a future container-runtime smoke test. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -94,7 +95,8 @@ public tables to
    - review each boundary above in order;
    - merge no migration automatically.
 3. **Free Supabase boundary verification**
-   - prepare the missing reproducible local baseline described in
+   - run `npm run planning-api:prepare-local` to generate the reproducible
+     checksummed test project described in
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
@@ -144,9 +146,9 @@ Use the least destructive rollback that restores safety:
 
 - Supabase Auth and Data API execution cannot run on the current machine:
   Docker, Podman, the Supabase CLI, `psql` and a WSL distribution are absent.
-- The guarded `npm run test:planning-api` harness is ready, but the repository's
-  incremental migration folder still needs a reviewed local bootstrap over
-  `supabase/schema.sql`; it must not be treated as a fresh database baseline.
+- The guarded `npm run test:planning-api` harness and disposable baseline
+  generator are ready. The generated 27-file stack still needs its first
+  container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
@@ -154,7 +156,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 61 Vitest files and 280 tests pass.
+- 62 Vitest files and 283 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions.
 - TypeScript passes.
@@ -162,6 +164,8 @@ Use the least destructive rollback that restores safety:
   `<img>` warning.
 - `npm audit --omit=dev` reports zero known vulnerabilities.
 - The optimized Next.js 16.2.12 build produces 78 pages.
+- The local API generator reproduces one baseline plus all 26 timestamped
+  migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
 - Venue detail focus lands below the sticky header; the 44px close control is

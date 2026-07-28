@@ -56,7 +56,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 61 test files and 280 tests passing.
+- 62 test files and 283 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios.

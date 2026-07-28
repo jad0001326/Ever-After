@@ -51,25 +51,39 @@ planning records before deleting the users and their cascaded data.
 The target must already contain the EverAft baseline schema and the eight
 Planning Hub migrations verified by `npm run test:planning-rls`.
 
-The repository currently has no `supabase/config.toml`, and its migration folder
-contains incremental changes rather than the original application baseline.
-`supabase/schema.sql` contains that baseline. Do not assume that running
-`supabase start` or `supabase db reset` directly in this checkout will produce a
-valid database. First create and review a reproducible local bootstrap that:
+The repository's migration folder contains incremental changes rather than the
+original application baseline. `supabase/schema.sql` contains that baseline.
+Do not run `supabase start` or `supabase db reset` directly in this checkout.
 
-1. initializes a local Supabase project;
-2. applies the baseline schema without writing to a hosted project;
-3. applies later repository SQL in its established order;
-4. applies the eight Planning Hub migrations in timestamp order; and
-5. confirms Auth's `handle_new_user` trigger creates `public.profiles`.
+Generate a disposable local-only project instead:
 
-That bootstrap must be tested on a disposable local database before it becomes
-repository migration history. It must not repair or rewrite production
-migration history by assumption.
+```powershell
+npm.cmd run planning-api:prepare-local
+```
+
+The generator:
+
+1. checks that the baseline has not begun overlapping later table migrations;
+2. copies `schema.sql` byte-for-byte as the first test migration;
+3. copies all 26 timestamped migrations byte-for-byte in filename order;
+4. records a SHA-256 checksum for every source and target; and
+5. refuses to replace an existing output directory.
+
+It writes to a unique operating-system temporary directory by default and
+prints that path. The generated manifest is test-only. It does not alter or
+repair repository or production migration history.
 
 ## Local command
 
-After a full local stack is prepared, use the URL and keys printed by
+Inside the generated directory, let the installed CLI create its own
+version-matched config and start the stack:
+
+```powershell
+supabase init --workdir .
+supabase start --workdir .
+```
+
+After all 27 generated migrations apply, use the URL and keys printed by
 `supabase start`:
 
 ```powershell
@@ -82,6 +96,11 @@ npm.cmd run test:planning-api
 The command prints only the target class (`local loopback` or
 `approved disposable`) and assertion progress. It never prints keys, passwords
 or invitation tokens.
+
+The generator and checksum verification pass on this machine. The stack itself
+has not run because no container runtime or Supabase CLI is installed. Its first
+successful run must also confirm that Auth's `handle_new_user` trigger creates
+`public.profiles`.
 
 ## Cleanup
 
