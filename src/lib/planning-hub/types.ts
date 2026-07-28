@@ -126,3 +126,10 @@ export type PlanningHubSupplierResults = {
   totalPages: number;
   error?: string;
 };
+
+export type PlanningHubSupplierCategory = {
+  slug: SupplierCategorySlug;
+  label: string;
+  plural: string;
+  budgetCategoryId: string;
+};

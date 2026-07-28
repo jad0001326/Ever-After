@@ -1,15 +1,19 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles } from "lucide-react";
+import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles, Store } from "lucide-react";
+import type { PlanningHubSupplierCategory } from "@/lib/planning-hub/types";
 
 export function PlanningHubHeader({
   stage = "venue",
+  supplierCategory = null,
   workspaceId = null,
 }: {
-  stage?: "venue" | "photography" | "organise";
+  stage?: "venue" | "photography" | "supplier" | "organise";
+  supplierCategory?: PlanningHubSupplierCategory | null;
   workspaceId?: string | null;
 }) {
   const photography = stage === "photography";
+  const supplier = stage === "supplier" && supplierCategory;
   const organise = stage === "organise";
   return (
     <header className="border-b border-[#d9d0c3] bg-[#fbf8f2]">
@@ -25,19 +29,35 @@ export function PlanningHubHeader({
         <div className="mt-6 max-w-4xl">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9c542d]">My EverAft</p>
           <h1 className="mt-2 font-[Georgia] text-4xl font-semibold leading-[0.95] tracking-[-0.04em] text-[#173526] sm:text-6xl">
-            {organise ? "Keep every moving part in one calm place." : photography ? "Choose photography that fits your real plan." : "Turn venue browsing into your wedding plan."}
+            {organise
+              ? "Keep every moving part in one calm place."
+              : photography
+                ? "Choose photography that fits your real plan."
+                : supplier
+                  ? `Choose ${supplier.plural.toLowerCase()} that fit your real plan.`
+                  : "Turn venue browsing into your wedding plan."}
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-[#625f57] sm:text-base">
             {organise
               ? "Turn your next steps, guest list and table arrangement into one connected workspace built around the same wedding plan."
               : photography
-              ? "Find photographers who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget."
-              : "Find a Scottish venue, compare the strongest options and keep every estimate, quote, booking and payment connected to your wedding budget."}
+                ? "Find photographers who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget."
+                : supplier
+                  ? `Find ${supplier.plural.toLowerCase()} who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget.`
+                  : "Find a Scottish venue, compare the strongest options and keep every estimate, quote, booking and payment connected to your wedding budget."}
           </p>
         </div>
         <nav aria-label="Planning stages" className="mt-6 flex gap-2 overflow-x-auto pb-1">
           <StageLink active={stage === "venue"} href={withPlanningWorkspace("/planning-hub", workspaceId)} icon={<MapPinned size={16} />} label="Venue" />
           <StageLink active={photography} href={withPlanningWorkspace("/planning-hub/photography", workspaceId)} icon={<Camera size={16} />} label="Photography" />
+          {supplier ? (
+            <StageLink
+              active
+              href={withPlanningWorkspace(`/planning-hub/suppliers/${supplier.slug}`, workspaceId)}
+              icon={<Store size={16} />}
+              label={supplier.label}
+            />
+          ) : null}
           <StageLink active={organise} href={withPlanningWorkspace("/planning-hub/organise", workspaceId)} icon={<CalendarCheck2 size={16} />} label="Organise" />
         </nav>
       </div>
