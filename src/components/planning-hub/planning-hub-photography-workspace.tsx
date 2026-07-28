@@ -26,6 +26,7 @@ import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 
 export function PlanningHubPhotographyWorkspace({
   initialPlan,
+  initialPlanIsFallback = false,
   connectedWorkspaceId = null,
   results,
   searchParams,
@@ -33,6 +34,7 @@ export function PlanningHubPhotographyWorkspace({
   userId
 }: {
   initialPlan: BudgetPlan;
+  initialPlanIsFallback?: boolean;
   connectedWorkspaceId?: string | null;
   results: ResultData;
   searchParams: PlanningHubPhotographySearchParams;
@@ -68,7 +70,7 @@ export function PlanningHubPhotographyWorkspace({
     const restoreTimer = window.setTimeout(() => {
       try {
         const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
-        if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
+        if (localPlan && (initialPlanIsFallback || new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime())) {
           const restored = { ...localPlan, userId };
           setPlan(restored);
           setSaveMessage("Restored newer changes from this device.");
@@ -90,7 +92,7 @@ export function PlanningHubPhotographyWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.photographers, searchParams.planItem, storageKey, userId]);
+  }, [initialPlan.updatedAt, initialPlanIsFallback, results.photographers, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;

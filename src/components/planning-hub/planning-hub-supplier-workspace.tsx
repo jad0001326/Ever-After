@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import type { ReactNode } from "react";
+import { ClipboardCheck, SearchX, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningHubSupplierDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
@@ -24,19 +27,24 @@ import { PlanningHubSupplierDetailPanel } from "./planning-hub-supplier-detail";
 import { PlanningHubSupplierPlanPanel } from "./planning-hub-supplier-plan-panel";
 import { PlanningHubSupplierResults } from "./planning-hub-supplier-results";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 
 export function PlanningHubSupplierWorkspace({
+  catalogueLive = true,
   category,
   connectedWorkspaceId = null,
   initialPlan,
+  initialPlanIsFallback = false,
   results,
   searchParams,
   today = "2026-07-28",
   userId,
 }: {
+  catalogueLive?: boolean;
   category: PlanningHubSupplierCategory;
   connectedWorkspaceId?: string | null;
   initialPlan: BudgetPlan;
+  initialPlanIsFallback?: boolean;
   results: ResultData;
   searchParams: PlanningHubSupplierSearchParams;
   today?: string;
@@ -71,7 +79,7 @@ export function PlanningHubSupplierWorkspace({
     const restoreTimer = window.setTimeout(() => {
       try {
         const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
-        if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
+        if (localPlan && (initialPlanIsFallback || new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime())) {
           const restored = { ...localPlan, userId };
           setPlan(restored);
           setSaveMessage("Restored newer changes from this device.");
@@ -93,7 +101,7 @@ export function PlanningHubSupplierWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [category, initialPlan.updatedAt, results.suppliers, searchParams.planItem, storageKey, userId]);
+  }, [category, initialPlan.updatedAt, initialPlanIsFallback, results.suppliers, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;
@@ -204,19 +212,29 @@ export function PlanningHubSupplierWorkspace({
   return (
     <div className="grid min-w-0 gap-6 lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="min-w-0">
-        <PlanningHubSupplierCompare category={category} onRemove={(supplierId) => setComparedSuppliers((current) => current.filter((supplier) => supplier.id !== supplierId))} suppliers={comparedSuppliers} />
-        <PlanningHubSupplierDetailPanel category={category} detail={detail} loading={detailLoading || pending && detailLoading} onClose={closeSupplierDetail} />
-        <PlanningHubSupplierResults
-          category={category}
-          comparedSupplierIds={comparedIds}
-          onCompare={toggleCompare}
-          onOpen={openSupplier}
-          plan={plan}
-          results={results}
-          searchParams={searchParams}
-        />
+        {catalogueLive ? (
+          <>
+            <PlanningHubSupplierCompare category={category} onRemove={(supplierId) => setComparedSuppliers((current) => current.filter((supplier) => supplier.id !== supplierId))} suppliers={comparedSuppliers} />
+            <PlanningHubSupplierDetailPanel category={category} detail={detail} loading={detailLoading || pending && detailLoading} onClose={closeSupplierDetail} />
+            <PlanningHubSupplierResults
+              category={category}
+              comparedSupplierIds={comparedIds}
+              onCompare={toggleCompare}
+              onOpen={openSupplier}
+              plan={plan}
+              results={results}
+              searchParams={searchParams}
+            />
+          </>
+        ) : (
+          <ManualSupplierIntroduction
+            category={category}
+            connectedWorkspaceId={connectedWorkspaceId}
+          />
+        )}
       </div>
       <PlanningHubSupplierPlanPanel
+        manualOnly={!catalogueLive}
         category={category}
         connectedWorkspaceId={connectedWorkspaceId}
         onInstallmentsSave={saveInstallments}
@@ -234,6 +252,59 @@ export function PlanningHubSupplierWorkspace({
         status={status}
         today={today}
       />
+    </div>
+  );
+}
+
+function ManualSupplierIntroduction({
+  category,
+  connectedWorkspaceId,
+}: {
+  category: PlanningHubSupplierCategory;
+  connectedWorkspaceId: string | null;
+}) {
+  return (
+    <section className="rounded-3xl border border-[#d8c7a7] bg-[#fff9ef] p-6 sm:p-8">
+      <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#765737]">
+        <SearchX size={15} /> Catalogue not presented
+      </span>
+      <h2 className="mt-5 max-w-2xl font-display text-4xl font-semibold text-[#173526] sm:text-5xl">Add your chosen {category.label.toLowerCase()} without losing the plan.</h2>
+      <p className="mt-4 max-w-2xl text-sm leading-6 text-[#625f57] sm:text-base">
+        EverAft has not activated this catalogue yet, so this page performs no supplier search and makes no claim about available listings. Use the form beside this guide for a business you found elsewhere.
+      </p>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <Explanation
+          icon={<ClipboardCheck size={19} />}
+          text="Record a working estimate, received quote or confirmed booking, then add deposits and instalment deadlines."
+          title="Keep the decision connected"
+        />
+        <Explanation
+          icon={<ShieldCheck size={19} />}
+          text="Your manual entry uses the same device-first budget plan. No inactive supplier profile or unapproved image is loaded."
+          title="Truthful by design"
+        />
+      </div>
+      <Link className="focus-ring mt-7 inline-flex min-h-11 items-center rounded-full border border-[#173526] bg-white px-5 text-sm font-semibold text-[#173526]" href={withPlanningWorkspace("/planning-hub/suppliers", connectedWorkspaceId)} prefetch={false}>
+        Review all supplier stages
+      </Link>
+    </section>
+  );
+}
+
+function Explanation({
+  icon,
+  text,
+  title,
+}: {
+  icon: ReactNode;
+  text: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-5">
+      <span className="grid size-10 place-items-center rounded-full bg-[#edf2ec] text-[#31533b]">{icon}</span>
+      <h3 className="mt-4 font-display text-2xl font-semibold text-[#173526]">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[#625f57]">{text}</p>
     </div>
   );
 }

@@ -4,13 +4,14 @@ Date: 26 July 2026
 
 ## Decision
 
-Planning Hub supplier discovery now has a category-neutral server data layer.
-Photography remains the only enabled supplier stage because it is the only
+Planning Hub supplier discovery has a category-neutral server data layer.
+Photography remains the only live supplier catalogue because it is the only
 category currently marked live in `supplierDirectoryCategories`.
 
-No route, navigation item or recommendation is exposed for an inactive
-category. The shared layer prepares future categories without presenting an
-empty catalogue to couples.
+Inactive categories are exposed as truthful manual-planning stages from the
+supplier roadmap. They do not query or display supplier listings. The shared
+layer prepares future catalogues without presenting an empty catalogue to
+couples.
 
 ## Shared contracts
 
@@ -27,7 +28,7 @@ The shared supplier layer provides:
 - price, featured, newest and name ordering;
 - a stable manual-entry fallback at the Planning Hub workspace layer.
 
-Photography is now a specialization over those contracts. It adds:
+Photography is a specialization over those contracts. It adds:
 
 - photography-style candidate matching;
 - photographer profile fields;
@@ -36,7 +37,7 @@ Photography is now a specialization over those contracts. It adds:
 
 ## Connected budget business logic
 
-Known supplier categories now share the same reusable plan conversion:
+Known supplier categories share the same reusable plan conversion:
 
 - map the directory category to its existing Budget Planner category;
 - retain source listing identity, imported prices and future listing URL;
@@ -53,8 +54,8 @@ call the category-neutral business rules directly.
 
 ## Activation rules
 
-A second supplier stage must not be enabled merely because its category mapping
-exists. Activation requires:
+A second supplier catalogue must not be enabled merely because its category
+mapping or manual-planning stage exists. Catalogue activation requires:
 
 1. a meaningful set of published listings in `supplier_listings`;
 2. representative or approved visual handling for the category;
@@ -69,7 +70,7 @@ exists. Activation requires:
 
 The current inactive mappings include videography, celebrants, floristry,
 catering, music, transport, cake, beauty, stationery, decor and other supplier
-categories. They remain unavailable to users.
+categories. They remain available for manual planning only.
 
 ## Security and data boundaries
 
@@ -84,17 +85,18 @@ categories. They remain unavailable to users.
 
 ## Verification
 
-- 46 test files and 228 tests passing;
-- focused category-normalization and Photography-specialization tests passing;
+- 60 test files and 275 tests passing after the supplier-roadmap slice;
+- focused category-normalization and supplier-continuity tests passing;
 - TypeScript check passing;
 - ESLint passing with one pre-existing unrelated Open Graph image warning;
-- optimized Next.js production build passing with 77 generated pages;
-- production-mode `/planning-hub/photography` browser regression at 390 x 844;
-- unavailable-search and manual-entry states render without browser errors.
+- optimized Next.js production build passing with 78 generated pages;
+- production-mode supplier roadmap and manual stage checked at 390 x 844;
+- manual-only supplier stages make no catalogue request and render without
+  browser errors.
 
 ## Rollback
 
-The refactor is internal and preserves the existing Photography interface.
-Rollback consists of restoring the former Photography-specific query module and
-removing the shared supplier contracts. No saved plan, route, database record or
-migration needs to be changed.
+The shared supplier data layer still preserves the Photography interface.
+Rollback of the roadmap slice consists of removing the roadmap route,
+manual-only route access and supplier recommendation. No saved plan, database
+record or migration needs to be changed.

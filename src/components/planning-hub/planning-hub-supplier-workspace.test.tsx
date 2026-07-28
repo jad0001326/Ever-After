@@ -145,6 +145,21 @@ describe("PlanningHubSupplierWorkspace", () => {
     expect(screen.getByText("This manually added videographer is ready for payment planning.")).toBeTruthy();
   });
 
+  it("supports manual planning without presenting or querying an inactive catalogue", () => {
+    renderWorkspace(
+      createPlanningHubStarterPlan(null),
+      null,
+      false,
+      { suppliers: [], total: 0, page: 1, totalPages: 1 },
+    );
+
+    expect(screen.getByRole("heading", { name: "Add your chosen videographer without losing the plan." })).toBeTruthy();
+    expect(screen.getByText(/performs no supplier search/i)).toBeTruthy();
+    expect(screen.queryByText("Films One")).toBeNull();
+    expect(screen.getByLabelText("Videographer name")).toBeTruthy();
+    expect(loadSupplierDetail).not.toHaveBeenCalled();
+  });
+
   it("restores the latest manually added supplier for this category", () => {
     const reopenedPlan = addManualPlanningHubSupplier(
       createPlanningHubStarterPlan(null),
@@ -175,13 +190,16 @@ describe("PlanningHubSupplierWorkspace", () => {
 function renderWorkspace(
   initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
   connectedWorkspaceId: string | null = null,
+  catalogueLive = true,
+  resultData: PlanningHubSupplierResults = results,
 ) {
   return render(
     <PlanningHubSupplierWorkspace
+      catalogueLive={catalogueLive}
       category={category}
       connectedWorkspaceId={connectedWorkspaceId}
       initialPlan={initialPlan}
-      results={results}
+      results={resultData}
       searchParams={{}}
       userId={null}
     />,

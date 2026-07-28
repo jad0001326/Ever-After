@@ -181,8 +181,8 @@ describe("PlanningHubPhotographyWorkspace", () => {
 
     expect(screen.getByRole("link", { name: /Review venue and wedding basics/i }).getAttribute("href"))
       .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
-    expect(screen.getByRole("link", { name: /organise guests and tables/i }).getAttribute("href"))
-      .toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006");
+    expect(screen.getByRole("link", { name: /plan your supplier team/i }).getAttribute("href"))
+      .toBe("/planning-hub/suppliers?workspace=60000000-0000-4000-8000-000000000006");
   });
 });
 

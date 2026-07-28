@@ -72,6 +72,7 @@ async function PlanningHubPhotographyContent({
       <PlanningHubPhotographyWorkspace
         connectedWorkspaceId={connectedContext?.snapshot.workspace.id ?? null}
         initialPlan={initialPlan}
+        initialPlanIsFallback={!connectedContext && !cloudPlan}
         results={results}
         searchParams={effectiveParams}
         today={getPlanningHubDateKey()}

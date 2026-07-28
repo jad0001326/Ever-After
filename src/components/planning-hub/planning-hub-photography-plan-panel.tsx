@@ -180,8 +180,8 @@ export function PlanningHubPhotographyPlanPanel({
         <button className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526] disabled:opacity-60" disabled={saveState === "saving"} onClick={onPlanSave} type="button">
           <Save size={17} /> Save plan
         </button>
-        <Link className="focus-ring mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#e8efe8] px-4 text-sm font-semibold text-[#173526]" href={withPlanningWorkspace("/planning-hub/organise", connectedWorkspaceId)} prefetch={false}>
-          <span>{hasBookedPhotographer ? "Next: organise guests and tables" : "Then: organise guests and tables"}<span className="mt-1 block text-xs font-normal text-[#5b665e]">{hasBookedPhotographer ? "Your core venue and photography choices are connected." : "Available whenever you are ready."}</span></span>
+        <Link className="focus-ring mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#e8efe8] px-4 text-sm font-semibold text-[#173526]" href={withPlanningWorkspace("/planning-hub/suppliers", connectedWorkspaceId)} prefetch={false}>
+          <span>{hasBookedPhotographer ? "Next: plan your supplier team" : "Then: plan your supplier team"}<span className="mt-1 block text-xs font-normal text-[#5b665e]">{hasBookedPhotographer ? "Your venue and photography choices now shape what comes next." : "Browse live stages or add a business manually."}</span></span>
           {hasBookedPhotographer ? <ArrowRight size={18} /> : <UsersRound size={18} />}
         </Link>
       </div>

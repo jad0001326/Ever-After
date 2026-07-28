@@ -23,6 +23,7 @@ import { PlanningHubVenueResults } from "./planning-hub-venue-results";
 
 export function PlanningHubWorkspace({
   initialPlan,
+  initialPlanIsFallback = false,
   initialSavedVenueIds,
   connectedWorkspaceId = null,
   results,
@@ -31,6 +32,7 @@ export function PlanningHubWorkspace({
   userId
 }: {
   initialPlan: BudgetPlan;
+  initialPlanIsFallback?: boolean;
   connectedWorkspaceId?: string | null;
   initialSavedVenueIds: string[];
   results: PlanningHubVenueResultData;
@@ -70,7 +72,7 @@ export function PlanningHubWorkspace({
     const restoreTimer = window.setTimeout(() => {
       try {
         const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
-        if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
+        if (localPlan && (initialPlanIsFallback || new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime())) {
           setPlan({ ...localPlan, userId });
           setSaveMessage("Restored newer changes from this device.");
           const restoredItem = findPlanningHubVenueItem(localPlan, searchParams.planItem)
@@ -89,7 +91,7 @@ export function PlanningHubWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.venues, searchParams.planItem, storageKey, userId]);
+  }, [initialPlan.updatedAt, initialPlanIsFallback, results.venues, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;

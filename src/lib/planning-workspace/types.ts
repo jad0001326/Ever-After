@@ -34,6 +34,7 @@ export type PlanningRecommendation =
   | { stage: "payments"; title: string; href: string; reason: string }
   | { stage: "venue"; title: string; href: string; reason: string }
   | { stage: "photography"; title: string; href: string; reason: string }
+  | { stage: "suppliers"; title: string; href: string; reason: string }
   | { stage: "guests"; title: string; href: string; reason: string }
   | { stage: "tables"; title: string; href: string; reason: string }
   | { stage: "tasks"; title: string; href: string; reason: string };

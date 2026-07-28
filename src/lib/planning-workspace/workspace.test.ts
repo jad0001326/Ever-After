@@ -99,6 +99,16 @@ describe("planning workspace", () => {
     ).href).toContain("workspace=60000000-0000-4000-8000-000000000006");
 
     budget.items.push(budgetItem("photography"));
+    expect(getPlanningRecommendation(budget, workspace).stage).toBe("suppliers");
+    expect(getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+    ).href).toBe("/planning-hub/suppliers?workspace=60000000-0000-4000-8000-000000000006");
+
+    const florist = budgetItem("flowers");
+    florist.supplierType = "Florist";
+    budget.items.push(florist);
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("guests");
     expect(getPlanningRecommendation(
       budget,
@@ -124,7 +134,9 @@ describe("planning workspace", () => {
   it("prioritises outstanding replies and ignores declined guests for seating", () => {
     const budget = createEmptyBudgetPlan();
     const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
-    budget.items = [budgetItem("venue"), budgetItem("photography")];
+    const florist = budgetItem("flowers");
+    florist.supplierType = "Florist";
+    budget.items = [budgetItem("venue"), budgetItem("photography"), florist];
     workspace.tablePlan = createExampleTablePlan();
     workspace.tablePlan.guests = workspace.tablePlan.guests.map((guest, index) => ({
       ...guest,

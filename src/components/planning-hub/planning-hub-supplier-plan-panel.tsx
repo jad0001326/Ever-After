@@ -18,6 +18,7 @@ import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 export function PlanningHubSupplierPlanPanel({
   category,
   connectedWorkspaceId,
+  manualOnly = false,
   onInstallmentsSave,
   onManualSupplier,
   onPlanSave,
@@ -35,6 +36,7 @@ export function PlanningHubSupplierPlanPanel({
 }: {
   category: PlanningHubSupplierCategory;
   connectedWorkspaceId: string | null;
+  manualOnly?: boolean;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
   onManualSupplier: (name: string, costPence: number, status: PlanningHubItemStatus) => void;
   onPlanSave: () => void;
@@ -50,7 +52,7 @@ export function PlanningHubSupplierPlanPanel({
   status: PlanningHubItemStatus;
   today: string;
 }) {
-  const [manualSupplierOpen, setManualSupplierOpen] = useState(false);
+  const [manualSupplierOpen, setManualSupplierOpen] = useState(manualOnly);
   const budget = calculatePlanningHubPlan(plan);
   const supplierItems = plan.items.filter((item) => (
     item.categoryId === category.budgetCategoryId
@@ -92,7 +94,7 @@ export function PlanningHubSupplierPlanPanel({
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-supplier-planning" id="current-supplier-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current {category.label.toLowerCase()}</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedSupplier?.name ?? selectedItem?.itemName ?? `Open a ${category.label.toLowerCase()} to plan them`}</h3>
+        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedSupplier?.name ?? selectedItem?.itemName ?? (manualOnly ? `Add a ${category.label.toLowerCase()} to your plan` : `Open a ${category.label.toLowerCase()} to plan them`)}</h3>
         {selectedSupplier ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -118,7 +120,7 @@ export function PlanningHubSupplierPlanPanel({
               ? `This manually added ${category.label.toLowerCase()} is ready for payment planning.`
               : `This saved ${category.label.toLowerCase()} is ready for payment planning.`}
           </p>
-        ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View &amp; plan” on a result to keep researching without leaving your workspace.</p>}
+        ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">{manualOnly ? `Enter the ${category.label.toLowerCase()} you found elsewhere below. EverAft will not search an inactive catalogue.` : "Use “View & plan” on a result to keep researching without leaving your workspace."}</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
 
@@ -143,7 +145,7 @@ export function PlanningHubSupplierPlanPanel({
         open={manualSupplierOpen}
       >
         <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
-          {category.label} not listed? <Plus size={18} />
+          {manualOnly ? `Add a ${category.label.toLowerCase()} manually` : `${category.label} not listed?`} <Plus size={18} />
         </summary>
         <form className="grid gap-3 px-5 pb-5" onSubmit={(event) => {
           event.preventDefault();

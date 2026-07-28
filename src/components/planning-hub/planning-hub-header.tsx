@@ -9,11 +9,12 @@ export function PlanningHubHeader({
   supplierCategory = null,
   workspaceId = null,
 }: {
-  stage?: "venue" | "photography" | "supplier" | "organise";
+  stage?: "venue" | "photography" | "suppliers" | "supplier" | "organise";
   supplierCategory?: PlanningHubSupplierCategory | null;
   workspaceId?: string | null;
 }) {
   const photography = stage === "photography";
+  const suppliers = stage === "suppliers";
   const supplier = stage === "supplier" && supplierCategory;
   const organise = stage === "organise";
   return (
@@ -34,6 +35,8 @@ export function PlanningHubHeader({
               ? "Keep every moving part in one calm place."
               : photography
                 ? "Choose photography that fits your real plan."
+                : suppliers
+                  ? "Build the supplier team around your real plan."
                 : supplier
                   ? `Choose ${supplier.plural.toLowerCase()} that fit your real plan.`
                   : "Turn venue browsing into your wedding plan."}
@@ -43,6 +46,8 @@ export function PlanningHubHeader({
               ? "Turn your next steps, guest list and table arrangement into one connected workspace built around the same wedding plan."
               : photography
                 ? "Find photographers who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget."
+                : suppliers
+                  ? "Choose what to plan next, browse live EverAft catalogues and keep businesses found elsewhere connected through truthful manual planning."
                 : supplier
                   ? `Find ${supplier.plural.toLowerCase()} who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget.`
                   : "Find a Scottish venue, compare the strongest options and keep every estimate, quote, booking and payment connected to your wedding budget."}
@@ -51,14 +56,7 @@ export function PlanningHubHeader({
         <nav aria-label="Planning stages" className="mt-6 flex gap-2 overflow-x-auto pb-1">
           <StageLink active={stage === "venue"} href={withPlanningWorkspace("/planning-hub", workspaceId)} icon={<MapPinned size={16} />} label="Venue" />
           <StageLink active={photography} href={withPlanningWorkspace("/planning-hub/photography", workspaceId)} icon={<Camera size={16} />} label="Photography" />
-          {supplier ? (
-            <StageLink
-              active
-              href={withPlanningWorkspace(`/planning-hub/suppliers/${supplier.slug}`, workspaceId)}
-              icon={<Store size={16} />}
-              label={supplier.label}
-            />
-          ) : null}
+          <StageLink active={suppliers || Boolean(supplier)} href={withPlanningWorkspace("/planning-hub/suppliers", workspaceId)} icon={<Store size={16} />} label="Suppliers" />
           <StageLink active={organise} href={withPlanningWorkspace("/planning-hub/organise", workspaceId)} icon={<CalendarCheck2 size={16} />} label="Organise" />
         </nav>
       </div>

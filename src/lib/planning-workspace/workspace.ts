@@ -5,6 +5,7 @@ import {
   getPlanningHubPaymentOverview,
 } from "@/lib/planning-hub/payments";
 import { getPhotographyNextHref } from "@/lib/planning-hub/plan";
+import { hasPlannedNonPhotographySupplier } from "@/lib/planning-hub/supplier-roadmap";
 import {
   createEmptyTablePlan,
   restoreTablePlan,
@@ -175,6 +176,15 @@ export function getPlanningRecommendation(
       reason: workspace.profile.priorities.includes("photography")
         ? "Photography is one of your priorities, and your venue context can now shape the shortlist."
         : "Your venue is in the plan, so photography is the strongest next supplier decision.",
+    };
+  }
+
+  if (!hasPlannedNonPhotographySupplier(budgetPlan)) {
+    return {
+      stage: "suppliers",
+      title: "Plan your next suppliers",
+      href: withPlanningWorkspace("/planning-hub/suppliers", workspaceId),
+      reason: "Choose the supplier category that matters next. Live catalogues can be browsed, and businesses found elsewhere can still be added manually.",
     };
   }
 

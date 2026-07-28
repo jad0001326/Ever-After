@@ -57,6 +57,7 @@ async function PlanningHubContent({ searchParams }: { searchParams: Promise<Plan
       <PlanningHubWorkspace
         connectedWorkspaceId={connectedContext?.snapshot.workspace.id ?? null}
         initialPlan={initialPlan}
+        initialPlanIsFallback={!connectedContext && !cloudPlan}
         initialSavedVenueIds={(favourites ?? []).map((favourite) => favourite.venue_id)}
         results={results}
         searchParams={params}
