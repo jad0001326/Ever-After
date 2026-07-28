@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:planning-rls",
+    "test:planning-rls": "node scripts/verify-planning-workspace-rls.mjs",
     "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
     "enrichment:stage": "node scripts/stage-enrichment-review.mts",
     "pricing:recover": "node scripts/build-pricing-recovery.mts",
@@ -34,6 +35,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.4",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@tailwindcss/postcss": "latest",

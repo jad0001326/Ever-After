@@ -1,7 +1,10 @@
 -- Transaction-safe RLS verification for My EverAft connected workspaces.
 --
--- Run only against a local Supabase database or disposable development branch:
---   supabase test db supabase/tests/planning_workspaces_rls.sql
+-- Preferred repository command:
+--   npm run test:planning-rls
+--
+-- The same transaction can also run against a local Supabase database or a
+-- disposable development branch after its migrations have been applied.
 --
 -- This verifies owner isolation, partner collaboration, privilege boundaries and
 -- anonymous denial. The transaction always rolls back its synthetic records.

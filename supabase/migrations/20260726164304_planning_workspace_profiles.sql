@@ -157,7 +157,7 @@ begin
     ),
     nullif(btrim(profile->>'vision'), '')
   )
-  on conflict (workspace_id) do update
+  on conflict on constraint planning_workspace_profiles_pkey do update
   set wedding_date = excluded.wedding_date,
       guest_count = excluded.guest_count,
       location = excluded.location,

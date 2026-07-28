@@ -25,9 +25,11 @@ release and secure cloud sharing remain deliberately gated.
 
 Secure partner sharing and cloud persistence have local application foundations
 and dormant database migrations, ownership checks, grants and RLS policies.
-They have not been applied to production or to a paid Supabase branch. Until
-those policies are exercised against a free local or disposable database, the
-local device plan remains the verified path.
+The unchanged migrations and transaction-safe RLS scenario now pass against an
+embedded PostgreSQL engine with real roles, grants, policies and `auth.uid()`
+claims. They have not been applied to production or to a paid Supabase branch.
+The cloud feature remains disabled until the Supabase Auth/Data API boundary is
+also exercised in a free local stack or approved disposable environment.
 
 Additional supplier catalogues are structurally ready but remain manual-only.
 Each catalogue still needs enough real published listings, approved imagery,
@@ -36,14 +38,16 @@ its public profile route and category-specific browser verification before its
 
 ## Remaining release gates
 
-1. Run the dormant collaboration migrations and RLS tests on a free local or
-   disposable Supabase environment, including cross-user denial tests and
-   rollback verification.
+1. Run the already-passing collaboration scenario through Supabase Auth and the
+   Data API in a free local stack or approved disposable environment. The
+   database-level owner, partner, outsider and anonymous cases now pass.
 2. Review the accumulated local commits as a release series and choose the
    production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
    Chrome verification is already passing.
-4. Review dependency-audit findings and resolve any release-relevant items.
+4. Resolve the current dependency audit findings in a separate upgrade slice;
+   production dependencies currently include Next.js, PostCSS, Sharp and
+   transitive `fast-uri` advisories.
 5. Obtain explicit approval before any push, pull request, migration,
    deployment, production write or rollback.
 6. After an approved release, collect field Core Web Vitals, especially INP,
@@ -52,6 +56,9 @@ its public profile route and category-specific browser verification before its
 ## Current verification baseline
 
 - 60 test files and 275 tests passing.
+- Embedded PostgreSQL RLS verification passing for 8 migrations and 10
+  user-owned tables, including schema-contract assertions and transaction-safe
+  owner, partner, outsider, invitee and anonymous scenarios.
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.
@@ -62,5 +69,5 @@ its public profile route and category-specific browser verification before its
   accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
   total blocking time 70-80 milliseconds.
 
-No production data, Supabase migration, cloud branch, deployment or paid action
-was used.
+No production data, hosted Supabase migration, cloud branch, deployment or paid
+action was used.

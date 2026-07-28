@@ -194,8 +194,10 @@ whole plan.
 
 These actions remain dormant unless the server-only
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true` flag is present. It is intentionally not
-a `NEXT_PUBLIC_` variable. Do not enable it until the migration and the
-transaction-safe RLS test have passed on a disposable Supabase branch.
+a `NEXT_PUBLIC_` variable. The database-level migration and transaction-safe RLS
+test now pass locally in embedded PostgreSQL. Do not enable the flag until the
+same boundary has also passed through Supabase Auth and the Data API in a free
+local stack or approved disposable environment.
 
 Invitation links first enter a dedicated `/planning-hub/join/redeem` handler.
 The handler validates the generated 43-character base64url token, moves it into
@@ -237,4 +239,37 @@ Local verification on 28 July 2026:
 - at 390 × 844, venue → photography → Organise retained the workspace query,
   page width matched the viewport and browser errors were empty.
 
-No migration, production write, deployment or paid cloud branch was used.
+No hosted migration, production write, deployment or paid cloud branch was
+used.
+
+## Reproducible database security proof
+
+`npm run test:planning-rls` creates an in-memory PostgreSQL database, installs
+the pinned `pgcrypto` extension, models the pre-existing Supabase roles and Auth
+identity helper, and applies the budget plus connected-workspace migrations
+unchanged.
+
+The verifier then checks the catalog contract for all ten user-owned planning
+tables before executing `supabase/tests/planning_workspaces_rls.sql` inside a
+transaction. It proves:
+
+- RLS is enabled and `anon` has no table privileges;
+- each writable planning table has command-appropriate policies;
+- sensitive functions use fixed empty search paths and narrow execution grants;
+- owners can create and replace their snapshots;
+- partners can read and update shared planning records and the linked budget,
+  but cannot transfer ownership, manage members or replace the owner snapshot;
+- outsiders cannot read or mutate workspace, guest, profile or budget data;
+- invitation acceptance requires the matching confirmed email, is single-use
+  and does not expose direct acceptance-state updates;
+- stale table-plan and snapshot writes fail; and
+- anonymous table and function access is denied.
+
+The first execution exposed an ambiguity between the
+`import_planning_workspace_snapshot_v2` output variable and
+`ON CONFLICT (workspace_id)`. The dormant migration now targets the named
+primary-key constraint, and the full scenario passes.
+
+This is a real PostgreSQL policy/grant test, but it does not emulate GoTrue,
+PostgREST or cookie transport. A full free-local Supabase API/Auth smoke test
+therefore remains a release gate.
