@@ -51,8 +51,9 @@ more detailed schedule.
 - Partner writes continue through the connected-workspace action and existing
   version conflict checks.
 - No anonymous grant, new API endpoint or public schedule record is introduced.
-- Existing RLS runtime tests remain a release gate when a free local Supabase
-  environment is available.
+- The database-level owner/partner/outsider RLS scenario now passes locally.
+  Supabase Auth and Data API execution remains a release gate for a free local
+  stack or approved disposable environment.
 
 ## Verification
 

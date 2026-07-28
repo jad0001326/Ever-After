@@ -462,7 +462,7 @@ export function PlanningHubOrganiseWorkspace({
         <aside className="rounded-3xl border border-[#d8c7a7] bg-[#f9f5ed] p-5 sm:p-6">
           <span className="grid size-11 place-items-center rounded-full bg-[#173526] text-white"><LockKeyhole size={19} /></span>
           <h2 className="mt-4 font-display text-2xl font-semibold text-[#173526]">Partner access</h2>
-          <p className="mt-2 text-sm leading-6 text-[#625f57]">Secure signed-in partner sharing is prepared behind the local approval gate. It stays disabled until its row-level access tests can run in a free disposable database, and it never uses a public editable link.</p>
+          <p className="mt-2 text-sm leading-6 text-[#625f57]">Secure signed-in partner sharing is prepared behind the local approval gate. Its database access rules pass locally, but sharing stays disabled until the Supabase sign-in and API boundary is verified and release approval is given. It never uses a public editable link.</p>
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-[#625f57]">
             {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>

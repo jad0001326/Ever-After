@@ -325,4 +325,19 @@ describe("PlanningHubOrganiseWorkspace", () => {
     ), { timeout: 2500 });
     expect(await screen.findByText("Guest and table changes saved to the shared plan.")).toBeTruthy();
   });
+
+  it("describes the remaining partner-sharing gate accurately", async () => {
+    render(
+      <PlanningHubOrganiseWorkspace
+        cloudEnabled={false}
+        initialBudgetPlan={createEmptyBudgetPlan(null)}
+        initialCloudSnapshot={null}
+        userId={null}
+      />,
+    );
+
+    expect(await screen.findByText(/database access rules pass locally/i)).toBeTruthy();
+    expect(screen.getByText(/Supabase sign-in and API boundary is verified/i)).toBeTruthy();
+    expect(screen.queryByText(/row-level access tests can run/i)).toBeNull();
+  });
 });

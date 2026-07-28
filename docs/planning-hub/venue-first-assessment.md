@@ -95,14 +95,21 @@ The test used the optimized production build with eight real venue results and t
 
 The final mobile regression for the existing public `/venues` route scored performance 98, accessibility 96, best practices 100 and SEO 100, with LCP 2.258 s, TBT 91 ms and CLS 0.
 
-Read-only production inspection confirms that `budget_plans` has RLS enabled, four authenticated owner policies, no anonymous grants, the composite `(user_id, id)` primary key and the owner/update index. `supabase/tests/budget_plans_rls.sql` adds rollback-only owner A, unrelated user B and anonymous verification for a local database or disposable Supabase branch. It has not been run against production.
+Read-only production inspection confirms that `budget_plans` has RLS enabled,
+four authenticated owner policies, no anonymous grants, the composite
+`(user_id, id)` primary key and the owner/update index. The rollback-only owner
+A, unrelated user B and anonymous scenario now passes locally against embedded
+PostgreSQL together with the connected-workspace policies. It has not been run
+against production.
 
 ## Remaining release gates
 
-1. Run `supabase/tests/budget_plans_rls.sql` on a local database or disposable Supabase branch when that environment is available.
-2. Complete one physical Safari/iPhone smoke test and collect post-release field INP after an approved deployment.
-3. Review the dependency audit findings without force-upgrading packages.
-4. Present the exact deployment and rollback plan for explicit approval.
+1. Run the already-passing database scenario through Supabase Auth and the Data
+   API in a free local stack or approved disposable environment.
+2. Complete one physical Safari/iPhone smoke test and collect post-release
+   field INP after an approved deployment.
+3. Review the exact deployment and rollback sequence and obtain explicit
+   approval. The production dependency audit is now clear.
 
 Photography now continues inside the same beta workspace. Its architecture, verification evidence and rollback plan are recorded in `docs/planning-hub/photography-phase.md`.
 

@@ -55,7 +55,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 60 test files and 275 tests passing.
+- 60 test files and 276 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios.
@@ -72,6 +72,11 @@ its public profile route and category-specific browser verification before its
   horizontal overflow, no browser errors and zero axe violations.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
+- Venue and photographer details now retain a 96px sticky-header focus offset;
+  their 44px close controls remain unobstructed and return focus to the exact
+  opening control.
+- Open venue details, open photographer details and Organise each pass axe-core
+  with zero violations and zero incomplete checks.
 - Three supplier-roadmap Lighthouse mobile runs: performance 98,
   accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
   total blocking time 70-80 milliseconds.

@@ -107,14 +107,14 @@ evidence for retaining the deferred editor.
 
 ## Next release gates
 
-1. Execute the new migration and RLS tests on a disposable database.
-2. Review the migration output and query plans before requesting production
-   migration approval.
-3. Wire the prepared cloud actions into Organise behind the disabled cloud flag.
-4. Dual-write only behind the Organise beta, with rollback to the local
-   workspace.
-5. Run browser and end-to-end partner-sharing checks with two isolated test
-   accounts before asking to enable cloud sync.
+1. Run the locally passing owner/partner/outsider scenario through Supabase Auth
+   and the Data API in a free local stack or approved disposable environment.
+2. Review migration history, advisors and query plans before requesting
+   production migration approval.
+3. Keep the wired cloud actions behind the disabled server-only flag.
+4. Run end-to-end partner-sharing checks with two isolated test accounts before
+   asking to enable cloud sync.
+5. Obtain separate approval for migration, deployment and cloud activation.
 
 ## Scheduled task management
 

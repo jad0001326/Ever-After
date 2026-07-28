@@ -20,7 +20,7 @@ export function PlanningHubPhotographerDetailPanel({
       aria-busy={loading}
       aria-label={loading ? "Loading photographer details" : `${detail?.name ?? "Photographer"} details`}
       aria-live="polite"
-      className="focus-ring mb-6 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white"
+      className="focus-ring mb-6 scroll-mt-24 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white"
       id="photographer-detail"
       tabIndex={-1}
     >
@@ -41,7 +41,7 @@ export function PlanningHubPhotographerDetailPanel({
                 </div>
               ))}
             </div>
-            <button aria-label="Close photographer details" className="focus-ring absolute right-3 top-3 inline-grid min-h-11 min-w-11 place-items-center rounded-full bg-white text-[#173526] shadow" onClick={onClose} type="button">
+            <button aria-label="Close photographer details" className="focus-ring absolute right-3 top-3 z-10 inline-grid min-h-11 min-w-11 place-items-center rounded-full bg-white text-[#173526] shadow" onClick={onClose} type="button">
               <X size={19} />
             </button>
           </div>

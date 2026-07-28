@@ -22,7 +22,7 @@ export function PlanningHubVenueDetailPanel({
       aria-busy={loading}
       aria-label={loading ? "Loading venue details" : `${detail?.name ?? "Venue"} details`}
       aria-live="polite"
-      className="focus-ring mb-6 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white"
+      className="focus-ring mb-6 scroll-mt-24 overflow-hidden rounded-3xl border border-[#cfc3b3] bg-white"
       id="venue-detail"
       tabIndex={-1}
     >
@@ -37,10 +37,10 @@ export function PlanningHubVenueDetailPanel({
         <>
           <div className="relative aspect-[16/9] bg-[#eee8dd]">
             <Image alt={detail.gallery[0].alt} className="object-cover" fill priority sizes="(min-width: 1024px) 55vw, 100vw" src={detail.gallery[0].url} />
-            <button aria-label="Close venue details" className="focus-ring absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-white/95 text-[#173526] shadow-lg" onClick={onClose} type="button">
+            <button aria-label="Close venue details" className="focus-ring absolute right-4 top-4 z-10 grid size-11 place-items-center rounded-full bg-white/95 text-[#173526] shadow-lg" onClick={onClose} type="button">
               <X size={20} />
             </button>
-            {!detail.hasApprovedPhoto ? <span className="absolute bottom-4 left-4 rounded-full bg-[#fff9ef]/95 px-3 py-1.5 text-xs font-semibold text-[#715622]">EverAft illustrated profile</span> : null}
+            {!detail.hasApprovedPhoto ? <span className="absolute bottom-4 left-4 rounded-full bg-[#fff9ef] px-3 py-1.5 text-xs font-semibold text-[#715622]">EverAft illustrated profile</span> : null}
           </div>
           <div className="p-5 sm:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9c542d]">{detail.type}</p>
@@ -52,9 +52,9 @@ export function PlanningHubVenueDetailPanel({
             </div>
             <p className="mt-5 text-sm leading-7 text-[#514b43]">{detail.description}</p>
             {detail.amenities.length ? (
-              <div className="mt-5 flex flex-wrap gap-2" aria-label="Venue amenities">
-                {detail.amenities.map((amenity) => <span className="rounded-full bg-[#f4efe7] px-3 py-1.5 text-xs font-medium text-[#5e5549]" key={amenity}>{amenity}</span>)}
-              </div>
+              <ul className="mt-5 flex flex-wrap gap-2" aria-label="Venue amenities">
+                {detail.amenities.map((amenity) => <li className="rounded-full bg-[#f4efe7] px-3 py-1.5 text-xs font-medium text-[#5e5549]" key={amenity}>{amenity}</li>)}
+              </ul>
             ) : null}
             {detail.gallery.length > 1 ? (
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">

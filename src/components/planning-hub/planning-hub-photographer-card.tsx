@@ -32,14 +32,14 @@ export function PlanningHubPhotographerCard({
           src={photographer.heroImageUrl}
         />
         <div className="absolute inset-x-3 top-3 flex flex-wrap justify-between gap-2">
-          <span className="rounded-full bg-white/92 px-3 py-1 text-[11px] font-semibold text-[#3d372f] backdrop-blur">Photographer</span>
+          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#3d372f]">Photographer</span>
           {bookingStatus ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-[#173526] px-3 py-1 text-[11px] font-semibold capitalize text-white">
               <Check size={13} /> {bookingStatus.replaceAll("_", " ")}
             </span>
           ) : null}
         </div>
-        {!photographer.hasApprovedPhoto ? <span className="absolute bottom-3 left-3 rounded-full bg-[#fff9ef]/95 px-3 py-1 text-[10px] font-semibold text-[#715622]">Profile image pending</span> : null}
+        {!photographer.hasApprovedPhoto ? <span className="absolute bottom-3 left-3 rounded-full bg-[#fff9ef] px-3 py-1 text-[10px] font-semibold text-[#715622]">Profile image pending</span> : null}
       </div>
       <div className="p-5">
         <h3 className="font-display text-2xl font-semibold leading-tight text-[#173526]">{photographer.name}</h3>
