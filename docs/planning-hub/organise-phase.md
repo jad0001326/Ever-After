@@ -9,8 +9,8 @@
   rebuilding table placement and conflict logic.
 - Migrates the existing device table plan into the new local workspace when the
   couple first opens Organise.
-- Added logical next-step guidance in this order: venue, photography, guests,
-  tables, then open tasks.
+- Added logical next-step guidance in this order: overdue payments, overdue
+  tasks, venue, photography, guests, tables, then open tasks.
 - Added a partner-access explanation without exposing a misleading public edit
   link or enabling insecure sharing.
 - Deferred the full seating canvas until the user opens it. This preserves an
@@ -115,3 +115,39 @@ evidence for retaining the deferred editor.
    workspace.
 5. Run browser and end-to-end partner-sharing checks with two isolated test
    accounts before asking to enable cloud sync.
+
+## Scheduled task management
+
+The Organise action list now exposes the scheduling fields that were already
+present in the shared task contract:
+
+- couples can create tasks with a planning category and optional due date;
+- task title, category and due date can be edited without recreating the task;
+- active tasks are ordered by overdue, due today, due within 30 days, later
+  scheduled and unscheduled work, with completed tasks retained at the end;
+- overdue, due-today and due-soon counts come from shared domain logic suitable
+  for web and future native clients;
+- the next-step engine prioritises the earliest overdue task after any overdue
+  payment and before ordinary venue or supplier discovery;
+- recommendations link directly to the task heading and preserve a validated
+  shared-workspace identifier;
+- the Scottish calendar day is derived in `Europe/London`, avoiding a one-day
+  error around the summer UTC boundary.
+
+Form and row state are isolated into small client components, so typing into one
+task does not re-render the complete checklist. Existing local persistence and
+prepared owner/partner cloud actions continue to use the same task DTO and RLS
+boundary.
+
+Updated local verification on 28 July 2026:
+
+- 54 test files and 256 tests passing;
+- TypeScript check passing;
+- ESLint passing with the same pre-existing unrelated Open Graph image warning;
+- optimized Next.js production build passing with 77 generated pages;
+- task creation, category selection, editing, overdue guidance and recommendation
+  routing verified in the optimized app at 390 x 844;
+- page width matched the viewport and browser errors were empty.
+
+No migration, cloud activation, production write, deployment or paid service was
+used.

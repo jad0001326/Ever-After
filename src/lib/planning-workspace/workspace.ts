@@ -16,6 +16,11 @@ import {
   profileVenueSearchHref,
   restoreWeddingProfile,
 } from "./profile";
+import {
+  formatPlanningTaskDate,
+  getPlanningTaskCategoryLabel,
+  getPlanningTaskOverview,
+} from "./tasks";
 import type { WeddingProfile } from "./profile";
 import type {
   PlanningRecommendation,
@@ -131,6 +136,20 @@ export function getPlanningRecommendation(
       title: `Review ${overduePayment.itemName} payment`,
       href: getPlanningHubPaymentDeadlineHref(budgetPlan, overduePayment, workspaceId),
       reason: `${overduePayment.label} is overdue. Update the payment or its deadline before the next planning step.`,
+    };
+  }
+
+  const overdueTask = getPlanningTaskOverview(workspace.tasks, referenceDate)
+    .tasks.find(({ urgency }) => urgency === "overdue")?.task;
+  if (overdueTask?.dueDate) {
+    return {
+      stage: "tasks",
+      title: `Review ${overdueTask.title}`,
+      href: withPlanningWorkspace(
+        "/planning-hub/organise#planning-tasks-title",
+        workspaceId,
+      ),
+      reason: `${getPlanningTaskCategoryLabel(overdueTask.category)} task due ${formatPlanningTaskDate(overdueTask.dueDate)}. Complete it or update the plan before moving on.`,
     };
   }
 

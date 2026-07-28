@@ -1,12 +1,13 @@
 "use client";
 
-import { CalendarCheck2, Check, Circle, Clock3, LockKeyhole, Plus, UsersRound } from "lucide-react";
+import { CalendarCheck2, Check, LockKeyhole, UsersRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningHubPaymentOverview } from "@/components/planning-hub/planning-hub-payment-overview";
+import { PlanningHubTaskList } from "@/components/planning-hub/planning-hub-task-list";
 import { PlanningPartnerAccess } from "@/components/planning-hub/planning-partner-access";
 import { PlanningWorkspaceCloudImport } from "@/components/planning-hub/planning-workspace-cloud-import";
 import {
@@ -32,7 +33,12 @@ import {
   restorePlanningWorkspace,
   serializePlanningWorkspace,
 } from "@/lib/planning-workspace/workspace";
-import type { PlanningTaskStatus, PlanningWorkspace } from "@/lib/planning-workspace/types";
+import { getPlanningTaskOverview } from "@/lib/planning-workspace/tasks";
+import type {
+  PlanningTaskCategory,
+  PlanningTaskStatus,
+  PlanningWorkspace,
+} from "@/lib/planning-workspace/types";
 import { restoreTablePlan, serializeTablePlan, TABLE_PLAN_STORAGE_KEY } from "@/lib/table-plan/planner";
 import type { TablePlan } from "@/lib/table-plan/types";
 
@@ -67,7 +73,6 @@ export function PlanningHubOrganiseWorkspace({
   const lastTablePlanRef = useRef<string | null>(null);
   const tableSyncTimerRef = useRef<number | null>(null);
   const [ready, setReady] = useState(false);
-  const [taskTitle, setTaskTitle] = useState("");
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [tablePlannerOpen, setTablePlannerOpen] = useState(false);
   const [, startCloudTransition] = useTransition();
@@ -226,10 +231,6 @@ export function PlanningHubOrganiseWorkspace({
     window.history.replaceState(null, "", url);
   }
 
-  const openTasks = useMemo(
-    () => workspace?.tasks.filter((task) => task.status !== "done").length ?? 0,
-    [workspace?.tasks],
-  );
   const activeCloudSnapshot =
     cloudSnapshot?.workspace.budget_plan_id === budgetPlan.id
       ? cloudSnapshot
@@ -240,6 +241,7 @@ export function PlanningHubOrganiseWorkspace({
   }
 
   const referenceDate = new Date(`${today}T12:00:00`);
+  const taskOverview = getPlanningTaskOverview(workspace.tasks, referenceDate);
   const recommendation = getPlanningRecommendation(
     budgetPlan,
     workspace,
@@ -293,16 +295,26 @@ export function PlanningHubOrganiseWorkspace({
     }
   }
 
-  function addTask() {
-    if (!taskTitle.trim()) return;
-    const task = createPlanningTask(taskTitle, { sortOrder: workspace?.tasks.length ?? 0 });
+  function addTask({
+    title,
+    category,
+    dueDate,
+  }: {
+    title: string;
+    category: PlanningTaskCategory;
+    dueDate: string | null;
+  }) {
+    const task = createPlanningTask(title, {
+      category,
+      dueDate,
+      sortOrder: workspace?.tasks.length ?? 0,
+    });
     setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
     setWorkspace((current) => current ? {
       ...current,
       tasks: [...current.tasks, task],
       updatedAt: new Date().toISOString(),
     } : current);
-    setTaskTitle("");
     if (activeWorkspaceId) {
       setSyncFeedback("Saving task to the shared plan…");
       startCloudTransition(async () => {
@@ -357,10 +369,46 @@ export function PlanningHubOrganiseWorkspace({
     }
   }
 
+  function updateTaskDetails(
+    taskId: string,
+    updates: {
+      title: string;
+      category: PlanningTaskCategory;
+      dueDate: string | null;
+    },
+  ) {
+    const now = new Date().toISOString();
+    setWorkspaceMode((current) => current === "cloud_loaded" ? "device_ahead" : current);
+    setWorkspace((current) => current ? {
+      ...current,
+      tasks: current.tasks.map((task) => (
+        task.id === taskId ? { ...task, ...updates, updatedAt: now } : task
+      )),
+      updatedAt: now,
+    } : current);
+    if (activeWorkspaceId) {
+      setSyncFeedback("Updating the shared taskâ€¦");
+      startCloudTransition(async () => {
+        const { updatePlanningTaskAction } = await import("@/app/actions/planning-workspace");
+        const result = await updatePlanningTaskAction(taskId, updates);
+        if (result.ok) {
+          setCloudSnapshot((current) => current ? {
+            ...current,
+            tasks: current.tasks.map((task) => task.id === result.task.id ? result.task : task),
+          } : current);
+          setWorkspaceMode("cloud_loaded");
+          setSyncFeedback("Task details updated in the shared plan.");
+        } else {
+          setSyncFeedback("The task changes remain safe on this device, but the shared copy could not be updated.");
+        }
+      });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3" aria-label="Planning overview">
-        <SummaryCard icon={<CalendarCheck2 size={19} />} label="Open tasks" value={String(openTasks)} />
+        <SummaryCard icon={<CalendarCheck2 size={19} />} label="Open tasks" value={String(taskOverview.openCount)} />
         <SummaryCard icon={<UsersRound size={19} />} label="Guests" value={String(workspace.tablePlan.guests.length)} />
         <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${assignedGuests}/${workspace.tablePlan.guests.length}`} />
       </section>
@@ -392,59 +440,18 @@ export function PlanningHubOrganiseWorkspace({
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#95502b]">Action list</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold text-[#173526]">Your tasks</h2>
-            </div>
-            <span className="rounded-full bg-[#edf2ec] px-3 py-1 text-xs font-semibold text-[#31533b]">{openTasks} open</span>
-          </div>
-          <div className="mt-5 flex gap-2">
-            <label className="min-w-0 flex-1">
-              <span className="sr-only">New task</span>
-              <input
-                className="focus-ring min-h-11 w-full rounded-xl border border-[var(--line)] px-3 text-sm"
-                onChange={(event) => setTaskTitle(event.target.value)}
-                onKeyDown={(event) => { if (event.key === "Enter") addTask(); }}
-                placeholder="e.g. Confirm final venue numbers"
-                value={taskTitle}
-              />
-            </label>
-            <button aria-label="Add task" className="focus-ring grid size-11 shrink-0 place-items-center rounded-xl bg-[#173526] text-white" onClick={addTask} type="button">
-              <Plus size={18} />
-            </button>
-          </div>
-          <div className="mt-5 space-y-2">
-            {workspace.tasks.map((task) => (
-              <article className="flex items-center gap-3 rounded-2xl border border-[#e5ddd1] p-3" key={task.id}>
-                <button
-                  aria-label={task.status === "done" ? `Reopen ${task.title}` : `Complete ${task.title}`}
-                  className={`focus-ring grid size-10 shrink-0 place-items-center rounded-full ${task.status === "done" ? "bg-[#31533b] text-white" : "bg-[#f5efe6] text-[#7b6f60]"}`}
-                  onClick={() => setTaskStatus(task.id, task.status === "done" ? "todo" : "done")}
-                  type="button"
-                >
-                  {task.status === "done" ? <Check size={18} /> : <Circle size={18} />}
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-semibold ${task.status === "done" ? "text-[#77716a] line-through" : "text-[#25221e]"}`}>{task.title}</p>
-                  <p className="mt-1 text-xs capitalize text-[var(--muted)]">{task.category} · {task.status.replace("_", " ")}</p>
-                </div>
-                {task.status === "todo" ? (
-                  <button aria-label={`Start ${task.title}`} className="focus-ring grid size-10 shrink-0 place-items-center rounded-full text-[#95502b] hover:bg-[#fff2e8]" onClick={() => setTaskStatus(task.id, "in_progress")} type="button">
-                    <Clock3 size={17} />
-                  </button>
-                ) : null}
-              </article>
-            ))}
-            {workspace.tasks.length === 0 ? <p className="rounded-2xl bg-[#faf7f2] px-4 py-8 text-center text-sm text-[var(--muted)]">Add the first task that will move your plan forward.</p> : null}
-          </div>
-        </section>
+        <PlanningHubTaskList
+          onAdd={addTask}
+          onStatusChange={setTaskStatus}
+          onUpdate={updateTaskDetails}
+          tasks={workspace.tasks}
+          today={today}
+        />
 
         <aside className="rounded-3xl border border-[#d8c7a7] bg-[#f9f5ed] p-5 sm:p-6">
           <span className="grid size-11 place-items-center rounded-full bg-[#173526] text-white"><LockKeyhole size={19} /></span>
           <h2 className="mt-4 font-display text-2xl font-semibold text-[#173526]">Partner access</h2>
-          <p className="mt-2 text-sm leading-6 text-[#625f57]">Secure partner sharing is the next release gate. It will use signed-in membership and row-level access, never a public editable link.</p>
+          <p className="mt-2 text-sm leading-6 text-[#625f57]">Secure signed-in partner sharing is prepared behind the local approval gate. It stays disabled until its row-level access tests can run in a free disposable database, and it never uses a public editable link.</p>
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-[#625f57]">
             {partnerAccessMessage({ cloudEnabled, userId, workspaceMode })}
           </p>

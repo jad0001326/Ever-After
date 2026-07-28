@@ -132,6 +132,12 @@ describe("planning workspace", () => {
       paidAt: null,
     }];
     budget.items = [venue];
+    workspace.tasks = [
+      createPlanningTask("Confirm guest numbers", {
+        category: "guests",
+        dueDate: "2026-07-10",
+      }),
+    ];
 
     const recommendation = getPlanningRecommendation(
       budget,
@@ -146,5 +152,36 @@ describe("planning workspace", () => {
     });
     expect(recommendation.href)
       .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006#payment-deadlines-title");
+  });
+
+  it("prioritises the earliest overdue task before ordinary discovery stages", () => {
+    const budget = createEmptyBudgetPlan();
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    workspace.tasks = [
+      createPlanningTask("Confirm flowers", {
+        category: "general",
+        dueDate: "2026-07-20",
+        sortOrder: 1,
+      }),
+      createPlanningTask("Confirm guest numbers", {
+        category: "guests",
+        dueDate: "2026-07-10",
+        sortOrder: 0,
+      }),
+    ];
+
+    const recommendation = getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+      new Date("2026-07-28T12:00:00"),
+    );
+
+    expect(recommendation).toEqual({
+      stage: "tasks",
+      title: "Review Confirm guest numbers",
+      href: "/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006#planning-tasks-title",
+      reason: "Guests task due 10 Jul 2026. Complete it or update the plan before moving on.",
+    });
   });
 });

@@ -95,6 +95,42 @@ describe("PlanningHubOrganiseWorkspace", () => {
     expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
   });
 
+  it("surfaces overdue scheduled work before ordinary discovery guidance", async () => {
+    const budgetPlan = createEmptyBudgetPlan();
+    const localWorkspace = createEmptyPlanningWorkspace({
+      budgetPlanId: budgetPlan.id,
+      ownerId: null,
+    });
+    localWorkspace.tasks = [{
+      id: "task-1",
+      title: "Confirm guest numbers",
+      notes: null,
+      category: "guests",
+      status: "todo",
+      dueDate: "2026-07-20",
+      sortOrder: 0,
+      createdAt: "2026-07-01T10:00:00.000Z",
+      updatedAt: "2026-07-01T10:00:00.000Z",
+    }];
+    window.localStorage.setItem(
+      PLANNING_WORKSPACE_STORAGE_KEY,
+      serializePlanningWorkspace(localWorkspace),
+    );
+
+    render(
+      <PlanningHubOrganiseWorkspace
+        initialBudgetPlan={budgetPlan}
+        today="2026-07-28"
+        userId={null}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Review Confirm guest numbers" })).toBeTruthy();
+    expect(screen.getByText("1 overdue")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Continue planning" }).getAttribute("href"))
+      .toBe("/planning-hub/organise#planning-tasks-title");
+  });
+
   it("adds tasks and persists them inside the same local workspace", async () => {
     render(<PlanningHubOrganiseWorkspace initialBudgetPlan={createEmptyBudgetPlan()} userId="user-1" />);
     await screen.findByText("Your tasks");
@@ -102,11 +138,32 @@ describe("PlanningHubOrganiseWorkspace", () => {
     fireEvent.change(screen.getByPlaceholderText("e.g. Confirm final venue numbers"), {
       target: { value: "Confirm caterer numbers" },
     });
+    fireEvent.change(screen.getByLabelText("Category"), {
+      target: { value: "guests" },
+    });
+    fireEvent.change(screen.getByLabelText(/Due date/), {
+      target: { value: "2026-08-12" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Add task" }));
 
     expect(screen.getByText("Confirm caterer numbers")).toBeTruthy();
+    expect(screen.getByText(/12 Aug 2026/)).toBeTruthy();
     await waitFor(() => {
-      expect(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY)).toContain("Confirm caterer numbers");
+      expect(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY)).toContain('"dueDate":"2026-08-12"');
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Confirm caterer numbers" }));
+    fireEvent.change(screen.getByLabelText("Edit task title"), {
+      target: { value: "Confirm final caterer numbers" },
+    });
+    fireEvent.change(screen.getByLabelText("Edit due date"), {
+      target: { value: "2026-08-15" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save task" }));
+
+    expect(screen.getByText("Confirm final caterer numbers")).toBeTruthy();
+    await waitFor(() => {
+      expect(window.localStorage.getItem(PLANNING_WORKSPACE_STORAGE_KEY)).toContain('"dueDate":"2026-08-15"');
     });
   });
 
@@ -118,7 +175,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
     fireEvent.change(screen.getByLabelText("Total wedding budget"), { target: { value: "24000" } });
     fireEvent.change(screen.getByLabelText("Estimated guests"), { target: { value: "84" } });
     fireEvent.change(screen.getByLabelText("Preferred area"), { target: { value: "Fife" } });
-    fireEvent.click(screen.getByText("Photography"));
+    fireEvent.click(screen.getByLabelText("Photography"));
     fireEvent.click(screen.getByRole("button", { name: "Save wedding profile" }));
 
     await waitFor(() => {
@@ -218,6 +275,8 @@ describe("PlanningHubOrganiseWorkspace", () => {
     await waitFor(() => expect(createPlanningTaskAction).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: "60000000-0000-4000-8000-000000000006",
       title: "Confirm shared numbers",
+      category: "general",
+      dueDate: null,
     })));
     expect(screen.getByText("Confirm shared numbers")).toBeTruthy();
   });

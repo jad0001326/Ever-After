@@ -3,6 +3,7 @@ import { loadLatestBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningWorkspaceContextAction, loadPlanningWorkspaceForBudgetAction } from "@/app/actions/planning-workspace";
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubOrganiseWorkspace } from "@/components/planning-hub/planning-hub-organise-workspace";
+import { getPlanningHubDateKey } from "@/lib/planning-hub/date";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import type { BudgetPlan } from "@/lib/budget/types";
 import type { PlanningWorkspaceCloudSnapshot } from "@/lib/planning-workspace/cloud";
@@ -67,7 +68,7 @@ export default async function PlanningHubOrganisePage({
           connectedWorkspaceId={initialCloudSnapshot?.workspace.id ?? null}
           initialBudgetPlan={initialBudgetPlan}
           initialCloudSnapshot={initialCloudSnapshot}
-          today={new Date().toISOString().slice(0, 10)}
+          today={getPlanningHubDateKey()}
           userId={user?.id ?? null}
         />
         {workspaceNotice ? (
