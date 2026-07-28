@@ -6,7 +6,7 @@ Status: locally complete as a connected, local-first beta; production release
 and connected partner sharing remain gated.
 
 This record maps the original objective to current evidence and defines a
-reviewable release sequence for the 28 commits on
+reviewable release sequence for the local commits on
 `codex/planning-hub-venue-slice`. It is a release plan, not permission to push,
 deploy, migrate or enable cloud persistence.
 
@@ -52,7 +52,8 @@ they do not require rewriting or pushing it.
 | 9. Readiness and roadmap | Add guest readiness and truthful 16-category roadmap. | `b34a699` through `67f8a41` | Manual-only stages must remain catalogue-query free. |
 | 10. Security proof | Add embedded PostgreSQL verification and correct the dormant profile import migration ambiguity. | `16b4534` | Must remain adjacent to the workspace migrations it verifies. |
 | 11. Dependency security | Patch production dependencies and record the residual dev-tool advisory. | `d9168c2` | Production audit is zero; do not run the forced ESLint downgrade. |
-| 12. Release audit | Correct gate messaging, perform final keyboard QA and record this release sequence. | Current working slice | Local commit only until push approval. |
+| 12. Release audit | Correct gate messaging, perform final keyboard QA and record this release sequence. | `b048ef1` | Local commit only until push approval. |
+| 13. API verification | Add the fail-closed Auth/Data API smoke harness and document the missing local baseline prerequisite. | Current working slice | Dormant until a free prepared test stack exists. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -93,10 +94,12 @@ public tables to
    - review each boundary above in order;
    - merge no migration automatically.
 3. **Free Supabase boundary verification**
+   - prepare the missing reproducible local baseline described in
+     `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - reset and apply the complete repository migration history, confirming that
-     the eight Planning Hub migrations above apply in timestamp order;
+   - confirm that the eight Planning Hub migrations above apply in timestamp
+     order over that baseline;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
    - prove invitation redemption, RLS denial and stale-version conflicts;
@@ -141,6 +144,9 @@ Use the least destructive rollback that restores safety:
 
 - Supabase Auth and Data API execution cannot run on the current machine:
   Docker, Podman, the Supabase CLI, `psql` and a WSL distribution are absent.
+- The guarded `npm run test:planning-api` harness is ready, but the repository's
+  incremental migration folder still needs a reviewed local bootstrap over
+  `supabase/schema.sql`; it must not be treated as a fresh database baseline.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
@@ -148,7 +154,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 60 Vitest files and 276 tests pass.
+- 61 Vitest files and 280 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions.
 - TypeScript passes.

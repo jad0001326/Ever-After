@@ -66,3 +66,7 @@ disposable environment. No paid branch is required.
 
 No production data, production migration, cloud branch or deployment is used by
 this verifier.
+
+The complementary `npm run test:planning-api` harness is documented in
+`docs/planning-hub/api-verification.md`. It remains dormant until a full free
+local Supabase stack with the EverAft baseline schema is available.

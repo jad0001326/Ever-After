@@ -39,8 +39,9 @@ its public profile route and category-specific browser verification before its
 ## Remaining release gates
 
 1. Run the already-passing collaboration scenario through Supabase Auth and the
-   Data API in a free local stack or approved disposable environment. The
-   database-level owner, partner, outsider and anonymous cases now pass.
+   Data API with the guarded `npm run test:planning-api` harness in a free local
+   stack or approved disposable environment. The database-level owner, partner,
+   outsider and anonymous cases now pass.
 2. Review the accumulated local commits as a release series and choose the
    production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
@@ -55,7 +56,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 60 test files and 276 tests passing.
+- 61 test files and 280 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios.

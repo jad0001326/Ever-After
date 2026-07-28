@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && npm run test:planning-rls",
+    "test:planning-api": "node scripts/verify-planning-workspace-api.mjs",
     "test:planning-rls": "node scripts/verify-planning-workspace-rls.mjs",
     "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
     "enrichment:stage": "node scripts/stage-enrichment-review.mts",
