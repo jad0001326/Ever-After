@@ -18,18 +18,18 @@
     "pricing:stage": "node scripts/stage-pricing-options.mts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@next/third-parties": "^16.2.10",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@next/third-parties": "16.2.12",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
-    "next": "^16.2.6",
+    "next": "16.2.12",
     "pdf-parse": "2.4.5",
     "react": "latest",
     "react-dom": "latest",
     "read-excel-file": "^9.0.9",
-    "sharp": "^0.34.5",
+    "sharp": "0.35.3",
     "svix": "^1.96.1",
     "tailwind-merge": "latest",
     "zod": "^4.4.3"
@@ -38,18 +38,19 @@
     "@electric-sql/pglite": "0.5.4",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
-    "@tailwindcss/postcss": "latest",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",
-    "eslint-config-next": "latest",
+    "eslint-config-next": "16.2.12",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vitest": "latest",
     "jsdom": "latest"
   },
   "overrides": {
-    "postcss": "8.5.10"
+    "postcss": "8.5.24",
+    "sharp": "0.35.3"
   }
 }

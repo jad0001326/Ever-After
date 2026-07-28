@@ -45,9 +45,9 @@ its public profile route and category-specific browser verification before its
    production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
    Chrome verification is already passing.
-4. Resolve the current dependency audit findings in a separate upgrade slice;
-   production dependencies currently include Next.js, PostCSS, Sharp and
-   transitive `fast-uri` advisories.
+4. Keep the development-only ESLint dependency advisory under review. The
+   production dependency audit is now clear; forcing npm's suggested fix would
+   incorrectly downgrade the Next.js ESLint configuration.
 5. Obtain explicit approval before any push, pull request, migration,
    deployment, production write or rollback.
 6. After an approved release, collect field Core Web Vitals, especially INP,
@@ -63,8 +63,15 @@ its public profile route and category-specific browser verification before its
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.
 - Optimized Next.js build passing with 78 generated pages.
+- Production dependency audit passing with zero known vulnerabilities after
+  patching Next.js, Sharp, PostCSS, MCP SDK and their affected transitives.
+  The full audit retains only a development-tool ESLint/minimatch advisory.
+- Sharp 0.35.3 image processing verified with the application's supported
+  rotate, flatten, resize and JPEG pipeline on Node.js 24.
 - Supplier roadmap and manual supplier stage verified at 390 x 844 with no
   horizontal overflow, no browser errors and zero axe violations.
+- Planning Hub home navigation verified at 390 x 844 with no horizontal
+  overflow, modal obstruction or browser errors.
 - Three supplier-roadmap Lighthouse mobile runs: performance 98,
   accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
   total blocking time 70-80 milliseconds.
