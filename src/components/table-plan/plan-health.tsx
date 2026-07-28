@@ -9,7 +9,7 @@ export function PlanHealth({ plan, conflicts, onPrint, onDownloadCsv }: { plan: 
   const overview = getTablePlanGuestOverview(plan);
   const available = Math.max(0, capacity - overview.assignedCount);
   return (
-    <aside className="print:hidden self-start rounded-[1.5rem] border border-[var(--line)] bg-white p-5 lg:sticky lg:top-24">
+    <aside aria-label="Plan health and export" className="print:hidden self-start rounded-[1.5rem] border border-[var(--line)] bg-white p-5 lg:sticky lg:top-24">
       <h2 className="flex items-center gap-2 font-display text-2xl font-semibold text-[var(--brand)]"><HeartPulse size={21} /> Plan health</h2>
       <dl className="mt-5 space-y-3 text-sm">
         <SummaryRow label="Invited guests" value={String(overview.totalCount)} />

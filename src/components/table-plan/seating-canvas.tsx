@@ -63,7 +63,7 @@ function SeatButton({ guest, seatIndex, hasSelection, isSelected, locked, onClic
       type="button"
     >
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e9e1d4] text-[10px] font-bold text-[#6b6257]">{seatIndex + 1}</span>
-      <span className={cn("min-w-0 truncate text-xs font-semibold", guest ? "text-[var(--foreground)]" : "text-[#8a8176]")}>{guest?.name ?? "Empty seat"}</span>
+      <span className={cn("min-w-0 truncate text-xs font-semibold", guest ? "text-[var(--foreground)]" : "text-[#6f675f]")}>{guest?.name ?? "Empty seat"}</span>
     </button>
   );
 }

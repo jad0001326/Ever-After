@@ -193,7 +193,7 @@ export default function Home() {
           <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
             {planningGuides.filter((guide) => guide.featured).map((guide, index) => (
               <Link className="focus-ring group grid gap-2 py-6 sm:grid-cols-[2rem_1fr_auto] sm:items-center sm:gap-5" href={`/guides/${guide.slug}`} key={guide.slug}>
-                <span className="text-xs font-semibold text-[#a08a72]">0{index + 1}</span>
+                <span className="text-xs font-semibold text-[#716352]">0{index + 1}</span>
                 <div>
                   <h3 className="font-display text-3xl font-semibold tracking-[-0.03em]">{guide.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{guide.description}</p>
@@ -227,7 +227,7 @@ export default function Home() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="grid overflow-hidden bg-[var(--brand)] text-white lg:grid-cols-[1.15fr_0.85fr]">
           <div className="px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
-            <p className="text-sm font-semibold tracking-[0.16em] text-[#d19a72]">For wedding businesses</p>
+            <p className="text-sm font-semibold tracking-[0.16em] text-[#d39d75]">For wedding businesses</p>
             <h2 className="mt-4 max-w-xl font-display text-5xl font-semibold leading-[0.92] tracking-[-0.045em] sm:text-6xl">Meet the couples who are looking for you.</h2>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/78">A considered, affordable place for brilliant wedding businesses to be discovered, trusted and contacted.</p>
             <ButtonLink className="mt-8 bg-[#ad5d32] text-white hover:bg-[#914920]" href="/for-business">Create your listing <ArrowRight size={17} /></ButtonLink>

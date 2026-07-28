@@ -42,7 +42,7 @@ export function PlannerSidebar(props: PlannerSidebarProps) {
     { id: "rules", label: "Rules" },
   ];
   return (
-    <aside className="print:hidden overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white">
+    <aside aria-label="Guest and table controls" className="print:hidden overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white">
       <div className="grid grid-cols-3 border-b border-[var(--line)]">
         {tabs.map((tab) => (
           <button

@@ -56,7 +56,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 62 test files and 283 tests passing.
+- 62 test files and 284 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios.
@@ -78,6 +78,10 @@ its public profile route and category-specific browser verification before its
   opening control.
 - Open venue details, open photographer details and Organise each pass axe-core
   with zero violations and zero incomplete checks.
+- The 1440 x 900 production-build audit covers Venue, Photography, Suppliers,
+  the open Organise table editor, both public planners and the home page with no
+  horizontal overflow, browser errors or axe violations. The home page retains
+  one automated contrast check marked incomplete rather than failed.
 - Three supplier-roadmap Lighthouse mobile runs: performance 98,
   accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
   total blocking time 70-80 milliseconds.

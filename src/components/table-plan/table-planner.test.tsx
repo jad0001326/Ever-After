@@ -25,6 +25,16 @@ describe("TablePlanner", () => {
     expect(screen.getByRole("button", { name: "Export guest list CSV" })).toBeTruthy();
   });
 
+  it("renders empty-seat labels with the accessible muted foreground", async () => {
+    render(<TablePlanner />);
+    await screen.findByText("Saved on this device");
+
+    expect(screen.getAllByText("Empty seat")[0]).toHaveProperty(
+      "className",
+      expect.stringContaining("text-[#6f675f]"),
+    );
+  });
+
   it("pastes multiple guests from a line-separated list", async () => {
     render(<TablePlanner />);
     await screen.findByText("Saved on this device");

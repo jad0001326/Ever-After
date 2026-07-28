@@ -54,7 +54,8 @@ they do not require rewriting or pushing it.
 | 11. Dependency security | Patch production dependencies and record the residual dev-tool advisory. | `d9168c2` | Production audit is zero; do not run the forced ESLint downgrade. |
 | 12. Release audit | Correct gate messaging, perform final keyboard QA and record this release sequence. | `b048ef1` | Local commit only until push approval. |
 | 13. API verification | Add the fail-closed Auth/Data API smoke harness and document its local baseline prerequisite. | `21fbb84` | Dormant until a free prepared test stack exists. |
-| 14. Local API bootstrap | Generate a checksummed disposable project from the exact baseline plus all timestamped migrations. | Current working slice | Local files only; requires a future container-runtime smoke test. |
+| 14. Local API bootstrap | Generate a checksummed disposable project from the exact baseline plus all timestamped migrations. | `11d4a1c` | Local files only; requires a future container-runtime smoke test. |
+| 15. Desktop release audit | Verify the production bundle at 1440 x 900 and correct public-planner and shared-table accessibility findings. | Current working slice | Local commit only; no hosted action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -156,7 +157,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 62 Vitest files and 283 tests pass.
+- 62 Vitest files and 284 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions.
 - TypeScript passes.
@@ -176,6 +177,10 @@ Use the least destructive rollback that restores safety:
   report zero violations and zero incomplete checks.
 - Organise, the public Budget Planner, the public Table Planner and the home
   page render at 390 x 844 without horizontal overflow or error overlays.
+- Venue, Photography, Suppliers, the open Organise table editor, both public
+  planners and the home page render at 1440 x 900 without horizontal overflow,
+  browser errors or axe violations. The home page has one contrast result that
+  axe leaves incomplete; it is not a violation.
 
 The browser verification used only the existing Supabase URL and publishable
 key for read-only catalogue access. The service-role key was not loaded.
