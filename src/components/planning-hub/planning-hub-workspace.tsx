@@ -39,8 +39,10 @@ export function PlanningHubWorkspace({
   userId: string | null;
 }) {
   const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
-  const initiallySelectedItem = findPlanningHubVenueItem(initialPlan, initialPlan.selectedVenueId);
-  const firstVenue = results.venues.find((venue) => venue.id === initialPlan.selectedVenueId)
+  const requestedItem = findPlanningHubVenueItem(initialPlan, searchParams.planItem);
+  const initiallySelectedItem = requestedItem
+    ?? findPlanningHubVenueItem(initialPlan, initialPlan.selectedVenueId);
+  const firstVenue = results.venues.find((venue) => venue.id === initiallySelectedItem?.listingId)
     ?? (initiallySelectedItem ? null : results.venues[0] ?? null);
   const firstItem = initiallySelectedItem ?? findPlanningHubVenueItem(initialPlan, firstVenue?.id);
   const [plan, setPlan] = useState(initialPlan);
@@ -71,8 +73,9 @@ export function PlanningHubWorkspace({
         if (localPlan && new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime()) {
           setPlan({ ...localPlan, userId });
           setSaveMessage("Restored newer changes from this device.");
-          const restoredVenue = results.venues.find((venue) => venue.id === localPlan.selectedVenueId);
-          const restoredItem = findPlanningHubVenueItem(localPlan, restoredVenue?.id ?? localPlan.selectedVenueId);
+          const restoredItem = findPlanningHubVenueItem(localPlan, searchParams.planItem)
+            ?? findPlanningHubVenueItem(localPlan, localPlan.selectedVenueId);
+          const restoredVenue = results.venues.find((venue) => venue.id === restoredItem?.listingId);
           if (restoredItem) {
             setSelectedVenueId(restoredVenue?.id ?? restoredItem.id);
             setStatus(normaliseStatus(restoredItem?.bookingStatus));
@@ -86,7 +89,7 @@ export function PlanningHubWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.venues, storageKey, userId]);
+  }, [initialPlan.updatedAt, results.venues, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;

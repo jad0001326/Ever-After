@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
+import { PlanningHubBookingOverview } from "@/components/planning-hub/planning-hub-booking-overview";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningHubPaymentOverview } from "@/components/planning-hub/planning-hub-payment-overview";
 import { PlanningHubTaskList } from "@/components/planning-hub/planning-hub-task-list";
@@ -412,6 +413,11 @@ export function PlanningHubOrganiseWorkspace({
         <SummaryCard icon={<UsersRound size={19} />} label="Guests" value={String(workspace.tablePlan.guests.length)} />
         <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${assignedGuests}/${workspace.tablePlan.guests.length}`} />
       </section>
+
+      <PlanningHubBookingOverview
+        plan={budgetPlan}
+        workspaceId={activeWorkspaceId}
+      />
 
       <PlanningHubPaymentOverview
         plan={budgetPlan}

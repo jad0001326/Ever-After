@@ -40,7 +40,8 @@ export function PlanningHubPhotographyWorkspace({
   userId: string | null;
 }) {
   const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
-  const firstPlannedItem = findLatestPhotographyItem(initialPlan);
+  const firstPlannedItem = findPlanningHubPhotographyItem(initialPlan, searchParams.planItem)
+    ?? findLatestPhotographyItem(initialPlan);
   const firstPhotographer = firstPlannedItem
     ? results.photographers.find((photographer) => photographer.id === firstPlannedItem.listingId) ?? null
     : results.photographers[0] ?? null;
@@ -71,7 +72,8 @@ export function PlanningHubPhotographyWorkspace({
           const restored = { ...localPlan, userId };
           setPlan(restored);
           setSaveMessage("Restored newer changes from this device.");
-          const restoredItem = findLatestPhotographyItem(restored);
+          const restoredItem = findPlanningHubPhotographyItem(restored, searchParams.planItem)
+            ?? findLatestPhotographyItem(restored);
           const restoredPhotographer = restoredItem?.listingId
             ? results.photographers.find((photographer) => photographer.id === restoredItem.listingId) ?? null
             : null;
@@ -88,7 +90,7 @@ export function PlanningHubPhotographyWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [initialPlan.updatedAt, results.photographers, storageKey, userId]);
+  }, [initialPlan.updatedAt, results.photographers, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;

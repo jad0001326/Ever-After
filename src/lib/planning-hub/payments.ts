@@ -1,7 +1,7 @@
-import { supplierDirectoryCategories } from "@/data/supplier-directory";
 import { getPaymentDeadlines } from "@/lib/budget/calculations";
 import type { BudgetPlan } from "@/lib/budget/types";
 import type { PaymentDeadline } from "@/lib/budget/calculations";
+import { getPlanningHubItemStageRoute } from "./item-navigation";
 import { withPlanningWorkspace } from "./navigation";
 
 export type PlanningHubPaymentOverview = {
@@ -49,22 +49,9 @@ export function getPlanningHubPaymentDeadlineHref(
   workspaceId?: string | null,
 ) {
   const item = plan.items.find((candidate) => candidate.id === deadline.itemId);
-  let href = "/planning-hub/organise";
-
-  if (item?.categoryId === "venue") {
-    href = "/planning-hub";
-  } else if (item?.categoryId === "photography") {
-    href = "/planning-hub/photography";
-  } else if (item) {
-    const category = supplierDirectoryCategories.find((candidate) => (
-      candidate.live
-      && candidate.budgetCategoryId === item.categoryId
-      && candidate.label === item.supplierType
-    ));
-    if (category && category.slug !== "photographer") {
-      href = `/planning-hub/suppliers/${category.slug}`;
-    }
-  }
+  const href = item
+    ? getPlanningHubItemStageRoute(item) ?? "/planning-hub/organise"
+    : "/planning-hub/organise";
 
   return withPlanningWorkspace(`${href}#payment-deadlines-title`, workspaceId);
 }

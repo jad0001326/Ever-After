@@ -5,6 +5,7 @@ import { loadPlanningWorkspaceContextAction } from "@/app/actions/planning-works
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubPhotographyFilters } from "@/components/planning-hub/planning-hub-photography-filters";
 import { PlanningHubPhotographyWorkspace } from "@/components/planning-hub/planning-hub-photography-workspace";
+import { getPlanningHubDateKey } from "@/lib/planning-hub/date";
 import { calculatePlanningHubPlan, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import { searchPlanningHubPhotographers } from "@/lib/planning-hub/photographers";
 import type { PlanningHubPhotographySearchParams } from "@/lib/planning-hub/types";
@@ -73,7 +74,7 @@ async function PlanningHubPhotographyContent({
         initialPlan={initialPlan}
         results={results}
         searchParams={effectiveParams}
-        today={new Date().toISOString().slice(0, 10)}
+        today={getPlanningHubDateKey()}
         userId={user?.id ?? null}
       />
     </div>

@@ -81,7 +81,7 @@ export function PlanningHubPhotographyPlanPanel({
       </div>
       <PlanningHubDeadlineSummary plan={plan} today={today} />
 
-      <div className="border-b border-[#e4ddd2] p-5" data-testid="current-photographer-planning">
+      <div className="border-b border-[#e4ddd2] p-5" data-testid="current-photographer-planning" id="current-photographer-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current photographer</p>
         <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedPhotographer?.name ?? selectedItem?.itemName ?? "Open a photographer to plan them"}</h3>
         {selectedPhotographer ? (
@@ -104,7 +104,11 @@ export function PlanningHubPhotographyPlanPanel({
             </button>
           </div>
         ) : selectedItem ? (
-          <p className="mt-3 text-sm leading-6 text-[#625f57]">This manually added photographer is ready for payment planning.</p>
+          <p className="mt-3 text-sm leading-6 text-[#625f57]">
+            {selectedItem.source === "manual"
+              ? "This manually added photographer is ready for payment planning."
+              : "This saved photographer is ready for payment planning."}
+          </p>
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View &amp; plan” on a result to keep researching without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>

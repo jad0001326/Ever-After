@@ -6,6 +6,7 @@ import { loadPlanningWorkspaceContextAction } from "@/app/actions/planning-works
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubSupplierFilters } from "@/components/planning-hub/planning-hub-supplier-filters";
 import { PlanningHubSupplierWorkspace } from "@/components/planning-hub/planning-hub-supplier-workspace";
+import { getPlanningHubDateKey } from "@/lib/planning-hub/date";
 import { calculatePlanningHubPlan, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import { getLivePlanningHubSupplierCategory } from "@/lib/planning-hub/supplier-search";
 import { searchPlanningHubSuppliers } from "@/lib/planning-hub/suppliers";
@@ -104,7 +105,7 @@ async function PlanningHubSupplierContent({
         initialPlan={initialPlan}
         results={results}
         searchParams={effectiveParams}
-        today={new Date().toISOString().slice(0, 10)}
+        today={getPlanningHubDateKey()}
         userId={user?.id ?? null}
       />
     </div>

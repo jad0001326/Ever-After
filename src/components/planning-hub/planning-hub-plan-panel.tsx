@@ -102,7 +102,7 @@ export function PlanningHubPlanPanel({
         </div>
       </details>
 
-      <div className="border-b border-[#e4ddd2] p-5" data-testid="current-venue-planning">
+      <div className="border-b border-[#e4ddd2] p-5" data-testid="current-venue-planning" id="current-venue-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current venue</p>
         <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedVenue?.name ?? selectedItem?.itemName ?? "Open a venue to plan it"}</h3>
         {selectedVenue ? (
@@ -130,7 +130,11 @@ export function PlanningHubPlanPanel({
           </div>
         ) : selectedItem ? (
           <div className="mt-4 grid gap-3">
-            <p className="text-sm leading-6 text-[#625f57]">This manually added venue is ready for payment planning.</p>
+            <p className="text-sm leading-6 text-[#625f57]">
+              {selectedItem.source === "manual"
+                ? "This manually added venue is ready for payment planning."
+                : "This saved venue is ready for payment planning."}
+            </p>
             <button
               aria-pressed={plan.selectedVenueId === selectedItem.id}
               className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526]"

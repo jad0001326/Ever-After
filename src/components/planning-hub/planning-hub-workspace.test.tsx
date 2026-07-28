@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BudgetPlan } from "@/lib/budget/types";
 import { addManualPlanningHubVenue, choosePlanningHubVenue, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
-import type { PlanningHubVenue, PlanningHubVenueDetail, PlanningHubVenueResults } from "@/lib/planning-hub/types";
+import type { PlanningHubSearchParams, PlanningHubVenue, PlanningHubVenueDetail, PlanningHubVenueResults } from "@/lib/planning-hub/types";
 import { PlanningHubWorkspace } from "./planning-hub-workspace";
 
 const loadVenueDetail = vi.fn();
@@ -144,6 +144,27 @@ describe("PlanningHubWorkspace", () => {
     expect(screen.getByRole("button", { name: "This is your chosen venue" })).toBeTruthy();
   });
 
+  it("opens the exact planned venue requested by a booking-stage link", () => {
+    const firstPlan = addManualPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      "First venue",
+      325_000,
+      "quoted",
+    );
+    firstPlan.items[0] = { ...firstPlan.items[0], source: "website" };
+    const plan = addManualPlanningHubVenue(
+      firstPlan,
+      "Later venue",
+      500_000,
+      "booked",
+    );
+    plan.selectedVenueId = plan.items[1].id;
+    renderWorkspace(plan, null, { planItem: plan.items[0].id });
+
+    expect(screen.getByRole("heading", { name: "First venue" })).toBeTruthy();
+    expect(screen.getByText("This saved venue is ready for payment planning.")).toBeTruthy();
+  });
+
   it("keeps shared workspace identity in the photography handoff", () => {
     renderWorkspace(
       createPlanningHubStarterPlan(null),
@@ -158,6 +179,7 @@ describe("PlanningHubWorkspace", () => {
 function renderWorkspace(
   initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
   connectedWorkspaceId: string | null = null,
+  searchParams: PlanningHubSearchParams = {},
 ) {
   return render(
     <PlanningHubWorkspace
@@ -165,7 +187,7 @@ function renderWorkspace(
       initialPlan={initialPlan}
       initialSavedVenueIds={[]}
       results={results}
-      searchParams={{}}
+      searchParams={searchParams}
       userId={null}
     />
   );

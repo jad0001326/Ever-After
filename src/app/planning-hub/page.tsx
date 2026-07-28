@@ -5,6 +5,7 @@ import { loadPlanningWorkspaceContextAction } from "@/app/actions/planning-works
 import { PlanningHubFilters } from "@/components/planning-hub/planning-hub-filters";
 import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header";
 import { PlanningHubWorkspace } from "@/components/planning-hub/planning-hub-workspace";
+import { getPlanningHubDateKey } from "@/lib/planning-hub/date";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import { searchPlanningHubVenues } from "@/lib/planning-hub/venues";
 import { createClient } from "@/lib/supabase/server";
@@ -59,7 +60,7 @@ async function PlanningHubContent({ searchParams }: { searchParams: Promise<Plan
         initialSavedVenueIds={(favourites ?? []).map((favourite) => favourite.venue_id)}
         results={results}
         searchParams={params}
-        today={new Date().toISOString().slice(0, 10)}
+        today={getPlanningHubDateKey()}
         userId={user?.id ?? null}
       />
     </div>

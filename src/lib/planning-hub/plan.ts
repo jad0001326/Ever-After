@@ -266,12 +266,17 @@ export function calculatePlanningHubPlan(plan: BudgetPlan) {
 
   return {
     totalBudgetPence: plan.totalBudgetPence,
+    spendableBudgetPence: budget.spendableBudgetPence,
     plannedPence: budget.allocatedPence,
     committedPence,
     paidPence: budget.totalPaidPence,
     remainingPence: budget.remainingPence,
     outstandingCommittedPence: Math.max(committedPence - committedPaidPence, 0),
-    uncommittedPlannedPence: Math.max(budget.allocatedPence - committedPence, 0)
+    uncommittedPlannedPence: Math.max(budget.allocatedPence - committedPence, 0),
+    percentUsed: budget.percentUsed,
+    missingPriceCount: budget.missingPriceCount,
+    activeItemCount: budget.activeItemCount,
+    health: budget.health,
   };
 }
 

@@ -43,7 +43,8 @@ export function PlanningHubSupplierWorkspace({
   userId: string | null;
 }) {
   const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
-  const firstPlannedItem = findLatestSupplierItem(initialPlan, category);
+  const firstPlannedItem = findPlanningHubSupplierItem(initialPlan, category.slug, searchParams.planItem)
+    ?? findLatestSupplierItem(initialPlan, category);
   const firstSupplier = firstPlannedItem
     ? results.suppliers.find((supplier) => supplier.id === firstPlannedItem.listingId) ?? null
     : results.suppliers[0] ?? null;
@@ -74,7 +75,8 @@ export function PlanningHubSupplierWorkspace({
           const restored = { ...localPlan, userId };
           setPlan(restored);
           setSaveMessage("Restored newer changes from this device.");
-          const restoredItem = findLatestSupplierItem(restored, category);
+          const restoredItem = findPlanningHubSupplierItem(restored, category.slug, searchParams.planItem)
+            ?? findLatestSupplierItem(restored, category);
           const restoredSupplier = restoredItem?.listingId
             ? results.suppliers.find((supplier) => supplier.id === restoredItem.listingId) ?? null
             : null;
@@ -91,7 +93,7 @@ export function PlanningHubSupplierWorkspace({
       }
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, [category, initialPlan.updatedAt, results.suppliers, storageKey, userId]);
+  }, [category, initialPlan.updatedAt, results.suppliers, searchParams.planItem, storageKey, userId]);
 
   useEffect(() => {
     if (!ready) return;

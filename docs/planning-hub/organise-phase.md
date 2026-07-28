@@ -151,3 +151,42 @@ Updated local verification on 28 July 2026:
 
 No migration, cloud activation, production write, deployment or paid service was
 used.
+
+## Connected budget and booking pipeline
+
+Organise now includes the plan-wide budget and booking context that previously
+appeared only inside individual venue or supplier stages:
+
+- remaining, planned, committed and paid totals reuse the existing Budget
+  Planner calculations;
+- booked, quoted, shortlisted and researching counts are derived from the same
+  saved items used by the public planner;
+- the pipeline prioritises booked commitments and selected venues, reports
+  missing prices honestly and renders at most six priority items on the command
+  centre;
+- inactive supplier categories remain visibly tracked but do not link to an
+  unavailable Planning Hub stage;
+- active items link to their exact saved item through a saved-item `planItem`
+  query, the correct editor anchor and the validated partner-workspace query;
+- venue, photography and reusable supplier stages restore the specifically
+  requested item rather than silently opening the newest saved item;
+- payment and booking links now share one stage-routing source of truth;
+- all Planning Hub stages use the Scottish `Europe/London` calendar day for
+  deadline calculations.
+
+The overview is derived synchronously from the already loaded budget plan. It
+adds no catalogue query, client fetch, API endpoint or data waterfall.
+
+Updated local verification on 28 July 2026:
+
+- 57 test files and 264 tests passing;
+- TypeScript check passing;
+- ESLint passing with the same pre-existing unrelated Open Graph image warning;
+- optimized Next.js production build passing with 77 generated pages;
+- a booked venue, quoted photographer and gated supplier item verified in the
+  optimized app at 390 x 844;
+- the exact venue booking link reopened the saved venue editor;
+- page width matched the viewport and browser errors were empty.
+
+No migration, cloud activation, production write, deployment or paid service was
+used.

@@ -5,7 +5,8 @@ import { addManualPlanningHubPhotographer, createPlanningHubStarterPlan } from "
 import type {
   PlanningHubPhotographer,
   PlanningHubPhotographerDetail,
-  PlanningHubPhotographerResults
+  PlanningHubPhotographerResults,
+  PlanningHubPhotographySearchParams,
 } from "@/lib/planning-hub/types";
 import { PlanningHubPhotographyWorkspace } from "./planning-hub-photography-workspace";
 
@@ -154,6 +155,24 @@ describe("PlanningHubPhotographyWorkspace", () => {
     expect(screen.getByText("This manually added photographer is ready for payment planning.")).toBeTruthy();
   });
 
+  it("opens the exact planned photographer requested by a booking-stage link", () => {
+    const firstPlan = addManualPlanningHubPhotographer(
+      createPlanningHubStarterPlan(null),
+      "First photographer",
+      100_000,
+      "quoted",
+    );
+    const plan = addManualPlanningHubPhotographer(
+      firstPlan,
+      "Later photographer",
+      150_000,
+      "booked",
+    );
+    renderWorkspace(plan, null, { planItem: plan.items[0].id });
+
+    expect(screen.getByRole("heading", { name: "First photographer" })).toBeTruthy();
+  });
+
   it("keeps shared workspace identity in both adjacent-stage links", () => {
     renderWorkspace(
       createPlanningHubStarterPlan(null),
@@ -170,13 +189,14 @@ describe("PlanningHubPhotographyWorkspace", () => {
 function renderWorkspace(
   initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
   connectedWorkspaceId: string | null = null,
+  searchParams: PlanningHubPhotographySearchParams = {},
 ) {
   return render(
     <PlanningHubPhotographyWorkspace
       connectedWorkspaceId={connectedWorkspaceId}
       initialPlan={initialPlan}
       results={results}
-      searchParams={{}}
+      searchParams={searchParams}
       userId={null}
     />
   );

@@ -36,6 +36,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
     render(<PlanningHubOrganiseWorkspace initialBudgetPlan={createEmptyBudgetPlan()} userId={null} />);
 
     expect(await screen.findByText("Choose the venue direction")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Budget & bookings" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Continue planning" }).getAttribute("href")).toBe("/planning-hub");
     expect(screen.queryByRole("button", { name: /Review.*cloud/i })).toBeNull();
   });
@@ -93,6 +94,8 @@ describe("PlanningHubOrganiseWorkspace", () => {
     expect(screen.getByRole("heading", { name: "Review Venue One payment" })).toBeTruthy();
     expect(screen.getAllByText("£4,000").length).toBe(2);
     expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Review booking stage" }).getAttribute("href"))
+      .toBe(`/planning-hub?planItem=${venue.id}#current-venue-planning`);
   });
 
   it("surfaces overdue scheduled work before ordinary discovery guidance", async () => {
