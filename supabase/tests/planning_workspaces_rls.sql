@@ -76,12 +76,19 @@ insert into public.budget_plans (
   name,
   plan_json
 )
-values (
-  'planning-budget-1',
-  '30000000-0000-4000-8000-000000000003',
-  'Planning test budget',
-  '{}'::jsonb
-);
+values
+  (
+    'planning-budget-1',
+    '30000000-0000-4000-8000-000000000003',
+    'Planning test budget',
+    '{}'::jsonb
+  ),
+  (
+    'planning-budget-private',
+    '30000000-0000-4000-8000-000000000003',
+    'Owner private budget',
+    '{}'::jsonb
+  );
 
 insert into public.planning_workspaces (id, owner_id, budget_plan_id, name)
 values (
@@ -243,6 +250,14 @@ begin
   ) <> 1 then
     raise exception 'RLS failure: partner cannot read the linked budget plan';
   end if;
+
+  if (
+    select count(*) from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-private'
+  ) <> 0 then
+    raise exception 'RLS failure: partner can read an unlinked owner budget plan';
+  end if;
 end
 $$;
 
@@ -301,6 +316,23 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+
+  begin
+    update public.planning_workspaces
+    set budget_plan_id = 'planning-budget-private'
+    where id = '60000000-0000-4000-8000-000000000006';
+    raise exception 'Grant failure: partner relinked the workspace to another owner budget';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  if (
+    select budget_plan_id
+    from public.planning_workspaces
+    where id = '60000000-0000-4000-8000-000000000006'
+  ) <> 'planning-budget-1' then
+    raise exception 'RLS failure: the shared workspace budget link changed';
+  end if;
 
   begin
     insert into public.planning_workspace_members (workspace_id, user_id, role)

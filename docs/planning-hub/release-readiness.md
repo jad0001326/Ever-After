@@ -31,7 +31,7 @@ deploy, migrate or enable cloud persistence.
 | Mobile performance | Three production-build Lighthouse runs score 98 performance, 100 accessibility and 100 best practices, with LCP 2.243-2.249 s and CLS 0. | Target met in lab |
 | Interaction performance | Immediate local state and small client boundaries are in place; lab TBT is 70-80 ms. Real INP requires post-release field traffic. | Awaiting field evidence |
 | Keyboard and screen reader access | Semantic landmarks, labelled status regions, pressed/expanded states and focus return are present. Release-candidate keyboard checks and axe scans pass at 390 x 844. | Proven locally |
-| User-record security | Ten user-owned tables have RLS, explicit grants, owner/member predicates and anonymous denial. The unchanged eight-migration sequence passes the embedded PostgreSQL scenario. | Database boundary proven |
+| User-record security | Ten user-owned tables have RLS, explicit grants, owner/member predicates and anonymous denial. The eight-migration sequence passes the embedded PostgreSQL scenario, including denial of partner access to unlinked owner budgets and workspace budget relinking. | Database boundary proven |
 
 ## Stacked review sequence
 
@@ -55,7 +55,8 @@ they do not require rewriting or pushing it.
 | 12. Release audit | Correct gate messaging, perform final keyboard QA and record this release sequence. | `b048ef1` | Local commit only until push approval. |
 | 13. API verification | Add the fail-closed Auth/Data API smoke harness and document its local baseline prerequisite. | `21fbb84` | Dormant until a free prepared test stack exists. |
 | 14. Local API bootstrap | Generate a checksummed disposable project from the exact baseline plus all timestamped migrations. | `11d4a1c` | Local files only; requires a future container-runtime smoke test. |
-| 15. Desktop release audit | Verify the production bundle at 1440 x 900 and correct public-planner and shared-table accessibility findings. | Current working slice | Local commit only; no hosted action. |
+| 15. Desktop release audit | Verify the production bundle at 1440 x 900 and correct public-planner and shared-table accessibility findings. | `dca9652` | Local commit only; no hosted action. |
+| 16. Partner budget-link hardening | Prevent a partner from relinking a shared workspace to another owner budget and extend both database and future Data API assertions. | Current working slice | Dormant migration and local verifier only; no hosted action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -159,7 +160,8 @@ Use the least destructive rollback that restores safety:
 
 - 62 Vitest files and 284 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
-  user-owned-table assertions.
+  user-owned-table assertions, including denial of partner reads against an
+  unlinked owner budget and denial of workspace budget relinking.
 - TypeScript passes.
 - ESLint has zero errors and retains one unrelated pre-existing Open Graph
   `<img>` warning.

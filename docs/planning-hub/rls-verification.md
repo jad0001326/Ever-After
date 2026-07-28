@@ -31,12 +31,12 @@ policy is missing, or a sensitive function has unsafe execution grants,
 search-path configuration or invoker/definer mode.
 
 The transaction scenario then covers owners, partners, outsiders, matching and
-non-matching invitees, unconfirmed email, anonymous access, linked budgets,
-tasks, private guest data, tables, seats, profiles, invitations, snapshot
-imports and optimistic-concurrency failures. Synthetic records always roll
-back.
+non-matching invitees, unconfirmed email, anonymous access, linked and unlinked
+owner budgets, tasks, private guest data, tables, seats, profiles, invitations,
+snapshot imports and optimistic-concurrency failures. Synthetic records always
+roll back.
 
-## Defect found by execution
+## Defects found by execution
 
 The original profile import used:
 
@@ -52,7 +52,20 @@ migration now targets:
 on conflict on constraint planning_workspace_profiles_pkey do update
 ```
 
-The unchanged RLS scenario passes after that correction.
+The expanded RLS scenario passes after that correction.
+
+The release review also found that the workspace table granted authenticated
+users column-level access to update `budget_plan_id`. RLS correctly limited the
+row to workspace members, but a partner who knew another plan identifier for
+the same owner could have relinked the shared workspace and gained access to
+that otherwise private budget.
+
+The foundation migration now has a before-update trigger that permits a budget
+link change only when `auth.uid()` is the workspace owner. The schema contract
+asserts that the trigger exists, while the transaction scenario proves that a
+partner can update the linked shared budget but cannot read the owner’s
+unlinked budget or relink the workspace to it. Owner snapshot replacement still
+passes.
 
 ## Boundary of the proof
 

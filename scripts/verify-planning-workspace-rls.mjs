@@ -83,6 +83,47 @@ async function assertSchemaContract(db) {
     `anon retains table privileges on ${anonymousPrivileges.rows.map((row) => row.table_name).join(", ")}`,
   );
 
+  const workspaceColumnPrivileges = await db.query(`
+    select
+      pg_catalog.has_column_privilege(
+        'authenticated',
+        'public.planning_workspaces',
+        'name',
+        'UPDATE'
+      ) as can_update_name,
+      pg_catalog.has_column_privilege(
+        'authenticated',
+        'public.planning_workspaces',
+        'budget_plan_id',
+        'UPDATE'
+      ) as can_update_budget_plan_id
+  `);
+  assert(
+    workspaceColumnPrivileges.rows[0]?.can_update_name === true,
+    "authenticated cannot update a workspace name",
+  );
+  assert(
+    workspaceColumnPrivileges.rows[0]?.can_update_budget_plan_id === true,
+    "workspace owners cannot update a linked budget during snapshot import",
+  );
+
+  const workspaceBudgetLinkTrigger = await db.query(`
+    select
+      trigger_name,
+      action_timing,
+      event_manipulation
+    from information_schema.triggers
+    where event_object_schema = 'public'
+      and event_object_table = 'planning_workspaces'
+      and trigger_name = 'planning_workspaces_protect_budget_link'
+  `);
+  assert(
+    workspaceBudgetLinkTrigger.rows.length === 1
+      && workspaceBudgetLinkTrigger.rows[0]?.action_timing === "BEFORE"
+      && workspaceBudgetLinkTrigger.rows[0]?.event_manipulation === "UPDATE",
+    "planning_workspaces has no budget-link protection trigger",
+  );
+
   const policyResult = await db.query(`
     select tablename, array_agg(distinct cmd order by cmd) as commands
     from pg_catalog.pg_policies
@@ -144,11 +185,12 @@ async function assertSchemaContract(db) {
       ('private', 'can_access_planning_workspace'),
       ('private', 'owns_planning_workspace'),
       ('private', 'current_verified_planning_email'),
-      ('private', 'can_access_planning_budget_plan')
+      ('private', 'can_access_planning_budget_plan'),
+      ('private', 'protect_planning_workspace_budget_link')
     )
   `);
 
-  assert(functionResult.rows.length === 8, "expected eight security-sensitive functions");
+  assert(functionResult.rows.length === 9, "expected nine security-sensitive functions");
   for (const row of functionResult.rows) {
     assert(row.empty_search_path, `${row.schema_name}.${row.function_name} has a mutable search_path`);
     assert(!row.anon_execute, `anon can execute ${row.schema_name}.${row.function_name}`);

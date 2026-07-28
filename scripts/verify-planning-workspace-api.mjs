@@ -108,15 +108,27 @@ async function verifyPlanningApiBoundary() {
   const outsiderClient = await signIn(outsider);
 
   const budgetPlanId = `api-smoke-${runId}`.slice(0, 100);
-  dataOrThrow(await ownerClient.from("budget_plans").insert({
-    currency: "GBP",
-    id: budgetPlanId,
-    name: "Planning API smoke budget",
-    plan_json: { apiSmoke: runId, schemaVersion: 1 },
-    scenario_name: "Current plan",
-    total_budget_pence: 2_500_000,
-    user_id: owner.id,
-  }).select("id").single(), "Owner budget creation");
+  const privateBudgetPlanId = `api-private-${runId}`.slice(0, 100);
+  dataOrThrow(await ownerClient.from("budget_plans").insert([
+    {
+      currency: "GBP",
+      id: budgetPlanId,
+      name: "Planning API smoke budget",
+      plan_json: { apiSmoke: runId, schemaVersion: 1 },
+      scenario_name: "Current plan",
+      total_budget_pence: 2_500_000,
+      user_id: owner.id,
+    },
+    {
+      currency: "GBP",
+      id: privateBudgetPlanId,
+      name: "Planning API private owner budget",
+      plan_json: { apiSmoke: runId, private: true, schemaVersion: 1 },
+      scenario_name: "Private plan",
+      total_budget_pence: 1_500_000,
+      user_id: owner.id,
+    },
+  ]).select("id"), "Owner budget creation");
 
   const workspaceId = randomUUID();
   const importedTaskId = randomUUID();
@@ -250,6 +262,29 @@ async function verifyPlanningApiBoundary() {
     plan_json: { apiSmoke: runId, partnerUpdated: true, schemaVersion: 1 },
     updated_at: new Date().toISOString(),
   }).eq("user_id", owner.id).eq("id", budgetPlanId).select("id").single(), "Partner linked-budget update");
+  expectEmptyOrDenied(
+    await partnerClient.from("budget_plans")
+      .select("id")
+      .eq("user_id", owner.id)
+      .eq("id", privateBudgetPlanId),
+    "Partner unlinked-budget read",
+  );
+  expectError(
+    await partnerClient.from("planning_workspaces")
+      .update({ budget_plan_id: privateBudgetPlanId })
+      .eq("id", workspaceId),
+    "Partner workspace budget relink",
+  );
+  assert.equal(
+    dataOrThrow(
+      await partnerClient.from("planning_workspaces")
+        .select("budget_plan_id")
+        .eq("id", workspaceId)
+        .single(),
+      "Partner workspace budget-link verification",
+    ).budget_plan_id,
+    budgetPlanId,
+  );
 
   expectEmptyOrDenied(
     await partnerClient.from("planning_workspace_invites").select("id").eq("workspace_id", workspaceId),

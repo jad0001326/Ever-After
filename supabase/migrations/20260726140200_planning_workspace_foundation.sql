@@ -374,6 +374,29 @@ create trigger planning_workspace_members_protect_owner
 before update or delete on public.planning_workspace_members
 for each row execute function private.protect_planning_workspace_owner_member();
 
+create or replace function private.protect_planning_workspace_budget_link()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.budget_plan_id is distinct from old.budget_plan_id
+    and (select auth.uid()) is distinct from old.owner_id
+  then
+    raise exception 'Only the workspace owner can change its linked budget plan'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function private.protect_planning_workspace_budget_link() from public;
+
+create trigger planning_workspaces_protect_budget_link
+before update of budget_plan_id on public.planning_workspaces
+for each row execute function private.protect_planning_workspace_budget_link();
+
 create trigger planning_workspaces_set_updated_at
 before update on public.planning_workspaces
 for each row execute function public.set_updated_at();

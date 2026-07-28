@@ -25,9 +25,11 @@ release and secure cloud sharing remain deliberately gated.
 
 Secure partner sharing and cloud persistence have local application foundations
 and dormant database migrations, ownership checks, grants and RLS policies.
-The unchanged migrations and transaction-safe RLS scenario now pass against an
+The release migrations and transaction-safe RLS scenario now pass against an
 embedded PostgreSQL engine with real roles, grants, policies and `auth.uid()`
-claims. They have not been applied to production or to a paid Supabase branch.
+claims. Partner access is limited to the linked shared budget; a database
+trigger prevents partners from relinking a workspace to another owner budget.
+They have not been applied to production or to a paid Supabase branch.
 The cloud feature remains disabled until the Supabase Auth/Data API boundary is
 also exercised in a free local stack or approved disposable environment.
 
@@ -59,7 +61,9 @@ its public profile route and category-specific browser verification before its
 - 62 test files and 284 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
-  owner, partner, outsider, invitee and anonymous scenarios.
+  owner, partner, outsider, invitee and anonymous scenarios. The partner can
+  update the shared budget but cannot read an unlinked owner budget or change
+  the workspace budget link.
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.

@@ -15,7 +15,8 @@ PostgreSQL cannot emulate:
 - explicit Data API grants and RLS behavior;
 - owner snapshot import and automatic owner membership;
 - email-bound, single-use partner invitation acceptance;
-- partner workspace, task and linked-budget access;
+- partner workspace, task and linked-budget access, with denial for unlinked
+  owner budgets and workspace budget relinking;
 - owner-only invitation, membership and workspace deletion controls;
 - outsider and anonymous isolation; and
 - table-plan version conflict behavior through the public RPC.
@@ -97,10 +98,12 @@ The command prints only the target class (`local loopback` or
 `approved disposable`) and assertion progress. It never prints keys, passwords
 or invitation tokens.
 
-The generator and checksum verification pass on this machine. The stack itself
-has not run because no container runtime or Supabase CLI is installed. Its first
-successful run must also confirm that Auth's `handle_new_user` trigger creates
-`public.profiles`.
+The generator and checksum verification pass on this machine, including the
+hardened workspace-foundation migration. The stack itself has not run because
+no container runtime or Supabase CLI is installed; the Windows WSL executable
+is present, but the subsystem and a Linux distribution are not installed. Its
+first successful run must also confirm that Auth's `handle_new_user` trigger
+creates `public.profiles`.
 
 ## Cleanup
 
