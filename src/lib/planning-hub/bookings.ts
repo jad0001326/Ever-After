@@ -1,11 +1,23 @@
 import { getItemPlanningCost } from "@/lib/budget/calculations";
 import type {
+  AvailabilityStatus,
   BookingStatus,
   BudgetPlan,
   PaymentStatus,
 } from "@/lib/budget/types";
 import { getPlanningHubItemStageHref } from "./item-navigation";
-import { calculatePlanningHubPlan } from "./plan";
+import {
+  calculatePlanningHubPlan,
+  getPlanningHubItemAvailability,
+} from "./plan";
+
+export type PlanningHubAvailabilityState =
+  | "date_needed"
+  | "not_checked"
+  | "enquiry_sent"
+  | "available"
+  | "unavailable"
+  | "stale";
 
 export type PlanningHubBookingEntry = {
   itemId: string;
@@ -18,6 +30,7 @@ export type PlanningHubBookingEntry = {
   outstandingPence: number | null;
   selectedVenue: boolean;
   stageHref: string | null;
+  availabilityState: PlanningHubAvailabilityState;
 };
 
 export type PlanningHubBookingOverview = {
@@ -27,6 +40,10 @@ export type PlanningHubBookingOverview = {
   quotedCount: number;
   shortlistedCount: number;
   researchingCount: number;
+  availabilityAvailableCount: number;
+  availabilityAwaitingCount: number;
+  availabilityNeedsActionCount: number;
+  availabilityUnavailableCount: number;
 };
 
 const bookingRank: Record<PlanningHubBookingEntry["bookingStatus"], number> = {
@@ -48,6 +65,10 @@ export function getPlanningHubBookingOverview(
   let quotedCount = 0;
   let shortlistedCount = 0;
   let researchingCount = 0;
+  let availabilityAvailableCount = 0;
+  let availabilityAwaitingCount = 0;
+  let availabilityNeedsActionCount = 0;
+  let availabilityUnavailableCount = 0;
 
   for (const item of plan.items) {
     if (item.bookingStatus === "cancelled" || item.costStatus === "cancelled") continue;
@@ -55,6 +76,15 @@ export function getPlanningHubBookingOverview(
     else if (item.bookingStatus === "quoted") quotedCount += 1;
     else if (item.bookingStatus === "shortlisted") shortlistedCount += 1;
     else researchingCount += 1;
+
+    const availabilityState = getBookingAvailabilityState(
+      item,
+      plan.weddingDate,
+    );
+    if (availabilityState === "available") availabilityAvailableCount += 1;
+    else if (availabilityState === "enquiry_sent") availabilityAwaitingCount += 1;
+    else if (availabilityState === "unavailable") availabilityUnavailableCount += 1;
+    else availabilityNeedsActionCount += 1;
 
     const costPence = getItemPlanningCost(item).amountPence;
     const paidPence = Math.max(item.totalPaidPence, item.depositPaidPence, 0);
@@ -74,6 +104,7 @@ export function getPlanningHubBookingOverview(
       selectedVenue: item.categoryId === "venue"
         && (plan.selectedVenueId === item.id || plan.selectedVenueId === item.listingId),
       stageHref: getPlanningHubItemStageHref(item, workspaceId),
+      availabilityState,
     });
   }
 
@@ -91,6 +122,10 @@ export function getPlanningHubBookingOverview(
     quotedCount,
     shortlistedCount,
     researchingCount,
+    availabilityAvailableCount,
+    availabilityAwaitingCount,
+    availabilityNeedsActionCount,
+    availabilityUnavailableCount,
   };
 }
 
@@ -101,4 +136,27 @@ export function getPlanningHubBookingStatusLabel(
   if (status === "quoted") return "Quote received";
   if (status === "shortlisted") return "Shortlisted";
   return "Researching";
+}
+
+export function getPlanningHubAvailabilityLabel(
+  state: PlanningHubAvailabilityState,
+) {
+  if (state === "date_needed") return "Set wedding date";
+  if (state === "enquiry_sent") return "Awaiting availability";
+  if (state === "available") return "Available for your date";
+  if (state === "unavailable") return "Unavailable for your date";
+  if (state === "stale") return "Availability needs rechecking";
+  return "Availability not checked";
+}
+
+function getBookingAvailabilityState(
+  item: {
+    availabilityDate: string | null;
+    availabilityStatus: AvailabilityStatus;
+  },
+  weddingDate: string | null,
+): PlanningHubAvailabilityState {
+  if (!weddingDate) return "date_needed";
+  const availability = getPlanningHubItemAvailability(item, weddingDate);
+  return availability.stale ? "stale" : availability.status;
 }

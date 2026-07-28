@@ -59,6 +59,7 @@ describe("PlanningHubBookingOverview", () => {
   it("shows committed, paid and remaining figures with an actionable booking", () => {
     const plan = createEmptyBudgetPlan();
     plan.totalBudgetPence = 2_000_000;
+    plan.weddingDate = "2027-06-12";
     plan.selectedVenueId = "venue-1";
     plan.items = [venue()];
 
@@ -70,9 +71,26 @@ describe("PlanningHubBookingOverview", () => {
     );
 
     expect(screen.getByText("Selected venue")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Date readiness" })).toBeTruthy();
+    expect(screen.getByText("Availability is tracked against your current wedding date.")).toBeTruthy();
+    expect(screen.getByText("1 available")).toBeTruthy();
+    expect(screen.getByText("Available for your date")).toBeTruthy();
     expect(screen.getByText("£1,000 paid · £4,000 left")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review booking stage" }).getAttribute("href"))
       .toBe("/planning-hub?planItem=venue-1&workspace=60000000-0000-4000-8000-000000000006#current-venue-planning");
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("25");
+  });
+
+  it("explains that availability checks need a wedding date", () => {
+    const plan = createEmptyBudgetPlan();
+    plan.items = [venue()];
+
+    render(<PlanningHubBookingOverview plan={plan} />);
+
+    expect(screen.getByText(
+      "Set your wedding date to start checking each venue and supplier.",
+    )).toBeTruthy();
+    expect(screen.getByText("1 need action")).toBeTruthy();
+    expect(screen.getByText("Set wedding date")).toBeTruthy();
   });
 });

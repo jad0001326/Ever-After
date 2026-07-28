@@ -1,10 +1,17 @@
 import Link from "next/link";
-import { BriefcaseBusiness, CheckCircle2, CircleGauge } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarCheck2,
+  CheckCircle2,
+  CircleGauge,
+} from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
 import type { BudgetPlan } from "@/lib/budget/types";
 import {
+  getPlanningHubAvailabilityLabel,
   getPlanningHubBookingOverview,
   getPlanningHubBookingStatusLabel,
+  type PlanningHubAvailabilityState,
 } from "@/lib/planning-hub/bookings";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 
@@ -77,6 +84,37 @@ export function PlanningHubBookingOverview({
             <CountPill label="shortlisted" value={overview.shortlistedCount} />
             <CountPill label="researching" value={overview.researchingCount} />
           </div>
+          <div
+            aria-labelledby="date-readiness-title"
+            className="mt-4 rounded-2xl border border-[#dce5da] bg-[#f3f6f1] p-4"
+          >
+            <div className="flex items-start gap-3">
+              <CalendarCheck2
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-[#31533b]"
+                size={20}
+              />
+              <div>
+                <h3
+                  className="text-sm font-semibold text-[#173526]"
+                  id="date-readiness-title"
+                >
+                  Date readiness
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-[#625f57]">
+                  {plan.weddingDate
+                    ? "Availability is tracked against your current wedding date."
+                    : "Set your wedding date to start checking each venue and supplier."}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+              <CountPill label="available" value={overview.availabilityAvailableCount} />
+              <CountPill label="awaiting" value={overview.availabilityAwaitingCount} />
+              <CountPill label="need action" value={overview.availabilityNeedsActionCount} />
+              <CountPill label="unavailable" value={overview.availabilityUnavailableCount} />
+            </div>
+          </div>
           <ol aria-label="Booking pipeline" className="mt-4 grid gap-3">
             {visibleItems.map((item) => (
               <li className="rounded-2xl border border-[#e4ddd2] bg-[#fbf8f2] p-4" key={item.itemId}>
@@ -93,6 +131,7 @@ export function PlanningHubBookingOverview({
                     <p className="mt-1 text-xs text-[#625f57]">
                       {item.categoryLabel} · {getPlanningHubBookingStatusLabel(item.bookingStatus)}
                     </p>
+                    <AvailabilityBadge state={item.availabilityState} />
                   </div>
                   <p className="text-sm font-semibold text-[#173526]">
                     {bookingAmountLabel(item, plan.currency)}
@@ -179,6 +218,26 @@ function Metric({ label, value }: { label: string; value: string }) {
 function CountPill({ label, value }: { label: string; value: number }) {
   const countLabel = value === 1 && label.endsWith("s") ? label.slice(0, -1) : label;
   return <span className="rounded-full bg-[#f3eee6] px-3 py-1.5 text-[#514b43]">{value} {countLabel}</span>;
+}
+
+function AvailabilityBadge({
+  state,
+}: {
+  state: PlanningHubAvailabilityState;
+}) {
+  const tone = state === "available"
+    ? "bg-[#e1eee3] text-[#255233]"
+    : state === "unavailable"
+      ? "bg-[#f8dfd7] text-[#8f3427]"
+      : state === "enquiry_sent"
+        ? "bg-[#fff0cc] text-[#75500d]"
+        : "bg-[#ece8e0] text-[#514b43]";
+
+  return (
+    <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
+      {getPlanningHubAvailabilityLabel(state)}
+    </span>
+  );
 }
 
 function bookingAmountLabel(
