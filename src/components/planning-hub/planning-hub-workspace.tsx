@@ -5,13 +5,14 @@ import { saveBudgetPlan } from "@/app/actions/budget";
 import { toggleFavourite } from "@/app/actions/favourites";
 import { loadPlanningHubVenueDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
-import type { BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
+import type { AvailabilityStatus, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import {
   addManualPlanningHubVenue,
   choosePlanningHubVenue,
   findPlanningHubVenueItem,
   getVenuePlanningCost,
   updatePlanningHubItemInstallments,
+  updatePlanningHubItemAvailability,
   upsertPlanningHubVenue,
   type PlanningHubVenueStatus
 } from "@/lib/planning-hub/plan";
@@ -213,6 +214,14 @@ export function PlanningHubWorkspace({
     );
   }
 
+  function saveAvailability(availabilityStatus: AvailabilityStatus) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemAvailability(plan, selectedItem.id, availabilityStatus),
+      "Venue availability updated.",
+    );
+  }
+
   function updatePlan(updates: Partial<BudgetPlan>) {
     setPlan((current) => ({ ...current, ...updates, updatedAt: new Date().toISOString() }));
     setSaveState("idle");
@@ -255,6 +264,7 @@ export function PlanningHubWorkspace({
       </div>
       <PlanningHubPlanPanel
         connectedWorkspaceId={connectedWorkspaceId}
+        onAvailabilityChange={saveAvailability}
         onChooseVenue={chooseCurrentVenue}
         onManualVenue={addManualVenue}
         onInstallmentsSave={saveInstallments}

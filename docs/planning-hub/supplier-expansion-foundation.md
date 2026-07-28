@@ -52,6 +52,31 @@ Photography keeps its existing wrapper functions, so this refactor does not
 change the current route or browser interface. Future web and native clients can
 call the category-neutral business rules directly.
 
+## Date-aware availability
+
+The supplier directory does not store supplier calendars. Planning Hub
+therefore does not filter or label a business as available merely because the
+couple has entered a wedding date.
+
+Instead, every connected venue and supplier budget item carries a reusable
+availability state:
+
+- not checked;
+- enquiry sent;
+- available;
+- unavailable.
+
+Any non-default state is tied to the exact wedding date it was checked against.
+If the couple changes their date, the earlier answer becomes stale and the
+interface asks them to confirm it again. A booked item is marked available
+automatically only when the plan already has a specific wedding date. Organise
+prioritises a chosen venue or photographer that still needs a date check,
+follow-up or replacement before recommending the next supplier stage.
+
+This state is part of the existing versioned budget JSON contract, with
+validation and legacy restoration defaults. It adds no catalogue query, public
+calendar claim, table, migration, grant or production write.
+
 ## Activation rules
 
 A second supplier catalogue must not be enabled merely because its category
@@ -85,8 +110,10 @@ categories. They remain available for manual planning only.
 
 ## Verification
 
-- 60 test files and 275 tests passing after the supplier-roadmap slice;
+- 65 test files and 296 tests passing after the date-availability slice;
 - focused category-normalization and supplier-continuity tests passing;
+- focused date-availability component, persistence, plan-domain,
+  recommendation and workspace-persistence tests passing;
 - TypeScript check passing;
 - ESLint passing with one pre-existing unrelated Open Graph image warning;
 - optimized Next.js production build passing with 78 generated pages;

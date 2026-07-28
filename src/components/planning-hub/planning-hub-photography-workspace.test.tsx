@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BudgetPlan } from "@/lib/budget/types";
+import { BUDGET_STORAGE_KEY } from "@/lib/budget/persistence";
 import { addManualPlanningHubPhotographer, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import type {
   PlanningHubPhotographer,
@@ -153,6 +154,32 @@ describe("PlanningHubPhotographyWorkspace", () => {
 
     expect(screen.getByRole("heading", { name: "A family friend" })).toBeTruthy();
     expect(screen.getByText("This manually added photographer is ready for payment planning.")).toBeTruthy();
+  });
+
+  it("persists the date checked with a photographer availability enquiry", async () => {
+    const plan = {
+      ...createPlanningHubStarterPlan(null),
+      weddingDate: "2027-06-12",
+    };
+    renderWorkspace(plan);
+    const manual = screen.getByText("Photographer not listed?").closest("details");
+    fireEvent.click(within(manual!).getByText("Photographer not listed?"));
+    fireEvent.change(within(manual!).getByLabelText("Photographer name"), {
+      target: { value: "A family friend" },
+    });
+    fireEvent.click(within(manual!).getByRole("button", { name: "Add manual photographer" }));
+    fireEvent.click(screen.getByText("Date availability"));
+    fireEvent.change(screen.getByRole("combobox", { name: "Availability for 12 Jun 2027" }), {
+      target: { value: "enquiry_sent" },
+    });
+
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem(BUDGET_STORAGE_KEY) ?? "{}");
+      expect(stored.items[0]).toMatchObject({
+        availabilityStatus: "enquiry_sent",
+        availabilityDate: "2027-06-12",
+      });
+    });
   });
 
   it("opens the exact planned photographer requested by a booking-stage link", () => {

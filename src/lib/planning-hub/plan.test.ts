@@ -11,6 +11,8 @@ import {
   findPlanningHubSupplierItem,
   findPlanningHubVenueItem,
   getPhotographyNextHref,
+  getPlanningHubItemAvailability,
+  updatePlanningHubItemAvailability,
   updatePlanningHubItemInstallments,
   updatePlanningHubPhotographerPayment,
   updatePlanningHubVenuePayment,
@@ -244,6 +246,65 @@ describe("Planning Hub plan", () => {
       dueDate: "2026-10-01",
       paymentStatus: "partially_paid",
       costStatus: "partially_paid",
+    });
+  });
+
+  it("tracks supplier availability against the current wedding date", () => {
+    const initial = {
+      ...createPlanningHubStarterPlan(null),
+      weddingDate: "2027-06-12",
+    };
+    const shortlisted = upsertPlanningHubPhotographer(
+      initial,
+      photographer,
+      200_000,
+      "shortlisted",
+    );
+    const enquired = updatePlanningHubItemAvailability(
+      shortlisted,
+      shortlisted.items[0].id,
+      "enquiry_sent",
+    );
+
+    expect(enquired.items[0]).toMatchObject({
+      availabilityStatus: "enquiry_sent",
+      availabilityDate: "2027-06-12",
+    });
+    expect(getPlanningHubItemAvailability(
+      enquired.items[0],
+      "2027-06-19",
+    )).toEqual({
+      status: "enquiry_sent",
+      checkedDate: "2027-06-12",
+      stale: true,
+    });
+  });
+
+  it("records a booked item as available only for the plan's current date", () => {
+    const plan = upsertPlanningHubVenue(
+      {
+        ...createPlanningHubStarterPlan(null),
+        weddingDate: "2027-06-12",
+      },
+      venue,
+      700_000,
+      "booked",
+    );
+
+    expect(plan.items[0]).toMatchObject({
+      availabilityStatus: "available",
+      availabilityDate: "2027-06-12",
+    });
+
+    const undated = upsertPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      venue,
+      700_000,
+      "booked",
+    );
+    expect(undated.items[0]).toMatchObject({
+      availabilityStatus: "not_checked",
+      availabilityDate: null,
     });
   });
 });

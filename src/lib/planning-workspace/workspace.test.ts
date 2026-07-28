@@ -37,6 +37,8 @@ function budgetItem(categoryId: string): BudgetItem {
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "shortlisted",
+    availabilityStatus: "not_checked",
+    availabilityDate: null,
     dueDate: null,
     websiteUrl: null,
     notes: null,
@@ -153,6 +155,47 @@ describe("planning workspace", () => {
 
     workspace.tablePlan.guests[0].rsvpStatus = "declined";
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("tasks");
+  });
+
+  it("keeps a chosen venue in focus until its date availability is confirmed", () => {
+    const budget = createEmptyBudgetPlan();
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    const venue = budgetItem("venue");
+    venue.itemName = "Venue One";
+    venue.listingId = "venue-one";
+    budget.items = [venue];
+    budget.selectedVenueId = "venue-one";
+    budget.weddingDate = "2027-06-12";
+
+    expect(getPlanningRecommendation(budget, workspace)).toEqual({
+      stage: "venue",
+      title: "Check Venue One availability",
+      href: "/planning-hub?planItem=venue-item#current-venue-planning",
+      reason: "EverAft does not infer supplier calendars. Confirm 12 Jun 2027 directly before treating this option as suitable.",
+    });
+
+    venue.availabilityStatus = "available";
+    venue.availabilityDate = "2027-06-12";
+    expect(getPlanningRecommendation(budget, workspace).stage).toBe("photography");
+  });
+
+  it("rechecks a photographer when the plan date changes", () => {
+    const budget = createEmptyBudgetPlan();
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    const venue = budgetItem("venue");
+    venue.bookingStatus = "booked";
+    const photographer = budgetItem("photography");
+    photographer.itemName = "Photographer One";
+    photographer.availabilityStatus = "available";
+    photographer.availabilityDate = "2027-06-12";
+    budget.items = [venue, photographer];
+    budget.weddingDate = "2027-06-19";
+
+    expect(getPlanningRecommendation(budget, workspace)).toMatchObject({
+      stage: "photography",
+      title: "Recheck Photographer One availability",
+      reason: "Your wedding date changed. Confirm Photographer One again for 19 Jun 2027 before relying on the earlier response.",
+    });
   });
 
   it("prioritises an overdue payment before the ordinary planning sequence", () => {

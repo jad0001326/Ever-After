@@ -7,11 +7,12 @@ import Link from "next/link";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningHubSupplierDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
-import type { BudgetItem, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
+import type { AvailabilityStatus, BudgetItem, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import {
   addManualPlanningHubSupplier,
   findPlanningHubSupplierItem,
   updatePlanningHubItemInstallments,
+  updatePlanningHubItemAvailability,
   upsertPlanningHubSupplier,
   type PlanningHubItemStatus,
 } from "@/lib/planning-hub/plan";
@@ -191,6 +192,14 @@ export function PlanningHubSupplierWorkspace({
     );
   }
 
+  function saveAvailability(availabilityStatus: AvailabilityStatus) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemAvailability(plan, selectedItem.id, availabilityStatus),
+      `${category.label} availability updated.`,
+    );
+  }
+
   function persistPlan(nextPlan: BudgetPlan, successMessage: string) {
     setPlan(nextPlan);
     if (!userId) {
@@ -235,6 +244,7 @@ export function PlanningHubSupplierWorkspace({
       </div>
       <PlanningHubSupplierPlanPanel
         manualOnly={!catalogueLive}
+        onAvailabilityChange={saveAvailability}
         category={category}
         connectedWorkspaceId={connectedWorkspaceId}
         onInstallmentsSave={saveInstallments}

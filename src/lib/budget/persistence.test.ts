@@ -8,7 +8,7 @@ describe("budget persistence", () => {
     expect(planningHubBudgetStorageKey("workspace-b")).not.toBe(planningHubBudgetStorageKey("workspace-a"));
   });
   it("restores a saved plan and merges newly introduced default categories", () => { const plan = createEmptyBudgetPlan(); plan.totalBudgetPence = 2_500_050; plan.categories = plan.categories.slice(0, 2); const restored = restoreBudgetPlan(serializeBudgetPlan(plan)); expect(restored?.totalBudgetPence).toBe(2_500_050); expect(restored?.categories.length).toBeGreaterThan(2); });
-  it("adds an empty instalment schedule to legacy saved items", () => {
+  it("adds current payment and availability defaults to legacy saved items", () => {
     const plan = createEmptyBudgetPlan();
     const legacyItem = {
       id: "legacy-item", categoryId: "venue", listingId: null, listingType: null, listingUrl: null, imageUrl: null, source: "manual",
@@ -17,7 +17,11 @@ describe("budget persistence", () => {
       guestCount: null, depositPaidPence: 10_000, totalPaidPence: 10_000, costStatus: "deposit_paid", paymentStatus: "deposit_paid",
       bookingStatus: "booked", dueDate: "2027-01-01", websiteUrl: null, notes: null, createdAt: plan.createdAt, updatedAt: plan.updatedAt, sortOrder: 0,
     };
-    expect(restoreBudgetPlan(JSON.stringify({ ...plan, items: [legacyItem] }))?.items[0].installments).toEqual([]);
+    expect(restoreBudgetPlan(JSON.stringify({ ...plan, items: [legacyItem] }))?.items[0]).toMatchObject({
+      installments: [],
+      availabilityStatus: "not_checked",
+      availabilityDate: null,
+    });
   });
   it("rejects corrupt or unsupported data", () => { expect(restoreBudgetPlan("not-json")).toBeNull(); expect(restoreBudgetPlan(JSON.stringify({ schemaVersion: 2, id: "old", items: [] }))).toBeNull(); });
 });

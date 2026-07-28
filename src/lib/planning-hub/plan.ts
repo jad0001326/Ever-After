@@ -2,7 +2,7 @@ import { supplierCategoryBySlug } from "@/data/supplier-directory";
 import { calculateBudget, getItemPlanningCost, getPaymentStatus } from "@/lib/budget/calculations";
 import { plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
-import type { BookingStatus, BudgetItem, BudgetPlan, PaymentInstallment, PlannerListing } from "@/lib/budget/types";
+import type { AvailabilityStatus, BookingStatus, BudgetItem, BudgetPlan, PaymentInstallment, PlannerListing } from "@/lib/budget/types";
 import type { SupplierCategorySlug } from "@/types/supplier";
 import type { PlanningHubPhotographer, PlanningHubSupplier, PlanningHubVenue } from "./types";
 
@@ -226,6 +226,39 @@ export function updatePlanningHubItemInstallments(
   };
 }
 
+export function updatePlanningHubItemAvailability(
+  plan: BudgetPlan,
+  itemId: string,
+  availabilityStatus: AvailabilityStatus,
+) {
+  const item = plan.items.find((candidate) => candidate.id === itemId);
+  if (!item || (availabilityStatus !== "not_checked" && !plan.weddingDate)) return plan;
+  const now = new Date().toISOString();
+  return {
+    ...plan,
+    updatedAt: now,
+    items: plan.items.map((candidate) => candidate.id === itemId ? {
+      ...candidate,
+      availabilityStatus,
+      availabilityDate: availabilityStatus === "not_checked" ? null : plan.weddingDate,
+      updatedAt: now,
+    } : candidate),
+  };
+}
+
+export function getPlanningHubItemAvailability(
+  item: Pick<BudgetItem, "availabilityDate" | "availabilityStatus">,
+  weddingDate: string | null,
+) {
+  const status = item.availabilityStatus ?? "not_checked";
+  return {
+    status,
+    checkedDate: item.availabilityDate ?? null,
+    stale: status !== "not_checked"
+      && item.availabilityDate !== weddingDate,
+  };
+}
+
 export function findPlanningHubVenueItem(plan: BudgetPlan, venueId: string | null | undefined) {
   if (!venueId) return null;
   return plan.items.find((item) => (
@@ -323,6 +356,12 @@ function upsertPlanningHubListing(
     costStatus: status === "booked" ? "booked" : status === "quoted" ? "quoted" : "estimated",
     paymentStatus: getPaymentStatus(cost, Math.max(baseItem.totalPaidPence, baseItem.depositPaidPence)),
     bookingStatus: status,
+    availabilityStatus: status === "booked" && plan.weddingDate
+      ? "available"
+      : baseItem.availabilityStatus,
+    availabilityDate: status === "booked" && plan.weddingDate
+      ? plan.weddingDate
+      : baseItem.availabilityDate,
     updatedAt: now
   };
 
@@ -371,6 +410,8 @@ function addManualPlanningHubItem(
     costStatus: status === "booked" ? "booked" : status === "quoted" ? "quoted" : "estimated",
     paymentStatus: "not_started",
     bookingStatus: status,
+    availabilityStatus: status === "booked" && plan.weddingDate ? "available" : "not_checked",
+    availabilityDate: status === "booked" && plan.weddingDate ? plan.weddingDate : null,
     dueDate: null,
     websiteUrl: null,
     notes: null,

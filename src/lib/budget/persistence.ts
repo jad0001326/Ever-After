@@ -28,6 +28,13 @@ export function restoreBudgetPlan(raw: string | null): BudgetPlan | null {
       items: parsed.items.map((item) => ({
         ...item,
         installments: Array.isArray(item.installments) ? item.installments : [],
+        availabilityStatus: ["not_checked", "enquiry_sent", "available", "unavailable"]
+          .includes(item.availabilityStatus)
+          ? item.availabilityStatus
+          : "not_checked",
+        availabilityDate: typeof item.availabilityDate === "string"
+          ? item.availabilityDate
+          : null,
       })),
       schemaVersion: 1,
     } as BudgetPlan;

@@ -22,7 +22,7 @@ deploy, migrate or enable cloud persistence.
 | Planning states and budget | Researching, shortlisted, quoted and booked states plus derived estimated, partially paid and paid states use the shared budget calculation layer. | Proven locally |
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
-| Supplier discovery | Photography is live with server filtering and pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. | Proven locally |
+| Supplier discovery | Photography is live with server filtering and pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states and upcoming priorities are connected to plan items. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds tasks, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
@@ -58,7 +58,8 @@ they do not require rewriting or pushing it.
 | 15. Desktop release audit | Verify the production bundle at 1440 x 900 and correct public-planner and shared-table accessibility findings. | `dca9652` | Local commit only; no hosted action. |
 | 16. Partner budget-link hardening | Prevent a partner from relinking a shared workspace to another owner budget and extend both database and future Data API assertions. | `b9b564b` | Dormant migration and local verifier only; no hosted action. |
 | 17. Integrated journey continuity | Verify the complete mobile local-device journey and prevent a newly generated Organise fallback from overwriting the couple's real plan. | `5331077` | Application, regression test and local browser evidence only; no hosted action. |
-| 18. Cross-site typography audit | Restore a valid local sans-serif stack after the remote font loader was removed and protect the global CSS contract. | Current working slice | Public and beta stylesheet change with no network font dependency; fresh rendered computed-style verification remains required. |
+| 18. Cross-site typography audit | Restore a valid local sans-serif stack after the remote font loader was removed and protect the global CSS contract. | `6747b3b` | Public and beta stylesheet change with no network font dependency; fresh rendered computed-style verification remains required. |
+| 19. Date-aware supplier planning | Track explicit date availability across venue and supplier items, stale prior answers when the wedding date changes and prioritize truthful follow-up recommendations. | Current working slice | Application and versioned JSON contract only; no supplier calendar claim or database migration. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -158,13 +159,17 @@ Use the least destructive rollback that restores safety:
   on a public page and Planning Hub page. The in-app Browser control runtime was
   unavailable during the code-level correction, so no substitute browser result
   is claimed.
+- Fresh rendered mobile verification must exercise the new date-availability
+  control and its stale-date warning. Component, workspace persistence and
+  recommendation behavior are covered, but the in-app Browser control runtime
+  remained unavailable for this slice.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
   require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 63 Vitest files and 285 tests pass.
+- 65 Vitest files and 296 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget and denial of workspace budget relinking.
@@ -176,6 +181,11 @@ Use the least destructive rollback that restores safety:
 - The global body font now resolves through a local system sans stack rather
   than an undefined custom property or a remote font request; its stylesheet
   contract has focused regression coverage.
+- Every planned venue or supplier can record whether availability has not been
+  checked, an enquiry was sent, or the business is available or unavailable for
+  the current wedding date. A date change invalidates the earlier answer, and
+  Organise prioritises confirming or replacing the affected option. Legacy
+  plans restore as not checked.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

@@ -38,6 +38,8 @@ function item(
     costStatus: bookingStatus === "booked" ? "booked" : bookingStatus === "quoted" ? "quoted" : "estimated",
     paymentStatus: "not_started",
     bookingStatus,
+    availabilityStatus: bookingStatus === "booked" ? "available" : "not_checked",
+    availabilityDate: bookingStatus === "booked" ? "2027-06-12" : null,
     dueDate: null,
     websiteUrl: null,
     notes: null,

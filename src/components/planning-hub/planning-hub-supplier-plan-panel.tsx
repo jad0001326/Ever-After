@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, CreditCard, Plus, Save } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
-import type { BudgetItem, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
+import type { AvailabilityStatus, BudgetItem, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import { calculatePlanningHubPlan, type PlanningHubItemStatus } from "@/lib/planning-hub/plan";
 import type {
   PlanningHubSupplier,
@@ -13,12 +13,14 @@ import type {
 } from "@/lib/planning-hub/types";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
+import { PlanningHubAvailability } from "./planning-hub-availability";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 
 export function PlanningHubSupplierPlanPanel({
   category,
   connectedWorkspaceId,
   manualOnly = false,
+  onAvailabilityChange,
   onInstallmentsSave,
   onManualSupplier,
   onPlanSave,
@@ -37,6 +39,7 @@ export function PlanningHubSupplierPlanPanel({
   category: PlanningHubSupplierCategory;
   connectedWorkspaceId: string | null;
   manualOnly?: boolean;
+  onAvailabilityChange: (status: AvailabilityStatus) => void;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
   onManualSupplier: (name: string, costPence: number, status: PlanningHubItemStatus) => void;
   onPlanSave: () => void;
@@ -123,6 +126,14 @@ export function PlanningHubSupplierPlanPanel({
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">{manualOnly ? `Enter the ${category.label.toLowerCase()} you found elsewhere below. EverAft will not search an inactive catalogue.` : "Use “View & plan” on a result to keep researching without leaving your workspace."}</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
+
+      {selectedItem ? (
+        <PlanningHubAvailability
+          item={selectedItem}
+          onChange={onAvailabilityChange}
+          weddingDate={plan.weddingDate}
+        />
+      ) : null}
 
       {selectedItem ? (
         <details className="border-b border-[#e4ddd2]">

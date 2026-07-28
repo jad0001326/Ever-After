@@ -4,11 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveBudgetPlan } from "@/app/actions/budget";
 import { loadPlanningHubPhotographerDetailAction } from "@/app/actions/planning-hub";
 import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
-import type { BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
+import type { AvailabilityStatus, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
 import {
   addManualPlanningHubPhotographer,
   findPlanningHubPhotographyItem,
   updatePlanningHubItemInstallments,
+  updatePlanningHubItemAvailability,
   upsertPlanningHubPhotographer,
   type PlanningHubItemStatus
 } from "@/lib/planning-hub/plan";
@@ -182,6 +183,14 @@ export function PlanningHubPhotographyWorkspace({
     );
   }
 
+  function saveAvailability(availabilityStatus: AvailabilityStatus) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemAvailability(plan, selectedItem.id, availabilityStatus),
+      "Photography availability updated.",
+    );
+  }
+
   function persistPlan(nextPlan: BudgetPlan, successMessage: string) {
     setPlan(nextPlan);
     if (!userId) {
@@ -216,6 +225,7 @@ export function PlanningHubPhotographyWorkspace({
       </div>
       <PlanningHubPhotographyPlanPanel
         connectedWorkspaceId={connectedWorkspaceId}
+        onAvailabilityChange={saveAvailability}
         onManualPhotographer={addManualPhotographer}
         onInstallmentsSave={saveInstallments}
         onPhotographerSave={saveCurrentPhotographer}

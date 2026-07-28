@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowRight, Check, Cloud, CreditCard, MapPinned, Plus, Save } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
-import type { BudgetItem, BudgetPlan } from "@/lib/budget/types";
+import type { AvailabilityStatus, BudgetItem, BudgetPlan } from "@/lib/budget/types";
 import type { PaymentInstallment } from "@/lib/budget/types";
 import type { PlanningHubVenueStatus } from "@/lib/planning-hub/plan";
 import { calculatePlanningHubPlan, getPhotographyNextHref } from "@/lib/planning-hub/plan";
 import type { PlanningHubVenue } from "@/lib/planning-hub/types";
+import { PlanningHubAvailability } from "./planning-hub-availability";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
 
 export type PlanningHubSaveState = "idle" | "saving" | "saved" | "error";
@@ -24,6 +25,7 @@ export function PlanningHubPlanPanel({
   saveState,
   status,
   onChooseVenue,
+  onAvailabilityChange,
   onManualVenue,
   onInstallmentsSave,
   onPlanChange,
@@ -42,6 +44,7 @@ export function PlanningHubPlanPanel({
   saveState: PlanningHubSaveState;
   status: PlanningHubVenueStatus;
   onChooseVenue: () => void;
+  onAvailabilityChange: (status: AvailabilityStatus) => void;
   onManualVenue: (name: string, costPence: number, status: PlanningHubVenueStatus) => void;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
   onPlanChange: (updates: Partial<BudgetPlan>) => void;
@@ -147,6 +150,14 @@ export function PlanningHubPlanPanel({
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View” on a result to inspect it here without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
+
+      {selectedItem ? (
+        <PlanningHubAvailability
+          item={selectedItem}
+          onChange={onAvailabilityChange}
+          weddingDate={plan.weddingDate}
+        />
+      ) : null}
 
       {selectedItem ? (
         <details className="border-b border-[#e4ddd2]">

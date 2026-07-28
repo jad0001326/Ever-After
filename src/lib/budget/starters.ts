@@ -122,6 +122,8 @@ export function createStarterBudgetPlan(starter: BudgetStarter, userId: string |
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "researching",
+    availabilityStatus: "not_checked",
+    availabilityDate: null,
     dueDate: null,
     websiteUrl: null,
     notes: null,

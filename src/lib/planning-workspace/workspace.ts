@@ -4,7 +4,11 @@ import {
   getPlanningHubPaymentDeadlineHref,
   getPlanningHubPaymentOverview,
 } from "@/lib/planning-hub/payments";
-import { getPhotographyNextHref } from "@/lib/planning-hub/plan";
+import {
+  getPhotographyNextHref,
+  getPlanningHubItemAvailability,
+} from "@/lib/planning-hub/plan";
+import { getPlanningHubItemStageHref } from "@/lib/planning-hub/item-navigation";
 import { hasPlannedNonPhotographySupplier } from "@/lib/planning-hub/supplier-roadmap";
 import {
   createEmptyTablePlan,
@@ -167,6 +171,27 @@ export function getPlanningRecommendation(
     };
   }
 
+  const selectedVenue = budgetPlan.items.find((item) => (
+    item.categoryId === "venue"
+    && item.bookingStatus !== "cancelled"
+    && (
+      item.id === budgetPlan.selectedVenueId
+      || item.listingId === budgetPlan.selectedVenueId
+    )
+  ));
+  const venueAvailability = selectedVenue
+    ? availabilityRecommendation(selectedVenue, budgetPlan.weddingDate)
+    : null;
+  if (selectedVenue && venueAvailability && selectedVenue.bookingStatus !== "booked") {
+    return {
+      stage: "venue",
+      title: venueAvailability.title,
+      href: getPlanningHubItemStageHref(selectedVenue, workspaceId)
+        ?? profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence, workspaceId),
+      reason: venueAvailability.reason,
+    };
+  }
+
   const photography = budgetPlan.items.find((item) => item.categoryId === "photography" && item.bookingStatus !== "cancelled");
   if (!photography) {
     return {
@@ -176,6 +201,20 @@ export function getPlanningRecommendation(
       reason: workspace.profile.priorities.includes("photography")
         ? "Photography is one of your priorities, and your venue context can now shape the shortlist."
         : "Your venue is in the plan, so photography is the strongest next supplier decision.",
+    };
+  }
+
+  const photographyAvailability = availabilityRecommendation(
+    photography,
+    budgetPlan.weddingDate,
+  );
+  if (photographyAvailability && photography.bookingStatus !== "booked") {
+    return {
+      stage: "photography",
+      title: photographyAvailability.title,
+      href: getPlanningHubItemStageHref(photography, workspaceId)
+        ?? getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0], workspaceId),
+      reason: photographyAvailability.reason,
     };
   }
 
@@ -237,6 +276,45 @@ export function getPlanningRecommendation(
       ? "Your main planning stages are connected; keep momentum with the next unfinished task."
       : "Your current list is clear. Add the next commitment as plans develop.",
   };
+}
+
+function availabilityRecommendation(
+  item: BudgetPlan["items"][number],
+  weddingDate: string | null,
+) {
+  if (!weddingDate) return null;
+  const availability = getPlanningHubItemAvailability(item, weddingDate);
+  const date = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/London",
+  }).format(new Date(`${weddingDate}T12:00:00Z`));
+  if (availability.stale) {
+    return {
+      title: `Recheck ${item.itemName} availability`,
+      reason: `Your wedding date changed. Confirm ${item.itemName} again for ${date} before relying on the earlier response.`,
+    };
+  }
+  if (availability.status === "not_checked") {
+    return {
+      title: `Check ${item.itemName} availability`,
+      reason: `EverAft does not infer supplier calendars. Confirm ${date} directly before treating this option as suitable.`,
+    };
+  }
+  if (availability.status === "enquiry_sent") {
+    return {
+      title: `Follow up with ${item.itemName}`,
+      reason: `Your availability enquiry for ${date} is still awaiting a response.`,
+    };
+  }
+  if (availability.status === "unavailable") {
+    return {
+      title: `Replace ${item.itemName}`,
+      reason: `${item.itemName} is recorded as unavailable on ${date}. Return to this stage and choose another option.`,
+    };
+  }
+  return null;
 }
 
 function isPlanningTask(value: unknown): value is PlanningTask {

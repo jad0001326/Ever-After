@@ -14,7 +14,7 @@ release and secure cloud sharing remain deliberately gated.
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings and payment progress. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items now track availability against the exact wedding date rather than inferring a calendar from directory data. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items. |
 | Organisation | Tasks, scheduled priorities, guest readiness, RSVP/dietary details and table planning are connected in one Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 63 test files and 285 tests passing.
+- 65 test files and 296 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -79,6 +79,11 @@ its public profile route and category-specific browser verification before its
   regression test protects that global contract.
 - Supplier roadmap and manual supplier stage verified at 390 x 844 with no
   horizontal overflow, no browser errors and zero axe violations.
+- Date availability is part of the reusable budget-item contract for venues,
+  photography and all supplier categories. The plan records not checked,
+  enquiry sent, available or unavailable against the exact wedding date;
+  changing that date makes the prior response stale and Organise recommends a
+  recheck before advancing.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;

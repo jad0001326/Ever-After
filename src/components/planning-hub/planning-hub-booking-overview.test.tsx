@@ -30,6 +30,8 @@ function venue(): BudgetItem {
     costStatus: "partially_paid",
     paymentStatus: "partially_paid",
     bookingStatus: "booked",
+    availabilityStatus: "available",
+    availabilityDate: "2027-06-12",
     dueDate: null,
     websiteUrl: null,
     notes: null,

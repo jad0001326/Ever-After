@@ -60,6 +60,8 @@ export function plannerListingToBudgetItem(listing: PlannerListing, plan: Budget
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "shortlisted",
+    availabilityStatus: "not_checked",
+    availabilityDate: null,
     dueDate: null,
     websiteUrl: listing.listingUrl,
     notes: null,

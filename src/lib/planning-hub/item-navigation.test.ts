@@ -31,6 +31,8 @@ function item(overrides: Partial<BudgetItem> = {}): BudgetItem {
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "shortlisted",
+    availabilityStatus: "not_checked",
+    availabilityDate: null,
     dueDate: null,
     websiteUrl: null,
     notes: null,

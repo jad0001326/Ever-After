@@ -5,6 +5,7 @@ export type ImportedPriceType = "fixed" | "starting_from" | "per_person" | "pack
 export type CostStatus = "estimated" | "quoted" | "booked" | "deposit_paid" | "partially_paid" | "paid" | "cancelled";
 export type BookingStatus = "researching" | "shortlisted" | "quoted" | "booked" | "cancelled";
 export type PaymentStatus = "not_started" | "deposit_paid" | "partially_paid" | "paid" | "overpaid";
+export type AvailabilityStatus = "not_checked" | "enquiry_sent" | "available" | "unavailable";
 export type PaymentInstallmentKind = "deposit" | "installment" | "final" | "other";
 
 export type PaymentInstallment = {
@@ -51,6 +52,8 @@ export type BudgetItem = {
   costStatus: CostStatus;
   paymentStatus: PaymentStatus;
   bookingStatus: BookingStatus;
+  availabilityStatus: AvailabilityStatus;
+  availabilityDate: string | null;
   dueDate: string | null;
   websiteUrl: string | null;
   notes: string | null;
