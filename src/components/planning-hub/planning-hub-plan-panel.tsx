@@ -15,6 +15,7 @@ import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planni
 export type PlanningHubSaveState = "idle" | "saving" | "saved" | "error";
 
 export function PlanningHubPlanPanel({
+  connectedWorkspaceId = null,
   plan,
   selectedItem,
   selectedVenue,
@@ -32,6 +33,7 @@ export function PlanningHubPlanPanel({
   onVenueSave,
   today,
 }: {
+  connectedWorkspaceId?: string | null;
   plan: BudgetPlan;
   selectedItem: BudgetItem | null;
   selectedVenue: PlanningHubVenue | null;
@@ -209,7 +211,7 @@ export function PlanningHubPlanPanel({
         <button className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#173526] px-4 text-sm font-semibold text-[#173526] disabled:opacity-60" disabled={saveState === "saving"} onClick={onPlanSave} type="button">
           <Save size={17} /> Save plan
         </button>
-        <Link className="focus-ring mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#e8efe8] px-4 text-sm font-semibold text-[#173526]" href={getPhotographyNextHref(plan)} prefetch={false}>
+        <Link className="focus-ring mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#e8efe8] px-4 text-sm font-semibold text-[#173526]" href={getPhotographyNextHref(plan, null, connectedWorkspaceId)} prefetch={false}>
           <span>Next: choose your photographer<span className="mt-1 block text-xs font-normal text-[#5b665e]">Matched to your venue and location.</span></span>
           <ArrowRight size={18} />
         </Link>

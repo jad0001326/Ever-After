@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles, Store } from "lucide-react";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import type { PlanningHubSupplierCategory } from "@/lib/planning-hub/types";
 
 export function PlanningHubHeader({
@@ -63,12 +64,6 @@ export function PlanningHubHeader({
       </div>
     </header>
   );
-}
-
-export function withPlanningWorkspace(href: string, workspaceId?: string | null) {
-  if (!workspaceId) return href;
-  const separator = href.includes("?") ? "&" : "?";
-  return `${href}${separator}workspace=${encodeURIComponent(workspaceId)}`;
 }
 
 function StageLink({

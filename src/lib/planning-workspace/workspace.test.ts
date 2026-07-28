@@ -82,14 +82,29 @@ describe("planning workspace", () => {
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("venue");
     expect(getPlanningRecommendation(budget, workspace).href)
       .toBe("/planning-hub?location=Perthshire&guests=90&budget=25000");
+    expect(getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+    ).href).toContain("workspace=60000000-0000-4000-8000-000000000006");
 
     budget.items = [budgetItem("venue")];
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("photography");
     expect(getPlanningRecommendation(budget, workspace).href)
       .toContain("style=Documentary");
+    expect(getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+    ).href).toContain("workspace=60000000-0000-4000-8000-000000000006");
 
     budget.items.push(budgetItem("photography"));
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("guests");
+    expect(getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+    ).href).toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006");
 
     workspace.tablePlan = createExampleTablePlan();
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("tables");

@@ -143,11 +143,25 @@ describe("PlanningHubWorkspace", () => {
     expect(screen.getByRole("heading", { name: "Our village hall" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "This is your chosen venue" })).toBeTruthy();
   });
+
+  it("keeps shared workspace identity in the photography handoff", () => {
+    renderWorkspace(
+      createPlanningHubStarterPlan(null),
+      "60000000-0000-4000-8000-000000000006",
+    );
+
+    expect(screen.getByRole("link", { name: /Next: choose your photographer/i }).getAttribute("href"))
+      .toContain("workspace=60000000-0000-4000-8000-000000000006");
+  });
 });
 
-function renderWorkspace(initialPlan: BudgetPlan = createPlanningHubStarterPlan(null)) {
+function renderWorkspace(
+  initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
+  connectedWorkspaceId: string | null = null,
+) {
   return render(
     <PlanningHubWorkspace
+      connectedWorkspaceId={connectedWorkspaceId}
       initialPlan={initialPlan}
       initialSavedVenueIds={[]}
       results={results}

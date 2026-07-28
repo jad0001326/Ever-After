@@ -9,6 +9,7 @@ import {
   profileVenueSearchHref,
   weddingPriorityOptions,
 } from "@/lib/planning-workspace/profile";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import type {
   WeddingDateFlexibility,
   WeddingPriority,
@@ -54,10 +55,12 @@ export function PlanningHubProfile({
   profile,
   totalBudgetPence,
   onSave,
+  workspaceId = null,
 }: {
   profile: WeddingProfile;
   totalBudgetPence: number;
   onSave: (profile: WeddingProfile, totalBudgetPence: number) => void;
+  workspaceId?: string | null;
 }) {
   const [message, setMessage] = useState("");
   const completion = profileCompletion(profile);
@@ -240,7 +243,7 @@ export function PlanningHubProfile({
             </button>
             <Link
               className="focus-ring inline-flex min-h-11 items-center justify-center rounded-full border border-[#31533b] px-5 text-sm font-semibold text-[#173526]"
-              href={profileVenueSearchHref(profile, totalBudgetPence)}
+              href={withPlanningWorkspace(profileVenueSearchHref(profile, totalBudgetPence), workspaceId)}
             >
               Find matching venues
             </Link>

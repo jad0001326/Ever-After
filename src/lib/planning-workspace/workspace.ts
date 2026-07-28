@@ -1,4 +1,5 @@
 import type { BudgetPlan } from "@/lib/budget/types";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import { getPhotographyNextHref } from "@/lib/planning-hub/plan";
 import {
   createEmptyTablePlan,
@@ -115,13 +116,14 @@ export function createPlanningTask(
 export function getPlanningRecommendation(
   budgetPlan: BudgetPlan,
   workspace: PlanningWorkspace,
+  workspaceId?: string | null,
 ): PlanningRecommendation {
   const venue = budgetPlan.items.find((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
   if (!venue) {
     return {
       stage: "venue",
       title: "Choose the venue direction",
-      href: profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence),
+      href: profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence, workspaceId),
       reason: workspace.profile.priorities.includes("venue")
         ? "You marked the venue as a priority. It anchors the date, location, capacity and suppliers that fit."
         : "Your venue anchors the date, location, capacity and the suppliers that fit.",
@@ -133,7 +135,7 @@ export function getPlanningRecommendation(
     return {
       stage: "photography",
       title: "Shortlist your photographer",
-      href: getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0]),
+      href: getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0], workspaceId),
       reason: workspace.profile.priorities.includes("photography")
         ? "Photography is one of your priorities, and your venue context can now shape the shortlist."
         : "Your venue is in the plan, so photography is the strongest next supplier decision.",
@@ -144,7 +146,7 @@ export function getPlanningRecommendation(
     return {
       stage: "guests",
       title: "Start the guest list",
-      href: "/planning-hub/organise",
+      href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
       reason: "A working guest list makes capacity, catering and table decisions more reliable.",
     };
   }
@@ -153,7 +155,7 @@ export function getPlanningRecommendation(
     return {
       stage: "tables",
       title: "Arrange your tables",
-      href: "/planning-hub/organise",
+      href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
       reason: "Some guests are still unassigned, so the table plan is ready for its next pass.",
     };
   }
@@ -161,7 +163,7 @@ export function getPlanningRecommendation(
   return {
     stage: "tasks",
     title: "Review the next open task",
-    href: "/planning-hub/organise",
+    href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
     reason: workspace.tasks.some((task) => task.status !== "done")
       ? "Your main planning stages are connected; keep momentum with the next unfinished task."
       : "Your current list is clear. Add the next commitment as plans develop.",

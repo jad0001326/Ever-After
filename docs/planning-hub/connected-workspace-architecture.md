@@ -205,3 +205,36 @@ never serialized into a React component, client bundle, form field or onward
 login/signup redirect. Both the redirect and production join response are
 `no-store` and apply no-referrer, noindex and anti-framing controls. Successful
 acceptance expires the same path-scoped cookie.
+
+## Cross-stage workspace continuity
+
+Planning Hub links now carry a validated connected workspace through the full
+journey:
+
+- venue planning to photography;
+- photography back to venue planning or forward to Organise;
+- generic supplier planning back to venue planning or forward to Organise;
+- Organise recommendations for venues, photography, guests, tables and tasks;
+- Wedding Profile venue discovery;
+- filter reset and empty-result recovery links.
+
+`src/lib/planning-hub/navigation.ts` is the shared internal-route helper. It
+preserves existing filters and hashes, adds exactly one `workspace` parameter
+and replaces stale workspace context rather than duplicating it. Personal-plan
+links remain byte-for-byte unchanged.
+
+Client workspaces receive only the workspace ID returned by the validated
+server context. An arbitrary or inaccessible `?workspace=` value can remain in
+the stage header for navigation, but it is not trusted for local-storage
+scoping or shared writes.
+
+Local verification on 28 July 2026:
+
+- focused continuity suite: 7 files and 38 tests passed;
+- full suite: 49 files and 242 tests passed;
+- TypeScript and optimized 77-page production build passed;
+- lint retained only the unrelated pre-existing venue OG-image warning;
+- at 390 × 844, venue → photography → Organise retained the workspace query,
+  page width matched the viewport and browser errors were empty.
+
+No migration, production write, deployment or paid cloud branch was used.

@@ -39,6 +39,21 @@ describe("PlanningHubOrganiseWorkspace", () => {
     expect(screen.queryByRole("button", { name: /Review.*cloud/i })).toBeNull();
   });
 
+  it("keeps recommendations and profile discovery inside a shared workspace", async () => {
+    render(
+      <PlanningHubOrganiseWorkspace
+        connectedWorkspaceId="60000000-0000-4000-8000-000000000006"
+        initialBudgetPlan={createEmptyBudgetPlan()}
+        userId={null}
+      />,
+    );
+
+    expect((await screen.findByRole("link", { name: "Continue planning" })).getAttribute("href"))
+      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
+    expect(screen.getByRole("link", { name: "Find matching venues" }).getAttribute("href"))
+      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
+  });
+
   it("adds tasks and persists them inside the same local workspace", async () => {
     render(<PlanningHubOrganiseWorkspace initialBudgetPlan={createEmptyBudgetPlan()} userId="user-1" />);
     await screen.findByText("Your tasks");

@@ -52,6 +52,20 @@ describe("PlanningHubProfile", () => {
       .toBe("/planning-hub?location=Fife&guests=80&budget=20000");
   });
 
+  it("keeps venue discovery inside a shared workspace", () => {
+    render(
+      <PlanningHubProfile
+        onSave={vi.fn()}
+        profile={createWeddingProfile()}
+        totalBudgetPence={0}
+        workspaceId="60000000-0000-4000-8000-000000000006"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Find matching venues" }).getAttribute("href"))
+      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
+  });
+
   it("keeps the priority selection bounded", () => {
     const onSave = vi.fn();
     render(

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { BudgetPlan } from "@/lib/budget/types";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import type { PlanningHubPhotographerResults as ResultData, PlanningHubPhotographySearchParams } from "@/lib/planning-hub/types";
 import { PlanningHubPhotographerCard } from "./planning-hub-photographer-card";
 
@@ -45,7 +46,7 @@ export function PlanningHubPhotographerResults({
         <h2 className="mt-3 font-display text-4xl font-semibold text-[#173526]">Your photographer can still belong in the plan.</h2>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-[#625f57]">Widen a filter or add a photographer EverAft does not list yet.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link className="focus-ring inline-flex min-h-11 items-center rounded-full border border-[#173526] px-5 text-sm font-semibold text-[#173526]" href="/planning-hub/photography" prefetch={false}>Clear filters</Link>
+          <Link className="focus-ring inline-flex min-h-11 items-center rounded-full border border-[#173526] px-5 text-sm font-semibold text-[#173526]" href={withPlanningWorkspace("/planning-hub/photography", searchParams.workspace)} prefetch={false}>Clear filters</Link>
           <a className="focus-ring inline-flex min-h-11 items-center rounded-full bg-[#173526] px-5 text-sm font-semibold text-white" href="#manual-photographer">Add manually</a>
         </div>
       </section>

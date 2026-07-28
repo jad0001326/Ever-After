@@ -101,6 +101,11 @@ describe("Planning Hub plan", () => {
     expect(plan.items[0]).toMatchObject({ source: "manual", itemName: "Our local hall", bookingStatus: "booked" });
     expect(findPlanningHubVenueItem(plan, plan.items[0].id)).toBe(plan.items[0]);
     expect(getPhotographyNextHref(contextual)).toContain("/planning-hub/photography?");
+    expect(getPhotographyNextHref(
+      contextual,
+      "Documentary",
+      "60000000-0000-4000-8000-000000000006",
+    )).toContain("workspace=60000000-0000-4000-8000-000000000006");
     expect(getPhotographyNextHref(contextual)).toContain("venue=venue-1");
     expect(getPhotographyNextHref(contextual)).toContain("location=Perthshire");
   });

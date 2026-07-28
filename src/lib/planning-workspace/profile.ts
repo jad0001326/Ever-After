@@ -87,6 +87,7 @@ export function restoreWeddingProfile(
 export function profileVenueSearchHref(
   profile: WeddingProfile,
   totalBudgetPence: number,
+  workspaceId?: string | null,
 ) {
   const params = new URLSearchParams();
   if (profile.location) params.set("location", profile.location);
@@ -96,6 +97,7 @@ export function profileVenueSearchHref(
     .map((style) => venueStyleSearchTypes[style])
     .find(Boolean);
   if (venueType) params.set("type", venueType);
+  if (workspaceId) params.set("workspace", workspaceId);
   return `/planning-hub${params.size ? `?${params.toString()}` : ""}`;
 }
 

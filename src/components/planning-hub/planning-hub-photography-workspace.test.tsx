@@ -153,11 +153,27 @@ describe("PlanningHubPhotographyWorkspace", () => {
     expect(screen.getByRole("heading", { name: "A family friend" })).toBeTruthy();
     expect(screen.getByText("This manually added photographer is ready for payment planning.")).toBeTruthy();
   });
+
+  it("keeps shared workspace identity in both adjacent-stage links", () => {
+    renderWorkspace(
+      createPlanningHubStarterPlan(null),
+      "60000000-0000-4000-8000-000000000006",
+    );
+
+    expect(screen.getByRole("link", { name: /Review venue and wedding basics/i }).getAttribute("href"))
+      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
+    expect(screen.getByRole("link", { name: /organise guests and tables/i }).getAttribute("href"))
+      .toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006");
+  });
 });
 
-function renderWorkspace(initialPlan: BudgetPlan = createPlanningHubStarterPlan(null)) {
+function renderWorkspace(
+  initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
+  connectedWorkspaceId: string | null = null,
+) {
   return render(
     <PlanningHubPhotographyWorkspace
+      connectedWorkspaceId={connectedWorkspaceId}
       initialPlan={initialPlan}
       results={results}
       searchParams={{}}

@@ -211,6 +211,7 @@ export function PlanningHubPhotographyWorkspace({
         />
       </div>
       <PlanningHubPhotographyPlanPanel
+        connectedWorkspaceId={connectedWorkspaceId}
         onManualPhotographer={addManualPhotographer}
         onInstallmentsSave={saveInstallments}
         onPhotographerSave={saveCurrentPhotographer}

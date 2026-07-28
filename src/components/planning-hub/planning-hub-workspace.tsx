@@ -249,6 +249,7 @@ export function PlanningHubWorkspace({
         />
       </div>
       <PlanningHubPlanPanel
+        connectedWorkspaceId={connectedWorkspaceId}
         onChooseVenue={chooseCurrentVenue}
         onManualVenue={addManualVenue}
         onInstallmentsSave={saveInstallments}

@@ -236,7 +236,7 @@ export function PlanningHubOrganiseWorkspace({
     return <div aria-busy="true" className="h-96 animate-pulse rounded-3xl bg-[#e7dfd2]"><span className="sr-only">Preparing your organised plan.</span></div>;
   }
 
-  const recommendation = getPlanningRecommendation(budgetPlan, workspace);
+  const recommendation = getPlanningRecommendation(budgetPlan, workspace, activeWorkspaceId);
   const assignedGuests = workspace.tablePlan.guests.filter((guest) => guest.tableId).length;
 
   function saveProfile(profile: WeddingProfile, totalBudgetPence: number) {
@@ -360,6 +360,7 @@ export function PlanningHubOrganiseWorkspace({
         onSave={saveProfile}
         profile={workspace.profile}
         totalBudgetPence={budgetPlan.totalBudgetPence}
+        workspaceId={activeWorkspaceId}
       />
 
       <section className="rounded-3xl border border-[#d8c7a7] bg-[#fff9ef] p-5 sm:p-6">

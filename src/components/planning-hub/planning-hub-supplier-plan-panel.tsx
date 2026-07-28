@@ -11,7 +11,7 @@ import type {
   PlanningHubSupplier,
   PlanningHubSupplierCategory,
 } from "@/lib/planning-hub/types";
-import { withPlanningWorkspace } from "./planning-hub-header";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 
