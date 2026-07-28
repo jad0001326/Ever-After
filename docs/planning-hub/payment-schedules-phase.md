@@ -116,6 +116,9 @@ summary:
   reported separately;
 - each commitment links back to the relevant venue or supplier payment editor,
   preserving a validated shared-workspace identifier;
+- five commitments render initially, with subsequent five-item batches
+  available on demand so every deadline remains actionable without an
+  unbounded first mobile render;
 - the next-step recommendation prioritises the earliest overdue payment before
   returning to venue, photography, guest, table or task guidance;
 - the UI is server-seeded with a serializable date string and introduces no

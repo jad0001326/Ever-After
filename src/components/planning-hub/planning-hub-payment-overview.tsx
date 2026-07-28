@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, WalletCards } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
 import type { BudgetPlan } from "@/lib/budget/types";
@@ -6,6 +9,8 @@ import {
   getPlanningHubPaymentDeadlineHref,
   getPlanningHubPaymentOverview,
 } from "@/lib/planning-hub/payments";
+
+const PAYMENT_BATCH_SIZE = 5;
 
 export function PlanningHubPaymentOverview({
   plan,
@@ -17,7 +22,12 @@ export function PlanningHubPaymentOverview({
   workspaceId?: string | null;
 }) {
   const overview = getPlanningHubPaymentOverview(plan, new Date(`${today}T12:00:00`));
-  const visibleDeadlines = overview.deadlines.slice(0, 5);
+  const [visibleCount, setVisibleCount] = useState(PAYMENT_BATCH_SIZE);
+  const visibleDeadlines = overview.deadlines.slice(0, visibleCount);
+  const remainingDeadlineCount = Math.max(
+    overview.deadlines.length - visibleDeadlines.length,
+    0,
+  );
 
   return (
     <section aria-labelledby="organise-payments-title" className="rounded-3xl border border-[#d8c7a7] bg-white p-5 sm:p-6">
@@ -48,7 +58,11 @@ export function PlanningHubPaymentOverview({
 
       {visibleDeadlines.length > 0 ? (
         <>
-          <ol aria-label="Upcoming payment commitments" className="mt-5 grid gap-3">
+          <ol
+            aria-label="Upcoming payment commitments"
+            className="mt-5 grid gap-3"
+            id="planning-hub-payment-commitments"
+          >
             {visibleDeadlines.map((deadline) => (
               <li className="rounded-2xl border border-[#e4ddd2] bg-[#fbf8f2] p-4" key={`${deadline.itemId}-${deadline.installmentId}-${deadline.dueDate}`}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -78,8 +92,22 @@ export function PlanningHubPaymentOverview({
               </li>
             ))}
           </ol>
-          {overview.deadlines.length > visibleDeadlines.length ? (
-            <p className="mt-3 text-xs text-[#625f57]">{overview.deadlines.length - visibleDeadlines.length} more scheduled payments remain in the connected plan.</p>
+          {overview.deadlines.length > PAYMENT_BATCH_SIZE ? (
+            <button
+              aria-controls="planning-hub-payment-commitments"
+              aria-expanded={visibleCount > PAYMENT_BATCH_SIZE}
+              className="focus-ring mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-[#173526] px-4 text-sm font-semibold text-[#173526]"
+              onClick={() => setVisibleCount((current) => (
+                current >= overview.deadlines.length
+                  ? PAYMENT_BATCH_SIZE
+                  : Math.min(current + PAYMENT_BATCH_SIZE, overview.deadlines.length)
+              ))}
+              type="button"
+            >
+              {remainingDeadlineCount > 0
+                ? `Show ${Math.min(remainingDeadlineCount, PAYMENT_BATCH_SIZE)} more payment${Math.min(remainingDeadlineCount, PAYMENT_BATCH_SIZE) === 1 ? "" : "s"}`
+                : "Show fewer payments"}
+            </button>
           ) : null}
         </>
       ) : (

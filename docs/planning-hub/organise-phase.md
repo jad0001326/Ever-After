@@ -259,8 +259,8 @@ appeared only inside individual venue or supplier stages:
 - booked, quoted, shortlisted and researching counts are derived from the same
   saved items used by the public planner;
 - the pipeline prioritises booked commitments and selected venues, reports
-  missing prices honestly and renders at most six priority items on the command
-  centre;
+  missing prices honestly and renders six priority items initially, with every
+  later booking available in progressive six-item batches;
 - inactive supplier categories remain visibly tracked but do not link to an
   unavailable Planning Hub stage;
 - active items link to their exact saved item through a saved-item `planItem`
@@ -268,6 +268,8 @@ appeared only inside individual venue or supplier stages:
 - venue, photography and reusable supplier stages restore the specifically
   requested item rather than silently opening the newest saved item;
 - payment and booking links now share one stage-routing source of truth;
+- payment deadlines follow the same bounded pattern: five initially, then
+  progressive five-item batches until every scheduled commitment is reachable;
 - all Planning Hub stages use the Scottish `Europe/London` calendar day for
   deadline calculations.
 

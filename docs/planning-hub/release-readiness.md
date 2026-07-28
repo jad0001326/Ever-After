@@ -23,7 +23,7 @@ deploy, migrate or enable cloud persistence.
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
 | Supplier discovery | Photography is live with server filtering and pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
-| Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in bounded six-item batches. | Proven locally |
+| Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds tasks, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
 | Native-ready business logic | Budget, recommendation, supplier, payment, task, guest, seating, validation and cloud mapping rules live outside page components and use stable DTOs. | Proven as an architectural foundation |
@@ -61,7 +61,8 @@ they do not require rewriting or pushing it.
 | 18. Cross-site typography audit | Restore a valid local sans-serif stack after the remote font loader was removed and protect the global CSS contract. | `6747b3b` | Public and beta stylesheet change with no network font dependency; fresh rendered computed-style verification remains required. |
 | 19. Date-aware supplier planning | Track explicit date availability across venue and supplier items, stale prior answers when the wedding date changes and prioritize truthful follow-up recommendations. | `280ac1b` | Application and versioned JSON contract only; no supplier calendar claim or database migration. |
 | 20. Availability command centre | Surface plan-wide date readiness and exact per-item availability in the existing Organise booking overview. | `4817bed` | Derived application view only; no new query, stored state or database change. |
-| 21. Reachable booking pipeline | Progressively reveal every active booking from Organise while keeping the initial DOM bounded. | Current working slice | Client presentation only; the full plan remains the existing calculation source. |
+| 21. Reachable booking pipeline | Progressively reveal every active booking from Organise while keeping the initial DOM bounded. | `14e2f0a` | Client presentation only; the full plan remains the existing calculation source. |
+| 22. Reachable payment deadlines | Progressively reveal every scheduled commitment from Organise while keeping the initial mobile view bounded. | Current working slice | Client presentation only; payment ordering and totals remain in the shared domain layer. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -163,16 +164,16 @@ Use the least destructive rollback that restores safety:
   is claimed.
 - Fresh rendered mobile verification must exercise the new date-availability
   control, stale-date warning, Organise command-centre summary and long-list
-  expansion. Component, domain, workspace persistence and recommendation
-  behavior are covered, but the in-app Browser control runtime remained
-  unavailable for these slices.
+  booking/payment expansion. Component, domain, workspace persistence and
+  recommendation behavior are covered, but the in-app Browser control runtime
+  remained unavailable for these slices.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
   require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 65 Vitest files and 300 tests pass.
+- 65 Vitest files and 301 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget and denial of workspace budget relinking.
@@ -191,6 +192,8 @@ Use the least destructive rollback that restores safety:
   counts, labels every booking, progressively reveals long plans in six-item
   batches, and prioritises confirming or replacing the affected option. Legacy
   plans restore as not checked.
+- Organise initially renders five scheduled payment commitments, then exposes
+  every later deadline and its exact payment-editor link in five-item batches.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
