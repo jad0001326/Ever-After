@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 62 test files and 284 tests passing.
+- 63 test files and 285 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -73,6 +73,10 @@ its public profile route and category-specific browser verification before its
   The full audit retains only a development-tool ESLint/minimatch advisory.
 - Sharp 0.35.3 image processing verified with the application's supported
   rotate, flatten, resize and JPEG pipeline on Node.js 24.
+- The release-series cross-site review found that removing the remote font
+  loader had left `--font-sans` undefined. A local system sans stack now keeps
+  public and beta body typography valid without adding a font request, and a
+  regression test protects that global contract.
 - Supplier roadmap and manual supplier stage verified at 390 x 844 with no
   horizontal overflow, no browser errors and zero axe violations.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
