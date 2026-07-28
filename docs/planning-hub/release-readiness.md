@@ -56,7 +56,8 @@ they do not require rewriting or pushing it.
 | 13. API verification | Add the fail-closed Auth/Data API smoke harness and document its local baseline prerequisite. | `21fbb84` | Dormant until a free prepared test stack exists. |
 | 14. Local API bootstrap | Generate a checksummed disposable project from the exact baseline plus all timestamped migrations. | `11d4a1c` | Local files only; requires a future container-runtime smoke test. |
 | 15. Desktop release audit | Verify the production bundle at 1440 x 900 and correct public-planner and shared-table accessibility findings. | `dca9652` | Local commit only; no hosted action. |
-| 16. Partner budget-link hardening | Prevent a partner from relinking a shared workspace to another owner budget and extend both database and future Data API assertions. | Current working slice | Dormant migration and local verifier only; no hosted action. |
+| 16. Partner budget-link hardening | Prevent a partner from relinking a shared workspace to another owner budget and extend both database and future Data API assertions. | `b9b564b` | Dormant migration and local verifier only; no hosted action. |
+| 17. Integrated journey continuity | Verify the complete mobile local-device journey and prevent a newly generated Organise fallback from overwriting the couple's real plan. | Current working slice | Application, regression test and local browser evidence only; no hosted action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -177,6 +178,17 @@ Use the least destructive rollback that restores safety:
   `View & plan`.
 - Open venue detail, open photographer detail and Organise axe-core scans each
   report zero violations and zero incomplete checks.
+- One continuous optimized 390 x 844 journey retained the same plan through a
+  booked venue, booked photographer, quoted manual florist, venue deposit,
+  Wedding Profile, task creation and the example guest/table plan. A fresh
+  Organise reload retained the £30,000 budget, three planned items, £500 paid,
+  the payment deadline, one task, 12 guests, three tables and photography
+  priority without horizontal overflow or browser errors.
+- The integrated journey exposed an Organise startup race: its newly generated
+  server fallback could have a later timestamp than the real device plan and
+  overwrite that plan. Organise now explicitly marks generated fallback data,
+  always restores a valid device plan over that fallback, and has a focused
+  regression test for this ordering.
 - Organise, the public Budget Planner, the public Table Planner and the home
   page render at 390 x 844 without horizontal overflow or error overlays.
 - Venue, Photography, Suppliers, the open Organise table editor, both public

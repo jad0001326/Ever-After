@@ -54,6 +54,7 @@ export function PlanningHubOrganiseWorkspace({
   cloudEnabled = false,
   connectedWorkspaceId = null,
   initialBudgetPlan,
+  initialBudgetPlanIsFallback = false,
   initialCloudSnapshot = null,
   today = "2026-07-28",
   userId,
@@ -61,6 +62,7 @@ export function PlanningHubOrganiseWorkspace({
   cloudEnabled?: boolean;
   connectedWorkspaceId?: string | null;
   initialBudgetPlan: BudgetPlan;
+  initialBudgetPlanIsFallback?: boolean;
   initialCloudSnapshot?: PlanningWorkspaceCloudSnapshot | null;
   today?: string;
   userId: string | null;
@@ -84,7 +86,10 @@ export function PlanningHubOrganiseWorkspace({
     queueMicrotask(() => {
       const localBudgetPlan = restoreBudgetPlan(readLocalStorage(budgetStorageKey));
       const activeBudgetPlan = localBudgetPlan
-        && Date.parse(localBudgetPlan.updatedAt) > Date.parse(initialBudgetPlan.updatedAt)
+        && (
+          initialBudgetPlanIsFallback
+          || Date.parse(localBudgetPlan.updatedAt) > Date.parse(initialBudgetPlan.updatedAt)
+        )
         ? { ...localBudgetPlan, userId }
         : initialBudgetPlan;
       const compatibleCloudSnapshot =
@@ -118,7 +123,7 @@ export function PlanningHubOrganiseWorkspace({
       setWorkspaceMode(startup.mode);
       setReady(true);
     });
-  }, [budgetStorageKey, cloudEnabled, initialBudgetPlan, initialCloudSnapshot, userId, workspaceStorageKey]);
+  }, [budgetStorageKey, cloudEnabled, initialBudgetPlan, initialBudgetPlanIsFallback, initialCloudSnapshot, userId, workspaceStorageKey]);
 
   useEffect(() => {
     if (!ready || !workspace) return;

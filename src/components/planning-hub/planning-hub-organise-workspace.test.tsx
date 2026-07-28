@@ -198,10 +198,10 @@ describe("PlanningHubOrganiseWorkspace", () => {
     });
   });
 
-  it("restores a newer guest plan when the server starter has a new id", async () => {
+  it("restores a device plan even when a newly generated server fallback is newer", async () => {
     const initialPlan = {
       ...createEmptyBudgetPlan(),
-      updatedAt: "2026-07-26T10:00:00.000Z",
+      updatedAt: "2026-07-28T10:00:00.000Z",
     };
     const localPlan = {
       ...createEmptyBudgetPlan(),
@@ -226,10 +226,24 @@ describe("PlanningHubOrganiseWorkspace", () => {
       serializePlanningWorkspace(localWorkspace),
     );
 
-    render(<PlanningHubOrganiseWorkspace initialBudgetPlan={initialPlan} userId={null} />);
+    render(
+      <PlanningHubOrganiseWorkspace
+        initialBudgetPlan={initialPlan}
+        initialBudgetPlanIsFallback
+        userId={null}
+      />,
+    );
 
     expect((await screen.findByRole("link", { name: "Find matching venues" })).getAttribute("href"))
       .toBe("/planning-hub?location=Perthshire&guests=72&budget=18000");
+    await waitFor(() => {
+      expect(JSON.parse(window.localStorage.getItem(BUDGET_STORAGE_KEY) ?? "{}")).toMatchObject({
+        id: localPlan.id,
+        totalBudgetPence: 1_800_000,
+        guestCount: 72,
+        location: "Perthshire",
+      });
+    });
   });
 
   it("defers the full seating editor until the couple opens it", async () => {

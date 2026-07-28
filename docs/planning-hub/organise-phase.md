@@ -152,6 +152,49 @@ Updated local verification on 28 July 2026:
 No migration, cloud activation, production write, deployment or paid service was
 used.
 
+## Integrated journey continuity
+
+The optimized mobile release-candidate journey uncovered a startup ordering
+defect at the boundary between discovery and Organise. Venue and supplier stages
+already treated an authenticated server starter as fallback data, but Organise
+compared only timestamps. A newly generated empty fallback could therefore be a
+few seconds newer than the real device plan, win startup and then persist over
+the couple's work.
+
+The Organise server page now distinguishes a generated fallback from a real
+cloud budget. During client startup, a valid device plan always wins over
+generated fallback data; timestamp ordering remains in effect when the server
+has a real budget. The regression test deliberately gives the empty fallback a
+newer timestamp and verifies that the device plan and its identity, budget,
+guest count and location remain in storage.
+
+The full 390 x 844 production-build journey was then repeated successfully:
+
+- a £30,000, 90-guest Perthshire plan retained McArthur Manor booked at £5,500,
+  A-Fotografy booked at £2,000 and a manual Highland Blooms quote of £1,200;
+- Organise retained the same plan identifier and selected venue;
+- a £1,000 venue deposit with £500 paid and a 15 August 2026 deadline persisted;
+- profile priorities, vision and styles persisted;
+- one guest-related task persisted;
+- the example seating plan retained 12 guests, three tables, two rules and all
+  12 guests assigned;
+- a fresh Organise reload retained the complete state, had no page-level
+  horizontal overflow or browser errors, and the open table editor reported
+  zero axe violations and zero incomplete checks.
+
+Updated local verification on 28 July 2026:
+
+- 62 test files and 284 tests passing;
+- embedded PostgreSQL RLS verification passing;
+- TypeScript and optimized production build passing;
+- ESLint passing with the same unrelated Open Graph image warning;
+- production dependency audit reporting zero known vulnerabilities.
+
+The catalogue reads used only the existing Supabase URL and publishable key.
+All planning mutations remained in local browser storage. No service-role key,
+migration, cloud activation, production write, deployment or paid service was
+used.
+
 ## Guest readiness and attendance-aware seating
 
 The guest fields already present in the shared workspace contract are now usable

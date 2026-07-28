@@ -82,6 +82,15 @@ its public profile route and category-specific browser verification before its
   opening control.
 - Open venue details, open photographer details and Organise each pass axe-core
   with zero violations and zero incomplete checks.
+- A single optimized 390 x 844 journey retained one plan from venue discovery
+  through photography, a manual florist, Organise, payment scheduling, profile,
+  tasks and the example guest/table plan. After a fresh Organise reload it
+  retained the £30,000 budget, all three items, £500 paid, one task, 12 guests,
+  three tables and the photography priority.
+- That journey exposed and fixed an Organise startup defect where a newly
+  generated server fallback could overwrite a real device plan solely because
+  its timestamp was newer. A focused regression now proves a server fallback
+  always yields to the existing device plan.
 - The 1440 x 900 production-build audit covers Venue, Photography, Suppliers,
   the open Organise table editor, both public planners and the home page with no
   horizontal overflow, browser errors or axe violations. The home page retains

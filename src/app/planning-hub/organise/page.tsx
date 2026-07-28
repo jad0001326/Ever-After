@@ -28,6 +28,7 @@ export default async function PlanningHubOrganisePage({
   ]);
   const user = authResult.data.user;
   let initialBudgetPlan = cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
+  let initialBudgetPlanIsFallback = !cloudPlan;
   const planningCloudEnabled = process.env.PLANNING_WORKSPACE_CLOUD_ENABLED === "true";
   let initialCloudSnapshot: PlanningWorkspaceCloudSnapshot | null = null;
 
@@ -39,6 +40,7 @@ export default async function PlanningHubOrganisePage({
       : await loadPlanningWorkspaceForBudgetAction(initialBudgetPlan.id);
     if (params.workspace && workspaceResult.ok && "budgetPlan" in workspaceResult) {
       initialBudgetPlan = workspaceResult.budgetPlan as BudgetPlan;
+      initialBudgetPlanIsFallback = false;
     }
     if (workspaceResult.ok && workspaceResult.snapshot) {
       initialCloudSnapshot = {
@@ -67,6 +69,7 @@ export default async function PlanningHubOrganisePage({
           cloudEnabled={planningCloudEnabled}
           connectedWorkspaceId={initialCloudSnapshot?.workspace.id ?? null}
           initialBudgetPlan={initialBudgetPlan}
+          initialBudgetPlanIsFallback={initialBudgetPlanIsFallback}
           initialCloudSnapshot={initialCloudSnapshot}
           today={getPlanningHubDateKey()}
           userId={user?.id ?? null}
