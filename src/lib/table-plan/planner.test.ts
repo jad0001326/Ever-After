@@ -21,6 +21,30 @@ describe("table planner", () => {
     expect(result.conflicts[0]?.message).toContain("8 more seats");
   });
 
+  it("retains declined guests but excludes them from seating and rules", () => {
+    const source = createExampleTablePlan();
+    const declined = source.guests[0];
+    declined.rsvpStatus = "declined";
+    declined.tableId = source.tables[0].id;
+    declined.seatIndex = 0;
+    source.tables = [{ ...source.tables[0], capacity: source.guests.length - 1 }];
+    source.rules = [{
+      id: "dormant-rule",
+      personAId: declined.id,
+      personBId: source.guests[1].id,
+      type: "must_next_to",
+    }];
+
+    const result = generateArrangement(source, 42);
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.plan.guests.find((guest) => guest.id === declined.id)).toMatchObject({
+      tableId: null,
+      seatIndex: null,
+    });
+    expect(result.plan.guests.filter((guest) => guest.tableId)).toHaveLength(source.guests.length - 1);
+  });
+
   it("round-trips local persistence", () => {
     const source = createExampleTablePlan();
     expect(restoreTablePlan(serializeTablePlan(source))).toEqual(source);
@@ -31,6 +55,7 @@ describe("table planner", () => {
     const arranged = generateArrangement(createExampleTablePlan(), 42).plan;
     const csv = planToCsv(arranged);
     expect(csv).toContain('"Amy Fraser"');
-    expect(csv.split("\r\n")[0]).toBe("Guest,Table,Seat");
+    expect(csv.split("\r\n")[0]).toBe("Guest,RSVP,Email,Dietary notes,Table,Seat");
+    expect(csv).toContain("pending");
   });
 });

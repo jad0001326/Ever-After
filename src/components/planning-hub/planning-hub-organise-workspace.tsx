@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubBookingOverview } from "@/components/planning-hub/planning-hub-booking-overview";
+import { PlanningHubGuestOverview } from "@/components/planning-hub/planning-hub-guest-overview";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
 import { PlanningHubPaymentOverview } from "@/components/planning-hub/planning-hub-payment-overview";
 import { PlanningHubTaskList } from "@/components/planning-hub/planning-hub-task-list";
@@ -35,6 +36,7 @@ import {
   serializePlanningWorkspace,
 } from "@/lib/planning-workspace/workspace";
 import { getPlanningTaskOverview } from "@/lib/planning-workspace/tasks";
+import { getTablePlanGuestOverview } from "@/lib/table-plan/guests";
 import type {
   PlanningTaskCategory,
   PlanningTaskStatus,
@@ -249,7 +251,10 @@ export function PlanningHubOrganiseWorkspace({
     activeWorkspaceId,
     referenceDate,
   );
-  const assignedGuests = workspace.tablePlan.guests.filter((guest) => guest.tableId).length;
+  const guestOverview = getTablePlanGuestOverview(
+    workspace.tablePlan,
+    workspace.profile.guestCount ?? 0,
+  );
 
   function saveProfile(profile: WeddingProfile, totalBudgetPence: number) {
     const now = profile.updatedAt;
@@ -410,8 +415,8 @@ export function PlanningHubOrganiseWorkspace({
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3" aria-label="Planning overview">
         <SummaryCard icon={<CalendarCheck2 size={19} />} label="Open tasks" value={String(taskOverview.openCount)} />
-        <SummaryCard icon={<UsersRound size={19} />} label="Guests" value={String(workspace.tablePlan.guests.length)} />
-        <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${assignedGuests}/${workspace.tablePlan.guests.length}`} />
+        <SummaryCard icon={<UsersRound size={19} />} label="Invited guests" value={String(guestOverview.totalCount)} />
+        <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${guestOverview.assignedCount}/${guestOverview.seatingGuestCount}`} />
       </section>
 
       <PlanningHubBookingOverview
@@ -486,18 +491,11 @@ export function PlanningHubOrganiseWorkspace({
           <EmbeddedTablePlanner initialPlan={workspace.tablePlan} mode="embedded" onPlanChange={updateTablePlan} storageKey={null} />
         </section>
       ) : (
-        <section className="rounded-3xl border border-[var(--line)] bg-[#fbfaf7] p-5 sm:p-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#95502b]">Guest and table workspace</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold text-[#173526]">Open the table editor when you need it</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#625f57]">
-                {workspace.tablePlan.guests.length} guests, {workspace.tablePlan.tables.length} tables and {assignedGuests} assigned seats are ready. The full seating canvas stays unloaded until you open it.
-              </p>
-            </div>
-            <button className="focus-ring min-h-11 shrink-0 rounded-full bg-[#173526] px-5 text-sm font-semibold text-white" onClick={() => setTablePlannerOpen(true)} type="button">Open guest &amp; table planner</button>
-          </div>
-        </section>
+        <PlanningHubGuestOverview
+          expectedGuestCount={workspace.profile.guestCount ?? 0}
+          onOpen={() => setTablePlannerOpen(true)}
+          overview={guestOverview}
+        />
       )}
       <p className="text-center text-xs leading-5 text-[#58705f]" role="status">
         {syncFeedback ?? workspaceStatusMessage(workspaceMode, cloudEnabled)}

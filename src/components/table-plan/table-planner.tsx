@@ -5,8 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PlanHealth } from "./plan-health";
 import { PlannerSidebar, type PlannerPanel } from "./planner-sidebar";
 import { SeatingCanvas } from "./seating-canvas";
+import { getTablePlanGuestOverview, isGuestForSeating } from "@/lib/table-plan/guests";
 import { createEmptyTablePlan, createExampleTablePlan, evaluateArrangement, generateArrangement, planToCsv, restoreTablePlan, serializeTablePlan, TABLE_PLAN_STORAGE_KEY } from "@/lib/table-plan/planner";
-import type { RuleConflict, SeatingRuleType, TablePlan, TablePlanTable } from "@/lib/table-plan/types";
+import type { RuleConflict, SeatingRuleType, TablePlan, TablePlanGuest, TablePlanTable } from "@/lib/table-plan/types";
 
 function randomId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -52,18 +53,39 @@ export function TablePlanner({
     if (ready) onPlanChange?.(plan);
   }, [onPlanChange, plan, ready]);
 
-  const assignedCount = useMemo(() => plan.guests.filter((guest) => guest.tableId).length, [plan.guests]);
+  const guestOverview = useMemo(() => getTablePlanGuestOverview(plan), [plan]);
 
   function updatePlan(updater: (current: TablePlan) => TablePlan) {
     setPlan((current) => ({ ...updater(current), updatedAt: new Date().toISOString() }));
   }
 
   function addGuest(name: string) {
-    updatePlan((current) => ({ ...current, guests: [...current.guests, { id: randomId(), name, tableId: null, seatIndex: null }] }));
+    updatePlan((current) => ({ ...current, guests: [...current.guests, { id: randomId(), name, rsvpStatus: "pending", tableId: null, seatIndex: null }] }));
   }
 
   function pasteGuests(names: string[]) {
-    updatePlan((current) => ({ ...current, guests: [...current.guests, ...names.map((name) => ({ id: randomId(), name, tableId: null, seatIndex: null }))] }));
+    updatePlan((current) => ({ ...current, guests: [...current.guests, ...names.map((name) => ({ id: randomId(), name, rsvpStatus: "pending" as const, tableId: null, seatIndex: null }))] }));
+  }
+
+  function updateGuest(
+    guestId: string,
+    updates: Partial<Pick<TablePlanGuest, "email" | "rsvpStatus" | "dietaryNotes">>,
+  ) {
+    updatePlan((current) => ({
+      ...current,
+      guests: current.guests.map((guest) => guest.id === guestId
+        ? {
+          ...guest,
+          ...updates,
+          ...(updates.rsvpStatus === "declined"
+            ? { tableId: null, seatIndex: null }
+            : {}),
+        }
+        : guest),
+    }));
+    if (updates.rsvpStatus === "declined") {
+      setSelectedGuestId((selected) => selected === guestId ? null : selected);
+    }
   }
 
   function deleteGuest(guestId: string) {
@@ -142,7 +164,7 @@ export function TablePlanner({
     const targetTable = plan.tables.find((table) => table.id === tableId);
     if (!targetTable || targetTable.locked) return;
     const selected = plan.guests.find((guest) => guest.id === selectedGuestId);
-    if (!selected) return;
+    if (!selected || !isGuestForSeating(selected)) return;
     setPreviousPlan(plan);
     const selectedSeat = { tableId: selected.tableId, seatIndex: selected.seatIndex };
     const nextPlan: TablePlan = {
@@ -182,8 +204,8 @@ export function TablePlanner({
         <div className="flex flex-wrap gap-2 lg:w-[42rem] lg:justify-end">
           {plan.guests.length === 0 ? <button className="focus-ring min-h-11 rounded-full border border-[var(--line)] bg-white px-5 text-sm font-semibold text-[var(--foreground)]" onClick={loadExample} type="button">Try an example</button> : null}
           <button className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 text-sm font-semibold disabled:opacity-45" disabled={!previousPlan} onClick={undo} type="button"><RotateCcw size={17} /> Undo</button>
-          <button className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[#a96a45] bg-white px-5 text-sm font-semibold text-[#824324] disabled:opacity-45" disabled={assignedCount === 0} onClick={clearArrangement} type="button"><Eraser size={17} /> Clear arrangement</button>
-          <button className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-[#9c542d] px-5 text-sm font-semibold text-white disabled:opacity-50" disabled={plan.guests.length === 0 || plan.tables.length === 0} onClick={generate} type="button"><Sparkles size={17} /> Generate arrangement</button>
+          <button className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-[#a96a45] bg-white px-5 text-sm font-semibold text-[#824324] disabled:opacity-45" disabled={guestOverview.assignedCount === 0} onClick={clearArrangement} type="button"><Eraser size={17} /> Clear arrangement</button>
+          <button className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full bg-[#9c542d] px-5 text-sm font-semibold text-white disabled:opacity-50" disabled={guestOverview.seatingGuestCount === 0 || plan.tables.length === 0} onClick={generate} type="button"><Sparkles size={17} /> Generate arrangement</button>
         </div>
       </div>
       <div className="hidden print:block">
@@ -191,7 +213,7 @@ export function TablePlanner({
         <p className="mt-2 text-sm">Prepared with EverAft · {plan.guests.length} guests · {plan.tables.length} tables</p>
       </div>
       <div className="table-planner-grid grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)_17rem]">
-        <PlannerSidebar activePanel={activePanel} onActivePanelChange={setActivePanel} onAddGuest={addGuest} onAddRule={addRule} onAddTable={addTable} onDeleteGuest={deleteGuest} onDeleteRule={deleteRule} onDeleteTable={deleteTable} onPasteGuests={pasteGuests} onSelectGuest={setSelectedGuestId} onUpdateTable={updateTable} plan={plan} selectedGuestId={selectedGuestId} />
+        <PlannerSidebar activePanel={activePanel} onActivePanelChange={setActivePanel} onAddGuest={addGuest} onAddRule={addRule} onAddTable={addTable} onDeleteGuest={deleteGuest} onDeleteRule={deleteRule} onDeleteTable={deleteTable} onPasteGuests={pasteGuests} onSelectGuest={setSelectedGuestId} onUpdateGuest={updateGuest} onUpdateTable={updateTable} plan={plan} selectedGuestId={selectedGuestId} />
         <SeatingCanvas onSeatClick={handleSeatClick} onSelectGuest={setSelectedGuestId} plan={plan} selectedGuestId={selectedGuestId} />
         <PlanHealth conflicts={conflicts} onDownloadCsv={downloadCsv} onPrint={() => window.print()} plan={plan} />
       </div>

@@ -53,11 +53,11 @@ export default async function PlanningHubSupplierPage({
   return (
     <>
       <PlanningHubHeader stage="supplier" supplierCategory={supplierCategory} workspaceId={query.workspace} />
-      <main className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
         <Suspense fallback={<SupplierWorkspaceFallback category={supplierCategory} />}>
           <PlanningHubSupplierContent category={supplierCategory} searchParams={Promise.resolve(query)} />
         </Suspense>
-      </main>
+      </div>
     </>
   );
 }

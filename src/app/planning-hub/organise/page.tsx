@@ -62,7 +62,7 @@ export default async function PlanningHubOrganisePage({
   return (
     <>
       <PlanningHubHeader stage="organise" workspaceId={initialCloudSnapshot?.workspace.id ?? params.workspace} />
-      <main className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
         <PlanningHubOrganiseWorkspace
           cloudEnabled={planningCloudEnabled}
           connectedWorkspaceId={initialCloudSnapshot?.workspace.id ?? null}
@@ -76,7 +76,7 @@ export default async function PlanningHubOrganisePage({
             {workspaceNotice} Your personal device plan has not been replaced.
           </p>
         ) : null}
-      </main>
+      </div>
     </>
   );
 }

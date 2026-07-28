@@ -1,17 +1,21 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, HeartPulse, Printer } from "lucide-react";
+import { getTablePlanGuestOverview } from "@/lib/table-plan/guests";
 import type { RuleConflict, TablePlan } from "@/lib/table-plan/types";
 
 export function PlanHealth({ plan, conflicts, onPrint, onDownloadCsv }: { plan: TablePlan; conflicts: RuleConflict[]; onPrint: () => void; onDownloadCsv: () => void }) {
   const capacity = plan.tables.reduce((sum, table) => sum + table.capacity, 0);
-  const assigned = plan.guests.filter((guest) => guest.tableId).length;
-  const available = Math.max(0, capacity - assigned);
+  const overview = getTablePlanGuestOverview(plan);
+  const available = Math.max(0, capacity - overview.assignedCount);
   return (
     <aside className="print:hidden self-start rounded-[1.5rem] border border-[var(--line)] bg-white p-5 lg:sticky lg:top-24">
       <h2 className="flex items-center gap-2 font-display text-2xl font-semibold text-[var(--brand)]"><HeartPulse size={21} /> Plan health</h2>
       <dl className="mt-5 space-y-3 text-sm">
-        <SummaryRow label="Guests" value={String(plan.guests.length)} />
+        <SummaryRow label="Invited guests" value={String(overview.totalCount)} />
+        <SummaryRow label="Attending" value={String(overview.acceptedCount)} />
+        <SummaryRow label="Awaiting replies" value={String(overview.pendingCount)} />
+        <SummaryRow label="Seats assigned" value={`${overview.assignedCount}/${overview.seatingGuestCount}`} />
         <SummaryRow label="Tables" value={String(plan.tables.length)} />
         <SummaryRow label="Rules" value={String(plan.rules.length)} />
         <SummaryRow label="Seats available" value={String(available)} />

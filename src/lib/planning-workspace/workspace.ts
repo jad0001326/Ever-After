@@ -10,6 +10,7 @@ import {
   restoreTablePlan,
   serializeTablePlan,
 } from "@/lib/table-plan/planner";
+import { getTablePlanGuestOverview } from "@/lib/table-plan/guests";
 import type { TablePlan } from "@/lib/table-plan/types";
 import {
   createWeddingProfile,
@@ -177,21 +178,44 @@ export function getPlanningRecommendation(
     };
   }
 
-  if (workspace.tablePlan.guests.length === 0) {
+  const guestOverview = getTablePlanGuestOverview(
+    workspace.tablePlan,
+    workspace.profile.guestCount ?? 0,
+  );
+
+  if (guestOverview.totalCount === 0) {
     return {
       stage: "guests",
       title: "Start the guest list",
-      href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
+      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
       reason: "A working guest list makes capacity, catering and table decisions more reliable.",
     };
   }
 
-  if (workspace.tablePlan.guests.some((guest) => !guest.tableId)) {
+  if (guestOverview.pendingCount > 0) {
+    return {
+      stage: "guests",
+      title: `Confirm ${guestOverview.pendingCount} outstanding ${guestOverview.pendingCount === 1 ? "RSVP" : "RSVPs"}`,
+      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
+      reason: "Record who is attending before finalising catering numbers and table assignments.",
+    };
+  }
+
+  if (guestOverview.seatingGuestCount === 0) {
+    return {
+      stage: "guests",
+      title: "Add attending guests",
+      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
+      reason: "Everyone currently listed is marked as not attending, so there is no seating plan to arrange yet.",
+    };
+  }
+
+  if (guestOverview.unassignedCount > 0) {
     return {
       stage: "tables",
       title: "Arrange your tables",
-      href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
-      reason: "Some guests are still unassigned, so the table plan is ready for its next pass.",
+      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
+      reason: `${guestOverview.unassignedCount} attending ${guestOverview.unassignedCount === 1 ? "guest is" : "guests are"} still unassigned, so the table plan is ready for its next pass.`,
     };
   }
 

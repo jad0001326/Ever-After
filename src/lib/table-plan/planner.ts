@@ -1,4 +1,5 @@
 import type { ArrangementResult, RuleConflict, SeatingRule, TablePlan, TablePlanGuest, TablePlanTable } from "./types";
+import { getGuestRsvpStatus, isGuestForSeating } from "./guests";
 
 export const TABLE_PLAN_STORAGE_KEY = "everaft:table-plan:v1";
 
@@ -33,7 +34,13 @@ export function createEmptyTablePlan(): TablePlan {
 export function createExampleTablePlan(): TablePlan {
   const plan = createEmptyTablePlan();
   const names = ["Amy Fraser", "Ben Fraser", "Chloe Martin", "David Martin", "Erin Campbell", "Fraser Young", "Grace Mitchell", "Harry Wilson", "Isla Stewart", "Jack Morrison", "Kara Lewis", "Liam McLean"];
-  const guests = names.map<TablePlanGuest>((name) => ({ id: randomId(), name, tableId: null, seatIndex: null }));
+  const guests = names.map<TablePlanGuest>((name) => ({
+    id: randomId(),
+    name,
+    rsvpStatus: "pending",
+    tableId: null,
+    seatIndex: null,
+  }));
   return {
     ...plan,
     guests,
@@ -128,16 +135,34 @@ function describeConflict(rule: SeatingRule, guestNames: Map<string, string>) {
 }
 
 export function generateArrangement(plan: TablePlan, seed = Date.now()): ArrangementResult {
+  const seatingGuests = plan.guests.filter(isGuestForSeating);
+  const seatingGuestIds = new Set(seatingGuests.map((guest) => guest.id));
+  const activeRules = plan.rules.filter(
+    (rule) => seatingGuestIds.has(rule.personAId) && seatingGuestIds.has(rule.personBId),
+  );
   const totalCapacity = plan.tables.reduce((sum, table) => sum + table.capacity, 0);
-  if (totalCapacity < plan.guests.length) {
-    return { plan, conflicts: [{ ruleId: null, message: `Add ${plan.guests.length - totalCapacity} more seats before generating the arrangement.` }], preferenceScore: 0 };
+  if (totalCapacity < seatingGuests.length) {
+    return {
+      plan: {
+        ...plan,
+        guests: plan.guests.map((guest) => isGuestForSeating(guest)
+          ? guest
+          : { ...guest, tableId: null, seatIndex: null }),
+        updatedAt: new Date().toISOString(),
+      },
+      conflicts: [{
+        ruleId: null,
+        message: `Add ${seatingGuests.length - totalCapacity} more seats before generating the arrangement.`,
+      }],
+      preferenceScore: 0,
+    };
   }
 
   const capacities = tableCapacityMap(plan.tables);
   const lockedTableIds = new Set(plan.tables.filter((table) => table.locked).map((table) => table.id));
   const fixed: Placement = new Map();
   const fixedSeatKeys = new Set<string>();
-  for (const guest of plan.guests) {
+  for (const guest of seatingGuests) {
     if (guest.tableId && guest.seatIndex != null && lockedTableIds.has(guest.tableId)) {
       fixed.set(guest.id, { tableId: guest.tableId, seatIndex: guest.seatIndex });
       fixedSeatKeys.add(`${guest.tableId}:${guest.seatIndex}`);
@@ -150,26 +175,26 @@ export function generateArrangement(plan: TablePlan, seed = Date.now()): Arrange
       if (!fixedSeatKeys.has(`${table.id}:${seatIndex}`)) movableSlots.push({ tableId: table.id, seatIndex });
     }
   }
-  const movableGuestIds = plan.guests.filter((guest) => !fixed.has(guest.id)).map((guest) => guest.id);
+  const movableGuestIds = seatingGuests.filter((guest) => !fixed.has(guest.id)).map((guest) => guest.id);
   const emptyCount = movableSlots.length - movableGuestIds.length;
   const baseAssignments: Array<string | null> = [...movableGuestIds, ...Array.from({ length: Math.max(0, emptyCount) }, () => null)];
   const random = createRandom(seed);
   let bestPlacement = placementFromAssignments(baseAssignments, movableSlots, fixed);
-  let bestScore = scorePlacement(plan.rules, bestPlacement, capacities);
-  const attempts = Math.min(50, Math.max(18, plan.rules.length * 5));
+  let bestScore = scorePlacement(activeRules, bestPlacement, capacities);
+  const attempts = Math.min(50, Math.max(18, activeRules.length * 5));
   const swapsPerAttempt = Math.min(1_500, Math.max(350, movableSlots.length * 25));
 
   for (let attempt = 0; attempt < attempts && bestScore > 0; attempt += 1) {
     const assignments = shuffled(baseAssignments, random);
     let placement = placementFromAssignments(assignments, movableSlots, fixed);
-    let score = scorePlacement(plan.rules, placement, capacities);
+    let score = scorePlacement(activeRules, placement, capacities);
     for (let swap = 0; swap < swapsPerAttempt && score > 0; swap += 1) {
       const first = Math.floor(random() * assignments.length);
       const second = Math.floor(random() * assignments.length);
       if (first === second) continue;
       [assignments[first], assignments[second]] = [assignments[second], assignments[first]];
       const candidatePlacement = placementFromAssignments(assignments, movableSlots, fixed);
-      const candidateScore = scorePlacement(plan.rules, candidatePlacement, capacities);
+      const candidateScore = scorePlacement(activeRules, candidatePlacement, capacities);
       if (candidateScore <= score) {
         placement = candidatePlacement;
         score = candidateScore;
@@ -184,10 +209,10 @@ export function generateArrangement(plan: TablePlan, seed = Date.now()): Arrange
   }
 
   const guestNames = new Map(plan.guests.map((guest) => [guest.id, guest.name]));
-  const conflicts: RuleConflict[] = plan.rules
+  const conflicts: RuleConflict[] = activeRules
     .filter((rule) => rule.type !== "prefer_next_to" && !ruleSatisfied(rule, bestPlacement, capacities))
     .map((rule) => ({ ruleId: rule.id, message: describeConflict(rule, guestNames) }));
-  const preferenceScore = plan.rules.filter((rule) => rule.type === "prefer_next_to" && ruleSatisfied(rule, bestPlacement, capacities)).length;
+  const preferenceScore = activeRules.filter((rule) => rule.type === "prefer_next_to" && ruleSatisfied(rule, bestPlacement, capacities)).length;
   const guests = plan.guests.map((guest) => {
     const seat = bestPlacement.get(guest.id);
     return { ...guest, tableId: seat?.tableId ?? null, seatIndex: seat?.seatIndex ?? null };
@@ -197,6 +222,7 @@ export function generateArrangement(plan: TablePlan, seed = Date.now()): Arrange
 }
 
 export function evaluateArrangement(plan: TablePlan): RuleConflict[] {
+  const seatingGuestIds = new Set(plan.guests.filter(isGuestForSeating).map((guest) => guest.id));
   const placement: Placement = new Map();
   plan.guests.forEach((guest) => {
     if (guest.tableId && guest.seatIndex != null) placement.set(guest.id, { tableId: guest.tableId, seatIndex: guest.seatIndex });
@@ -204,6 +230,7 @@ export function evaluateArrangement(plan: TablePlan): RuleConflict[] {
   const capacities = tableCapacityMap(plan.tables);
   const names = new Map(plan.guests.map((guest) => [guest.id, guest.name]));
   return plan.rules
+    .filter((rule) => seatingGuestIds.has(rule.personAId) && seatingGuestIds.has(rule.personBId))
     .filter((rule) => rule.type !== "prefer_next_to" && !ruleSatisfied(rule, placement, capacities))
     .map((rule) => ({ ruleId: rule.id, message: describeConflict(rule, names) }));
 }
@@ -213,6 +240,15 @@ export function planToCsv(plan: TablePlan) {
   const escape = (value: string) => `"${value.replaceAll('"', '""')}"`;
   const rows = [...plan.guests]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((guest) => [escape(guest.name), escape(guest.tableId ? tableNames.get(guest.tableId) ?? "" : "Unassigned"), guest.seatIndex == null ? "" : String(guest.seatIndex + 1)]);
-  return [["Guest", "Table", "Seat"], ...rows].map((row) => row.join(",")).join("\r\n");
+    .map((guest) => [
+      escape(guest.name),
+      getGuestRsvpStatus(guest),
+      escape(guest.email ?? ""),
+      escape(guest.dietaryNotes ?? ""),
+      escape(guest.tableId ? tableNames.get(guest.tableId) ?? "" : "Unassigned"),
+      guest.seatIndex == null ? "" : String(guest.seatIndex + 1),
+    ]);
+  return [["Guest", "RSVP", "Email", "Dietary notes", "Table", "Seat"], ...rows]
+    .map((row) => row.join(","))
+    .join("\r\n");
 }

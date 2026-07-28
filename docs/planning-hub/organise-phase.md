@@ -152,6 +152,60 @@ Updated local verification on 28 July 2026:
 No migration, cloud activation, production write, deployment or paid service was
 used.
 
+## Guest readiness and attendance-aware seating
+
+The guest fields already present in the shared workspace contract are now usable
+through the existing Table Planner:
+
+- each guest can be marked as awaiting reply, attending or not attending;
+- optional email, dietary and accessibility notes can be recorded without
+  changing the database contract;
+- legacy guest records without an RSVP remain compatible and are treated as
+  awaiting a reply;
+- guests who are not attending remain visible in exports and readiness totals,
+  but no longer consume capacity, appear on the seating canvas, participate in
+  seating rules or trigger an unassigned-seat recommendation;
+- changing a seated guest to not attending clears their seat immediately;
+- CSV exports now include RSVP, email and dietary-note columns alongside table
+  and seat details;
+- the lightweight Organise screen reports accepted, awaiting, declined, dietary
+  and assigned-seat readiness while keeping the full canvas dynamically
+  unloaded;
+- next-step guidance prioritises outstanding replies before seating and links
+  directly to the guest-readiness section.
+
+The attendance and readiness calculations live in shared TypeScript domain
+logic, rather than React components, so the same rules can be reused by a future
+native client. Existing device persistence and the prepared atomic shared-plan
+sync already carry these fields; no migration was required.
+
+The Planning Hub route wrappers also stopped adding nested `main` landmarks.
+The optimized mobile Organise route now has zero axe violations and no
+page-level horizontal overflow at 390 x 844.
+
+Updated local verification on 28 July 2026:
+
+- 58 test files and 269 tests passing;
+- TypeScript check passing;
+- ESLint passing with the same pre-existing unrelated Open Graph image warning;
+- optimized Next.js production build passing with 77 generated pages;
+- RSVP editing, dietary persistence, immediate seat removal and compact
+  readiness updates verified in the optimized app at 390 x 844;
+- browser errors empty and page width matched the viewport;
+- three fresh mobile Lighthouse samples:
+
+| Run | Performance | Accessibility | Best practices | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 99 | 100 | 100 | 2,219ms | 60ms | 0 |
+| 2 | 98 | 100 | 100 | 2,274ms | 108ms | 0 |
+| 3 | 99 | 100 | 100 | 2,084ms | 36ms | 0 |
+
+Median: performance 99, accessibility 100, best practices 100, LCP 2.219s,
+TBT 60ms and CLS 0.
+
+No migration, cloud activation, production write, deployment or paid service was
+used.
+
 ## Connected budget and booking pipeline
 
 Organise now includes the plan-wide budget and booking context that previously

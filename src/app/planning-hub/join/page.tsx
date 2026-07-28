@@ -56,7 +56,7 @@ export default async function PlanningHubJoinPage({
           </span>
         </div>
       </header>
-      <main className="mx-auto grid min-h-[32rem] max-w-3xl place-items-center px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto grid min-h-[32rem] max-w-3xl place-items-center px-4 py-8 sm:px-6 sm:py-10">
         <section
           aria-labelledby="partner-invitation-title"
           className="soft-shadow w-full rounded-[2rem] border border-[var(--line)] bg-white p-6 sm:p-8"
@@ -104,7 +104,7 @@ export default async function PlanningHubJoinPage({
             )}
           </div>
         </section>
-      </main>
+      </div>
     </>
   );
 }

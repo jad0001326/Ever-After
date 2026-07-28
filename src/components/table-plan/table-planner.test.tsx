@@ -35,6 +35,25 @@ describe("TablePlanner", () => {
     expect(screen.getAllByText("Callum Ross").length).toBeGreaterThan(0);
   });
 
+  it("records RSVP and dietary details and removes declined guests from seating", async () => {
+    render(<TablePlanner />);
+    await screen.findByText("Saved on this device");
+    fireEvent.change(screen.getByPlaceholderText("Guest name"), { target: { value: "Ailsa Grant" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add guest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Ailsa Grant" }));
+    fireEvent.change(screen.getByLabelText("RSVP"), { target: { value: "declined" } });
+    fireEvent.change(screen.getByLabelText("Dietary or accessibility notes"), { target: { value: "Wheelchair access" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save guest" }));
+
+    expect(await screen.findByText(/Not attending/)).toBeTruthy();
+    expect(screen.getByText("No seat needed")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Generate arrangement" }).hasAttribute("disabled")).toBe(true);
+    await waitFor(() => {
+      expect(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY)).toContain('"rsvpStatus":"declined"');
+      expect(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY)).toContain("Wheelchair access");
+    });
+  });
+
   it("lets a table capacity be replaced before enforcing its limits", async () => {
     const selectSpy = vi.spyOn(HTMLInputElement.prototype, "select");
     render(<TablePlanner />);

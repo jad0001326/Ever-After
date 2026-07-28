@@ -26,11 +26,11 @@ export default async function PlanningHubPhotographyPage({
   return (
     <>
       <PlanningHubHeader stage="photography" workspaceId={params.workspace} />
-      <main className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
         <Suspense fallback={<PhotographyWorkspaceFallback />}>
           <PlanningHubPhotographyContent searchParams={Promise.resolve(params)} />
         </Suspense>
-      </main>
+      </div>
     </>
   );
 }

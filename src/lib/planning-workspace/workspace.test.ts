@@ -104,9 +104,13 @@ describe("planning workspace", () => {
       budget,
       workspace,
       "60000000-0000-4000-8000-000000000006",
-    ).href).toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006");
+    ).href).toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006#guest-readiness-title");
 
     workspace.tablePlan = createExampleTablePlan();
+    workspace.tablePlan.guests = workspace.tablePlan.guests.map((guest) => ({
+      ...guest,
+      rsvpStatus: "accepted",
+    }));
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("tables");
 
     workspace.tablePlan.guests = workspace.tablePlan.guests.map((guest, index) => ({
@@ -114,6 +118,28 @@ describe("planning workspace", () => {
       tableId: workspace.tablePlan.tables[0].id,
       seatIndex: index,
     }));
+    expect(getPlanningRecommendation(budget, workspace).stage).toBe("tasks");
+  });
+
+  it("prioritises outstanding replies and ignores declined guests for seating", () => {
+    const budget = createEmptyBudgetPlan();
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    budget.items = [budgetItem("venue"), budgetItem("photography")];
+    workspace.tablePlan = createExampleTablePlan();
+    workspace.tablePlan.guests = workspace.tablePlan.guests.map((guest, index) => ({
+      ...guest,
+      rsvpStatus: index === 0 ? "pending" : index === 1 ? "declined" : "accepted",
+      tableId: index > 1 ? workspace.tablePlan.tables[0].id : null,
+      seatIndex: index > 1 ? index - 2 : null,
+    }));
+
+    expect(getPlanningRecommendation(budget, workspace)).toMatchObject({
+      stage: "guests",
+      title: "Confirm 1 outstanding RSVP",
+      href: "/planning-hub/organise#guest-readiness-title",
+    });
+
+    workspace.tablePlan.guests[0].rsvpStatus = "declined";
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("tasks");
   });
 

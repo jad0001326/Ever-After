@@ -234,7 +234,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
 
   it("defers the full seating editor until the couple opens it", async () => {
     render(<PlanningHubOrganiseWorkspace initialBudgetPlan={createEmptyBudgetPlan()} userId={null} />);
-    await screen.findByText("Open the table editor when you need it");
+    await screen.findByRole("heading", { name: "Guests & seating" });
 
     expect(screen.queryByText("Plan health")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open guest & table planner" }));
@@ -312,7 +312,7 @@ describe("PlanningHubOrganiseWorkspace", () => {
         userId="partner-1"
       />,
     );
-    await screen.findByText("Open the table editor when you need it");
+    await screen.findByRole("heading", { name: "Guests & seating" });
     fireEvent.click(screen.getByRole("button", { name: "Open guest & table planner" }));
     fireEvent.click(await screen.findByRole("button", { name: "Try an example" }));
 
