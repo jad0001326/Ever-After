@@ -1,5 +1,9 @@
 import type { BudgetPlan } from "@/lib/budget/types";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
+import {
+  getPlanningHubPaymentDeadlineHref,
+  getPlanningHubPaymentOverview,
+} from "@/lib/planning-hub/payments";
 import { getPhotographyNextHref } from "@/lib/planning-hub/plan";
 import {
   createEmptyTablePlan,
@@ -117,7 +121,19 @@ export function getPlanningRecommendation(
   budgetPlan: BudgetPlan,
   workspace: PlanningWorkspace,
   workspaceId?: string | null,
+  referenceDate = new Date(),
 ): PlanningRecommendation {
+  const overduePayment = getPlanningHubPaymentOverview(budgetPlan, referenceDate)
+    .deadlines.find((deadline) => deadline.urgency === "overdue");
+  if (overduePayment) {
+    return {
+      stage: "payments",
+      title: `Review ${overduePayment.itemName} payment`,
+      href: getPlanningHubPaymentDeadlineHref(budgetPlan, overduePayment, workspaceId),
+      reason: `${overduePayment.label} is overdue. Update the payment or its deadline before the next planning step.`,
+    };
+  }
+
   const venue = budgetPlan.items.find((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
   if (!venue) {
     return {

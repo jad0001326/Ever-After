@@ -116,4 +116,35 @@ describe("planning workspace", () => {
     }));
     expect(getPlanningRecommendation(budget, workspace).stage).toBe("tasks");
   });
+
+  it("prioritises an overdue payment before the ordinary planning sequence", () => {
+    const budget = createEmptyBudgetPlan();
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budget.id });
+    const venue = budgetItem("venue");
+    venue.itemName = "Venue One";
+    venue.installments = [{
+      id: "final",
+      kind: "final",
+      label: "Final balance",
+      amountPence: 400_000,
+      paidPence: 0,
+      dueDate: "2026-07-01",
+      paidAt: null,
+    }];
+    budget.items = [venue];
+
+    const recommendation = getPlanningRecommendation(
+      budget,
+      workspace,
+      "60000000-0000-4000-8000-000000000006",
+      new Date("2026-07-28T12:00:00"),
+    );
+
+    expect(recommendation).toMatchObject({
+      stage: "payments",
+      title: "Review Venue One payment",
+    });
+    expect(recommendation.href)
+      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006#payment-deadlines-title");
+  });
 });

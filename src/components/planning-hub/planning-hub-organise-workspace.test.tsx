@@ -8,6 +8,7 @@ import {
   BUDGET_STORAGE_KEY,
   createEmptyBudgetPlan,
 } from "@/lib/budget/persistence";
+import { plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
 import {
   createEmptyPlanningWorkspace,
   PLANNING_WORKSPACE_STORAGE_KEY,
@@ -52,6 +53,46 @@ describe("PlanningHubOrganiseWorkspace", () => {
       .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
     expect(screen.getByRole("link", { name: "Find matching venues" }).getAttribute("href"))
       .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006");
+  });
+
+  it("surfaces an overdue commitment as the next organising priority", async () => {
+    const budgetPlan = createEmptyBudgetPlan();
+    const venue = plannerListingToBudgetItem({
+      id: "venue-1",
+      slug: "venue-one",
+      name: "Venue One",
+      type: "Venue",
+      categoryId: "venue",
+      location: "Fife",
+      imageUrl: "/venue.jpg",
+      listingUrl: "/venues/venue-one",
+      priceFromPence: 500_000,
+      priceToPence: null,
+      pricingStatus: "fixed",
+    }, budgetPlan);
+    venue.installments = [{
+      id: "final",
+      kind: "final",
+      label: "Final balance",
+      amountPence: 400_000,
+      paidPence: 0,
+      dueDate: "2026-07-01",
+      paidAt: null,
+    }];
+    budgetPlan.items = [venue];
+
+    render(
+      <PlanningHubOrganiseWorkspace
+        initialBudgetPlan={budgetPlan}
+        today="2026-07-28"
+        userId={null}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Payments & deadlines" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Review Venue One payment" })).toBeTruthy();
+    expect(screen.getAllByText("£4,000").length).toBe(2);
+    expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
   });
 
   it("adds tasks and persists them inside the same local workspace", async () => {

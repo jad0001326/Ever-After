@@ -67,6 +67,7 @@ export default async function PlanningHubOrganisePage({
           connectedWorkspaceId={initialCloudSnapshot?.workspace.id ?? null}
           initialBudgetPlan={initialBudgetPlan}
           initialCloudSnapshot={initialCloudSnapshot}
+          today={new Date().toISOString().slice(0, 10)}
           userId={user?.id ?? null}
         />
         {workspaceNotice ? (

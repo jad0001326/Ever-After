@@ -103,3 +103,33 @@ Application rollback is isolated:
 2. retain aggregate payment fields in saved plans;
 3. treat any stored `installments` arrays as forward-compatible unused JSON;
 4. preserve the public Budget Planner and all existing `budget_plans` records.
+
+## Organise payment command centre
+
+The Organise stage now turns the saved schedules into an actionable mobile
+summary:
+
+- overdue, due-soon and upcoming commitments are counted from shared payment
+  logic rather than duplicated UI calculations;
+- known outstanding amounts and schedules with a still-unknown amount are
+  reported separately;
+- each commitment links back to the relevant venue or supplier payment editor,
+  preserving a validated shared-workspace identifier;
+- the next-step recommendation prioritises the earliest overdue payment before
+  returning to venue, photography, guest, table or task guidance;
+- the UI is server-seeded with a serializable date string and introduces no
+  client fetch or additional data waterfall.
+
+The command centre is compatible with personal and partner workspaces and does
+not introduce a schema change, migration, cloud feature or paid service.
+
+Updated local verification:
+
+- 51 test files and 248 tests passing;
+- TypeScript check passing;
+- ESLint passing with the same pre-existing unrelated Open Graph image warning;
+- optimized Next.js production build passing with 77 generated pages;
+- empty and overdue states verified in the optimized app at 390 x 844;
+- the overdue scenario showed the expected £4,000 balance, payment-first
+  recommendation and venue payment-editor link;
+- no horizontal overflow or browser error was observed.

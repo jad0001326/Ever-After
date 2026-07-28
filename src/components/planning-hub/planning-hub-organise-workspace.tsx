@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { PlanningHubProfile } from "@/components/planning-hub/planning-hub-profile";
+import { PlanningHubPaymentOverview } from "@/components/planning-hub/planning-hub-payment-overview";
 import { PlanningPartnerAccess } from "@/components/planning-hub/planning-partner-access";
 import { PlanningWorkspaceCloudImport } from "@/components/planning-hub/planning-workspace-cloud-import";
 import {
@@ -45,12 +46,14 @@ export function PlanningHubOrganiseWorkspace({
   connectedWorkspaceId = null,
   initialBudgetPlan,
   initialCloudSnapshot = null,
+  today = "2026-07-28",
   userId,
 }: {
   cloudEnabled?: boolean;
   connectedWorkspaceId?: string | null;
   initialBudgetPlan: BudgetPlan;
   initialCloudSnapshot?: PlanningWorkspaceCloudSnapshot | null;
+  today?: string;
   userId: string | null;
 }) {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(connectedWorkspaceId);
@@ -236,7 +239,13 @@ export function PlanningHubOrganiseWorkspace({
     return <div aria-busy="true" className="h-96 animate-pulse rounded-3xl bg-[#e7dfd2]"><span className="sr-only">Preparing your organised plan.</span></div>;
   }
 
-  const recommendation = getPlanningRecommendation(budgetPlan, workspace, activeWorkspaceId);
+  const referenceDate = new Date(`${today}T12:00:00`);
+  const recommendation = getPlanningRecommendation(
+    budgetPlan,
+    workspace,
+    activeWorkspaceId,
+    referenceDate,
+  );
   const assignedGuests = workspace.tablePlan.guests.filter((guest) => guest.tableId).length;
 
   function saveProfile(profile: WeddingProfile, totalBudgetPence: number) {
@@ -355,6 +364,12 @@ export function PlanningHubOrganiseWorkspace({
         <SummaryCard icon={<UsersRound size={19} />} label="Guests" value={String(workspace.tablePlan.guests.length)} />
         <SummaryCard icon={<Check size={19} />} label="Seats assigned" value={`${assignedGuests}/${workspace.tablePlan.guests.length}`} />
       </section>
+
+      <PlanningHubPaymentOverview
+        plan={budgetPlan}
+        today={today}
+        workspaceId={activeWorkspaceId}
+      />
 
       <PlanningHubProfile
         onSave={saveProfile}
