@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Camera, SlidersHorizontal } from "lucide-react";
 import { photographerStyles } from "@/data/supplier-directory";
 import { formatMoney } from "@/lib/budget/calculations";
+import { getPlanningHubSupplierResetHref } from "@/lib/planning-hub/navigation";
 import {
-  getPlanningHubSupplierResetHref,
   type PlanningHubDerivedSupplierFilters,
 } from "@/lib/planning-hub/supplier-search";
 import type { PlanningHubPhotographySearchParams } from "@/lib/planning-hub/types";

@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
+import { getPlanningHubSupplierResetHref } from "@/lib/planning-hub/navigation";
 import {
-  getPlanningHubSupplierResetHref,
   type PlanningHubDerivedSupplierFilters,
 } from "@/lib/planning-hub/supplier-search";
 import type {

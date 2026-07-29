@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlanningHubPhotographer, PlanningHubSupplier, PlanningHubVenue } from "./types";
+import { getPhotographyNextHref } from "./navigation";
 import {
   addManualPlanningHubSupplier,
   addManualPlanningHubPhotographer,
@@ -10,7 +11,6 @@ import {
   findPlanningHubPhotographyItem,
   findPlanningHubSupplierItem,
   findPlanningHubVenueItem,
-  getPhotographyNextHref,
   getPlanningHubItemAvailability,
   removePlanningHubItem,
   updatePlanningHubItemAvailability,

@@ -1,35 +1,26 @@
 import type { BudgetPlan } from "@/lib/budget/types";
-import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
-import {
-  getPlanningHubPaymentDeadlineHref,
-  getPlanningHubPaymentOverview,
-} from "@/lib/planning-hub/payments";
+import { getPlanningHubItemStageHref } from "@/lib/planning-hub/item-navigation";
 import {
   getPhotographyNextHref,
-  getPlanningHubItemAvailability,
-} from "@/lib/planning-hub/plan";
-import { getPlanningHubItemStageHref } from "@/lib/planning-hub/item-navigation";
-import { hasPlannedNonPhotographySupplier } from "@/lib/planning-hub/supplier-roadmap";
+  withPlanningWorkspace,
+} from "@/lib/planning-hub/navigation";
+import { getPlanningHubPaymentDeadlineHref } from "@/lib/planning-hub/payments";
 import {
   createEmptyTablePlan,
   restoreTablePlan,
   serializeTablePlan,
 } from "@/lib/table-plan/planner";
-import { getTablePlanGuestOverview } from "@/lib/table-plan/guests";
 import type { TablePlan } from "@/lib/table-plan/types";
+import type { WeddingProfile } from "./profile";
 import {
   createWeddingProfile,
-  profileVenueSearchHref,
   restoreWeddingProfile,
 } from "./profile";
-import {
-  formatPlanningTaskDate,
-  getPlanningTaskCategoryLabel,
-  getPlanningTaskOverview,
-} from "./tasks";
-import type { WeddingProfile } from "./profile";
+import { profileVenueSearchHref } from "./profile-navigation";
+import { getPlanningRecommendationDecision } from "./recommendations";
 import type {
   PlanningRecommendation,
+  PlanningRecommendationTarget,
   PlanningTask,
   PlanningWorkspace,
 } from "./types";
@@ -134,187 +125,74 @@ export function getPlanningRecommendation(
   workspaceId?: string | null,
   referenceDate = new Date(),
 ): PlanningRecommendation {
-  const overduePayment = getPlanningHubPaymentOverview(budgetPlan, referenceDate)
-    .deadlines.find((deadline) => deadline.urgency === "overdue");
-  if (overduePayment) {
-    return {
-      stage: "payments",
-      title: `Review ${overduePayment.itemName} payment`,
-      href: getPlanningHubPaymentDeadlineHref(budgetPlan, overduePayment, workspaceId),
-      reason: `${overduePayment.label} is overdue. Update the payment or its deadline before the next planning step.`,
-    };
-  }
-
-  const overdueTask = getPlanningTaskOverview(workspace.tasks, referenceDate)
-    .tasks.find(({ urgency }) => urgency === "overdue")?.task;
-  if (overdueTask?.dueDate) {
-    return {
-      stage: "tasks",
-      title: `Review ${overdueTask.title}`,
-      href: withPlanningWorkspace(
-        "/planning-hub/organise#planning-tasks-title",
-        workspaceId,
-      ),
-      reason: `${getPlanningTaskCategoryLabel(overdueTask.category)} task due ${formatPlanningTaskDate(overdueTask.dueDate)}. Complete it or update the plan before moving on.`,
-    };
-  }
-
-  const venue = budgetPlan.items.find((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
-  if (!venue) {
-    return {
-      stage: "venue",
-      title: "Choose the venue direction",
-      href: profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence, workspaceId),
-      reason: workspace.profile.priorities.includes("venue")
-        ? "You marked the venue as a priority. It anchors the date, location, capacity and suppliers that fit."
-        : "Your venue anchors the date, location, capacity and the suppliers that fit.",
-    };
-  }
-
-  const selectedVenue = budgetPlan.items.find((item) => (
-    item.categoryId === "venue"
-    && item.bookingStatus !== "cancelled"
-    && (
-      item.id === budgetPlan.selectedVenueId
-      || item.listingId === budgetPlan.selectedVenueId
-    )
-  ));
-  const venueAvailability = selectedVenue
-    ? availabilityRecommendation(selectedVenue, budgetPlan.weddingDate)
-    : null;
-  if (selectedVenue && venueAvailability && selectedVenue.bookingStatus !== "booked") {
-    return {
-      stage: "venue",
-      title: venueAvailability.title,
-      href: getPlanningHubItemStageHref(selectedVenue, workspaceId)
-        ?? profileVenueSearchHref(workspace.profile, budgetPlan.totalBudgetPence, workspaceId),
-      reason: venueAvailability.reason,
-    };
-  }
-
-  const photography = budgetPlan.items.find((item) => item.categoryId === "photography" && item.bookingStatus !== "cancelled");
-  if (!photography) {
-    return {
-      stage: "photography",
-      title: "Shortlist your photographer",
-      href: getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0], workspaceId),
-      reason: workspace.profile.priorities.includes("photography")
-        ? "Photography is one of your priorities, and your venue context can now shape the shortlist."
-        : "Your venue is in the plan, so photography is the strongest next supplier decision.",
-    };
-  }
-
-  const photographyAvailability = availabilityRecommendation(
-    photography,
-    budgetPlan.weddingDate,
+  const decision = getPlanningRecommendationDecision(
+    budgetPlan,
+    workspace,
+    referenceDate,
   );
-  if (photographyAvailability && photography.bookingStatus !== "booked") {
-    return {
-      stage: "photography",
-      title: photographyAvailability.title,
-      href: getPlanningHubItemStageHref(photography, workspaceId)
-        ?? getPhotographyNextHref(budgetPlan, workspace.profile.photographyStyles[0], workspaceId),
-      reason: photographyAvailability.reason,
-    };
-  }
-
-  if (!hasPlannedNonPhotographySupplier(budgetPlan)) {
-    return {
-      stage: "suppliers",
-      title: "Plan your next suppliers",
-      href: withPlanningWorkspace("/planning-hub/suppliers", workspaceId),
-      reason: "Choose the supplier category that matters next. Live catalogues can be browsed, and businesses found elsewhere can still be added manually.",
-    };
-  }
-
-  const guestOverview = getTablePlanGuestOverview(
-    workspace.tablePlan,
-    workspace.profile.guestCount ?? 0,
-  );
-
-  if (guestOverview.totalCount === 0) {
-    return {
-      stage: "guests",
-      title: "Start the guest list",
-      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
-      reason: "A working guest list makes capacity, catering and table decisions more reliable.",
-    };
-  }
-
-  if (guestOverview.pendingCount > 0) {
-    return {
-      stage: "guests",
-      title: `Confirm ${guestOverview.pendingCount} outstanding ${guestOverview.pendingCount === 1 ? "RSVP" : "RSVPs"}`,
-      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
-      reason: "Record who is attending before finalising catering numbers and table assignments.",
-    };
-  }
-
-  if (guestOverview.seatingGuestCount === 0) {
-    return {
-      stage: "guests",
-      title: "Add attending guests",
-      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
-      reason: "Everyone currently listed is marked as not attending, so there is no seating plan to arrange yet.",
-    };
-  }
-
-  if (guestOverview.unassignedCount > 0) {
-    return {
-      stage: "tables",
-      title: "Arrange your tables",
-      href: withPlanningWorkspace("/planning-hub/organise#guest-readiness-title", workspaceId),
-      reason: `${guestOverview.unassignedCount} attending ${guestOverview.unassignedCount === 1 ? "guest is" : "guests are"} still unassigned, so the table plan is ready for its next pass.`,
-    };
-  }
-
   return {
-    stage: "tasks",
-    title: "Review the next open task",
-    href: withPlanningWorkspace("/planning-hub/organise", workspaceId),
-    reason: workspace.tasks.some((task) => task.status !== "done")
-      ? "Your main planning stages are connected; keep momentum with the next unfinished task."
-      : "Your current list is clear. Add the next commitment as plans develop.",
+    stage: decision.stage,
+    title: decision.title,
+    reason: decision.reason,
+    href: recommendationHref(
+      decision.target,
+      budgetPlan,
+      workspace,
+      workspaceId,
+    ),
   };
 }
 
-function availabilityRecommendation(
-  item: BudgetPlan["items"][number],
-  weddingDate: string | null,
+function recommendationHref(
+  target: PlanningRecommendationTarget,
+  budgetPlan: BudgetPlan,
+  workspace: PlanningWorkspace,
+  workspaceId?: string | null,
 ) {
-  if (!weddingDate) return null;
-  const availability = getPlanningHubItemAvailability(item, weddingDate);
-  const date = new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Europe/London",
-  }).format(new Date(`${weddingDate}T12:00:00Z`));
-  if (availability.stale) {
-    return {
-      title: `Recheck ${item.itemName} availability`,
-      reason: `Your wedding date changed. Confirm ${item.itemName} again for ${date} before relying on the earlier response.`,
-    };
+  switch (target.kind) {
+    case "payment":
+      return getPlanningHubPaymentDeadlineHref(
+        budgetPlan,
+        { itemId: target.itemId },
+        workspaceId,
+      );
+    case "venue-search":
+      return profileVenueSearchHref(
+        workspace.profile,
+        budgetPlan.totalBudgetPence,
+        workspaceId,
+      );
+    case "photography-search":
+      return getPhotographyNextHref(
+        budgetPlan,
+        workspace.profile.photographyStyles[0],
+        workspaceId,
+      );
+    case "supplier-roadmap":
+      return withPlanningWorkspace("/planning-hub/suppliers", workspaceId);
+    case "plan-item": {
+      const item = budgetPlan.items.find((candidate) => candidate.id === target.itemId);
+      const stageHref = item
+        ? getPlanningHubItemStageHref(item, workspaceId)
+        : null;
+      if (stageHref) return stageHref;
+      return target.fallback === "venue-search"
+        ? profileVenueSearchHref(
+            workspace.profile,
+            budgetPlan.totalBudgetPence,
+            workspaceId,
+          )
+        : getPhotographyNextHref(
+            budgetPlan,
+            workspace.profile.photographyStyles[0],
+            workspaceId,
+          );
+    }
+    case "organise": {
+      const hash = target.anchor ? `#${target.anchor}` : "";
+      return withPlanningWorkspace(`/planning-hub/organise${hash}`, workspaceId);
+    }
   }
-  if (availability.status === "not_checked") {
-    return {
-      title: `Check ${item.itemName} availability`,
-      reason: `EverAft does not infer supplier calendars. Confirm ${date} directly before treating this option as suitable.`,
-    };
-  }
-  if (availability.status === "enquiry_sent") {
-    return {
-      title: `Follow up with ${item.itemName}`,
-      reason: `Your availability enquiry for ${date} is still awaiting a response.`,
-    };
-  }
-  if (availability.status === "unavailable") {
-    return {
-      title: `Replace ${item.itemName}`,
-      reason: `${item.itemName} is recorded as unavailable on ${date}. Return to this stage and choose another option.`,
-    };
-  }
-  return null;
 }
 
 function isPlanningTask(value: unknown): value is PlanningTask {

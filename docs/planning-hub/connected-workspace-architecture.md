@@ -183,6 +183,27 @@ Each PR must pass focused unit tests, typecheck, lint and production build.
 User-facing phases also require keyboard/screen-reader checks, 390px responsive
 QA and three-run mobile Lighthouse verification against the stated targets.
 
+## Portable domain boundary
+
+The future native-client claim is now enforced rather than inferred. Nineteen
+declared modules contain the shared budget, planning-state, supplier-context,
+recommendation, profile, task, guest, seating and validation rules. The
+source-level boundary test rejects:
+
+- React or Next.js imports and client/server execution directives;
+- browser globals, URL construction and device storage;
+- Node runtime or environment access;
+- Supabase clients and web navigation adapters.
+
+`getPlanningRecommendationDecision` returns a platform-neutral target such as
+`venue-search`, `photography-search`, `payment` with a stable plan-item ID, or
+`organise` with a semantic anchor. `workspace.ts` is the web adapter that maps
+that decision to a Planning Hub URL. Catalogue queries, analytics, invitation
+cookies and internal-route helpers remain explicitly outside the portable core.
+The boundary is verified by
+`scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
+prove that the core result contains no `href`.
+
 ## Current cloud activation gate
 
 The typed server actions live in `src/app/actions/planning-workspace.ts`. Every

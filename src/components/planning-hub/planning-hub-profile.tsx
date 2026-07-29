@@ -6,10 +6,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import {
   profileCompletion,
-  profileVenueSearchHref,
   weddingPriorityOptions,
 } from "@/lib/planning-workspace/profile";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
+import { profileVenueSearchHref } from "@/lib/planning-workspace/profile-navigation";
 import type {
   WeddingDateFlexibility,
   WeddingPriority,

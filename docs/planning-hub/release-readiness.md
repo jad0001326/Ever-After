@@ -28,7 +28,7 @@ a production deployment, migrate or enable cloud persistence.
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
-| Native-ready business logic | Budget, recommendation, supplier, payment, task, guest, seating, validation and cloud mapping rules live outside page components and use stable DTOs. | Proven as an architectural foundation |
+| Native-ready business logic | Nineteen declared budget, recommendation, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. | Proven as an architectural foundation |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
 | Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Chrome Event Timing measures four real keyboard interactions with a 24 ms slowest duration and fails above 200 ms. Real INP still requires post-release field traffic. | Target met in lab; awaiting field evidence |
@@ -78,6 +78,7 @@ they do not require rewriting or pushing it.
 | 33. Rendered lifecycle completion | Verify date availability and staleness, complete booking/payment expansion, focused removal, duplicate-free reactivation and the computed local font stack. | `5c255a5` | Local browser tooling and release evidence only; no application, schema, catalogue or hosted mutation. |
 | 34. Upstream release sync | Merge current `origin/main`, including claimant email hardening, outreach validation and ten new planning guides, then recertify the Planning Hub release candidate. | Current working slice | Clean local merge and verification only; no remote write, migration or deployment. |
 | 35. Lab interaction timing | Measure browser-generated keyboard interactions with Chrome Event Timing and fail the release gate above 200 ms. | Current local slice | Repeatable local lab evidence only; field INP still requires approved traffic. |
+| 36. Portable planning domain | Separate recommendation decisions from web routing and guard 19 reusable domain modules against framework, browser, Node and Supabase adapter coupling. | Current local slice | Architecture and tests only; no native application, API activation or hosted action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -181,7 +182,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 69 Vitest files and 338 tests pass.
+- 71 Vitest files and 344 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -202,6 +203,11 @@ Use the least destructive rollback that restores safety:
   contract has focused regression coverage. The optimized browser matrix also
   confirms the computed body font resolves to the local system stack on
   Planning Hub and both public planners at mobile and desktop sizes.
+- The portable-domain gate reads 19 declared modules and rejects React/Next
+  imports, client/server directives, browser globals and storage, URL
+  construction, Node environment access, Supabase clients and web adapters.
+  The recommendation engine now returns stable platform-neutral targets; the
+  existing workspace adapter preserves every tested web URL.
 - Every planned venue or supplier can record whether availability has not been
   checked, an enquiry was sent, or the business is available or unavailable for
   the current wedding date. A date change invalidates the earlier answer, and

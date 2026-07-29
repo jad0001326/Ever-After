@@ -3,10 +3,10 @@ import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
 import {
   createWeddingProfile,
   profileCompletion,
-  profileVenueSearchHref,
   restoreWeddingProfile,
 } from "./profile";
 import type { WeddingProfile } from "./profile";
+import { profileVenueSearchHref } from "./profile-navigation";
 
 describe("wedding profile", () => {
   it("reuses the existing budget basics as the profile source", () => {

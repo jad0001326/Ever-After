@@ -7,8 +7,9 @@ import { ArrowRight, Check, Cloud, CreditCard, MapPinned, Plus, Save } from "luc
 import { formatMoney } from "@/lib/budget/calculations";
 import type { AvailabilityStatus, BudgetItem, BudgetPlan } from "@/lib/budget/types";
 import type { PaymentInstallment } from "@/lib/budget/types";
+import { getPhotographyNextHref } from "@/lib/planning-hub/navigation";
 import type { PlanningHubVenueStatus } from "@/lib/planning-hub/plan";
-import { calculatePlanningHubPlan, getPhotographyNextHref } from "@/lib/planning-hub/plan";
+import { calculatePlanningHubPlan } from "@/lib/planning-hub/plan";
 import type { PlanningHubVenue } from "@/lib/planning-hub/types";
 import { PlanningHubAvailability } from "./planning-hub-availability";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";

@@ -45,19 +45,6 @@ export function getPlanningHubSupplierRoadmap(
   });
 }
 
-export function hasPlannedNonPhotographySupplier(plan: BudgetPlan) {
-  const nonPhotographyTypes = new Set<string>(
-    supplierDirectoryCategories
-      .filter((category) => category.slug !== "photographer")
-      .map((category) => category.label),
-  );
-  return plan.items.some((item) => (
-    item.bookingStatus !== "cancelled"
-    && item.supplierType !== null
-    && nonPhotographyTypes.has(item.supplierType)
-  ));
-}
-
 function supplierRoadmapHref(
   categorySlug: PlanningHubSupplierRoadmapEntry["slug"],
   catalogueLive: boolean,

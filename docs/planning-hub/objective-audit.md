@@ -19,7 +19,7 @@ remain deliberately gated.
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
-| Reusable logic | Planning, budget, supplier, payment and workspace rules live outside page components and can support a future native client. |
+| Reusable logic | Nineteen declared budget, supplier, recommendation, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs. |
 | Safe beta | The Planning Hub remains on separate no-index beta routes and the public planners remain available. |
 
 ## Prepared but not enabled
@@ -48,7 +48,7 @@ its public profile route and category-specific browser verification before its
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
 | Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
-| Native iPhone and Android apps | Future-compatible architecture only | Shared domain logic and backend contracts are reusable, but native clients and physical-device QA are outside this web milestone. |
+| Native iPhone and Android apps | Future-compatible architecture only | The executable portable-domain boundary and platform-neutral recommendation DTOs prove the reusable foundation, but native clients and physical-device QA are outside this web milestone. |
 
 ## Remaining release gates
 
@@ -70,7 +70,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 69 test files and 338 tests passing.
+- 71 test files and 344 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -141,6 +141,11 @@ its public profile route and category-specific browser verification before its
   Event Timing records four distinct interactions; the full optimized run's
   slowest duration is 24 milliseconds and the gate fails above 200
   milliseconds. Field INP remains explicitly separate.
+- The native-ready source boundary covers 19 declared domain modules and fails
+  on framework directives, React/Next imports, browser globals or storage,
+  URL construction, Node environment access, Supabase clients and web adapters.
+  Recommendation decisions now return stable platform-neutral targets; the web
+  workspace adapter alone converts those targets into Planning Hub URLs.
 - Chrome's full rendered accessibility tree proves unique banner/main
   landmarks, named primary/stage/result navigation, named filter/result/plan
   landmarks, correct heading levels, detail and control names, pressed and

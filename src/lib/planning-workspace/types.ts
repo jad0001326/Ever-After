@@ -30,11 +30,40 @@ export type PlanningWorkspace = {
   updatedAt: string;
 };
 
-export type PlanningRecommendation =
-  | { stage: "payments"; title: string; href: string; reason: string }
-  | { stage: "venue"; title: string; href: string; reason: string }
-  | { stage: "photography"; title: string; href: string; reason: string }
-  | { stage: "suppliers"; title: string; href: string; reason: string }
-  | { stage: "guests"; title: string; href: string; reason: string }
-  | { stage: "tables"; title: string; href: string; reason: string }
-  | { stage: "tasks"; title: string; href: string; reason: string };
+export type PlanningRecommendationStage =
+  | "payments"
+  | "venue"
+  | "photography"
+  | "suppliers"
+  | "guests"
+  | "tables"
+  | "tasks";
+
+export type PlanningRecommendationTarget =
+  | { kind: "payment"; itemId: string }
+  | { kind: "venue-search" }
+  | { kind: "photography-search" }
+  | { kind: "supplier-roadmap" }
+  | {
+      kind: "plan-item";
+      itemId: string;
+      fallback: "venue-search" | "photography-search";
+    }
+  | {
+      kind: "organise";
+      anchor: "planning-tasks-title" | "guest-readiness-title" | null;
+    };
+
+type PlanningRecommendationContent = {
+  stage: PlanningRecommendationStage;
+  title: string;
+  reason: string;
+};
+
+export type PlanningRecommendationDecision = PlanningRecommendationContent & {
+  target: PlanningRecommendationTarget;
+};
+
+export type PlanningRecommendation = PlanningRecommendationContent & {
+  href: string;
+};

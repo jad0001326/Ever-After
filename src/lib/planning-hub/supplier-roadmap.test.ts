@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addManualPlanningHubSupplier, createPlanningHubStarterPlan } from "./plan";
+import {
+  addManualPlanningHubSupplier,
+  createPlanningHubStarterPlan,
+  hasPlannedNonPhotographySupplier,
+} from "./plan";
 import {
   getPlanningHubSupplierRoadmap,
-  hasPlannedNonPhotographySupplier,
 } from "./supplier-roadmap";
 
 describe("Planning Hub supplier roadmap", () => {

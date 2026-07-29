@@ -12,7 +12,7 @@ export type PlanningHubDerivedSupplierFilters = {
   venue: boolean;
 };
 
-type PlanningHubSupplierDiscoveryParams = PlanningHubSupplierSearchParams & {
+export type PlanningHubSupplierDiscoveryParams = PlanningHubSupplierSearchParams & {
   style?: string;
 };
 
@@ -82,23 +82,6 @@ export function getPlanningHubSupplierDiscoveryContext<
     selectedVenueName: selectedVenue?.itemName ?? (transportedVenueName || null),
     weddingDate: plan.weddingDate ?? transportedPlanDate,
   };
-}
-
-export function getPlanningHubSupplierResetHref(
-  route: string,
-  params: PlanningHubSupplierDiscoveryParams,
-) {
-  const query = new URLSearchParams();
-  if (params.workspace) query.set("workspace", params.workspace);
-  if (params.context === "plan") {
-    query.set("context", "plan");
-    if (params.planDate) query.set("planDate", params.planDate);
-    if (params.planLocation) query.set("planLocation", params.planLocation);
-    if (params.remainingPence) query.set("remainingPence", params.remainingPence);
-    if (params.venue) query.set("venue", params.venue);
-    if (params.venueName) query.set("venueName", params.venueName);
-  }
-  return `${route}${query.size ? `?${query}` : ""}`;
 }
 
 export function normalisePlanningHubSupplierSearchParams(

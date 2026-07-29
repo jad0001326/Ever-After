@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getPlanningHubSupplierResetHref } from "./navigation";
 import {
   addManualPlanningHubVenue,
   choosePlanningHubVenue,
@@ -10,7 +11,6 @@ import {
   getLivePlanningHubSupplierCategory,
   getPlanningHubSupplierCategory,
   getPlanningHubSupplierDiscoveryContext,
-  getPlanningHubSupplierResetHref,
   isSupplierCategorySlug,
   normalisePlanningHubSupplierSearchParams,
   PLANNING_HUB_SUPPLIER_PAGE_SIZE,

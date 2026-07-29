@@ -84,23 +84,6 @@ export function restoreWeddingProfile(
   return profile as WeddingProfile;
 }
 
-export function profileVenueSearchHref(
-  profile: WeddingProfile,
-  totalBudgetPence: number,
-  workspaceId?: string | null,
-) {
-  const params = new URLSearchParams();
-  if (profile.location) params.set("location", profile.location);
-  if (profile.guestCount) params.set("guests", String(profile.guestCount));
-  if (totalBudgetPence > 0) params.set("budget", String(Math.floor(totalBudgetPence / 100)));
-  const venueType = profile.venueStyles
-    .map((style) => venueStyleSearchTypes[style])
-    .find(Boolean);
-  if (venueType) params.set("type", venueType);
-  if (workspaceId) params.set("workspace", workspaceId);
-  return `/planning-hub${params.size ? `?${params.toString()}` : ""}`;
-}
-
 export function profileCompletion(profile: WeddingProfile) {
   const checks = [
     profile.weddingDate !== null || profile.dateFlexibility === "season_only",
@@ -141,10 +124,3 @@ function isBoundedStringArray(value: unknown, maxItems: number, maxLength: numbe
 function hasUniqueValues(values: string[]) {
   return new Set(values).size === values.length;
 }
-
-const venueStyleSearchTypes: Record<string, string | undefined> = {
-  Castle: "Castle",
-  Barn: "Barn",
-  "Country house": "Country Estate",
-  Hotel: "Luxury Hotel",
-};

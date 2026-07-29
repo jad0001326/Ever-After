@@ -45,7 +45,7 @@ export function getPlanningHubPaymentOverview(
 
 export function getPlanningHubPaymentDeadlineHref(
   plan: BudgetPlan,
-  deadline: PaymentDeadline,
+  deadline: Pick<PaymentDeadline, "itemId">,
   workspaceId?: string | null,
 ) {
   const item = plan.items.find((candidate) => candidate.id === deadline.itemId);

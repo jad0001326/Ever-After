@@ -1,4 +1,4 @@
-import { supplierCategoryBySlug } from "@/data/supplier-directory";
+import { supplierCategoryBySlug, supplierDirectoryCategories } from "@/data/supplier-directory";
 import { calculateBudget, getItemPlanningCost, getPaymentStatus } from "@/lib/budget/calculations";
 import { plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
@@ -345,37 +345,17 @@ export function getVenuePlanningCost(venue: PlanningHubVenue | null | undefined,
   return ["total", "per_event", null].includes(venue.pricingUnit) ? venue.priceFromPence : null;
 }
 
-export function getPhotographyNextHref(
-  plan: BudgetPlan,
-  preferredStyle?: string | null,
-  workspaceId?: string | null,
-) {
-  const params = new URLSearchParams();
-  if (preferredStyle) params.set("style", preferredStyle);
-  if (workspaceId) {
-    params.set("workspace", workspaceId);
-  } else {
-    const selectedVenue = plan.selectedVenueId
-      ? plan.items.find((item) => (
-          item.categoryId === "venue"
-          && item.bookingStatus !== "cancelled"
-          && item.costStatus !== "cancelled"
-          && (
-            item.id === plan.selectedVenueId
-            || item.listingId === plan.selectedVenueId
-          )
-        )) ?? null
-      : null;
-    const remainingPence = calculatePlanningHubPlan(plan).remainingPence;
-
-    params.set("context", "plan");
-    params.set("remainingPence", String(remainingPence));
-    if (selectedVenue?.listingId) params.set("venue", selectedVenue.listingId);
-    if (selectedVenue?.itemName) params.set("venueName", selectedVenue.itemName);
-    if (plan.weddingDate) params.set("planDate", plan.weddingDate);
-    if (plan.location) params.set("planLocation", plan.location);
-  }
-  return `/planning-hub/photography${params.size ? `?${params.toString()}` : ""}`;
+export function hasPlannedNonPhotographySupplier(plan: BudgetPlan) {
+  const nonPhotographyTypes = new Set<string>(
+    supplierDirectoryCategories
+      .filter((category) => category.slug !== "photographer")
+      .map((category) => category.label),
+  );
+  return plan.items.some((item) => (
+    item.bookingStatus !== "cancelled"
+    && item.supplierType !== null
+    && nonPhotographyTypes.has(item.supplierType)
+  ));
 }
 
 function upsertPlanningHubListing(
