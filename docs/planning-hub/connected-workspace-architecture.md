@@ -185,9 +185,10 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Nineteen
+The future native-client claim is now enforced rather than inferred. Twenty
 declared modules contain the shared budget, planning-state, supplier-context,
-recommendation, profile, task, guest, seating and validation rules. The
+recommendation, dashboard-snapshot, profile, task, guest, seating and
+validation rules. The
 source-level boundary test rejects:
 
 - React or Next.js imports and client/server execution directives;
@@ -198,8 +199,14 @@ source-level boundary test rejects:
 `getPlanningRecommendationDecision` returns a platform-neutral target such as
 `venue-search`, `photography-search`, `payment` with a stable plan-item ID, or
 `organise` with a semantic anchor. `workspace.ts` is the web adapter that maps
-that decision to a Planning Hub URL. Catalogue queries, analytics, invitation
-cookies and internal-route helpers remain explicitly outside the portable core.
+that decision to a Planning Hub URL.
+`createPlanningDashboardSnapshot` assembles the budget, payment, task, guest,
+profile-completion and recommendation state into a versioned JSON-safe
+contract. It rejects a workspace joined to the wrong budget plan and contains
+no URL, Date, Map, framework object or persistence handle, so a future native
+presentation adapter can consume the same dashboard decision state.
+Catalogue queries, analytics, invitation cookies and internal-route helpers
+remain explicitly outside the portable core.
 The boundary is verified by
 `scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
 prove that the core result contains no `href`.
