@@ -6,6 +6,10 @@ import {
 } from "../src/lib/planning-workspace/budget-api-schema.ts";
 import { planningDashboardSnapshotJsonSchema } from "../src/lib/planning-workspace/snapshot-schema.ts";
 import {
+  planningProfileResourceJsonSchema,
+  planningProfileUpdateRequestJsonSchema,
+} from "../src/lib/planning-workspace/profile-api-schema.ts";
+import {
   planningTablePlanUpdateRequestJsonSchema,
   planningTablePlanUpdateSuccessJsonSchema,
 } from "../src/lib/planning-workspace/table-plan-api-schema.ts";
@@ -30,6 +34,14 @@ const contracts = [
   {
     file: "planning-table-plan-update-success.v1.schema.json",
     schema: planningTablePlanUpdateSuccessJsonSchema,
+  },
+  {
+    file: "planning-profile-resource.v1.schema.json",
+    schema: planningProfileResourceJsonSchema,
+  },
+  {
+    file: "planning-profile-update-request.v1.schema.json",
+    schema: planningProfileUpdateRequestJsonSchema,
   },
 ];
 let stale = false;

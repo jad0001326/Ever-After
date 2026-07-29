@@ -49,6 +49,18 @@ Use the same dashboard's `workspaceUpdatedAt` value with
 - validate the success body and subsequent dashboard GET against the checked
   schemas.
 
+Then exercise both methods on
+`/api/planning/v1/workspaces/{workspaceId}/profile`:
+
+- prove owner and partner receive the same strict profile resource;
+- prove an accessible workspace without a profile returns `profile: null`;
+- create that missing profile with `expectedProfileUpdatedAt: null`;
+- update it using the exact returned `profile.updatedAt`;
+- prove a stale version returns `409 version_conflict` without changing the
+  stored profile;
+- prove an outsider receives the generic workspace denial; and
+- validate every successful response against the checked resource schema.
+
 All application assertions use publishable-key clients with real user sessions.
 The secret test key is used only to create test Auth users, confirm their
 profiles exist and delete those users during cleanup.

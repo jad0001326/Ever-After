@@ -185,7 +185,7 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Twenty-three
+The future native-client claim is now enforced rather than inferred. Twenty-four
 declared modules contain the shared budget, planning-state, supplier-context,
 recommendation, dashboard/update-contract, profile, task, guest, seating and
 validation rules. The
@@ -213,8 +213,8 @@ language-neutral Draft 2020-12 schema is checked in at
 the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 `npm run planning-contract:check` to fail on schema drift or
 `npm run planning-contract:write` after an intentional versioned contract
-change. The generator maintains the dashboard snapshot plus the budget-update
-and table-plan-update request and success schemas.
+change. The generator maintains seven schemas: the dashboard snapshot, budget
+and table-plan request/success pairs, and profile resource/update request.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
 
@@ -244,6 +244,14 @@ existing authenticated transaction that locks the workspace and atomically
 replaces guests, tables, seats and rules. Owner and partner access remains
 governed by the caller's RLS-visible workspace and the function's explicit
 access check.
+
+The dormant
+`GET|PATCH /api/planning/v1/workspaces/{workspaceId}/profile` resource lets
+native clients load, create and replace the complete wedding profile. A null
+expected version is valid only for first creation; updates use the exact
+resource timestamp in both a precheck and conditional write. PostgreSQL
+supplies timestamps, while explicit grants and owner/partner RLS remain the
+only authorization boundary.
 The boundary is verified by
 `scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
 prove that the core result contains no `href`.

@@ -172,7 +172,7 @@ const planningImportRuleSchema = z.object({
   type: z.enum(["must_next_to", "prefer_next_to", "must_not_next_to", "must_separate"])
 });
 
-export const weddingProfileSchema = z.object({
+const weddingProfileContentShape = {
   schemaVersion: z.literal(1),
   weddingDate: z.iso.date().nullable(),
   guestCount: z.number().int().min(1).max(10000).nullable(),
@@ -194,8 +194,16 @@ export const weddingProfileSchema = z.object({
   venueStyles: z.array(z.string().trim().min(1).max(80)).max(8),
   photographyStyles: z.array(z.string().trim().min(1).max(80)).max(8),
   vision: z.string().trim().max(1000).nullable(),
-  updatedAt: z.iso.datetime({ offset: true })
-}).superRefine((profile, context) => {
+};
+
+function validateWeddingProfileChoices(
+  profile: {
+    priorities: string[];
+    venueStyles: string[];
+    photographyStyles: string[];
+  },
+  context: z.RefinementCtx,
+) {
   for (const field of ["priorities", "venueStyles", "photographyStyles"] as const) {
     if (new Set(profile[field]).size !== profile[field].length) {
       context.addIssue({
@@ -205,7 +213,18 @@ export const weddingProfileSchema = z.object({
       });
     }
   }
-});
+}
+
+export const weddingProfileContentSchema = z
+  .strictObject(weddingProfileContentShape)
+  .superRefine(validateWeddingProfileChoices);
+
+export const weddingProfileSchema = z
+  .strictObject({
+    ...weddingProfileContentShape,
+    updatedAt: z.iso.datetime({ offset: true }),
+  })
+  .superRefine(validateWeddingProfileChoices);
 
 export const planningWorkspaceImportSnapshotSchema = z.object({
   id: planningWorkspaceIdSchema,

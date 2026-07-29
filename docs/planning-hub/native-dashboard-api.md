@@ -2,9 +2,9 @@
 
 Date: 29 July 2026
 
-Status: dashboard read plus conflict-safe budget and table-plan writes are
-implemented and verified locally, but dormant. None of the routes is live. They return
-`503 connected_planning_disabled` before authentication unless
+Status: dashboard read, wedding-profile read/write and conflict-safe budget and
+table-plan writes are implemented and verified locally, but dormant. None of
+the routes is live. They return `503 connected_planning_disabled` before authentication unless
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true`.
 
 ## Dashboard read contract
@@ -66,7 +66,7 @@ and new server version:
 
 ## Authentication and authorization
 
-The endpoint accepts a Supabase Auth access token, not an API key. It:
+The API accepts a Supabase Auth access token, not an API key. It:
 
 1. rejects missing, malformed and oversized bearer values;
 2. verifies the token through `supabase.auth.getUser(token)`;
@@ -82,6 +82,43 @@ No service-role or secret key is read. The route does not accept a caller-
 supplied owner ID and never uses user metadata for authorization. An
 RLS-inaccessible or nonexistent workspace produces the same generic
 `404 workspace_unavailable` response.
+
+## Wedding-profile resource
+
+```http
+GET /api/planning/v1/workspaces/{workspaceId}/profile
+Authorization: Bearer {supabase-access-token}
+```
+
+```http
+PATCH /api/planning/v1/workspaces/{workspaceId}/profile
+Authorization: Bearer {supabase-access-token}
+Content-Type: application/json
+
+{
+  "schemaVersion": 1,
+  "expectedProfileUpdatedAt": "2026-07-29T12:00:00.000Z",
+  "profile": { "...": "the complete profile without a client timestamp" }
+}
+```
+
+The checked resource and request schemas are:
+
+- `contracts/planning-profile-resource.v1.schema.json`
+- `contracts/planning-profile-update-request.v1.schema.json`
+
+GET returns the full wedding profile or `null` when the caller can access a
+workspace that has not established one. PATCH uses `null` as the expected
+version only for first creation; existing profiles require the exact
+`profile.updatedAt` returned by GET. The route prechecks that version and then
+conditions the update on the same `updated_at`. A concurrent first insert or
+update produces `409 version_conflict`.
+
+The client cannot supply `updatedAt`, workspace ownership or any database
+identity field. PostgreSQL supplies the creation time and the existing update
+trigger supplies later versions. Both reads and writes use only the caller's
+publishable-key client, explicit authenticated grants and the existing
+owner/partner RLS policies. No migration or privileged function was added.
 
 ## Table-plan write contract
 
@@ -122,7 +159,7 @@ owner-only. This route adds no migration, grant or service-role path.
 | 400 | `invalid_request` | The PATCH JSON or its internal version relationship is invalid. |
 | 401 | `authentication_required` | A bearer token is missing, malformed, expired or rejected by Supabase Auth. |
 | 404 | `workspace_unavailable` | The caller cannot read the workspace, or it does not exist. |
-| 409 | `version_conflict` | The linked plan or its exact version changed before the conditional update. |
+| 409 | `version_conflict` | The targeted budget, table plan or profile version changed before the conditional write. |
 | 413 | `payload_too_large` | The PATCH request exceeds 1 MB. |
 | 415 | `unsupported_media_type` | The PATCH request is not JSON. |
 | 500 | `snapshot_unavailable` | Accessible records did not form a valid matched snapshot. |
@@ -158,6 +195,11 @@ Local tests cover:
 - partner table-plan success through the caller-bound RPC;
 - generic table-plan outsider denial;
 - table-plan stale-precheck and in-transaction race conflicts; and
+- strict profile resource and update-request schema drift;
+- accessible missing-profile reads without confusing them with outsider denial;
+- partner profile creation and exact-version replacement;
+- rejection of client timestamps and unknown profile fields;
+- first-insert collisions and post-read profile update races; and
 - the unchanged embedded PostgreSQL owner, partner, outsider and anonymous RLS
   scenarios.
 
@@ -183,6 +225,15 @@ X-EverAft-Contract: urn:everaft:planning-table-plan-update-success:v1
 A real owner/partner success still requires the gated full-stack verification
 below.
 
+The built profile GET independently returned:
+
+```text
+HTTP 503
+Cache-Control: private, no-store, max-age=0
+X-EverAft-Contract: urn:everaft:planning-profile-resource:v1
+{"error":"connected_planning_disabled"}
+```
+
 This proves the built route fails closed without contacting Supabase. A `200`
 response still requires the separately gated local full-stack Auth/Data API
 run described in `api-verification.md`.
@@ -199,9 +250,9 @@ X-EverAft-Contract: urn:everaft:planning-budget-update-success:v1
 ## Activation boundary
 
 Do not enable the routes in production merely because their code and database
-RLS tests pass. First run the prepared local Auth/Data API scenario, call all
-three routes with owner, partner, outsider and expired tokens, prove real stale
-budget and table-plan versions return 409 without changing data, and confirm
-successful responses against the checked JSON Schemas. Production activation,
-migration application and cloud-flag changes each still require explicit
-approval.
+RLS tests pass. First run the prepared local Auth/Data API scenario, call the
+dashboard, budget, table-plan and profile resources with owner, partner,
+outsider and expired tokens, prove real stale budget, table-plan and profile
+versions return 409 without changing data, and confirm successful responses
+against the checked JSON Schemas. Production activation, migration application
+and cloud-flag changes each still require explicit approval.
