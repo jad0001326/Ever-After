@@ -2,10 +2,31 @@
 
 Date: 29 July 2026
 
-Status: dashboard read, wedding-profile and task management, plus conflict-safe
-budget and table-plan writes are implemented and verified locally, but dormant.
+Status: workspace discovery, dashboard, wedding-profile, task and table-plan
+reads plus conflict-safe resource writes are implemented and verified locally,
+but dormant.
 None of the routes is live. They return `503 connected_planning_disabled` before authentication unless
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true`.
+
+## Workspace discovery contract
+
+```http
+GET /api/planning/v1/workspaces?limit=25&offset=0
+Authorization: Bearer {supabase-access-token}
+```
+
+A successful response is the strict
+`urn:everaft:planning-workspace-collection:v1` contract checked in at
+`docs/planning-hub/contracts/planning-workspace-collection.v1.schema.json`.
+It returns at most 50 RLS-visible workspaces, ordered by most recently updated,
+with the caller's `owner` or `partner` role and bounded offset pagination.
+It does not expose the owner ID or any other workspace member.
+
+The adapter first queries the caller's RLS-visible workspace page, then reads
+membership rows constrained to both those workspace IDs and the authenticated
+user ID. A missing or duplicate caller membership fails closed instead of
+inferring a role from workspace ownership. Empty pages skip the membership
+query.
 
 ## Dashboard read contract
 
@@ -72,9 +93,9 @@ The API accepts a Supabase Auth access token, not an API key. It:
 2. verifies the token through `supabase.auth.getUser(token)`;
 3. creates one request-scoped client with the publishable key and that exact
    access token;
-4. performs every required workspace, profile, task, guest, table, seat, rule
-   and linked-budget query through that caller-bound client, while omitting
-   unused membership and invitation reads; and
+4. performs every required workspace, caller-membership, profile, task, guest,
+   table, seat, rule and linked-budget query through that caller-bound client,
+   while omitting unrelated member and invitation reads; and
 5. relies on the existing explicit grants and RLS policies for owner/partner
    access and outsider denial.
 

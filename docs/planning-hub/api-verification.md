@@ -23,6 +23,18 @@ PostgreSQL cannot emulate:
 
 After those direct Data API assertions pass, the same owner, partner, outsider
 and expired sessions must call
+`GET /api/planning/v1/workspaces`:
+
+- prove owner and partner receive the expected bounded collection and their
+  own role without owner IDs or other membership rows;
+- prove pagination and most-recently-updated ordering;
+- prove outsider and expired sessions receive an empty collection or
+  authentication denial as appropriate; and
+- validate successful responses against the checked workspace collection
+  schema.
+
+Then the same owner, partner, outsider
+and expired sessions must call
 `GET /api/planning/v1/workspaces/{workspaceId}/dashboard`. Owner and partner
 responses must validate against the checked v1 JSON Schema; outsider and
 expired tokens must receive the route's generic denial contract. See

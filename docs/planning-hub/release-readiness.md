@@ -28,7 +28,7 @@ a production deployment, migrate or enable cloud persistence.
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
-| Native-ready business logic | Twenty-five declared budget, recommendation, dashboard/update-contract, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. Strict JSON-safe facades, fourteen checked Draft 2020-12 schemas and dormant authenticated adapters expose dashboard/profile/task/full-table-plan reads plus conflict-safe profile, task, budget and atomic table-plan writes to future clients. | Complete current resource foundations proven locally |
+| Native-ready business logic | Twenty-six declared budget, recommendation, workspace-discovery, dashboard/update-contract, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. Strict JSON-safe facades, fifteen checked Draft 2020-12 schemas and dormant authenticated adapters expose workspace/dashboard/profile/task/full-table-plan reads plus conflict-safe profile, task, budget and atomic table-plan writes to future clients. | Complete current resource foundations proven locally |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
 | Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Chrome Event Timing measures four real keyboard interactions with a 24 ms slowest duration and fails above 200 ms. Real INP still requires post-release field traffic. | Target met in lab; awaiting field evidence |
@@ -86,7 +86,8 @@ they do not require rewriting or pushing it.
 | 41. Atomic native table-plan write | Add checked request/success schemas and a dormant PATCH route that preserves owner/partner access while using the existing transaction's lock and exact workspace-version check. | `f0ee532` | Dormant route and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 | 42. Native wedding-profile resource | Add checked nullable resource/update schemas plus dormant GET/PATCH handlers with server timestamps and two-stage profile-version concurrency. | `20e4708` | Caller-bound RLS reads/writes and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 | 43. Native task management | Add six checked contracts plus bounded list, stable-ID create, exact-version update and exact-version delete routes. | `3a5fad8` | Caller-bound workspace/task RLS operations and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
-| 44. Native table-plan read resource | Add a checked full resource and bounded narrow GET, returning the exact version consumed by the existing atomic PATCH. | Current local slice | Caller-bound RLS reads, validator hardening and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
+| 44. Native table-plan read resource | Add a checked full resource and bounded narrow GET, returning the exact version consumed by the existing atomic PATCH. | `f98f0d5` | Caller-bound RLS reads, validator hardening and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
+| 45. Native workspace discovery | Add a checked bounded collection that lets authenticated clients discover their RLS-visible workspaces and caller role without exposing other members. | Current local slice | Caller-bound RLS reads and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -190,7 +191,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 88 Vitest files and 440 tests pass.
+- 91 Vitest files and 452 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -211,7 +212,7 @@ Use the least destructive rollback that restores safety:
   contract has focused regression coverage. The optimized browser matrix also
   confirms the computed body font resolves to the local system stack on
   Planning Hub and both public planners at mobile and desktop sizes.
-- The portable-domain gate reads 25 declared modules and rejects React/Next
+- The portable-domain gate reads 26 declared modules and rejects React/Next
   imports, client/server directives, browser globals and storage, URL
   construction, Node environment access, Supabase clients and web adapters.
   The recommendation engine now returns stable platform-neutral targets; the

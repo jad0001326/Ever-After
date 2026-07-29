@@ -56,6 +56,42 @@ export async function resolvePlanningApiRequest(
     } as const;
   }
 
+  const authentication = await resolvePlanningApiAuthenticationAfterGate(
+    request,
+    contractId,
+  );
+  if (!authentication.ok) return authentication;
+
+  return {
+    ok: true,
+    workspaceId: workspaceId.data,
+    supabase: authentication.supabase,
+    user: authentication.user,
+  } as const;
+}
+
+export async function resolvePlanningApiAuthentication(
+  request: Request,
+  contractId: string,
+) {
+  if (process.env.PLANNING_WORKSPACE_CLOUD_ENABLED !== "true") {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        503,
+        "connected_planning_disabled",
+      ),
+    } as const;
+  }
+
+  return resolvePlanningApiAuthenticationAfterGate(request, contractId);
+}
+
+async function resolvePlanningApiAuthenticationAfterGate(
+  request: Request,
+  contractId: string,
+) {
   const authentication = await authenticatePlanningApiRequest(request);
   if (!authentication.ok) {
     if (
@@ -84,7 +120,6 @@ export async function resolvePlanningApiRequest(
 
   return {
     ok: true,
-    workspaceId: workspaceId.data,
     supabase: authentication.supabase,
     user: authentication.user,
   } as const;

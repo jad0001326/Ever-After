@@ -185,7 +185,7 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Twenty-five
+The future native-client claim is now enforced rather than inferred. Twenty-six
 declared modules contain the shared budget, planning-state, supplier-context,
 recommendation, dashboard/update-contract, profile, task, guest, seating and
 validation rules. The
@@ -213,11 +213,19 @@ language-neutral Draft 2020-12 schema is checked in at
 the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 `npm run planning-contract:check` to fail on schema drift or
 `npm run planning-contract:write` after an intentional versioned contract
-change. The generator maintains fourteen schemas: the dashboard snapshot,
-table-plan read resource, budget and table-plan request/success pairs, profile
-resource/update request, and six task collection/mutation contracts.
+change. The generator maintains fifteen schemas: workspace discovery, the
+dashboard snapshot, table-plan read resource, budget and table-plan
+request/success pairs, profile resource/update request, and six task
+collection/mutation contracts.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
+
+The dormant `GET /api/planning/v1/workspaces` route gives a native client its
+authenticated starting point without requiring a pre-known workspace ID. It
+returns a bounded, most-recently-updated page and the caller's role. Workspace
+RLS limits the first query; the second query is explicitly constrained to the
+authenticated user's membership rows, so an owner never receives partner
+identity data through this collection.
 
 The dormant
 `GET /api/planning/v1/workspaces/{workspaceId}/dashboard` route is the first

@@ -22,8 +22,15 @@ import {
   planningTaskResourceJsonSchema,
   planningTaskUpdateRequestJsonSchema,
 } from "../src/lib/planning-workspace/task-api-schema.ts";
+import {
+  planningWorkspaceCollectionJsonSchema,
+} from "../src/lib/planning-workspace/workspace-api-schema.ts";
 
 const contracts = [
+  {
+    file: "planning-workspace-collection.v1.schema.json",
+    schema: planningWorkspaceCollectionJsonSchema,
+  },
   {
     file: "planning-dashboard-snapshot.v1.schema.json",
     schema: planningDashboardSnapshotJsonSchema,

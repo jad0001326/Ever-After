@@ -161,7 +161,11 @@ describe("Planning Budget API", () => {
       savedAt: "2026-07-29T12:00:00.001Z",
     });
 
-    const response = await PATCH(validRequest(), routeContext());
+    const response = await PATCH(request({
+      schemaVersion: 1,
+      expectedBudgetUpdatedAt: updatedAt,
+      plan,
+    }), routeContext());
     const body = await response.json();
 
     expect(response.status).toBe(200);
