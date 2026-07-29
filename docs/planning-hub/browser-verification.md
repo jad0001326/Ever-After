@@ -54,6 +54,20 @@ used only to establish the starting control for each independent assertion;
 activation, sequential focus movement and navigation are performed by the
 browser.
 
+Finally, the gate reads Chrome's full accessibility tree rather than inferring
+screen-reader behavior from DOM attributes. It proves:
+
+- exactly one banner and one main landmark on Venue and Photography;
+- named primary/stage/result navigation plus named filter, result and
+  connected-plan landmarks;
+- the expected H1, H2 and selected-venue H3 levels;
+- chosen, Compare and manual-disclosure pressed/expanded state;
+- the on-demand detail region and Close control names;
+- the remaining budget and transported venue/date/budget as accessible text;
+- meaningful result control, return-link and next-stage link names;
+- the same exact Photography query context without a false manual catalogue
+  venue ID.
+
 For each viewport it proves:
 
 - the stable milestone content for that surface renders, including the exact

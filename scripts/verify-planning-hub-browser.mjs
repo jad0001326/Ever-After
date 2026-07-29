@@ -247,6 +247,13 @@ try {
     journey,
     runtimeErrors,
   });
+  activeScenario = "venue-screen-reader-mobile";
+  runtimeErrors.length = 0;
+  await verifyVenueAccessibilityTree({
+    client,
+    journey,
+    runtimeErrors,
+  });
   activeScenario = "venue-keyboard-mobile";
   runtimeErrors.length = 0;
   await verifyVenueKeyboardJourney({
@@ -254,11 +261,18 @@ try {
     journey,
     runtimeErrors,
   });
+  activeScenario = "photography-screen-reader-mobile";
+  runtimeErrors.length = 0;
+  await verifyPhotographyAccessibilityTree({
+    client,
+    journey,
+    runtimeErrors,
+  });
 
   client.close();
   console.log(journeyOnly
-    ? "Planning Hub browser verification passed the mobile venue-to-photography and keyboard journeys in interaction-only mode with no overflow, browser errors or axe findings."
-    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile venue-to-photography and keyboard journeys with no overflow, browser errors or axe findings.`);
+    ? "Planning Hub browser verification passed the mobile state, keyboard and screen-reader journeys in interaction-only mode with no overflow, browser errors or accessibility findings."
+    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile state, keyboard and screen-reader journeys with no overflow, browser errors or accessibility findings.`);
 } catch (error) {
   if (browserDiagnostics.trim()) {
     console.error(browserDiagnostics.trim());
@@ -554,6 +568,17 @@ async function verifyVenueKeyboardJourney({
       && document.activeElement?.id === "venue-detail"`,
     "Enter to open venue details and transfer focus",
   );
+  const detailAccessibility = await getAccessibilitySnapshot(client);
+  assertAccessibilityNode(detailAccessibility, {
+    label: "opened venue detail region",
+    name: `${firstVenueName} details`,
+    role: "region",
+  });
+  assertAccessibilityNode(detailAccessibility, {
+    label: "venue detail close control",
+    name: "Close venue details",
+    role: "button",
+  });
 
   await pressKey(client, "Tab");
   await waitForCondition(
@@ -607,6 +632,24 @@ async function verifyVenueKeyboardJourney({
     `document.activeElement?.matches('details#manual-venue input[name="name"]')`,
     "Tab to enter the expanded manual venue form",
   );
+  const expandedAccessibility = await getAccessibilitySnapshot(client);
+  assertAccessibilityNode(expandedAccessibility, {
+    label: "pressed comparison state",
+    name: "Compare",
+    properties: { pressed: "true" },
+    role: "button",
+  });
+  assertAccessibilityNode(expandedAccessibility, {
+    label: "expanded manual venue disclosure",
+    name: "Venue not listed?",
+    properties: { expanded: true },
+    role: "DisclosureTriangle",
+  });
+  assertAccessibilityNode(expandedAccessibility, {
+    label: "manual venue name field",
+    name: "Venue name",
+    role: "textbox",
+  });
 
   const recommendationFocused = await focusLinkByText(
     client,
@@ -631,6 +674,164 @@ async function verifyVenueKeyboardJourney({
 
   console.log(
     "venue-keyboard-mobile: Enter opened detail, Tab reached Close, Enter restored View focus, Space compared, Enter expanded manual entry, Tab reached its first field and Enter followed Photography.",
+  );
+}
+
+async function verifyVenueAccessibilityTree({
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  const nodes = await getAccessibilitySnapshot(client);
+  assert.equal(
+    nodes.filter((node) => node.role === "banner").length,
+    1,
+    "The Venue page must expose exactly one banner landmark.",
+  );
+  assert.equal(
+    nodes.filter((node) => node.role === "main").length,
+    1,
+    "The Venue page must expose exactly one main landmark.",
+  );
+  for (const landmark of [
+    { name: "Primary navigation", role: "navigation" },
+    { name: "Planning stages", role: "navigation" },
+    { name: "Venue result pages", role: "navigation" },
+    { name: "Venue filters", role: "complementary" },
+    { name: "Connected wedding plan", role: "complementary" },
+    { name: "Matching wedding venues", role: "region" },
+  ]) {
+    assertAccessibilityNode(nodes, {
+      ...landmark,
+      label: `${landmark.name} landmark`,
+    });
+  }
+  for (const heading of [
+    { level: 1, name: "Turn venue browsing into your wedding plan." },
+    { level: 2, name: "Matching wedding venues" },
+    { level: 2, name: "Budget at a glance" },
+    { level: 3, name: journeyConfig.manualVenueName },
+  ]) {
+    assertAccessibilityNode(nodes, {
+      label: `${heading.name} heading`,
+      name: heading.name,
+      properties: { level: heading.level },
+      role: "heading",
+    });
+  }
+  assertAccessibilityNode(nodes, {
+    label: "chosen venue pressed state",
+    name: "This is your chosen venue",
+    properties: { pressed: "true" },
+    role: "button",
+  });
+  assertAccessibilityNode(nodes, {
+    label: "collapsed manual venue disclosure",
+    name: "Venue not listed?",
+    properties: { expanded: false },
+    role: "DisclosureTriangle",
+  });
+  assertAccessibilityNode(nodes, {
+    label: "remaining budget text",
+    name: "£25,000",
+    role: "StaticText",
+  });
+  const nextStage = assertAccessibilityNode(nodes, {
+    label: "Photography recommendation link",
+    nameIncludes: "Next: choose your photographer",
+    role: "link",
+  });
+  const nextUrl = new URL(nextStage.properties.url);
+  assert.equal(nextUrl.searchParams.get("remainingPence"), "2500000");
+  assert.equal(nextUrl.searchParams.get("venueName"), journeyConfig.manualVenueName);
+  assert.equal(nextUrl.searchParams.get("planDate"), journeyConfig.weddingDate);
+  assert.equal(nextUrl.searchParams.get("planLocation"), journeyConfig.location);
+  assert.equal(nextUrl.searchParams.has("venue"), false);
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `venue-screen-reader-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+  console.log(
+    "venue-screen-reader-mobile: unique banner/main, named navigation, filters, results and plan landmarks, heading levels, chosen/collapsed states, remaining budget and next-stage link passed.",
+  );
+}
+
+async function verifyPhotographyAccessibilityTree({
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  const nodes = await getAccessibilitySnapshot(client);
+  assert.equal(
+    nodes.filter((node) => node.role === "banner").length,
+    1,
+    "The Photography page must expose exactly one banner landmark.",
+  );
+  assert.equal(
+    nodes.filter((node) => node.role === "main").length,
+    1,
+    "The Photography page must expose exactly one main landmark.",
+  );
+  for (const landmark of [
+    { name: "Primary navigation", role: "navigation" },
+    { name: "Planning stages", role: "navigation" },
+    { name: "Photographer result pages", role: "navigation" },
+    { name: "Photography filters", role: "complementary" },
+    { name: "Connected wedding plan", role: "complementary" },
+    { name: "Matching wedding photographers", role: "region" },
+  ]) {
+    assertAccessibilityNode(nodes, {
+      ...landmark,
+      label: `${landmark.name} landmark`,
+    });
+  }
+  for (const heading of [
+    { level: 1, name: "Choose photography that fits your real plan." },
+    { level: 2, name: "Photographers for your plan" },
+    { level: 2, name: "Budget at a glance" },
+  ]) {
+    assertAccessibilityNode(nodes, {
+      label: `${heading.name} heading`,
+      name: heading.name,
+      properties: { level: heading.level },
+      role: "heading",
+    });
+  }
+  for (const accessibleText of [
+    `Venue: ${journeyConfig.manualVenueName}`,
+    "Date: 12 Jun 2027",
+    "£25,000",
+  ]) {
+    assertAccessibilityNode(nodes, {
+      label: `${accessibleText} transported plan context`,
+      name: accessibleText,
+      role: "StaticText",
+    });
+  }
+  assertAccessibilityNode(nodes, {
+    label: "photographer comparison control",
+    name: "Compare",
+    properties: { pressed: "false" },
+    role: "button",
+  });
+  assertAccessibilityNode(nodes, {
+    label: "photographer planning control",
+    name: "View & plan",
+    role: "button",
+  });
+  assertAccessibilityNode(nodes, {
+    label: "return-to-venue link",
+    name: "Review venue and wedding basics",
+    role: "link",
+  });
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `photography-screen-reader-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+  console.log(
+    "photography-screen-reader-mobile: unique banner/main, named navigation, filters, results and plan landmarks, heading levels, venue/date/budget context and result controls passed.",
   );
 }
 
@@ -677,6 +878,51 @@ async function assertHealthyPage({
   assert.deepEqual(axe.violations, [], `${name} has axe violations: ${JSON.stringify(axe.violations)}`);
   assert.deepEqual(axe.incomplete, [], `${name} has indeterminate axe checks: ${JSON.stringify(axe.incomplete)}`);
   assert.deepEqual(runtimeErrors, [], `${name} emitted browser errors: ${JSON.stringify(runtimeErrors)}`);
+}
+
+async function getAccessibilitySnapshot(client) {
+  await client.send("Accessibility.enable");
+  const { nodes } = await client.send("Accessibility.getFullAXTree");
+  return nodes
+    .filter((node) => !node.ignored)
+    .map((node) => ({
+      name: node.name?.value ?? "",
+      properties: Object.fromEntries(
+        (node.properties ?? []).map((property) => [
+          property.name,
+          property.value?.value,
+        ]),
+      ),
+      role: node.role?.value ?? "",
+    }));
+}
+
+function assertAccessibilityNode(nodes, {
+  label,
+  name,
+  nameIncludes,
+  properties = {},
+  role,
+}) {
+  const matches = nodes.filter((node) => (
+    node.role === role
+      && (name === undefined || node.name === name)
+      && (nameIncludes === undefined || node.name.includes(nameIncludes))
+      && Object.entries(properties).every(([property, value]) => (
+        node.properties[property] === value
+      ))
+  ));
+  assert(
+    matches.length > 0,
+    `${label} is missing from the accessibility tree.`
+    + ` Available ${role} nodes: ${JSON.stringify(
+      nodes
+        .filter((node) => node.role === role)
+        .map((node) => ({ name: node.name, properties: node.properties }))
+        .slice(0, 20),
+    )}`,
+  );
+  return matches[0];
 }
 
 async function clickFirstVenueAction(client, text) {

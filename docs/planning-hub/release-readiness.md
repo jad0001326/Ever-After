@@ -30,7 +30,7 @@ deploy, migrate or enable cloud persistence.
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
 | Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Real INP requires post-release field traffic. | Awaiting field evidence |
-| Keyboard and screen reader access | Semantic landmarks, labelled status regions, pressed/expanded states and focus return are present. The repeatable 390 x 844 gate uses native Enter, Space and Tab input for detail focus, close-and-return, comparison, manual entry and the Photography handoff; axe remains clear. | Proven locally |
+| Keyboard and screen reader access | The repeatable 390 x 844 gate uses native Enter, Space and Tab input for detail focus, close-and-return, comparison, manual entry and the Photography handoff. Chrome's full accessibility tree proves unique banner/main landmarks, named navigation/filter/result/plan landmarks, heading levels, state properties and transported context; axe remains clear. | Proven locally |
 | User-record security | Ten user-owned tables have RLS, explicit grants, owner/member predicates and anonymous denial. The eight-migration sequence passes the embedded PostgreSQL scenario, including denial of partner access to unlinked owner budgets and workspace budget relinking. | Database boundary proven |
 
 ## Stacked review sequence
@@ -70,7 +70,8 @@ they do not require rewriting or pushing it.
 | 27. Whole-milestone browser matrix | Extend the reproducible gate across Venue, Photography, Organise and both public planners at small-iPhone and desktop release sizes. | `27c48ee` | Read-only local browser verification only; catalogue access remains read-only and every scenario uses a disposable browser profile. |
 | 28. Venue-to-Photography interaction gate | Prove the signed-out favourite guard, comparison, on-demand detail, manual booked venue, exact remaining-budget handoff and device restore. | `7522107` | Local interaction verification only; no favourite or planning mutation reaches Supabase. |
 | 29. Venue performance recertification | Re-measure the complete optimized Venue step after the assembled milestone and retain trace-based evidence. | `2be9c73` | Read-only local Lighthouse evidence; no application change is justified while every objective target passes. |
-| 30. Native keyboard journey | Add real Enter, Space and Tab coverage for venue detail focus, close-and-return, comparison, manual entry and the Photography recommendation. | Current working slice | Local browser verification only; programmatic focus establishes each starting control but never substitutes for activation or sequential navigation. |
+| 30. Native keyboard journey | Add real Enter, Space and Tab coverage for venue detail focus, close-and-return, comparison, manual entry and the Photography recommendation. | `ee105f3` | Local browser verification only; programmatic focus establishes each starting control but never substitutes for activation or sequential navigation. |
+| 31. Screen-reader tree contract | Assert Chrome's rendered accessibility tree for Venue, the interactive detail/compare/manual states and transported Photography context. | Current working slice | Local browser accessibility inspection only; no application change is justified while the rendered semantic contract passes. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -249,6 +250,11 @@ Use the least destructive rollback that restores safety:
   and restores the exact `View` trigger, Space toggles Compare, Enter expands
   manual venue entry, Tab reaches its first field, and Enter follows the
   Photography recommendation with the exact remaining plan context.
+- Chrome's full accessibility tree then proves one banner and one main,
+  named primary/stage/result navigation, named filter/result/connected-plan
+  landmarks, correct H1/H2/H3 levels, chosen/Compare/disclosure states, the
+  detail region and Close control, and accessible venue/date/£25,000 context
+  after the Photography handoff.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

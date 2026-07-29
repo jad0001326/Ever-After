@@ -113,6 +113,10 @@ its public profile route and category-specific browser verification before its
   prove venue detail focus transfer, keyboard-reachable Close, exact trigger
   focus restoration, Compare pressed state, manual-entry disclosure and field
   order, and keyboard navigation to the plan-aware Photography stage.
+- Chrome's full rendered accessibility tree proves unique banner/main
+  landmarks, named primary/stage/result navigation, named filter/result/plan
+  landmarks, correct heading levels, detail and control names, pressed and
+  expanded state, and the exact venue/date/£25,000 Photography context.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;
