@@ -2,13 +2,15 @@
 
 Date: 29 July 2026
 
-Status: locally complete as a connected, local-first beta; production release
-and connected partner sharing remain gated.
+Status: locally complete as a connected, local-first beta and published for
+review in draft pull request #55; production release and connected partner
+sharing remain gated.
 
 This record maps the original objective to current evidence and defines a
-reviewable release sequence for the local commits on
-`codex/planning-hub-venue-slice`. It is a release plan, not permission to push,
-deploy, migrate or enable cloud persistence.
+reviewable release sequence for the commits on
+`codex/planning-hub-venue-slice`. The user approved pushing that branch and
+opening draft pull request #55. This record is not permission to merge, create
+a production deployment, migrate or enable cloud persistence.
 
 ## Requirement evidence
 
@@ -111,8 +113,9 @@ public tables to
    - verify the production dependency audit remains clear;
    - keep the cloud flag absent.
 2. **Code review**
-   - obtain approval before pushing or creating stacked pull requests;
-   - review each boundary above in order;
+   - review draft pull request #55 and each boundary above in order;
+   - keep the pull request in draft until the intended production scope is
+     agreed;
    - merge no migration automatically.
 3. **Free Supabase boundary verification**
    - run `npm run planning-api:prepare-local` to generate the reproducible
@@ -171,8 +174,9 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Push, pull-request creation, migration, deployment and production writes all
-  require explicit approval.
+- The branch push and draft pull request were explicitly approved and are now
+  complete. Merge, production deployment, migration and production writes
+  still require separate explicit approval.
 
 ## Final local release-candidate evidence
 
@@ -303,5 +307,8 @@ discovery attempts, so the already permitted loopback-only Chrome DevTools
 verifier supplied the rendered interaction, accessibility, computed-style and
 screenshot evidence.
 
-No paid resource, cloud branch, deployment, migration or production write was
-used to create this release record.
+No paid resource, cloud branch, migration, production write or production
+deployment was used to create this release record. The approved branch push
+created draft pull request #55. The repository's existing Vercel Git integration
+then created an authentication-protected preview automatically; the production
+domain was not changed.

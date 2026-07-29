@@ -2,8 +2,9 @@
 
 Date: 29 July 2026
 
-Status: the local beta now covers the connected planning journey. Production
-release and secure cloud sharing remain deliberately gated.
+Status: the local beta now covers the connected planning journey and is under
+review in draft pull request #55. Production release and secure cloud sharing
+remain deliberately gated.
 
 ## Delivered locally
 
@@ -46,7 +47,7 @@ its public profile route and category-specific browser verification before its
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; native keyboard, Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Not authorised | No push, pull request, hosted migration, deployment or production write has been approved. |
+| Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Future-compatible architecture only | Shared domain logic and backend contracts are reusable, but native clients and physical-device QA are outside this web milestone. |
 
 ## Remaining release gates
@@ -55,15 +56,15 @@ its public profile route and category-specific browser verification before its
    Data API with the guarded `npm run test:planning-api` harness in a free local
    stack or approved disposable environment. The database-level owner, partner,
    outsider and anonymous cases now pass.
-2. Review the accumulated local commits as a release series and choose the
-   production scope.
+2. Review draft pull request #55 and its accumulated release boundaries, then
+   choose the production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
    Chrome verification is already passing.
 4. Keep the development-only ESLint dependency advisory under review. The
    production dependency audit is now clear; forcing npm's suggested fix would
    incorrectly downgrade the Next.js ESLint configuration.
-5. Obtain explicit approval before any push, pull request, migration,
-   deployment, production write or rollback.
+5. Obtain separate explicit approval before merging, creating a production
+   deployment, applying a migration, changing production data or rolling back.
 6. After an approved release, collect field Core Web Vitals, especially INP,
    because Lighthouse cannot provide a representative field INP measurement.
 
@@ -173,5 +174,8 @@ its public profile route and category-specific browser verification before its
   server-rendered hero heading; the route chunk is about 8.5KiB and the median
   full transfer is about 288KiB.
 
-No production data, hosted Supabase migration, cloud branch, deployment or paid
-action was used.
+No production data, hosted Supabase migration, cloud branch, paid action or
+production deployment was used. The approved branch push created draft pull
+request #55, and the repository's existing Vercel Git integration automatically
+created an authentication-protected preview. The production domain was not
+changed.
