@@ -31,7 +31,7 @@ export function PlanningHubSupplierResults({
 }) {
   const planItemsBySupplier = new Map(
     plan.items
-      .filter((item) => item.categoryId === category.budgetCategoryId && item.supplierType === category.label && item.listingId)
+      .filter((item) => item.categoryId === category.budgetCategoryId && item.supplierType === category.label && item.bookingStatus !== "cancelled" && item.listingId)
       .map((item) => [item.listingId!, item]),
   );
   const route = `/planning-hub/suppliers/${category.slug}`;

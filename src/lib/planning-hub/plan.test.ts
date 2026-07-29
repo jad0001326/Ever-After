@@ -12,6 +12,7 @@ import {
   findPlanningHubVenueItem,
   getPhotographyNextHref,
   getPlanningHubItemAvailability,
+  removePlanningHubItem,
   updatePlanningHubItemAvailability,
   updatePlanningHubItemInstallments,
   updatePlanningHubPhotographerPayment,
@@ -81,6 +82,90 @@ describe("Planning Hub plan", () => {
 
     const selected = choosePlanningHubVenue(shortlisted, venue.id);
     expect(selected.selectedVenueId).toBe(venue.id);
+  });
+
+  it("removes a selected venue from active planning without losing its history", () => {
+    const booked = upsertPlanningHubVenue(
+      createPlanningHubStarterPlan("user-1"),
+      venue,
+      700_000,
+      "booked",
+    );
+    const withPayments = updatePlanningHubItemInstallments(
+      choosePlanningHubVenue(booked, venue.id),
+      booked.items[0].id,
+      [{
+        id: "deposit",
+        kind: "deposit",
+        label: "Deposit",
+        amountPence: 100_000,
+        paidPence: 100_000,
+        dueDate: "2026-08-01",
+        paidAt: "2026-07-20",
+      }],
+    );
+    const removed = removePlanningHubItem(withPayments, withPayments.items[0].id);
+
+    expect(removed.selectedVenueId).toBeNull();
+    expect(removed.items[0]).toMatchObject({
+      bookingStatus: "cancelled",
+      costStatus: "cancelled",
+      totalPaidPence: 100_000,
+      installments: [{ id: "deposit" }],
+    });
+    expect(findPlanningHubVenueItem(removed, venue.id)).toBeNull();
+    expect(calculatePlanningHubPlan(removed)).toMatchObject({
+      plannedPence: 0,
+      committedPence: 0,
+      paidPence: 0,
+      remainingPence: 2_000_000,
+      activeItemCount: 0,
+    });
+  });
+
+  it("removes a supplier without clearing an unrelated selected venue and can reactivate it", () => {
+    const withVenue = choosePlanningHubVenue(
+      upsertPlanningHubVenue(createPlanningHubStarterPlan(null), venue, 650_000, "shortlisted"),
+      venue.id,
+    );
+    const withSupplier = upsertPlanningHubSupplier(
+      withVenue,
+      videographer,
+      210_000,
+      "quoted",
+    );
+    const removed = removePlanningHubItem(withSupplier, withSupplier.items[1].id);
+
+    expect(removed.selectedVenueId).toBe(venue.id);
+    expect(findPlanningHubSupplierItem(removed, "videographer", videographer.id)).toBeNull();
+
+    const reactivated = upsertPlanningHubSupplier(
+      removed,
+      videographer,
+      220_000,
+      "shortlisted",
+    );
+    expect(reactivated.items).toHaveLength(2);
+    expect(findPlanningHubSupplierItem(reactivated, "videographer", videographer.id))
+      .toMatchObject({
+        id: withSupplier.items[1].id,
+        bookingStatus: "shortlisted",
+        costStatus: "estimated",
+        estimatedCostPence: 220_000,
+      });
+  });
+
+  it("does not rewrite a plan when the item is absent or already removed", () => {
+    const plan = upsertPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      venue,
+      650_000,
+      "shortlisted",
+    );
+    const removed = removePlanningHubItem(plan, plan.items[0].id);
+
+    expect(removePlanningHubItem(plan, "missing-item")).toBe(plan);
+    expect(removePlanningHubItem(removed, removed.items[0].id)).toBe(removed);
   });
 
   it("moves a quoted venue into committed spend only when booked", () => {

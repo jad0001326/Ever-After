@@ -113,6 +113,15 @@ against production.
 
 Photography now continues inside the same beta workspace. Its architecture, verification evidence and rollback plan are recorded in `docs/planning-hub/photography-phase.md`.
 
+## Selection lifecycle continuation
+
+The current venue panel now exposes inline confirmed removal. The shared plan
+mutation marks the item inactive rather than erasing its history, clears
+`selectedVenueId` when it references either the catalogue listing or manual
+item, and immediately removes the venue from budget totals, deadlines and the
+shortlist. A catalogue venue returns to the unplanned card state and can be
+added again through the existing upsert path without a duplicate.
+
 ## Rollback
 
 The route is isolated and unlinked. Application rollback is therefore:

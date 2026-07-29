@@ -130,6 +130,15 @@ categories. They remain available for manual planning only.
 - manual-only supplier stages make no catalogue request and render without
   browser errors.
 
+## Selection lifecycle continuation
+
+Every category-neutral supplier stage now shares an inline confirmed removal.
+The underlying budget item is retained as cancelled for history, but is absent
+from active totals, deadlines, recommendations, shortlists and catalogue-card
+status. Re-adding the same published listing reactivates the existing record
+instead of appending a duplicate. This uses only versioned plan JSON and the
+existing persistence boundary.
+
 ## Rollback
 
 The shared supplier data layer still preserves the Photography interface.

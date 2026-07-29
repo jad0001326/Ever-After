@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, CreditCard, Plus, Save } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
@@ -14,6 +14,7 @@ import type {
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
 import { PlanningHubAvailability } from "./planning-hub-availability";
+import { PlanningHubItemRemoval } from "./planning-hub-item-removal";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 
 export function PlanningHubSupplierPlanPanel({
@@ -22,6 +23,7 @@ export function PlanningHubSupplierPlanPanel({
   manualOnly = false,
   onAvailabilityChange,
   onInstallmentsSave,
+  onItemRemove,
   onManualSupplier,
   onPlanSave,
   onPlanningCostChange,
@@ -41,6 +43,7 @@ export function PlanningHubSupplierPlanPanel({
   manualOnly?: boolean;
   onAvailabilityChange: (status: AvailabilityStatus) => void;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
+  onItemRemove: () => void;
   onManualSupplier: (name: string, costPence: number, status: PlanningHubItemStatus) => void;
   onPlanSave: () => void;
   onPlanningCostChange: (pence: number) => void;
@@ -56,6 +59,7 @@ export function PlanningHubSupplierPlanPanel({
   today: string;
 }) {
   const [manualSupplierOpen, setManualSupplierOpen] = useState(manualOnly);
+  const currentHeadingRef = useRef<HTMLHeadingElement>(null);
   const budget = calculatePlanningHubPlan(plan);
   const supplierItems = plan.items.filter((item) => (
     item.categoryId === category.budgetCategoryId
@@ -73,6 +77,11 @@ export function PlanningHubSupplierPlanPanel({
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
   }, [manualId]);
+
+  function removeCurrentItem() {
+    onItemRemove();
+    requestAnimationFrame(() => currentHeadingRef.current?.focus());
+  }
 
   return (
     <aside aria-label="Connected wedding plan" className="self-start rounded-3xl border border-[#cfc3b3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -97,7 +106,7 @@ export function PlanningHubSupplierPlanPanel({
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-supplier-planning" id="current-supplier-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current {category.label.toLowerCase()}</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedSupplier?.name ?? selectedItem?.itemName ?? (manualOnly ? `Add a ${category.label.toLowerCase()} to your plan` : `Open a ${category.label.toLowerCase()} to plan them`)}</h3>
+        <h3 className="focus-ring mt-2 rounded font-display text-2xl font-semibold text-[#173526]" ref={currentHeadingRef} tabIndex={-1}>{selectedSupplier?.name ?? selectedItem?.itemName ?? (manualOnly ? `Add a ${category.label.toLowerCase()} to your plan` : `Open a ${category.label.toLowerCase()} to plan them`)}</h3>
         {selectedSupplier ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -126,6 +135,16 @@ export function PlanningHubSupplierPlanPanel({
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">{manualOnly ? `Enter the ${category.label.toLowerCase()} you found elsewhere below. EverAft will not search an inactive catalogue.` : "Use “View & plan” on a result to keep researching without leaving your workspace."}</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
+
+      {selectedItem ? (
+        <PlanningHubItemRemoval
+          disabled={saveState === "saving"}
+          itemKind={category.label.toLowerCase()}
+          itemName={selectedItem.itemName}
+          key={selectedItem.id}
+          onRemove={removeCurrentItem}
+        />
+      ) : null}
 
       {selectedItem ? (
         <PlanningHubAvailability

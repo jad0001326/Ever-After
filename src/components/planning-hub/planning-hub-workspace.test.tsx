@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BudgetPlan } from "@/lib/budget/types";
-import { addManualPlanningHubVenue, choosePlanningHubVenue, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import { addManualPlanningHubVenue, choosePlanningHubVenue, createPlanningHubStarterPlan, upsertPlanningHubVenue } from "@/lib/planning-hub/plan";
 import type { PlanningHubSearchParams, PlanningHubVenue, PlanningHubVenueDetail, PlanningHubVenueResults } from "@/lib/planning-hub/types";
 import { PlanningHubWorkspace } from "./planning-hub-workspace";
 
 const loadVenueDetail = vi.fn();
+const saveConnectedBudgetPlan = vi.fn();
 
 vi.mock("@/app/actions/budget", () => ({
   saveBudgetPlan: vi.fn(async () => ({ ok: true }))
@@ -17,6 +18,10 @@ vi.mock("@/app/actions/favourites", () => ({
 
 vi.mock("@/app/actions/planning-hub", () => ({
   loadPlanningHubVenueDetailAction: (...args: unknown[]) => loadVenueDetail(...args)
+}));
+
+vi.mock("@/app/actions/planning-workspace", () => ({
+  saveConnectedBudgetPlanAction: (...args: unknown[]) => saveConnectedBudgetPlan(...args),
 }));
 
 vi.mock("next/image", () => ({
@@ -81,6 +86,8 @@ describe("PlanningHubWorkspace", () => {
     window.localStorage.clear();
     loadVenueDetail.mockReset();
     loadVenueDetail.mockResolvedValue(detail);
+    saveConnectedBudgetPlan.mockReset();
+    saveConnectedBudgetPlan.mockResolvedValue({ ok: true });
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       callback(0);
       return 1;
@@ -174,12 +181,65 @@ describe("PlanningHubWorkspace", () => {
     expect(screen.getByRole("link", { name: /Next: choose your photographer/i }).getAttribute("href"))
       .toContain("workspace=60000000-0000-4000-8000-000000000006");
   });
+
+  it("confirms venue removal, clears the chosen venue and allows it to be added again", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Add venue to plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose as main venue" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove from plan" }));
+    expect(screen.getByRole("group", { name: /Remove Venue One from your plan/i })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Keep in plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep in plan" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Remove from plan" }));
+    expect(screen.getByRole("button", { name: "This is your chosen venue" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove from plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove from plan" }));
+
+    const heading = within(screen.getByTestId("current-venue-planning"))
+      .getByRole("heading", { name: "Venue One" });
+    expect(screen.getByRole("button", { name: "Add venue to plan" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "This is your chosen venue" })).toBeNull();
+    expect(screen.queryByText("Venue shortlist")).toBeNull();
+    expect(screen.queryByText("cancelled")).toBeNull();
+    expect(screen.getByRole("status").textContent).toMatch(/removed from your plan/i);
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+
+  it("saves connected venue removal through the existing protected plan boundary", async () => {
+    const planned = upsertPlanningHubVenue(
+      createPlanningHubStarterPlan("user-1"),
+      venues[0],
+      650_000,
+      "booked",
+    );
+    const selected = choosePlanningHubVenue(planned, venues[0].id);
+    renderWorkspace(
+      selected,
+      "60000000-0000-4000-8000-000000000006",
+      {},
+      "user-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove from plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove from plan" }));
+
+    await waitFor(() => expect(saveConnectedBudgetPlan).toHaveBeenCalledOnce());
+    const [, savedPlan] = saveConnectedBudgetPlan.mock.calls[0] as [string, BudgetPlan];
+    expect(savedPlan.selectedVenueId).toBeNull();
+    expect(savedPlan.items[0]).toMatchObject({
+      bookingStatus: "cancelled",
+      costStatus: "cancelled",
+    });
+  });
 });
 
 function renderWorkspace(
   initialPlan: BudgetPlan = createPlanningHubStarterPlan(null),
   connectedWorkspaceId: string | null = null,
   searchParams: PlanningHubSearchParams = {},
+  userId: string | null = null,
 ) {
   return render(
     <PlanningHubWorkspace
@@ -188,7 +248,7 @@ function renderWorkspace(
       initialSavedVenueIds={[]}
       results={results}
       searchParams={searchParams}
-      userId={null}
+      userId={userId}
     />
   );
 }

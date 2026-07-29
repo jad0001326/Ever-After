@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowRight, Check, Cloud, CreditCard, MapPinned, Plus, Save } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
@@ -12,6 +12,7 @@ import { calculatePlanningHubPlan, getPhotographyNextHref } from "@/lib/planning
 import type { PlanningHubVenue } from "@/lib/planning-hub/types";
 import { PlanningHubAvailability } from "./planning-hub-availability";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
+import { PlanningHubItemRemoval } from "./planning-hub-item-removal";
 
 export type PlanningHubSaveState = "idle" | "saving" | "saved" | "error";
 
@@ -28,6 +29,7 @@ export function PlanningHubPlanPanel({
   onAvailabilityChange,
   onManualVenue,
   onInstallmentsSave,
+  onItemRemove,
   onPlanChange,
   onPlanSave,
   onPlanningCostChange,
@@ -47,6 +49,7 @@ export function PlanningHubPlanPanel({
   onAvailabilityChange: (status: AvailabilityStatus) => void;
   onManualVenue: (name: string, costPence: number, status: PlanningHubVenueStatus) => void;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
+  onItemRemove: () => void;
   onPlanChange: (updates: Partial<BudgetPlan>) => void;
   onPlanSave: () => void;
   onPlanningCostChange: (pence: number) => void;
@@ -55,6 +58,7 @@ export function PlanningHubPlanPanel({
   today: string;
 }) {
   const [manualVenueOpen, setManualVenueOpen] = useState(false);
+  const currentHeadingRef = useRef<HTMLHeadingElement>(null);
   const budget = calculatePlanningHubPlan(plan);
   const venueItems = plan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
 
@@ -66,6 +70,11 @@ export function PlanningHubPlanPanel({
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
   }, []);
+
+  function removeCurrentItem() {
+    onItemRemove();
+    requestAnimationFrame(() => currentHeadingRef.current?.focus());
+  }
 
   return (
     <aside aria-label="Connected wedding plan" className="self-start rounded-3xl border border-[#cfc3b3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -107,7 +116,7 @@ export function PlanningHubPlanPanel({
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-venue-planning" id="current-venue-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current venue</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedVenue?.name ?? selectedItem?.itemName ?? "Open a venue to plan it"}</h3>
+        <h3 className="focus-ring mt-2 rounded font-display text-2xl font-semibold text-[#173526]" ref={currentHeadingRef} tabIndex={-1}>{selectedVenue?.name ?? selectedItem?.itemName ?? "Open a venue to plan it"}</h3>
         {selectedVenue ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -150,6 +159,16 @@ export function PlanningHubPlanPanel({
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View” on a result to inspect it here without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
+
+      {selectedItem ? (
+        <PlanningHubItemRemoval
+          disabled={saveState === "saving"}
+          itemKind="venue"
+          itemName={selectedItem.itemName}
+          key={selectedItem.id}
+          onRemove={removeCurrentItem}
+        />
+      ) : null}
 
       {selectedItem ? (
         <PlanningHubAvailability

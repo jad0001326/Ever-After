@@ -91,6 +91,15 @@ Before release:
 4. review the exact deployment and rollback plan and obtain approval;
 5. collect consented field INP after release.
 
+## Selection lifecycle continuation
+
+Photography now shares the confirmed removal component and reusable plan
+mutation with venue and generic supplier planning. A removed photographer is
+excluded from active cost, payment, availability, shortlist and result-card
+state while the retained catalogue option can be added again later. Persistence
+continues through the existing device plan or authenticated whole-plan save; no
+new table, grant, action or migration is required.
+
 ## Rollback
 
 Application rollback is isolated:

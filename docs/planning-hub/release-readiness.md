@@ -1,6 +1,6 @@
 # My EverAft Planning Hub release readiness
 
-Date: 28 July 2026
+Date: 29 July 2026
 
 Status: locally complete as a connected, local-first beta; production release
 and connected partner sharing remain gated.
@@ -18,7 +18,7 @@ deploy, migrate or enable cloud persistence.
 | Wedding profile | Budget, date, guests, location, priorities and vision are validated outside React and drive recommendations. Profile component and domain tests pass. | Proven locally |
 | Server-side venue discovery | `src/lib/planning-hub/venues.ts` selects narrow fields, filters on the server and returns eight-row pages. | Proven locally |
 | Venue details and photographs | Detail and approved gallery queries run only after an item is opened; image dimensions and responsive sizes are retained. | Proven locally |
-| Save, shortlist and compare | Saved favourites, planned items, selected venue and transient three-item comparison remain distinct. Focus returns to the opening control when detail closes. | Proven locally |
+| Save, shortlist and compare | Saved favourites, planned items, selected venue and transient three-item comparison remain distinct. Focus returns to the opening control when detail closes. Venue and supplier selections can be removed through inline confirmation and the catalogue option returns to an addable state. | Proven locally |
 | Planning states and budget | Researching, shortlisted, quoted and booked states plus derived estimated, partially paid and paid states use the shared budget calculation layer. | Proven locally |
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
@@ -63,7 +63,8 @@ they do not require rewriting or pushing it.
 | 20. Availability command centre | Surface plan-wide date readiness and exact per-item availability in the existing Organise booking overview. | `4817bed` | Derived application view only; no new query, stored state or database change. |
 | 21. Reachable booking pipeline | Progressively reveal every active booking from Organise while keeping the initial DOM bounded. | `14e2f0a` | Client presentation only; the full plan remains the existing calculation source. |
 | 22. Reachable payment deadlines | Progressively reveal every scheduled commitment from Organise while keeping the initial mobile view bounded. | `b03357d` | Client presentation only; payment ordering and totals remain in the shared domain layer. |
-| 23. Complete task lifecycle | Add confirmed task removal to device plans and the prepared member-scoped shared action, restoring the task locally if shared deletion fails. | Current working slice | Existing table, grants, RLS and server action only; no schema or cloud activation. |
+| 23. Complete task lifecycle | Add confirmed task removal to device plans and the prepared member-scoped shared action, restoring the task locally if shared deletion fails. | `0a58be0` | Existing table, grants, RLS and server action only; no schema or cloud activation. |
+| 24. Complete selection lifecycle | Add confirmed removal and safe reactivation for venue, photography and generic supplier plan items, including selected-venue clearing and inactive result-card handling. | Current working slice | Versioned plan JSON and the existing protected whole-plan save only; no schema, grant or cloud activation. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -165,16 +166,17 @@ Use the least destructive rollback that restores safety:
   is claimed.
 - Fresh rendered mobile verification must exercise the new date-availability
   control, stale-date warning, Organise command-centre summary and long-list
-  booking/payment expansion. Component, domain, workspace persistence and
-  recommendation behavior are covered, but the in-app Browser control runtime
-  remained unavailable for these slices.
+  booking/payment expansion, plus confirmed item removal and reactivation.
+  Component, domain, workspace persistence and recommendation behavior are
+  covered, but the in-app Browser control runtime remained unavailable for
+  these slices.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
   require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 65 Vitest files and 304 tests pass.
+- 65 Vitest files and 311 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -200,6 +202,13 @@ Use the least destructive rollback that restores safety:
   connected mode uses the existing authenticated record-ID delete action and
   restores the local task if that shared deletion fails. Focus returns to the
   task heading after a confirmed removal.
+- Venue, photography and generic supplier selections now use one inline
+  confirmation flow. Removal marks the plan item cancelled, clears a matching
+  main venue, excludes the item from active totals, deadlines, shortlists and
+  result-card status, then returns focus to the stable current-item heading.
+  The same catalogue listing can be added again through the existing upsert
+  without duplicating its retained history. Connected removal uses the existing
+  authenticated whole-plan save and introduces no new mutation or migration.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

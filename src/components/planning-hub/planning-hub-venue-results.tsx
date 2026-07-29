@@ -30,7 +30,7 @@ export function PlanningHubVenueResults({
 }) {
   const planItemsByVenue = new Map(
     plan.items
-      .filter((item) => item.categoryId === "venue" && item.listingId)
+      .filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled" && item.listingId)
       .map((item) => [item.listingId!, item])
   );
 

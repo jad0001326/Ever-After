@@ -108,6 +108,28 @@ export function choosePlanningHubVenue(plan: BudgetPlan, venueId: string) {
   return { ...plan, selectedVenueId: venueId, updatedAt: new Date().toISOString() };
 }
 
+export function removePlanningHubItem(plan: BudgetPlan, itemId: string) {
+  const item = plan.items.find((candidate) => candidate.id === itemId);
+  if (!item || item.bookingStatus === "cancelled") return plan;
+  const now = new Date().toISOString();
+  const removesSelectedVenue = item.categoryId === "venue"
+    && (plan.selectedVenueId === item.id || plan.selectedVenueId === item.listingId);
+
+  return {
+    ...plan,
+    selectedVenueId: removesSelectedVenue ? null : plan.selectedVenueId,
+    updatedAt: now,
+    items: plan.items.map((candidate) => candidate.id === itemId
+      ? {
+          ...candidate,
+          bookingStatus: "cancelled" as const,
+          costStatus: "cancelled" as const,
+          updatedAt: now,
+        }
+      : candidate),
+  };
+}
+
 export function updatePlanningHubVenuePayment(
   plan: BudgetPlan,
   venueId: string,
@@ -263,6 +285,7 @@ export function findPlanningHubVenueItem(plan: BudgetPlan, venueId: string | nul
   if (!venueId) return null;
   return plan.items.find((item) => (
     item.categoryId === "venue"
+    && item.bookingStatus !== "cancelled"
     && (item.listingId === venueId || item.id === venueId)
   )) ?? null;
 }
@@ -282,6 +305,7 @@ export function findPlanningHubSupplierItem(
   return plan.items.find((item) => (
     item.categoryId === category.budgetCategoryId
     && item.supplierType === category.label
+    && item.bookingStatus !== "cancelled"
     && (item.listingId === supplierId || item.id === supplierId)
   )) ?? null;
 }

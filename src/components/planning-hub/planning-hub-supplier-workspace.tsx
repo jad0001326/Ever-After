@@ -11,6 +11,7 @@ import type { AvailabilityStatus, BudgetItem, BudgetPlan, PaymentInstallment } f
 import {
   addManualPlanningHubSupplier,
   findPlanningHubSupplierItem,
+  removePlanningHubItem,
   updatePlanningHubItemInstallments,
   updatePlanningHubItemAvailability,
   upsertPlanningHubSupplier,
@@ -200,6 +201,14 @@ export function PlanningHubSupplierWorkspace({
     );
   }
 
+  function removeCurrentItem() {
+    if (!selectedItem) return;
+    persistPlan(
+      removePlanningHubItem(plan, selectedItem.id),
+      `${selectedItem.itemName} was removed from your plan.`,
+    );
+  }
+
   function persistPlan(nextPlan: BudgetPlan, successMessage: string) {
     setPlan(nextPlan);
     if (!userId) {
@@ -248,6 +257,7 @@ export function PlanningHubSupplierWorkspace({
         category={category}
         connectedWorkspaceId={connectedWorkspaceId}
         onInstallmentsSave={saveInstallments}
+        onItemRemove={removeCurrentItem}
         onManualSupplier={addManualSupplier}
         onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
         onPlanningCostChange={setPlanningCostPence}

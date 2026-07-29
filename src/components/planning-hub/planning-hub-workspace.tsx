@@ -11,6 +11,7 @@ import {
   choosePlanningHubVenue,
   findPlanningHubVenueItem,
   getVenuePlanningCost,
+  removePlanningHubItem,
   updatePlanningHubItemInstallments,
   updatePlanningHubItemAvailability,
   upsertPlanningHubVenue,
@@ -222,6 +223,14 @@ export function PlanningHubWorkspace({
     );
   }
 
+  function removeCurrentItem() {
+    if (!selectedItem) return;
+    persistPlan(
+      removePlanningHubItem(plan, selectedItem.id),
+      `${selectedItem.itemName} was removed from your plan.`,
+    );
+  }
+
   function updatePlan(updates: Partial<BudgetPlan>) {
     setPlan((current) => ({ ...current, ...updates, updatedAt: new Date().toISOString() }));
     setSaveState("idle");
@@ -268,6 +277,7 @@ export function PlanningHubWorkspace({
         onChooseVenue={chooseCurrentVenue}
         onManualVenue={addManualVenue}
         onInstallmentsSave={saveInstallments}
+        onItemRemove={removeCurrentItem}
         onPlanChange={updatePlan}
         onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
         onPlanningCostChange={setPlanningCostPence}

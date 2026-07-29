@@ -185,6 +185,23 @@ describe("PlanningHubSupplierWorkspace", () => {
     expect(screen.getByRole("link", { name: /organise guests and tables/i }).getAttribute("href"))
       .toBe("/planning-hub/organise?workspace=60000000-0000-4000-8000-000000000006");
   });
+
+  it("removes a category supplier from active planning and keeps it available to re-add", async () => {
+    renderWorkspace();
+    fireEvent.click(screen.getByRole("button", { name: "Add videographer to plan" }));
+    expect(screen.getByText("Videographer shortlist")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove from plan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, remove from plan" }));
+
+    const heading = within(screen.getByTestId("current-supplier-planning"))
+      .getByRole("heading", { name: "Films One" });
+    expect(screen.getByRole("button", { name: "Add videographer to plan" })).toBeTruthy();
+    expect(screen.queryByText("Videographer shortlist")).toBeNull();
+    expect(screen.queryByText("cancelled")).toBeNull();
+    expect(screen.getByRole("status").textContent).toMatch(/removed from your plan/i);
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
 });
 
 function renderWorkspace(

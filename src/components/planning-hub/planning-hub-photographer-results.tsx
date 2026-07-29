@@ -25,7 +25,7 @@ export function PlanningHubPhotographerResults({
 }) {
   const planItemsByPhotographer = new Map(
     plan.items
-      .filter((item) => item.categoryId === "photography" && item.listingId)
+      .filter((item) => item.categoryId === "photography" && item.bookingStatus !== "cancelled" && item.listingId)
       .map((item) => [item.listingId!, item])
   );
 

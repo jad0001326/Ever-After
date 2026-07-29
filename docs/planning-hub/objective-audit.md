@@ -1,6 +1,6 @@
 # My EverAft Planning Hub objective audit
 
-Date: 28 July 2026
+Date: 29 July 2026
 
 Status: the local beta now covers the connected planning journey. Production
 release and secure cloud sharing remain deliberately gated.
@@ -11,10 +11,10 @@ release and secure cloud sharing remain deliberately gated.
 | --- | --- |
 | Wedding profile | Budget, date, guest count, location and priorities drive the workspace and recommendations. |
 | Venue discovery | Server-side filters and pagination return lightweight cards; details and approved galleries load on demand. |
-| Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. |
+| Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items now track availability against the exact wedding date rather than inferring a calendar from directory data. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 65 test files and 304 tests passing.
+- 65 test files and 311 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -87,6 +87,12 @@ its public profile route and category-specific browser verification before its
   available, awaiting, unavailable and action-needed items, labels every
   booking, progressively reveals long plans without an unbounded first render,
   and recommends a recheck before advancing.
+- Venue, photography and generic supplier planning now expose the same inline
+  confirmed removal. The reusable domain mutation preserves historical costs
+  and payments in the versioned plan while marking the item inactive, clears a
+  matching selected venue and allows an existing catalogue item to be
+  reactivated without creating a duplicate. Result cards, shortlists, totals,
+  deadlines and recommendations all ignore the cancelled record.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;

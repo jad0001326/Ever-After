@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, CreditCard, Plus, Save, UsersRound } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
@@ -13,6 +13,7 @@ import type { PlanningHubPhotographer } from "@/lib/planning-hub/types";
 import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
 import { PlanningHubAvailability } from "./planning-hub-availability";
 import { PlanningHubDeadlineSummary, PlanningHubPaymentSchedule } from "./planning-hub-payment-schedule";
+import { PlanningHubItemRemoval } from "./planning-hub-item-removal";
 
 export function PlanningHubPhotographyPlanPanel({
   connectedWorkspaceId = null,
@@ -26,6 +27,7 @@ export function PlanningHubPhotographyPlanPanel({
   onAvailabilityChange,
   onManualPhotographer,
   onInstallmentsSave,
+  onItemRemove,
   onPlanSave,
   onPlanningCostChange,
   onStatusChange,
@@ -43,6 +45,7 @@ export function PlanningHubPhotographyPlanPanel({
   onAvailabilityChange: (status: AvailabilityStatus) => void;
   onManualPhotographer: (name: string, costPence: number, status: PlanningHubItemStatus) => void;
   onInstallmentsSave: (installments: PaymentInstallment[]) => void;
+  onItemRemove: () => void;
   onPlanSave: () => void;
   onPlanningCostChange: (pence: number) => void;
   onStatusChange: (status: PlanningHubItemStatus) => void;
@@ -50,6 +53,7 @@ export function PlanningHubPhotographyPlanPanel({
   today: string;
 }) {
   const [manualPhotographerOpen, setManualPhotographerOpen] = useState(false);
+  const currentHeadingRef = useRef<HTMLHeadingElement>(null);
   const budget = calculatePlanningHubPlan(plan);
   const photographyItems = plan.items.filter((item) => item.categoryId === "photography" && item.bookingStatus !== "cancelled");
   const hasBookedPhotographer = photographyItems.some((item) => item.bookingStatus === "booked");
@@ -62,6 +66,11 @@ export function PlanningHubPhotographyPlanPanel({
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
   }, []);
+
+  function removeCurrentItem() {
+    onItemRemove();
+    requestAnimationFrame(() => currentHeadingRef.current?.focus());
+  }
 
   return (
     <aside aria-label="Connected wedding plan" className="self-start rounded-3xl border border-[#cfc3b3] bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -86,7 +95,7 @@ export function PlanningHubPhotographyPlanPanel({
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-photographer-planning" id="current-photographer-planning">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current photographer</p>
-        <h3 className="mt-2 font-display text-2xl font-semibold text-[#173526]">{selectedPhotographer?.name ?? selectedItem?.itemName ?? "Open a photographer to plan them"}</h3>
+        <h3 className="focus-ring mt-2 rounded font-display text-2xl font-semibold text-[#173526]" ref={currentHeadingRef} tabIndex={-1}>{selectedPhotographer?.name ?? selectedItem?.itemName ?? "Open a photographer to plan them"}</h3>
         {selectedPhotographer ? (
           <div className="mt-4 grid gap-3">
             <Label text="Planning stage">
@@ -115,6 +124,16 @@ export function PlanningHubPhotographyPlanPanel({
         ) : <p className="mt-3 text-sm leading-6 text-[#625f57]">Use “View &amp; plan” on a result to keep researching without leaving your workspace.</p>}
         <p className={`mt-3 text-xs leading-5 ${saveState === "error" ? "text-[#9b3025]" : "text-[#625f57]"}`} role="status">{saveMessage}</p>
       </div>
+
+      {selectedItem ? (
+        <PlanningHubItemRemoval
+          disabled={saveState === "saving"}
+          itemKind="photographer"
+          itemName={selectedItem.itemName}
+          key={selectedItem.id}
+          onRemove={removeCurrentItem}
+        />
+      ) : null}
 
       {selectedItem ? (
         <PlanningHubAvailability

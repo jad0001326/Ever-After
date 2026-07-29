@@ -8,6 +8,7 @@ import type { AvailabilityStatus, BudgetPlan, PaymentInstallment } from "@/lib/b
 import {
   addManualPlanningHubPhotographer,
   findPlanningHubPhotographyItem,
+  removePlanningHubItem,
   updatePlanningHubItemInstallments,
   updatePlanningHubItemAvailability,
   upsertPlanningHubPhotographer,
@@ -191,6 +192,14 @@ export function PlanningHubPhotographyWorkspace({
     );
   }
 
+  function removeCurrentItem() {
+    if (!selectedItem) return;
+    persistPlan(
+      removePlanningHubItem(plan, selectedItem.id),
+      `${selectedItem.itemName} was removed from your plan.`,
+    );
+  }
+
   function persistPlan(nextPlan: BudgetPlan, successMessage: string) {
     setPlan(nextPlan);
     if (!userId) {
@@ -228,6 +237,7 @@ export function PlanningHubPhotographyWorkspace({
         onAvailabilityChange={saveAvailability}
         onManualPhotographer={addManualPhotographer}
         onInstallmentsSave={saveInstallments}
+        onItemRemove={removeCurrentItem}
         onPhotographerSave={saveCurrentPhotographer}
         onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
         onPlanningCostChange={setPlanningCostPence}
