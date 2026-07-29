@@ -9,14 +9,24 @@ one repeatable local gate. It uses an installed Chrome or Edge executable
 through the browser's DevTools protocol; it does not install a browser, contact
 a hosted test service or write to production.
 
-The command currently verifies the plan-aware photography handoff at:
+The command verifies five milestone surfaces at both release viewports:
 
-- 390 x 844, representing a small iPhone viewport;
-- 1440 x 900, representing the desktop release viewport.
+- Venue discovery, including the responsive shell, server result area and
+  manual-entry fallback;
+- the plan-aware Photography handoff with exact transported context;
+- Organise, including budget/bookings, payments, profile, tasks and guest/table
+  readiness;
+- the existing public Budget Planner;
+- the existing public Table Planner.
+
+That produces ten scenarios in total: each surface at 390 x 844, representing a
+small iPhone viewport, and 1440 x 900, representing the desktop release
+viewport.
 
 For each viewport it proves:
 
-- the exact venue, wedding date, location and remaining-budget context renders;
+- the stable milestone content for that surface renders, including the exact
+  venue, wedding date, location and remaining-budget context in Photography;
 - the viewport and document widths match, with no page-level horizontal
   overflow;
 - no Next.js development overlay is present;
@@ -60,7 +70,7 @@ Every run:
 2. creates a fresh browser profile under the operating-system temporary
    directory;
 3. launches the browser headlessly;
-4. runs both responsive scenarios;
+4. runs all ten responsive scenarios;
 5. closes the owned browser process;
 6. verifies the temporary path belongs to the run before recursively removing
    it.

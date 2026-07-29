@@ -138,6 +138,12 @@ try {
   for (const scenario of scenarios) {
     activeScenario = scenario.name;
     runtimeErrors.length = 0;
+    await evaluate(
+      client,
+      `localStorage.clear();
+       sessionStorage.clear();
+       localStorage.setItem("everaft-cookie-preference-v2", "essential")`,
+    );
     await client.send("Emulation.setDeviceMetricsOverride", {
       deviceScaleFactor: 1,
       height: scenario.viewport.height,

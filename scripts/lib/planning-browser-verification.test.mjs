@@ -48,16 +48,23 @@ describe("Planning Hub browser verification configuration", () => {
     })).toThrow(/must be an absolute path/);
   });
 
-  it("covers the connected handoff at small-iPhone and desktop sizes", () => {
+  it("covers every milestone surface at small-iPhone and desktop sizes", () => {
     const scenarios = getPlanningBrowserScenarios();
 
-    expect(scenarios.map((scenario) => scenario.viewport)).toEqual([
-      { height: 844, width: 390 },
-      { height: 900, width: 1440 },
-    ]);
-    expect(scenarios.every((scenario) => scenario.path.startsWith(
-      "/planning-hub/photography?context=plan&planDate=2027-06-12",
+    expect(scenarios).toHaveLength(10);
+    expect(scenarios.slice(0, 5).every((scenario) => (
+      scenario.viewport.height === 844 && scenario.viewport.width === 390
     ))).toBe(true);
-    expect(scenarios[0].expectedText).toContain("Venue: Our village hall");
+    expect(scenarios.slice(5).every((scenario) => (
+      scenario.viewport.height === 900 && scenario.viewport.width === 1440
+    ))).toBe(true);
+    expect(scenarios.map((scenario) => scenario.path)).toContain(
+      "/wedding-budget-planner",
+    );
+    expect(scenarios.map((scenario) => scenario.path)).toContain(
+      "/wedding-table-planner",
+    );
+    expect(scenarios.find((scenario) => scenario.name === "photography-context-mobile")
+      ?.expectedText).toContain("Venue: Our village hall");
   });
 });

@@ -94,7 +94,16 @@ export function getPlanningBrowserScenarios() {
     venueName: "Our village hall",
   });
 
-  return [
+  const surfaces = [
+    {
+      expectedText: [
+        "Turn venue browsing into your wedding plan.",
+        "Find your venue",
+        "Venue not listed?",
+      ],
+      name: "venue",
+      path: "/planning-hub",
+    },
     {
       expectedText: [
         "Choose photography that fits your real plan.",
@@ -104,20 +113,52 @@ export function getPlanningBrowserScenarios() {
         "From your Wedding Profile.",
         "Using the amount remaining in your connected plan.",
       ],
-      name: "photography-context-mobile",
+      name: "photography-context",
       path: `/planning-hub/photography?${contextQuery}`,
-      viewport: { height: 844, width: 390 },
     },
     {
       expectedText: [
-        "Choose photography that fits your real plan.",
-        "Venue: Our village hall",
-        "Date: 12 Jun 2027",
-        "£17,000 remaining overall",
+        "Keep every moving part in one calm place.",
+        "Budget & bookings",
+        "Payments & deadlines",
+        "Help EverAft narrow the choices",
+        "Your tasks",
+        "Guests & seating",
       ],
-      name: "photography-context-desktop",
-      path: `/planning-hub/photography?${contextQuery}`,
-      viewport: { height: 900, width: 1440 },
+      name: "organise",
+      path: "/planning-hub/organise",
     },
+    {
+      expectedText: [
+        "Wedding Budget Planner",
+        "Set your total budget, add venues and suppliers",
+        "Start with your total budget",
+        "Use an editable starter budget",
+      ],
+      name: "public-budget",
+      path: "/wedding-budget-planner",
+    },
+    {
+      expectedText: [
+        "Wedding table planner",
+        "Add your guests, set the relationships that matter",
+        "Try an example",
+      ],
+      name: "public-table",
+      path: "/wedding-table-planner",
+    },
+  ];
+
+  return [
+    ...surfaces.map((surface) => ({
+      ...surface,
+      name: `${surface.name}-mobile`,
+      viewport: { height: 844, width: 390 },
+    })),
+    ...surfaces.map((surface) => ({
+      ...surface,
+      name: `${surface.name}-desktop`,
+      viewport: { height: 900, width: 1440 },
+    })),
   ];
 }

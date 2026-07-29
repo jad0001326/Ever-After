@@ -98,10 +98,12 @@ its public profile route and category-specific browser verification before its
   plan-derived values are explained and exposed to assistive technology, and
   pagination preserves the original query rather than freezing derived values
   into the URL.
-- The repeatable optimized-build browser gate renders the photography handoff
-  at 390 x 844 and 1440 x 900. It proves the transported venue, date, location
-  and exact remaining balance, equal viewport/document widths, no browser
-  errors and 47 axe passes with zero violations or indeterminate checks.
+- The repeatable optimized-build browser gate covers Venue, the Photography
+  handoff, Organise, the public Budget Planner and the public Table Planner at
+  both 390 x 844 and 1440 x 900. All ten scenarios have equal
+  viewport/document widths, no browser errors and zero axe violations or
+  indeterminate checks; Photography also proves the transported venue, date,
+  location and exact remaining balance.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;
