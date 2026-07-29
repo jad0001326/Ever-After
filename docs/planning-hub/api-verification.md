@@ -66,7 +66,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 26 timestamped migrations byte-for-byte in filename order;
+3. copies all 27 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 
@@ -84,7 +84,7 @@ supabase init --workdir .
 supabase start --workdir .
 ```
 
-After all 27 generated migrations apply, use the URL and keys printed by
+After all 28 generated migrations apply, use the URL and keys printed by
 `supabase start`:
 
 ```powershell

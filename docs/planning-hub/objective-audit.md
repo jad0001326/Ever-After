@@ -38,6 +38,17 @@ Each catalogue still needs enough real published listings, approved imagery,
 its public profile route and category-specific browser verification before its
 `live` flag can change.
 
+## Completion classification
+
+| Scope | Classification | Evidence or boundary |
+| --- | --- | --- |
+| Venue-first Planning Hub milestone | Complete locally | Responsive shell, profile inputs, paginated server discovery, detail, save/compare, estimated/quoted/booked planning, connected budget and payments, Photography handoff and manual fallback all pass the optimized interaction gate. |
+| Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
+| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; native keyboard, Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
+| Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
+| Production release | Not authorised | No push, pull request, hosted migration, deployment or production write has been approved. |
+| Native iPhone and Android apps | Future-compatible architecture only | Shared domain logic and backend contracts are reusable, but native clients and physical-device QA are outside this web milestone. |
+
 ## Remaining release gates
 
 1. Run the already-passing collaboration scenario through Supabase Auth and the
@@ -58,7 +69,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 67 test files and 322 tests passing.
+- 69 test files and 336 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -68,7 +79,8 @@ its public profile route and category-specific browser verification before its
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.
-- Optimized Next.js build passing with 78 generated pages.
+- Optimized Next.js build passing with 88 generated pages after merging the ten
+  new upstream planning guides.
 - Production dependency audit passing with zero known vulnerabilities after
   patching Next.js, Sharp, PostCSS, MCP SDK and their affected transitives.
   The full audit retains only a development-tool ESLint/minimatch advisory.

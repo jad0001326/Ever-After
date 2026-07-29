@@ -73,7 +73,8 @@ they do not require rewriting or pushing it.
 | 30. Native keyboard journey | Add real Enter, Space and Tab coverage for venue detail focus, close-and-return, comparison, manual entry and the Photography recommendation. | `ee105f3` | Local browser verification only; programmatic focus establishes each starting control but never substitutes for activation or sequential navigation. |
 | 31. Screen-reader tree contract | Assert Chrome's rendered accessibility tree for Venue, the interactive detail/compare/manual states and transported Photography context. | `9d5c402` | Local browser accessibility inspection only; no application change is justified while the rendered semantic contract passes. |
 | 32. Payment commitment round trip | Record a partial venue payment, surface it in Organise and return to the exact open payment editor with focus preserved. | `6865e1f` | Application routing, focus timing, semantic readiness panel and local browser evidence only; no schema or hosted action. |
-| 33. Rendered lifecycle completion | Verify date availability and staleness, complete booking/payment expansion, focused removal, duplicate-free reactivation and the computed local font stack. | Current working slice | Local browser tooling and release evidence only; no application, schema, catalogue or hosted mutation. |
+| 33. Rendered lifecycle completion | Verify date availability and staleness, complete booking/payment expansion, focused removal, duplicate-free reactivation and the computed local font stack. | `5c255a5` | Local browser tooling and release evidence only; no application, schema, catalogue or hosted mutation. |
+| 34. Upstream release sync | Merge current `origin/main`, including claimant email hardening, outreach validation and ten new planning guides, then recertify the Planning Hub release candidate. | Current working slice | Clean local merge and verification only; no remote write, migration or deployment. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -166,7 +167,7 @@ Use the least destructive rollback that restores safety:
 - Supabase Auth and Data API execution cannot run on the current machine:
   Docker, Podman, the Supabase CLI, `psql` and a WSL distribution are absent.
 - The guarded `npm run test:planning-api` harness and disposable baseline
-  generator are ready. The generated 27-file stack still needs its first
+  generator are ready. The generated 28-file stack still needs its first
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
@@ -175,7 +176,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 67 Vitest files and 329 tests pass.
+- 69 Vitest files and 336 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -184,7 +185,8 @@ Use the least destructive rollback that restores safety:
 - ESLint has zero errors and retains one unrelated pre-existing Open Graph
   `<img>` warning.
 - `npm audit --omit=dev` reports zero known vulnerabilities.
-- The optimized Next.js 16.2.12 build produces 78 pages.
+- The optimized Next.js 16.2.12 build produces 88 pages after integrating ten
+  new planning guides from `origin/main`.
 - Three fresh optimized Venue-route Lighthouse runs score 99/98/99
   performance, 100 accessibility and 100 best practices. Median LCP is 2.237
   seconds, TBT is 34 milliseconds and CLS is 0; the slowest LCP is 2.395
@@ -266,7 +268,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 26 timestamped
+- The local API generator reproduces one baseline plus all 27 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
