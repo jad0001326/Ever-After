@@ -82,6 +82,10 @@ describe("createPlanningDashboardSnapshot", () => {
       workspace: {
         budgetPlanId: "budget-1",
       },
+      versions: {
+        workspaceUpdatedAt: workspace.updatedAt,
+        budgetUpdatedAt: plan.updatedAt,
+      },
       wedding: {
         date: "2027-06-12",
         guestCount: 80,

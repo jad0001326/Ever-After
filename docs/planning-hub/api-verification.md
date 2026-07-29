@@ -21,6 +21,13 @@ PostgreSQL cannot emulate:
 - outsider and anonymous isolation; and
 - table-plan version conflict behavior through the public RPC.
 
+After those direct Data API assertions pass, the same owner, partner, outsider
+and expired sessions must call
+`GET /api/planning/v1/workspaces/{workspaceId}/dashboard`. Owner and partner
+responses must validate against the checked v1 JSON Schema; outsider and
+expired tokens must receive the route's generic denial contract. See
+`native-dashboard-api.md`.
+
 All application assertions use publishable-key clients with real user sessions.
 The secret test key is used only to create test Auth users, confirm their
 profiles exist and delete those users during cleanup.

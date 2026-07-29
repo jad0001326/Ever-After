@@ -10,6 +10,10 @@ import {
   PLANNING_INVITE_COOKIE
 } from "@/lib/planning-workspace/invite";
 import {
+  loadPlanningWorkspaceContext,
+  loadPlanningWorkspaceSnapshot,
+} from "@/lib/planning-workspace/server-snapshot";
+import {
   createPlanningInviteSchema,
   ensurePlanningWorkspaceSchema,
   importPlanningWorkspaceSchema,
@@ -154,29 +158,11 @@ export async function loadPlanningWorkspaceContextAction(workspaceId: unknown) {
   const context = await getPlanningContext();
   if (!context.ok) return context;
 
-  const snapshot = await loadPlanningWorkspaceSnapshot(context.supabase, parsed.data);
-  if (!snapshot.ok) return snapshot;
-  if (!snapshot.workspace.budget_plan_id) {
-    return { ok: false, message: "That workspace is not linked to a wedding budget." } satisfies ActionFailure;
-  }
-
-  const { data, error } = await context.supabase
-    .from("budget_plans")
-    .select("plan_json")
-    .eq("user_id", snapshot.workspace.owner_id)
-    .eq("id", snapshot.workspace.budget_plan_id)
-    .maybeSingle();
-  const budgetPlan = budgetPlanSchema.safeParse(data?.plan_json);
-  if (error || !budgetPlan.success) {
-    return { ok: false, message: "The connected wedding budget is unavailable." } satisfies ActionFailure;
-  }
-
-  return {
-    ok: true,
-    budgetPlan: { ...budgetPlan.data, userId: snapshot.workspace.owner_id },
-    isOwner: snapshot.workspace.owner_id === context.user.id,
-    snapshot,
-  } as const;
+  return loadPlanningWorkspaceContext(
+    context.supabase,
+    parsed.data,
+    context.user.id,
+  );
 }
 
 export async function saveConnectedBudgetPlanAction(workspaceId: unknown, input: unknown) {
@@ -224,65 +210,6 @@ export async function saveConnectedBudgetPlanAction(workspaceId: unknown, input:
     return { ok: false, message: "Cloud save failed. Your latest changes remain saved on this device." } satisfies ActionFailure;
   }
   return { ok: true, savedAt: data.updated_at } as const;
-}
-
-async function loadPlanningWorkspaceSnapshot(
-  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
-  id: string
-) {
-  const [
-    workspaceResult,
-    profileResult,
-    memberResult,
-    taskResult,
-    guestResult,
-    tableResult,
-    seatResult,
-    ruleResult,
-    inviteResult
-  ] = await Promise.all([
-    supabase.from("planning_workspaces").select("*").eq("id", id).maybeSingle(),
-    supabase.from("planning_workspace_profiles").select("*").eq("workspace_id", id).maybeSingle(),
-    supabase.from("planning_workspace_members").select("*").eq("workspace_id", id),
-    supabase.from("planning_tasks").select("*").eq("workspace_id", id).order("sort_order").order("created_at"),
-    supabase.from("planning_guests").select("*").eq("workspace_id", id).order("sort_order").order("name"),
-    supabase.from("planning_tables").select("*").eq("workspace_id", id).order("sort_order").order("created_at"),
-    supabase.from("planning_seats").select("*").eq("workspace_id", id),
-    supabase.from("planning_seating_rules").select("*").eq("workspace_id", id),
-    supabase.from("planning_workspace_invites")
-      .select("id, workspace_id, email_normalized, role, expires_at, accepted_at, accepted_by, revoked_at, created_at")
-      .eq("workspace_id", id)
-      .order("created_at", { ascending: false })
-  ]);
-
-  const error = [
-    workspaceResult,
-    profileResult,
-    memberResult,
-    taskResult,
-    guestResult,
-    tableResult,
-    seatResult,
-    ruleResult,
-    inviteResult
-  ].find((result) => result.error)?.error;
-
-  if (error || !workspaceResult.data) {
-    return { ok: false, message: "That connected plan is unavailable or you no longer have access." } satisfies ActionFailure;
-  }
-
-  return {
-    ok: true,
-    workspace: workspaceResult.data,
-    profile: profileResult.data,
-    members: memberResult.data ?? [],
-    tasks: taskResult.data ?? [],
-    guests: guestResult.data ?? [],
-    tables: tableResult.data ?? [],
-    seats: seatResult.data ?? [],
-    seatingRules: ruleResult.data ?? [],
-    invites: inviteResult.data ?? []
-  } as const;
 }
 
 export async function importPlanningWorkspaceSnapshotAction(input: unknown) {

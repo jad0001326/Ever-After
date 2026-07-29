@@ -36,6 +36,10 @@ export function createPlanningDashboardSnapshot(
       name: workspace.name,
       budgetPlanId: budgetPlan.id,
     },
+    versions: {
+      workspaceUpdatedAt: workspace.updatedAt,
+      budgetUpdatedAt: budgetPlan.updatedAt,
+    },
     wedding: {
       date: workspace.profile.weddingDate,
       guestCount: workspace.profile.guestCount,

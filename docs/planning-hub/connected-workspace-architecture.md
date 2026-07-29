@@ -204,7 +204,9 @@ that decision to a Planning Hub URL.
 profile-completion and recommendation state into a versioned JSON-safe
 contract. It rejects a workspace joined to the wrong budget plan and contains
 no URL, Date, Map, framework object or persistence handle, so a future native
-presentation adapter can consume the same dashboard decision state.
+presentation adapter can consume the same dashboard decision state. Separate
+workspace and budget update timestamps provide stable freshness tokens for a
+future conditional-write contract.
 The runtime contract is strict: unknown adapter fields are rejected. Its
 language-neutral Draft 2020-12 schema is checked in at
 `docs/planning-hub/contracts/planning-dashboard-snapshot.v1.schema.json` with
@@ -214,6 +216,15 @@ the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 change.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
+
+The dormant
+`GET /api/planning/v1/workspaces/{workspaceId}/dashboard` route is the first
+native-consumable adapter for that contract. It verifies a Supabase Auth bearer
+token, then uses the same caller-bound publishable-key client for every Data
+API query so the existing owner/partner RLS remains authoritative. It is
+dynamic, private, no-store and returns a generic 404 for both absent and
+RLS-inaccessible workspaces. The server-only cloud flag remains the outer
+fail-closed gate.
 The boundary is verified by
 `scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
 prove that the core result contains no `href`.

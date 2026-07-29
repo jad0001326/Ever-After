@@ -48,7 +48,7 @@ its public profile route and category-specific browser verification before its
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
 | Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
-| Native iPhone and Android apps | Future-compatible architecture only | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe dashboard snapshot now have a language-neutral schema suitable for model generation, but native clients and physical-device QA are outside this web milestone. |
+| Native iPhone and Android apps | Read API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe dashboard snapshot now have a language-neutral schema and dormant authenticated GET adapter. The adapter verifies a Supabase Auth bearer token and reads through the caller's RLS client; native applications, write endpoints, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
 
@@ -70,7 +70,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 72 test files and 348 tests passing.
+- 75 test files and 362 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -151,6 +151,15 @@ its public profile route and category-specific browser verification before its
   and round-trips through JSON without URLs or runtime-specific values. Its
   strict runtime validator rejects unknown web-adapter fields, while a
   generated Draft 2020-12 JSON Schema with a stable URN is checked for drift.
+  Separate workspace and budget update timestamps preserve the versions future
+  clients will need for conflict-safe writes.
+- The first dormant native read adapter exposes that exact contract through a
+  versioned dynamic GET route. It verifies the bearer token with Supabase Auth,
+  performs all reads through the same caller-bound publishable-key client,
+  preserves owner/partner RLS, collapses missing and inaccessible workspaces to
+  one generic 404 and sends private no-store responses. The optimized built
+  route was exercised locally with the cloud flag off and returned the expected
+  503 before authentication or any Supabase connection.
 - Chrome's full rendered accessibility tree proves unique banner/main
   landmarks, named primary/stage/result navigation, named filter/result/plan
   landmarks, correct heading levels, detail and control names, pressed and

@@ -50,6 +50,10 @@ export const planningDashboardSnapshotSchema = z.strictObject({
     name: z.string().min(1),
     budgetPlanId: z.string().min(1),
   }),
+  versions: z.strictObject({
+    workspaceUpdatedAt: z.string().datetime({ offset: true }),
+    budgetUpdatedAt: z.string().datetime({ offset: true }),
+  }),
   wedding: z.strictObject({
     date: nullableDate,
     guestCount: z.number().int().positive().nullable(),
