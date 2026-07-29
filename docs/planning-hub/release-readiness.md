@@ -71,7 +71,8 @@ they do not require rewriting or pushing it.
 | 28. Venue-to-Photography interaction gate | Prove the signed-out favourite guard, comparison, on-demand detail, manual booked venue, exact remaining-budget handoff and device restore. | `7522107` | Local interaction verification only; no favourite or planning mutation reaches Supabase. |
 | 29. Venue performance recertification | Re-measure the complete optimized Venue step after the assembled milestone and retain trace-based evidence. | `2be9c73` | Read-only local Lighthouse evidence; no application change is justified while every objective target passes. |
 | 30. Native keyboard journey | Add real Enter, Space and Tab coverage for venue detail focus, close-and-return, comparison, manual entry and the Photography recommendation. | `ee105f3` | Local browser verification only; programmatic focus establishes each starting control but never substitutes for activation or sequential navigation. |
-| 31. Screen-reader tree contract | Assert Chrome's rendered accessibility tree for Venue, the interactive detail/compare/manual states and transported Photography context. | Current working slice | Local browser accessibility inspection only; no application change is justified while the rendered semantic contract passes. |
+| 31. Screen-reader tree contract | Assert Chrome's rendered accessibility tree for Venue, the interactive detail/compare/manual states and transported Photography context. | `9d5c402` | Local browser accessibility inspection only; no application change is justified while the rendered semantic contract passes. |
+| 32. Payment commitment round trip | Record a partial venue payment, surface it in Organise and return to the exact open payment editor with focus preserved. | Current working slice | Application routing, focus timing, semantic readiness panel and local browser evidence only; no schema or hosted action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -183,7 +184,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 67 Vitest files and 322 tests pass.
+- 67 Vitest files and 329 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -210,6 +211,9 @@ Use the least destructive rollback that restores safety:
   plans restore as not checked.
 - Organise initially renders five scheduled payment commitments, then exposes
   every later deadline and its exact payment-editor link in five-item batches.
+  Each link retains the source plan-item ID and opens and focuses the matching
+  venue, photography or supplier payment editor; missing items fall back to the
+  Organise commitments section.
 - Task removal requires inline confirmation. Device plans persist the removal;
   connected mode uses the existing authenticated record-ID delete action and
   restores the local task if that shared deletion fails. Focus returns to the
@@ -242,9 +246,9 @@ Use the least destructive rollback that restores safety:
 - The same repeatable gate then runs a signed-out 390 x 844 interaction
   journey against the read-only catalogue. It proves the favourite sign-in
   guard, comparison, on-demand venue detail, a £30,000 profile, a £5,000 booked
-  manual venue, immediate £25,000 balance, exact Photography URL and rendered
-  context, exclusion of manual IDs from catalogue filtering, and device-plan
-  restoration after returning to Venue.
+  manual venue, a £1,000 deposit with £500 paid, immediate £25,000 balance,
+  exact Photography URL and rendered context, exclusion of manual IDs from
+  catalogue filtering, and device-plan restoration after returning to Venue.
 - The restored plan then passes a native keyboard journey. Enter opens the
   first venue detail and moves focus into it, Tab reaches Close, Enter closes
   and restores the exact `View` trigger, Space toggles Compare, Enter expands
@@ -255,6 +259,11 @@ Use the least destructive rollback that restores safety:
   landmarks, correct H1/H2/H3 levels, chosen/Compare/disclosure states, the
   detail region and Close control, and accessible venue/date/£25,000 context
   after the Photography handoff.
+- The same device plan then opens in Organise with its booking and payment
+  commitment intact. `Review payment plan` returns to the exact manual venue,
+  opens its payment disclosure and focuses the summary. The populated Organise
+  view has zero axe violations and zero indeterminate checks; the date-readiness
+  card is a named semantic section.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

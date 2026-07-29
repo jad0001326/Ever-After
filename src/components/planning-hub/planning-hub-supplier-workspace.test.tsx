@@ -7,6 +7,7 @@ import type {
   PlanningHubSupplierCategory,
   PlanningHubSupplierDetail,
   PlanningHubSupplierResults,
+  PlanningHubSupplierSearchParams,
 } from "@/lib/planning-hub/types";
 import { PlanningHubSupplierWorkspace } from "./planning-hub-supplier-workspace";
 
@@ -90,6 +91,7 @@ const detail: PlanningHubSupplierDetail = {
 
 describe("PlanningHubSupplierWorkspace", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/");
     window.localStorage.clear();
     loadSupplierDetail.mockReset();
     loadSupplierDetail.mockResolvedValue(detail);
@@ -174,6 +176,33 @@ describe("PlanningHubSupplierWorkspace", () => {
     expect(screen.getByText("This manually added videographer is ready for payment planning.")).toBeTruthy();
   });
 
+  it("opens and focuses the exact supplier payment editor requested by a deadline link", () => {
+    const plan = addManualPlanningHubSupplier(
+      createPlanningHubStarterPlan(null),
+      "videographer",
+      "A family friend",
+      50_000,
+      "booked",
+    );
+    window.history.replaceState(
+      null,
+      "",
+      `/planning-hub/suppliers/videographer?planItem=${plan.items[0].id}#current-supplier-payments`,
+    );
+
+    renderWorkspace(
+      plan,
+      null,
+      true,
+      results,
+      { planItem: plan.items[0].id },
+    );
+
+    const payments = document.querySelector<HTMLDetailsElement>("#current-supplier-payments");
+    expect(payments?.open).toBe(true);
+    expect(payments?.querySelector(":scope > summary")).toBe(document.activeElement);
+  });
+
   it("keeps a future live supplier stage inside the shared workspace", () => {
     renderWorkspace(
       createPlanningHubStarterPlan(null),
@@ -209,6 +238,7 @@ function renderWorkspace(
   connectedWorkspaceId: string | null = null,
   catalogueLive = true,
   resultData: PlanningHubSupplierResults = results,
+  searchParams: PlanningHubSupplierSearchParams = {},
 ) {
   return render(
     <PlanningHubSupplierWorkspace
@@ -217,7 +247,7 @@ function renderWorkspace(
       connectedWorkspaceId={connectedWorkspaceId}
       initialPlan={initialPlan}
       results={resultData}
-      searchParams={{}}
+      searchParams={searchParams}
       userId={null}
     />,
   );

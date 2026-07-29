@@ -83,6 +83,7 @@ const detail: PlanningHubVenueDetail = {
 
 describe("PlanningHubWorkspace", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/");
     window.localStorage.clear();
     loadVenueDetail.mockReset();
     loadVenueDetail.mockResolvedValue(detail);
@@ -170,6 +171,47 @@ describe("PlanningHubWorkspace", () => {
 
     expect(screen.getByRole("heading", { name: "First venue" })).toBeTruthy();
     expect(screen.getByText("This saved venue is ready for payment planning.")).toBeTruthy();
+  });
+
+  it("opens and focuses the exact venue payment editor requested by a deadline link", () => {
+    const plan = addManualPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      "Our village hall",
+      325_000,
+      "booked",
+    );
+    window.history.replaceState(
+      null,
+      "",
+      `/planning-hub?planItem=${plan.items[0].id}#current-venue-payments`,
+    );
+
+    renderWorkspace(plan, null, { planItem: plan.items[0].id });
+
+    const payments = document.querySelector<HTMLDetailsElement>("#current-venue-payments");
+    expect(payments?.open).toBe(true);
+    expect(payments?.querySelector(":scope > summary")).toBe(document.activeElement);
+  });
+
+  it("opens and focuses venue payments when client navigation applies the hash after mount", () => {
+    const plan = addManualPlanningHubVenue(
+      createPlanningHubStarterPlan(null),
+      "Our village hall",
+      325_000,
+      "booked",
+    );
+    renderWorkspace(plan, null, { planItem: plan.items[0].id });
+
+    window.history.replaceState(
+      null,
+      "",
+      `/planning-hub?planItem=${plan.items[0].id}#current-venue-payments`,
+    );
+    fireEvent(window, new HashChangeEvent("hashchange"));
+
+    const payments = document.querySelector<HTMLDetailsElement>("#current-venue-payments");
+    expect(payments?.open).toBe(true);
+    expect(payments?.querySelector(":scope > summary")).toBe(document.activeElement);
   });
 
   it("keeps shared workspace identity in the photography handoff", () => {

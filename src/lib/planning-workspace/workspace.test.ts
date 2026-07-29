@@ -232,7 +232,7 @@ describe("planning workspace", () => {
       title: "Review Venue One payment",
     });
     expect(recommendation.href)
-      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006#payment-deadlines-title");
+      .toBe("/planning-hub?planItem=venue-item&workspace=60000000-0000-4000-8000-000000000006#current-venue-payments");
   });
 
   it("prioritises the earliest overdue task before ordinary discovery stages", () => {

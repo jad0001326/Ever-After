@@ -1,7 +1,7 @@
 import { getPaymentDeadlines } from "@/lib/budget/calculations";
 import type { BudgetPlan } from "@/lib/budget/types";
 import type { PaymentDeadline } from "@/lib/budget/calculations";
-import { getPlanningHubItemStageRoute } from "./item-navigation";
+import { getPlanningHubItemStageHref } from "./item-navigation";
 import { withPlanningWorkspace } from "./navigation";
 
 export type PlanningHubPaymentOverview = {
@@ -49,9 +49,26 @@ export function getPlanningHubPaymentDeadlineHref(
   workspaceId?: string | null,
 ) {
   const item = plan.items.find((candidate) => candidate.id === deadline.itemId);
-  const href = item
-    ? getPlanningHubItemStageRoute(item) ?? "/planning-hub/organise"
-    : "/planning-hub/organise";
+  if (!item) {
+    return withPlanningWorkspace(
+      "/planning-hub/organise#planning-hub-payment-commitments",
+      workspaceId,
+    );
+  }
+  const stageHref = getPlanningHubItemStageHref(item, workspaceId);
+  if (!stageHref) {
+    return withPlanningWorkspace(
+      "/planning-hub/organise#planning-hub-payment-commitments",
+      workspaceId,
+    );
+  }
+  const url = new URL(stageHref, "https://planning-hub.local");
+  url.hash = paymentEditorAnchor(item.categoryId);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
 
-  return withPlanningWorkspace(`${href}#payment-deadlines-title`, workspaceId);
+function paymentEditorAnchor(categoryId: string) {
+  if (categoryId === "venue") return "current-venue-payments";
+  if (categoryId === "photography") return "current-photographer-payments";
+  return "current-supplier-payments";
 }

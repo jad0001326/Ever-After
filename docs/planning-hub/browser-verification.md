@@ -30,12 +30,14 @@ The gate then runs one stateful 390 x 844 journey:
 2. adds that result to comparison, opens its on-demand detail and closes it;
 3. sets a £30,000 budget, 12 June 2027 date, 80 guests and Fife location;
 4. adds a £5,000 booked manual venue and chooses it as the main venue;
-5. proves the remaining budget changes immediately to £25,000;
-6. follows the Photography recommendation and proves its URL and rendered
+5. adds a £1,000 booking deposit due 1 June 2027, records £500 paid and proves
+   the plan-wide deadline and paid totals update;
+6. proves the remaining budget changes immediately to £25,000;
+7. follows the Photography recommendation and proves its URL and rendered
    context contain the exact venue, date, location and remaining pence;
-7. proves a manual venue is not mistaken for a catalogue venue filter;
-8. returns to the Venue step and proves the chosen venue and budget restore
-   from the disposable browser's local plan.
+8. proves a manual venue is not mistaken for a catalogue venue filter;
+9. returns to the Venue step and proves the chosen venue, budget and partial
+   payment restore from the disposable browser's local plan.
 
 It then retains that restored plan for a real keyboard-input journey:
 
@@ -67,6 +69,12 @@ screen-reader behavior from DOM attributes. It proves:
 - meaningful result control, return-link and next-stage link names;
 - the same exact Photography query context without a false manual catalogue
   venue ID.
+
+The final stateful check opens Organise with that same device plan, verifies the
+booking and payment commitment, and follows `Review payment plan`. The link
+must retain the exact plan-item ID, return to the Venue stage, open that item's
+payment disclosure and focus its summary. This covers both direct-load and
+client-navigation hash timing.
 
 For each viewport it proves:
 

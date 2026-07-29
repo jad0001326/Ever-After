@@ -78,6 +78,10 @@ describe("Planning Hub browser verification configuration", () => {
       location: "Fife",
       manualVenueCost: "5000",
       manualVenueName: "Browser journey hall",
+      paymentAmount: "1000",
+      paymentDueDate: "2027-06-01",
+      paymentLabel: "Booking deposit",
+      paymentPaid: "500",
       totalBudget: "30000",
       weddingDate: "2027-06-12",
     });

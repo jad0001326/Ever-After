@@ -15,7 +15,7 @@ release and secure cloud sharing remain deliberately gated.
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
 | Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. |
-| Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches. |
+| Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
 | Reusable logic | Planning, budget, supplier, payment and workspace rules live outside page components and can support a future native client. |
@@ -106,9 +106,13 @@ its public profile route and category-specific browser verification before its
   location and exact remaining balance.
 - That gate now appends a signed-out 390 x 844 interaction journey: favourite
   access is safely gated, a live venue compares and opens on demand, a £5,000
-  booked manual venue reduces a £30,000 plan to £25,000 immediately, the exact
-  venue/date/location/balance reach Photography without a false catalogue
-  venue ID, and the device plan restores after returning to Venue.
+  booked manual venue reduces a £30,000 plan to £25,000 immediately, a £1,000
+  deposit records £500 paid, the exact venue/date/location/balance reach
+  Photography without a false catalogue venue ID, and the device plan restores
+  after returning to Venue.
+- The restored plan then reaches Organise with its booking and payment
+  commitment intact. Its review link retains the exact plan-item ID, returns
+  to Venue, opens the matching payment disclosure and focuses its summary.
 - The same repeatable run uses Chrome's native Enter, Space and Tab input to
   prove venue detail focus transfer, keyboard-reachable Close, exact trigger
   focus restoration, Compare pressed state, manual-entry disclosure and field

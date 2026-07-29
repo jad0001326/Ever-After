@@ -84,7 +84,56 @@ describe("Planning Hub payment guidance", () => {
       deadline,
       "60000000-0000-4000-8000-000000000006",
     )).toBe(
-      "/planning-hub?workspace=60000000-0000-4000-8000-000000000006#payment-deadlines-title",
+      `/planning-hub?planItem=${plan.items[0].id}&workspace=60000000-0000-4000-8000-000000000006#current-venue-payments`,
+    );
+  });
+
+  it("falls back to the Organise commitments when the source item is unavailable", () => {
+    const plan = planWithDeadlines();
+    const deadline = {
+      ...getPlanningHubPaymentOverview(
+        plan,
+        new Date("2026-07-28T12:00:00"),
+      ).deadlines[0],
+      itemId: "missing-item",
+    };
+
+    expect(getPlanningHubPaymentDeadlineHref(plan, deadline)).toBe(
+      "/planning-hub/organise#planning-hub-payment-commitments",
+    );
+  });
+
+  it("opens the photography payment editor for a photography commitment", () => {
+    const plan = planWithDeadlines();
+    plan.items[0] = {
+      ...plan.items[0],
+      categoryId: "photography",
+      supplierType: "Photographer",
+    };
+    const deadline = getPlanningHubPaymentOverview(
+      plan,
+      new Date("2026-07-28T12:00:00"),
+    ).deadlines[0];
+
+    expect(getPlanningHubPaymentDeadlineHref(plan, deadline)).toBe(
+      `/planning-hub/photography?planItem=${plan.items[0].id}#current-photographer-payments`,
+    );
+  });
+
+  it("keeps a manual-only supplier commitment in Organise until its catalogue stage is live", () => {
+    const plan = planWithDeadlines();
+    plan.items[0] = {
+      ...plan.items[0],
+      categoryId: "videography",
+      supplierType: "Videographer",
+    };
+    const deadline = getPlanningHubPaymentOverview(
+      plan,
+      new Date("2026-07-28T12:00:00"),
+    ).deadlines[0];
+
+    expect(getPlanningHubPaymentDeadlineHref(plan, deadline)).toBe(
+      "/planning-hub/organise#planning-hub-payment-commitments",
     );
   });
 });

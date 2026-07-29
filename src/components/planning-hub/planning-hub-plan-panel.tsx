@@ -58,18 +58,30 @@ export function PlanningHubPlanPanel({
   today: string;
 }) {
   const [manualVenueOpen, setManualVenueOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const currentHeadingRef = useRef<HTMLHeadingElement>(null);
+  const paymentSummaryRef = useRef<HTMLElement>(null);
   const budget = calculatePlanningHubPlan(plan);
+  const selectedItemId = selectedItem?.id;
   const venueItems = plan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
 
   useEffect(() => {
     const openFromHash = () => {
       if (window.location.hash === "#manual-venue") setManualVenueOpen(true);
+      if (window.location.hash === "#current-venue-payments") setPaymentOpen(true);
     };
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
   }, []);
+
+  useEffect(() => {
+    if (!paymentOpen || !selectedItemId || window.location.hash !== "#current-venue-payments") return;
+    requestAnimationFrame(() => {
+      paymentSummaryRef.current?.focus({ preventScroll: true });
+      paymentSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [paymentOpen, selectedItemId]);
 
   function removeCurrentItem() {
     onItemRemove();
@@ -179,8 +191,13 @@ export function PlanningHubPlanPanel({
       ) : null}
 
       {selectedItem ? (
-        <details className="border-b border-[#e4ddd2]">
-          <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
+        <details
+          className="border-b border-[#e4ddd2] scroll-mt-24"
+          id="current-venue-payments"
+          onToggle={(event) => setPaymentOpen(event.currentTarget.open)}
+          open={paymentOpen}
+        >
+          <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]" ref={paymentSummaryRef}>
             Payments <CreditCard size={18} />
           </summary>
           <PlanningHubPaymentSchedule

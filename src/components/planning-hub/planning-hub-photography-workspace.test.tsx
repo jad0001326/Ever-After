@@ -87,6 +87,7 @@ const detail: PlanningHubPhotographerDetail = {
 
 describe("PlanningHubPhotographyWorkspace", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/");
     window.localStorage.clear();
     loadPhotographerDetail.mockReset();
     loadPhotographerDetail.mockResolvedValue(detail);
@@ -198,6 +199,26 @@ describe("PlanningHubPhotographyWorkspace", () => {
     renderWorkspace(plan, null, { planItem: plan.items[0].id });
 
     expect(screen.getByRole("heading", { name: "First photographer" })).toBeTruthy();
+  });
+
+  it("opens and focuses the exact photographer payment editor requested by a deadline link", () => {
+    const plan = addManualPlanningHubPhotographer(
+      createPlanningHubStarterPlan(null),
+      "A family friend",
+      50_000,
+      "booked",
+    );
+    window.history.replaceState(
+      null,
+      "",
+      `/planning-hub/photography?planItem=${plan.items[0].id}#current-photographer-payments`,
+    );
+
+    renderWorkspace(plan, null, { planItem: plan.items[0].id });
+
+    const payments = document.querySelector<HTMLDetailsElement>("#current-photographer-payments");
+    expect(payments?.open).toBe(true);
+    expect(payments?.querySelector(":scope > summary")).toBe(document.activeElement);
   });
 
   it("keeps shared workspace identity in both adjacent-stage links", () => {

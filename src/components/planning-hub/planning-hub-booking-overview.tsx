@@ -94,7 +94,7 @@ export function PlanningHubBookingOverview({
             <CountPill label="shortlisted" value={overview.shortlistedCount} />
             <CountPill label="researching" value={overview.researchingCount} />
           </div>
-          <div
+          <section
             aria-labelledby="date-readiness-title"
             className="mt-4 rounded-2xl border border-[#dce5da] bg-[#f3f6f1] p-4"
           >
@@ -124,7 +124,7 @@ export function PlanningHubBookingOverview({
               <CountPill label="need action" value={overview.availabilityNeedsActionCount} />
               <CountPill label="unavailable" value={overview.availabilityUnavailableCount} />
             </div>
-          </div>
+          </section>
           <ol
             aria-label="Booking pipeline"
             className="mt-4 grid gap-3"

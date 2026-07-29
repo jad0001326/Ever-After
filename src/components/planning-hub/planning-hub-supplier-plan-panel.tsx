@@ -59,8 +59,11 @@ export function PlanningHubSupplierPlanPanel({
   today: string;
 }) {
   const [manualSupplierOpen, setManualSupplierOpen] = useState(manualOnly);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const currentHeadingRef = useRef<HTMLHeadingElement>(null);
+  const paymentSummaryRef = useRef<HTMLElement>(null);
   const budget = calculatePlanningHubPlan(plan);
+  const selectedItemId = selectedItem?.id;
   const supplierItems = plan.items.filter((item) => (
     item.categoryId === category.budgetCategoryId
     && item.supplierType === category.label
@@ -72,11 +75,20 @@ export function PlanningHubSupplierPlanPanel({
   useEffect(() => {
     const openFromHash = () => {
       if (window.location.hash === `#${manualId}`) setManualSupplierOpen(true);
+      if (window.location.hash === "#current-supplier-payments") setPaymentOpen(true);
     };
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
   }, [manualId]);
+
+  useEffect(() => {
+    if (!paymentOpen || !selectedItemId || window.location.hash !== "#current-supplier-payments") return;
+    requestAnimationFrame(() => {
+      paymentSummaryRef.current?.focus({ preventScroll: true });
+      paymentSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [paymentOpen, selectedItemId]);
 
   function removeCurrentItem() {
     onItemRemove();
@@ -155,8 +167,13 @@ export function PlanningHubSupplierPlanPanel({
       ) : null}
 
       {selectedItem ? (
-        <details className="border-b border-[#e4ddd2]">
-          <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]">
+        <details
+          className="border-b border-[#e4ddd2] scroll-mt-24"
+          id="current-supplier-payments"
+          onToggle={(event) => setPaymentOpen(event.currentTarget.open)}
+          open={paymentOpen}
+        >
+          <summary className="focus-ring flex min-h-14 cursor-pointer list-none items-center justify-between px-5 font-semibold text-[#173526]" ref={paymentSummaryRef}>
             Deposits &amp; payments <CreditCard size={18} />
           </summary>
           <PlanningHubPaymentSchedule

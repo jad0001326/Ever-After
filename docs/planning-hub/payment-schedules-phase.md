@@ -26,6 +26,8 @@ table, migration, Supabase branch or production write is required.
 - Keep separately added rows independently addressable.
 - Support website listings and manually added venues or photographers.
 - Keep manually selected suppliers active after the workspace is reopened.
+- Link each Organise deadline to its exact venue, photography or supplier item,
+  open the matching payment editor and place keyboard focus on its summary.
 
 ## Compatibility and persistence
 
@@ -59,15 +61,17 @@ more detailed schedule.
 
 Current local branch evidence:
 
-- 44 test files and 219 tests passing;
+- 67 test files and 329 tests passing;
 - TypeScript check passing;
 - ESLint passing with one pre-existing unrelated Open Graph image warning;
-- optimized Next.js production build passing with 77 generated pages;
+- optimized Next.js production build passing with 78 generated pages;
 - venue and photography manual fallback, selection and payment editing verified
   in a real browser at 390 x 844;
 - no horizontal overflow or relevant browser error;
 - independent payment rows, legacy restore, deadline ordering and reopened
-  manual selections covered by regression tests.
+  manual selections covered by regression tests;
+- a real 390 x 844 browser journey records a £1,000 venue deposit with £500
+  paid, verifies it in Organise and returns to the exact open, focused editor.
 
 One optimized-production mobile Lighthouse run for `/planning-hub` measured:
 

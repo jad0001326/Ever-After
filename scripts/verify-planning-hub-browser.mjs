@@ -268,11 +268,20 @@ try {
     journey,
     runtimeErrors,
   });
+  activeScenario = "organise-payment-mobile";
+  runtimeErrors.length = 0;
+  await verifyOrganisePaymentJourney({
+    axeSource,
+    baseUrl: config.baseUrl,
+    client,
+    journey,
+    runtimeErrors,
+  });
 
   client.close();
   console.log(journeyOnly
-    ? "Planning Hub browser verification passed the mobile state, keyboard and screen-reader journeys in interaction-only mode with no overflow, browser errors or accessibility findings."
-    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile state, keyboard and screen-reader journeys with no overflow, browser errors or accessibility findings.`);
+    ? "Planning Hub browser verification passed the mobile state, payment, keyboard and screen-reader journeys in interaction-only mode with no overflow, browser errors or accessibility findings."
+    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile state, payment, keyboard and screen-reader journeys with no overflow, browser errors or accessibility findings.`);
 } catch (error) {
   if (browserDiagnostics.trim()) {
     console.error(browserDiagnostics.trim());
@@ -490,6 +499,15 @@ async function verifyVenueToPhotographyJourney({
       && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£25,000")`,
     "the chosen venue and immediately updated remaining budget",
   );
+  await addPartialVenuePayment(client, journeyConfig);
+  await waitForCondition(
+    client,
+    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("Next payment deadlines")
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes(${JSON.stringify(journeyConfig.paymentLabel)})
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("1 Jun 2027")
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£500")`,
+    "the saved partial payment and venue deadline",
+  );
 
   const nextHref = await evaluate(
     client,
@@ -535,8 +553,10 @@ async function verifyVenueToPhotographyJourney({
   ]);
   await waitForCondition(
     client,
-    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£25,000")`,
-    "the locally restored remaining budget",
+    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£25,000")
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£500")
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes(${JSON.stringify(journeyConfig.paymentLabel)})`,
+    "the locally restored remaining budget and partial payment",
   );
 
   assert.deepEqual(
@@ -545,7 +565,185 @@ async function verifyVenueToPhotographyJourney({
     `venue-to-photography-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
   );
   console.log(
-    `venue-to-photography-mobile: guest favourite guard, compare, detail, manual booked venue, £25,000 handoff and local restore passed at ${journeyConfig.viewport.width}x${journeyConfig.viewport.height}.`,
+    `venue-to-photography-mobile: guest favourite guard, compare, detail, manual booked venue, £500 partial payment, £25,000 handoff and local restore passed at ${journeyConfig.viewport.width}x${journeyConfig.viewport.height}.`,
+  );
+}
+
+async function addPartialVenuePayment(client, journeyConfig) {
+  const opened = await evaluate(
+    client,
+    `(() => {
+      const details = Array.from(
+        document.querySelectorAll('aside[aria-label="Connected wedding plan"] details'),
+      ).find((candidate) => candidate.querySelector(":scope > summary")?.textContent?.includes("Payments"));
+      if (!details) return false;
+      if (!details.open) details.querySelector(":scope > summary")?.click();
+      details.setAttribute("data-browser-payment-schedule", "true");
+      return details.open;
+    })()`,
+  );
+  assert.equal(opened, true, "The venue payment schedule did not open.");
+  const added = await clickButtonWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Add payment",
+  );
+  assert.equal(added, true, "A venue payment row could not be added.");
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector('details[data-browser-payment-schedule="true"] ol[aria-label="Payment schedule"] li'))`,
+    "the new venue payment row",
+  );
+  await setLabelledControlWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Label",
+    journeyConfig.paymentLabel,
+  );
+  await setLabelledControlWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Amount",
+    journeyConfig.paymentAmount,
+  );
+  await setLabelledControlWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Paid so far",
+    journeyConfig.paymentPaid,
+  );
+  await setLabelledControlWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Due date",
+    journeyConfig.paymentDueDate,
+  );
+  const editedSchedule = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const root = document.querySelector('details[data-browser-payment-schedule="true"]');
+      return JSON.stringify({
+        text: root?.innerText ?? "",
+        values: Object.fromEntries(Array.from(root?.querySelectorAll("label") ?? []).map((label) => [
+          label.childNodes[0]?.textContent?.trim() ?? "",
+          label.querySelector("input, select, textarea")?.value ?? ""
+        ]))
+      });
+    })()`,
+  ));
+  assert.equal(editedSchedule.values.Label, journeyConfig.paymentLabel);
+  assert.equal(editedSchedule.values.Amount, journeyConfig.paymentAmount);
+  assert.equal(editedSchedule.values["Paid so far"], journeyConfig.paymentPaid);
+  assert.equal(editedSchedule.values["Due date"], journeyConfig.paymentDueDate);
+  await waitForCondition(
+    client,
+    `document.querySelector('details[data-browser-payment-schedule="true"]')?.innerText.includes("Scheduled")
+      && document.querySelector('details[data-browser-payment-schedule="true"]')?.innerText.includes("£1,000")
+      && document.querySelector('details[data-browser-payment-schedule="true"]')?.innerText.includes("Paid")
+      && document.querySelector('details[data-browser-payment-schedule="true"]')?.innerText.includes("£500")`,
+    "the edited payment schedule totals",
+  );
+  const saved = await clickButtonWithin(
+    client,
+    'details[data-browser-payment-schedule="true"]',
+    "Save payment schedule",
+  );
+  assert.equal(saved, true, "The venue payment schedule could not be saved.");
+}
+
+async function verifyOrganisePaymentJourney({
+  axeSource: source,
+  baseUrl,
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  await client.send("Page.navigate", {
+    url: new URL("/planning-hub/organise", baseUrl).href,
+  });
+  const expectedText = [
+    "Keep every moving part in one calm place.",
+    "Budget & bookings",
+    "Payments & deadlines",
+    journeyConfig.manualVenueName,
+    journeyConfig.paymentLabel,
+    "1 Jun 2027",
+    "Review payment plan",
+  ];
+  await waitForDocument(client, expectedText);
+  await assertHealthyPage({
+    axeSource: source,
+    client,
+    expectedText,
+    name: "organise-payment-mobile",
+    runtimeErrors,
+    viewport: journeyConfig.viewport,
+  });
+
+  const paymentHref = await evaluate(
+    client,
+    `Array.from(document.querySelectorAll("a"))
+      .find((candidate) => candidate.textContent?.includes("Review payment plan"))
+      ?.href`,
+  );
+  assert(paymentHref, "The Organise payment commitment has no review link.");
+  const paymentUrl = new URL(paymentHref);
+  assert.equal(paymentUrl.pathname, "/planning-hub");
+  assert(paymentUrl.searchParams.get("planItem"), "The payment review link must identify its plan item.");
+  assert.equal(paymentUrl.hash, "#current-venue-payments");
+
+  const followedPayment = await clickLinkByText(client, "Review payment plan");
+  assert.equal(followedPayment, true, "The Organise payment review link was not followed.");
+  await waitForDocument(client, [
+    journeyConfig.manualVenueName,
+    "Next payment deadlines",
+    journeyConfig.paymentLabel,
+  ]);
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector("#current-venue-payments"))
+      && document.querySelector("#current-venue-planning h3")?.textContent?.trim() === ${JSON.stringify(journeyConfig.manualVenueName)}`,
+    "the exact venue and its payment editor",
+  );
+  const returnedPaymentState = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const details = document.querySelector("#current-venue-payments");
+      const summary = details?.querySelector(":scope > summary");
+      return JSON.stringify({
+        activeElement: document.activeElement?.outerHTML?.slice(0, 300) ?? "",
+        focused: document.activeElement === summary,
+        open: details?.open ?? false,
+        paymentText: details?.innerText ?? "",
+        url: window.location.href,
+        values: Object.fromEntries(Array.from(details?.querySelectorAll("label") ?? []).map((label) => [
+          label.childNodes[0]?.textContent?.trim() ?? "",
+          label.querySelector("input, select, textarea")?.value ?? ""
+        ]))
+      });
+    })()`,
+  ));
+  assert.equal(returnedPaymentState.open, true, JSON.stringify(returnedPaymentState));
+  assert.equal(returnedPaymentState.focused, true, JSON.stringify(returnedPaymentState));
+  assert(
+    returnedPaymentState.values.Label === journeyConfig.paymentLabel,
+    JSON.stringify(returnedPaymentState),
+  );
+  assert.equal(
+    returnedPaymentState.values["Paid so far"],
+    journeyConfig.paymentPaid,
+    JSON.stringify(returnedPaymentState),
+  );
+  const returnedUrl = new URL(await evaluate(client, "window.location.href"));
+  assert.equal(returnedUrl.searchParams.get("planItem"), paymentUrl.searchParams.get("planItem"));
+  assert.equal(returnedUrl.hash, "#current-venue-payments");
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `organise-payment-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+  console.log(
+    `organise-payment-mobile: the ${journeyConfig.paymentLabel} commitment returned to its exact venue payment editor, opened it and focused its summary.`,
   );
 }
 
@@ -865,7 +1063,13 @@ async function assertHealthyPage({
   const axe = JSON.parse(await evaluate(
     client,
     `axe.run(document).then((results) => JSON.stringify({
-      incomplete: results.incomplete.map((item) => ({ id: item.id, nodes: item.nodes.length })),
+      incomplete: results.incomplete.map((item) => ({
+        id: item.id,
+        nodes: item.nodes.map((node) => ({
+          failureSummary: node.failureSummary,
+          target: node.target
+        }))
+      })),
       passes: results.passes.length,
       violations: results.violations.map((item) => ({
         id: item.id,
@@ -1031,14 +1235,26 @@ async function pressKey(client, key) {
 }
 
 async function setLabelledControl(client, labelText, value) {
+  await setLabelledControlWithin(
+    client,
+    'aside[aria-label="Connected wedding plan"]',
+    labelText,
+    value,
+  );
+}
+
+async function setLabelledControlWithin(client, rootSelector, labelText, value) {
   const selector = await evaluate(
     client,
     `(() => {
-      const labels = Array.from(document.querySelectorAll('aside[aria-label="Connected wedding plan"] label'));
+      const root = document.querySelector(${JSON.stringify(rootSelector)});
+      const labels = Array.from(root?.querySelectorAll("label") ?? []);
       const index = labels.findIndex((label) => label.childNodes[0]?.textContent?.trim() === ${JSON.stringify(labelText)});
       const control = index >= 0 ? labels[index].querySelector("input, select, textarea") : null;
       if (!control) return null;
-      const marker = "planning-browser-control-" + index;
+      document.querySelectorAll("[data-browser-control]")
+        .forEach((candidate) => candidate.removeAttribute("data-browser-control"));
+      const marker = "planning-browser-control-" + Date.now() + "-" + index;
       control.setAttribute("data-browser-control", marker);
       return '[data-browser-control="' + marker + '"]';
     })()`,

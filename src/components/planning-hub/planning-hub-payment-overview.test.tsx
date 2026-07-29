@@ -56,7 +56,7 @@ describe("PlanningHubPaymentOverview", () => {
     expect(screen.getAllByText("£4,000").length).toBe(2);
     expect(screen.getByText("Final balance · 1 Jul 2026")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review payment plan" }).getAttribute("href"))
-      .toBe("/planning-hub?workspace=60000000-0000-4000-8000-000000000006#payment-deadlines-title");
+      .toBe(`/planning-hub?planItem=${venue.id}&workspace=60000000-0000-4000-8000-000000000006#current-venue-payments`);
   });
 
   it("reveals every scheduled payment in bounded batches", () => {
