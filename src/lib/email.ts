@@ -1,5 +1,6 @@
 import { absoluteUrl } from "@/lib/utils";
 import { isValidEmailSyntax } from "@/lib/outreach-validation";
+import { buildClaimApprovedEmail } from "@/lib/claim-approved-email";
 
 export type EmailInput = {
   to: string | string[];
@@ -48,6 +49,7 @@ type ClaimReviewedNotification = {
   claimId: string;
   venueName: string;
   venueSlug: string;
+  claimantName: string;
   claimantEmail: string;
   businessEmail: string;
   status: "approved" | "rejected";
@@ -130,7 +132,15 @@ function splitEmails(value: string | undefined) {
 }
 
 function uniqueEmails(values: Array<string | null | undefined>) {
-  return Array.from(new Set(values.flatMap((value) => splitEmails(value ?? undefined))));
+  const seen = new Set<string>();
+  return values
+    .flatMap((value) => splitEmails(value ?? undefined))
+    .filter((email) => {
+      const key = email.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 function htmlEscape(value: string) {
@@ -380,19 +390,19 @@ export async function notifyClaimReviewed(input: ClaimReviewedNotification) {
   if (recipients.length === 0) return;
 
   const approved = input.status === "approved";
+  const welcomeEmail = approved ? buildClaimApprovedEmail(input) : null;
   await sendEmail({
     to: recipients,
-    subject: approved ? `Your EverAft claim for ${input.venueName} was approved` : `Your EverAft claim for ${input.venueName} was reviewed`,
-    text: [
-      `Hello,`,
+    subject: welcomeEmail?.subject ?? `Your EverAft claim for ${input.venueName} was reviewed`,
+    text: welcomeEmail?.text ?? [
+      `Hi ${input.claimantName},`,
       "",
-      approved
-        ? `Your claim for ${input.venueName} has been approved. You can now manage the listing from the vendor dashboard.`
-        : `Your claim for ${input.venueName} was not approved at this stage.`,
+      `Your claim for ${input.venueName} was not approved at this stage.`,
       input.adminNotes ? `Admin note: ${input.adminNotes}` : null,
       "",
-      approved ? `Vendor dashboard: ${absoluteUrl("/vendor")}` : `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}`
+      `Venue listing: ${absoluteUrl(`/venues/${input.venueSlug}`)}`
     ].filter((line): line is string => line !== null).join("\n"),
+    html: welcomeEmail?.html,
     idempotencyKey: `claim-${input.status}-${input.claimId}`
   });
 }
