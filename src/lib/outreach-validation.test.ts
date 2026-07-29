@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hasOfficialContactSource,
+  isValidEmailSyntax,
   isTrustedVenueContact,
   isValidOutreachEmail,
   normalizeEmail,
@@ -14,11 +15,19 @@ describe("outreach validation", () => {
 
   it("accepts ordinary syntax and rejects malformed or placeholder addresses", () => {
     expect(isValidOutreachEmail("weddings@venue.co.uk")).toBe(true);
+    expect(isValidOutreachEmail("info@ayrehotel.co.u")).toBe(false);
     expect(isValidOutreachEmail("not-an-email")).toBe(false);
     expect(isValidOutreachEmail("//outlook.office365.com/owa/calendar/book@venue.co.uk")).toBe(false);
     expect(isValidOutreachEmail("%20info@venue.co.uk")).toBe(false);
     expect(isValidOutreachEmail("test@venue.co.uk")).toBe(false);
     expect(isValidOutreachEmail("hello@example.com")).toBe(false);
+  });
+
+  it("requires a provider-compatible top-level domain", () => {
+    expect(isValidEmailSyntax("hello@venue.travel")).toBe(true);
+    expect(isValidEmailSyntax("hello@venue.xn--p1ai")).toBe(true);
+    expect(isValidEmailSyntax("hello@venue.u")).toBe(false);
+    expect(isValidEmailSyntax("hello@venue.123")).toBe(false);
   });
 
   it("accepts only public HTTP URLs and removes fragments", () => {

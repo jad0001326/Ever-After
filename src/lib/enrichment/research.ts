@@ -1,6 +1,7 @@
 import { lookup, resolve4, resolve6, resolveMx } from "node:dns/promises";
 import { isIP } from "node:net";
 import { PDFParse } from "pdf-parse";
+import { isValidEmailSyntax } from "../outreach-validation";
 
 export type ResearchConfidence = "high" | "medium" | "low";
 export type EmailVerificationStatus =
@@ -662,11 +663,9 @@ export function extractEmails(html: string) {
 
 export function isEmailSyntaxValid(value: string) {
   const email = value.trim().toLowerCase();
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
-  const [localPart, domain] = email.split("@");
-  if (!localPart || !domain || /[%/\\\"]/.test(localPart) || localPart.startsWith(".") || localPart.endsWith(".") || localPart.includes("..")) return false;
-  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(domain)) return false;
-  return !ignoredEmailFragments.some((fragment) => email.includes(fragment)) && !/\.(?:png|jpe?g|gif|webp|svg)$/i.test(email);
+  return isValidEmailSyntax(email)
+    && !ignoredEmailFragments.some((fragment) => email.includes(fragment))
+    && !/\.(?:png|jpe?g|gif|webp|svg)$/i.test(email);
 }
 
 function parseRobotsGroups(text: string) {

@@ -2767,6 +2767,1291 @@ export const planningGuides: readonly PlanningGuide[] = [
         "href": "https://www.gov.uk/marriage-visa"
       }
     ]
+  },
+  {
+    slug: "wedding-planning-checklist-scotland",
+    title: "The complete wedding planning checklist for Scotland",
+    shortTitle: "Scottish wedding planning checklist",
+    description:
+      "A calm, practical Scottish wedding checklist from the first budget conversation to the final legal paperwork and wedding-day handover.",
+    category: "Planning",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 10,
+    answer:
+      "Start with four connected decisions: the amount you can spend, a realistic guest range, your ceremony type and the kind of venue you need. Book the date-defining parts first, then work through suppliers, guests, legal notice and final logistics in dependency order.",
+    intro: [
+      "A useful wedding checklist is not a list of 150 jobs presented as if they are equally urgent. Some decisions unlock everything else; others cannot be finalised until guest numbers, timings or a venue are confirmed.",
+      "This checklist is written for weddings taking place in Scotland. The time windows are flexible planning ranges, not deadlines. Start at the point that matches your wedding and move the important dependencies forward."
+    ],
+    takeaways: [
+      "Agree the budget, guest range and priorities before committing to a venue.",
+      "Book the ceremony, venue and date-dependent suppliers before decorative details.",
+      "Treat Scottish marriage notice and the Marriage Schedule as essential legal tasks, not optional admin."
+    ],
+    sections: [
+      {
+        heading: "First: define the wedding you can actually plan",
+        bullets: [
+          "Set a firm upper spending limit and decide what it includes.",
+          "Write a realistic day-guest range rather than a single perfect number.",
+          "Choose three shared priorities and three things you are happy to simplify.",
+          "Decide whether you want a civil, religious or belief ceremony.",
+          "Choose a broad area, season and acceptable days of the week."
+        ],
+        paragraphs: [
+          "These decisions belong together. A guest list affects the venue, food and drink; the venue affects the date and supplier travel; the ceremony choice affects who must be available and which registrar you need to contact.",
+          "Open a working budget now. Use estimates honestly, keep a contingency and replace each estimate with the complete written price when you book."
+        ]
+      },
+      {
+        heading: "Book the parts that define the date",
+        table: {
+          headers: ["Decision", "Confirm before paying"],
+          rows: [
+            ["Venue", "Complete price, capacity, spaces, timings, wet-weather plan and contract"],
+            ["Ceremony", "Registrar or authorised celebrant, place, date and time"],
+            ["Photography", "Named photographer, coverage, deliverables, travel and backup plan"],
+            ["Core entertainment", "Exact act or team, timings, equipment and sound restrictions"],
+            ["Accommodation", "Room allocation, minimum stay, release date and liability for unused rooms"]
+          ]
+        },
+        paragraphs: [
+          "There is no universal supplier order after the venue and ceremony. Prioritise any supplier whose individual style or availability matters most to you, especially where only one person or team can take your date."
+        ]
+      },
+      {
+        heading: "Build the middle of the plan",
+        bullets: [
+          "Confirm food, drinks, evening food and dietary-process details.",
+          "Book clothing early enough for ordering and alterations without panic.",
+          "Arrange music, flowers, styling, cake, stationery and transport in the order your wedding needs them.",
+          "Check power, access, setup, collection and supplier-meal requirements with the venue.",
+          "Create a guest information plan for accommodation, travel, children and accessibility.",
+          "Keep every deposit and balance date in one payment schedule."
+        ],
+        paragraphs: [
+          "A supplier being booked does not make the job complete. Record who is responsible, the total cost, what is included, what you still need to supply and the next decision date."
+        ]
+      },
+      {
+        heading: "Turn names into an invited guest plan",
+        paragraphs: [
+          "Clean the guest list before ordering stationery. Use one row per invited household, record every named guest and keep day invitations, evening invitations, plus-ones and children explicit.",
+          "Send invitations early enough for your guests to make realistic travel and accommodation arrangements. Set the RSVP deadline before the venue and caterer need final numbers, leaving time to chase replies and solve table changes."
+        ],
+        bullets: [
+          "Collect attendance, dietary needs and accessibility requirements together.",
+          "Track invitations sent, replies received and any follow-up needed.",
+          "Start a draft seating plan before the deadline, but place guests only after replies are reliable.",
+          "Tell guests clearly which parts of the day they are invited to."
+        ]
+      },
+      {
+        heading: "Complete the Scottish legal process",
+        paragraphs: [
+          "Both people need to submit marriage notice and the required documents to the registrar for the district where the ceremony will take place. National Records of Scotland keeps the current forms, document guidance and process; follow that source and the registrar's written instructions rather than an old checklist.",
+          "Confirm how the Marriage Schedule will be collected, handled at the ceremony and returned for registration. The arrangement differs between civil and religious or belief ceremonies, so give the task a named owner."
+        ],
+        bullets: [
+          "Recheck the current NRS forms, fees and document requirements.",
+          "Confirm that a religious or belief celebrant is authorised to solemnise the marriage.",
+          "Plan any required document collection or in-person appointment.",
+          "Choose two witnesses aged 16 or over and confirm their details with the registrar.",
+          "Keep originals and submission evidence together."
+        ]
+      },
+      {
+        heading: "The final month and final week",
+        table: {
+          headers: ["When", "Finish"],
+          rows: [
+            ["Four to six weeks", "RSVP chase, final fittings, ceremony draft, supplier details and first complete timeline"],
+            ["Two to four weeks", "Final numbers, seating plan, dietary list, payments and venue handover"],
+            ["Final week", "Weather decision, emergency contacts, packing, deliveries and delegated jobs"],
+            ["Day before", "Marriage Schedule check, rings, clothing, overnight bags and only the tasks that genuinely cannot happen earlier"],
+            ["Afterwards", "Return the Marriage Schedule as instructed, settle agreed extras and store contracts and final invoices"]
+          ]
+        },
+        paragraphs: [
+          "Give the final running order and contact sheet to the venue and the people who need it. On the day, decisions should go to a coordinator, venue contact or trusted person rather than back to the couple."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Open the wedding budget planner", href: "/wedding-budget-planner" },
+      { label: "Build your table plan", href: "/wedding-table-planner" },
+      { label: "Compare Scottish wedding venues", href: "/venues" },
+      { label: "Read the venue viewing checklist", href: "/guides/wedding-venue-viewing-checklist" }
+    ],
+    faqs: [
+      {
+        question: "How long does it take to plan a wedding in Scotland?",
+        answer:
+          "There is no required planning length. More time can give you more choice for a fixed date or high-demand venue, while a shorter plan can work well when you are flexible and make decisions quickly. The legal notice process still needs to be completed on the current NRS timetable."
+      },
+      {
+        question: "What should we book first?",
+        answer:
+          "Confirm the budget, guest range and ceremony direction first. The venue, ceremony provider and date normally come next, followed by the individual suppliers whose availability matters most to you."
+      },
+      {
+        question: "Do we need a wedding planner?",
+        answer:
+          "Not necessarily. A planner can be valuable for complex logistics, limited time or on-the-day coordination, but a clear budget, decision log, payment schedule and named responsibilities can support a self-planned wedding."
+      },
+      {
+        question: "Where should we check the legal marriage steps?",
+        answer:
+          "Use National Records of Scotland and the registrar for the district where the ceremony will take place. Requirements and fees can change, so recheck them before sending documents."
+      }
+    ],
+    sources: [
+      {
+        label: "National Records of Scotland: registering a marriage or civil partnership",
+        href: "https://www.nrscotland.gov.uk/registration/registering-a-marriage-or-civil-partnership/"
+      },
+      {
+        label: "National Records of Scotland: making arrangements",
+        href: "https://www.nrscotland.gov.uk/registration/making-arrangements-for-a-marriage-or-civil-partnership/"
+      },
+      {
+        label: "National Records of Scotland: marriage and civil partnership celebrants",
+        href: "https://www.nrscotland.gov.uk/registration/marriage-and-civil-partnership-celebrants/"
+      }
+    ]
+  },
+  {
+    slug: "how-far-in-advance-book-wedding-venue-scotland",
+    title: "How far in advance should you book a wedding venue in Scotland?",
+    shortTitle: "When to book a Scottish venue",
+    description:
+      "A realistic guide to venue booking times in Scotland, from fixed peak Saturdays to flexible dates and shorter planning windows.",
+    category: "Choosing a venue",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 8,
+    answer:
+      "If you want a particular Scottish venue, a fixed date or a peak Saturday, start enquiries as soon as your budget and guest range are credible—often 12 to 18 months or more ahead. If you are flexible on venue, month or weekday, a shorter window can still work.",
+    intro: [
+      "There is no national booking deadline for wedding venues. Availability is shaped by the exact venue, date, ceremony time, guest count and accommodation you need.",
+      "The right moment to book is not simply 'as early as possible'. It is when you understand the full commitment and have enough information to choose confidently."
+    ],
+    takeaways: [
+      "Fixed venue plus fixed peak date needs the earliest search.",
+      "Flexibility on weekday, season or location creates more options.",
+      "Do not trade careful contract checks for speed."
+    ],
+    sections: [
+      {
+        heading: "Use the window that matches your constraints",
+        table: {
+          headers: ["Planning position", "Practical approach"],
+          rows: [
+            ["18 months or more", "Useful for a very specific venue, exclusive-use weekend, peak Saturday or large accommodation need"],
+            ["12–18 months", "A sensible starting window for broad choice without treating availability as guaranteed"],
+            ["6–12 months", "Often workable with flexibility and a focused shortlist"],
+            ["Under 6 months", "Prioritise venues with suitable live availability and simplify dependent bookings"]
+          ]
+        },
+        paragraphs: [
+          "These are planning ranges, not market promises. A small city ceremony can have different lead times from a two-night Highland estate, and a date that has just been released can appear at any stage."
+        ]
+      },
+      {
+        heading: "Start earlier when several scarce things must align",
+        bullets: [
+          "You only want one named venue.",
+          "The date must be a Saturday in a popular month.",
+          "Most guests need bedrooms on site.",
+          "You require a particular registrar, celebrant, photographer or band.",
+          "The venue hosts a limited number of weddings each year.",
+          "Travel depends on ferries, flights or a narrow seasonal operating window."
+        ],
+        paragraphs: [
+          "Every fixed requirement reduces the number of workable combinations. Make those constraints visible before sending enquiries so the venue can answer the real question."
+        ]
+      },
+      {
+        heading: "You can plan faster by changing the right variable",
+        bullets: [
+          "Ask for all available dates within a month or season instead of one date.",
+          "Compare Thursdays, Fridays and Sundays as well as Saturdays.",
+          "Consider a single-day booking rather than a full exclusive-use weekend.",
+          "Look across several connected regions rather than one postcode.",
+          "Separate on-site bedrooms you need from accommodation guests could book nearby.",
+          "Keep the guest range honest so you do not exclude a venue for guests who may never be invited."
+        ]
+      },
+      {
+        heading: "Do not book before these answers are written down",
+        bullets: [
+          "The total for your date and realistic guest count, including VAT and required extras.",
+          "The exact rooms, grounds, access times and level of exclusivity.",
+          "Comfortable ceremony, meal and evening capacities for your layout.",
+          "The wet-weather plan and what triggers the change.",
+          "Required or restricted suppliers, food, drink and accommodation commitments.",
+          "Deposit, payment, cancellation, postponement and price-change terms."
+        ],
+        paragraphs: [
+          "Availability pressure is real, but a deposit turns a possible wedding into a contract. Ask how long the date can be held while you read the documents and compare the complete price."
+        ]
+      },
+      {
+        heading: "Make one availability enquiry do more work",
+        paragraphs: [
+          "Give the venue your acceptable date range, day and evening guest range, ceremony preference, accommodation need and budget context. Ask for every suitable option rather than only whether one date is free.",
+          "Keep a shared shortlist with the response date, quoted total, key conditions and next action. That makes it easier to move quickly without losing the differences between packages."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Search Scottish wedding venues", href: "/venues" },
+      { label: "Compare venue packages", href: "/guides/how-to-compare-wedding-venue-packages" },
+      { label: "Use the venue viewing checklist", href: "/guides/wedding-venue-viewing-checklist" },
+      { label: "Check hidden venue costs", href: "/guides/hidden-wedding-venue-costs" }
+    ],
+    faqs: [
+      {
+        question: "Is two years too early to book a wedding venue?",
+        answer:
+          "Not if the venue accepts bookings that far ahead and you are ready to make the commitment. Check how prices may change, what is fixed in the contract and whether the long payment schedule remains comfortable."
+      },
+      {
+        question: "Can we book a wedding venue six months ahead?",
+        answer:
+          "Yes, if suitable dates and capacity are available. Flexibility and quick, organised decisions matter more in a short window, but the contract and complete price still deserve proper review."
+      },
+      {
+        question: "Should we choose the date or venue first?",
+        answer:
+          "Choose the date first only if it has real importance or cannot move. If the venue matters more, ask it for a set of suitable dates and build the ceremony and supplier search around those."
+      }
+    ]
+  },
+  {
+    slug: "wedding-venue-red-flags",
+    title: "Wedding venue red flags: what to check before paying a deposit",
+    shortTitle: "Wedding venue red flags",
+    description:
+      "The warning signs that deserve a pause before you sign, from incomplete prices and pressure selling to vague capacities and weak weather plans.",
+    category: "Choosing a venue",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "Pause before booking if the venue will not provide a complete written price, contract and package details; pressures you to pay immediately; gives inconsistent answers; or cannot explain capacity, exclusivity, accessibility and its wet-weather plan for your wedding.",
+    intro: [
+      "A red flag is not a minor preference you dislike. It is a sign that the cost, service or responsibility may be materially different from what you think you are buying.",
+      "One unclear answer may be resolved with a good follow-up. A pattern of pressure, contradictions or missing documents is different. Slow the decision down until the important facts are written down."
+    ],
+    takeaways: [
+      "Never rely on the brochure headline as the complete price.",
+      "Pressure becomes dangerous when key documents or answers are still missing.",
+      "A beautiful main space cannot compensate for a day that fails in rain, at capacity or for guests who need access."
+    ],
+    sections: [
+      {
+        heading: "The quote is not a complete total",
+        bullets: [
+          "VAT, service, staffing or cleaning is not clearly included.",
+          "Minimum guest numbers or food-and-drink spends appear late.",
+          "Bedrooms, security, furniture or required suppliers are compulsory but unpriced.",
+          "The venue will not quote your actual date and guest range.",
+          "Important verbal inclusions are missing from the package or contract."
+        ],
+        paragraphs: [
+          "Ask for one worked total for a realistic version of your wedding. Optional upgrades can sit separately; compulsory costs should not be left for you to discover after paying."
+        ]
+      },
+      {
+        heading: "You are being pushed to pay before you can verify",
+        bullets: [
+          "The date will only be held if you pay during the viewing.",
+          "You cannot take the contract away to read.",
+          "Questions are dismissed as details that can be handled later.",
+          "A discount is used to prevent you comparing another venue.",
+          "The person selling the package cannot confirm what their promises mean in the contract."
+        ],
+        paragraphs: [
+          "A genuinely limited date can still be sold transparently. Ask when the hold expires and what exactly is needed to reserve it. Citizens Advice Scotland has separate guidance if you believe a service was sold through misleading information or unfair pressure."
+        ]
+      },
+      {
+        heading: "Capacity, spaces or exclusivity keep changing",
+        bullets: [
+          "The advertised maximum is used without showing the layout it assumes.",
+          "The ceremony, meal and evening capacities are treated as one number.",
+          "No one can explain where guests go during a room turnaround.",
+          "Exclusive use is promised without defining the buildings, grounds, accommodation or public access.",
+          "Noise limits, finishing times or public opening are only mentioned verbally."
+        ],
+        paragraphs: [
+          "Ask to see a floor plan or a real wedding with similar numbers. Legal capacity, comfortable capacity and the number that leaves space for entertainment, accessibility and service are not automatically the same."
+        ]
+      },
+      {
+        heading: "The contract leaves the important risk with you",
+        bullets: [
+          "Prices may change without a clear method, notice period or limit.",
+          "The cancellation table is missing or difficult to reconcile with the payment schedule.",
+          "The venue can materially change rooms, suppliers or timings without explaining your options.",
+          "Accommodation liability is unclear if guests do not book.",
+          "The contract, quote and brochure contradict one another."
+        ],
+        paragraphs: [
+          "Do not guess which document wins. Ask the venue to correct the documents or confirm the agreed position in a form that becomes part of the contract. Seek independent consumer or legal advice where the financial commitment is significant and the wording remains unclear."
+        ]
+      },
+      {
+        heading: "The backup plan is only a hopeful sentence",
+        bullets: [
+          "The indoor alternative does not hold your guest count.",
+          "There is no wind plan for an outdoor structure or exposed ceremony.",
+          "The alternative route is not step-free or weather-protected.",
+          "Moving indoors removes the dining, band or turnaround space.",
+          "No one owns the decision or knows when it will be made."
+        ],
+        paragraphs: [
+          "Ask to walk through the wet-weather version in the same order as the wedding day. The backup should be a complete experience, not simply permission to stand somewhere indoors."
+        ]
+      },
+      {
+        heading: "Know the difference between a red flag and a trade-off",
+        table: {
+          headers: ["Trade-off you can assess", "Red flag that blocks assessment"],
+          rows: [
+            ["A firm 11pm finish", "The finish time changes between the brochure and contract"],
+            ["A required caterer with a full price list", "A compulsory supplier with no available quote"],
+            ["No lift to one optional room", "The main guest journey is described as accessible but is not"],
+            ["A non-refundable booking payment explained clearly", "Refund and cancellation terms are withheld until after payment"],
+            ["A smaller wet-weather room you accept", "No suitable plan for the number the venue agreed to host"]
+          ]
+        }
+      }
+    ],
+    venueLinks: [
+      { label: "Compare Scottish venues", href: "/venues" },
+      { label: "Questions to ask before booking", href: "/guides/questions-to-ask-before-booking-a-wedding-venue" },
+      { label: "Understand deposits and cancellation terms", href: "/guides/wedding-venue-deposits-cancellation-terms" },
+      { label: "Plan an accessible wedding", href: "/guides/planning-accessible-wedding-checklist" }
+    ],
+    faqs: [
+      {
+        question: "Is a non-refundable wedding venue deposit a red flag?",
+        answer:
+          "Not by itself. The important questions are whether the payment and cancellation terms are clear before booking, what the venue may retain in each situation and whether the contract is fair. Get advice if the wording or amount concerns you."
+      },
+      {
+        question: "What if the venue's verbal promise is not in the contract?",
+        answer:
+          "Ask for the contract, quote or agreed schedule to be amended before you pay. It is much easier to resolve a difference while the booking is still being negotiated."
+      },
+      {
+        question: "Should we walk away after one poor email?",
+        answer:
+          "Not necessarily. Ask a clear follow-up and judge the response. The stronger warning is a repeated pattern of missing answers, contradictions, pressure or unwillingness to document the agreement."
+      }
+    ],
+    sources: [
+      {
+        label: "Citizens Advice Scotland: misleading or pressured sales",
+        href: "https://www.citizensadvice.org.uk/scotland/consumer/changed-your-mind/if-you-were-misled-or-pressured-into-buying-something-you-didnt-want/"
+      },
+      {
+        label: "Citizens Advice Scotland: cancelling a service you have arranged",
+        href: "https://www.citizensadvice.org.uk/scotland/consumer/changed-your-mind/cancelling-a-service-youve-arranged/"
+      }
+    ]
+  },
+  {
+    slug: "how-to-choose-between-wedding-venues",
+    title: "How to choose between wedding venues without second-guessing",
+    shortTitle: "Choosing between wedding venues",
+    description:
+      "A practical venue comparison method using deal-breakers, complete costs, guest experience and a weighted scorecard.",
+    category: "Choosing a venue",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 8,
+    answer:
+      "Remove any venue that fails a genuine deal-breaker, compare the remaining options using the same complete wedding scenario, then score the factors you actually value. Use the score to expose the decision—not to replace your judgement.",
+    intro: [
+      "The hardest venue decision is rarely good versus bad. It is usually two places you like for different reasons, with packages that present their strengths in different ways.",
+      "A fair comparison gives every venue the same wedding: the same guest count, ceremony plan, food and drink assumptions, accommodation need and likely extras."
+    ],
+    takeaways: [
+      "Separate deal-breakers from preferences before scoring anything.",
+      "Compare the complete cost of the same wedding at each venue.",
+      "Test the guest journey and wet-weather version, not only the main room."
+    ],
+    sections: [
+      {
+        heading: "Step one: remove the venues that cannot host your wedding",
+        bullets: [
+          "The comfortable capacity is too low for your realistic guest list.",
+          "The ceremony type, accessibility or location cannot work.",
+          "The complete likely price exceeds your firm upper limit.",
+          "The required date or acceptable date range is unavailable.",
+          "A contract term creates a risk you are not willing to accept."
+        ],
+        paragraphs: [
+          "A deal-breaker should be factual. 'It did not feel quite as warm' is a preference; 'two key guests cannot reach the ceremony room' is a constraint. Keeping those separate prevents a beautiful detail from hiding an unworkable plan."
+        ]
+      },
+      {
+        heading: "Step two: build one like-for-like cost",
+        table: {
+          headers: ["Include", "Use the same assumption"],
+          rows: [
+            ["Venue and ceremony", "Date, rooms, access time and ceremony fee"],
+            ["Food and drink", "Day guests, evening guests, menu level and drinks plan"],
+            ["Accommodation", "Rooms you must pay for or guarantee"],
+            ["Required extras", "Staffing, furniture, security, cleaning, corkage and supplier rules"],
+            ["Logistics", "Transport, travel, hired equipment and extra setup"],
+            ["Risk allowance", "Costs still uncertain plus a realistic contingency"]
+          ]
+        },
+        paragraphs: [
+          "Put optional upgrades on a separate line. One venue should not lose because its quote includes an upgrade you did not ask the other venue to provide."
+        ]
+      },
+      {
+        heading: "Step three: weight what matters to both of you",
+        table: {
+          headers: ["Factor", "Example weight"],
+          rows: [
+            ["Complete cost and contract confidence", "25%"],
+            ["Guest experience and access", "20%"],
+            ["Spaces and flow", "20%"],
+            ["Food, drink and service", "15%"],
+            ["Location and accommodation", "10%"],
+            ["Look and atmosphere", "10%"]
+          ]
+        },
+        paragraphs: [
+          "Change the weights together before scoring the venues. Rate each factor consistently, multiply the rating by the weight and then discuss the largest differences. The example is a starting structure, not a correct set of priorities."
+        ]
+      },
+      {
+        heading: "Step four: walk through the whole guest journey",
+        bullets: [
+          "Arrival, parking, coach drop-off and check-in.",
+          "Ceremony entry, seating, sound and exit.",
+          "Drinks reception and the room-turnaround period.",
+          "Meal service, toilets, quiet space and accessibility.",
+          "Evening arrivals, entertainment, bar and finish.",
+          "Departure, taxis, accommodation and breakfast."
+        ],
+        paragraphs: [
+          "Repeat the walk-through using the wet-weather plan. A venue that works beautifully for two hours of sunshine may feel very different when every guest and supplier moves indoors."
+        ]
+      },
+      {
+        heading: "Step five: use a second viewing to test the decision",
+        paragraphs: [
+          "Return with the unresolved questions, not a second copy of the first viewing. Measure key spaces, check routes, confirm layouts, review the complete quote and ask the venue to reconcile every contract difference.",
+          "Afterwards, each of you should answer two questions privately: which venue would you choose, and what is the strongest reason not to choose it? The hesitation often identifies the final fact you still need."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Build a fresh venue shortlist", href: "/venues" },
+      { label: "Compare wedding venue packages", href: "/guides/how-to-compare-wedding-venue-packages" },
+      { label: "Check venue capacity and layouts", href: "/guides/wedding-venue-capacity-layouts" },
+      { label: "Open the wedding budget planner", href: "/wedding-budget-planner" }
+    ],
+    faqs: [
+      {
+        question: "Should we choose the venue that scores highest?",
+        answer:
+          "Use the score to make trade-offs visible. If you still prefer the lower-scoring venue, identify which factor the model undervalued or which concern has not been captured, then adjust the comparison honestly."
+      },
+      {
+        question: "How many wedding venues should we view?",
+        answer:
+          "There is no ideal number. Research widely, then view only the venues that appear to meet your budget, capacity, location and ceremony needs. More viewings do not automatically create a better decision."
+      },
+      {
+        question: "What if one venue costs more but includes more?",
+        answer:
+          "Strip both packages back to the same wedding scenario. Compare compulsory costs and equivalent inclusions, then keep genuinely optional upgrades separate."
+      }
+    ]
+  },
+  {
+    slug: "how-to-make-wedding-guest-list",
+    title: "How to make a wedding guest list that fits your venue and budget",
+    shortTitle: "Building the wedding guest list",
+    description:
+      "A fair, practical method for building day and evening guest lists, handling plus-ones and keeping numbers connected to capacity and cost.",
+    category: "Planning",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "Build the guest list from named people, not an estimated round number. Set a firm invited limit below the venue's comfortable capacity, apply the same rules to comparable guests and keep a small reserve for uncertain plus-ones or family decisions.",
+    intro: [
+      "Guest count is not only a seating question. It changes the venue shortlist, catering, drinks, stationery, transport, accommodation and the time you can realistically spend with people on the day.",
+      "The aim is not to create a list nobody could question. It is to make consistent decisions together and ensure every invitation fits the wedding you can host."
+    ],
+    takeaways: [
+      "Use named guests and invited households from the start.",
+      "Set the limit from comfortable capacity and complete per-person cost.",
+      "Write rules for partners, plus-ones, children and evening invitations before applying them."
+    ],
+    sections: [
+      {
+        heading: "Find the number you can genuinely invite",
+        bullets: [
+          "Ask the venue for comfortable capacity in your intended layout.",
+          "Keep space for accessibility, entertainment, service and the dance floor.",
+          "Calculate the complete cost of an additional day guest, not only the meal price.",
+          "Leave a small operational margin rather than filling every legal seat.",
+          "Separate the maximum you can invite from the number you expect to attend."
+        ],
+        paragraphs: [
+          "Do not assume a percentage will decline and spend those seats twice. Attrition varies by travel, family, notice, date and the people involved. Invite only the number the venue and budget can hold if everyone says yes."
+        ]
+      },
+      {
+        heading: "Create one master list",
+        table: {
+          headers: ["Field", "Why it matters"],
+          rows: [
+            ["Invited household", "Controls stationery and makes the invitation unit clear"],
+            ["Every named guest", "Prevents accidental or assumed plus-ones"],
+            ["Day or evening", "Keeps catering and communications accurate"],
+            ["Adult or child", "Supports menus, chairs and venue rules"],
+            ["Contact details", "Allows one reliable invitation and follow-up route"],
+            ["Dietary and access needs", "Moves requirements into the operational plan"],
+            ["RSVP status", "Shows exactly what still needs action"]
+          ]
+        }
+      },
+      {
+        heading: "Agree rules before discussing individual names",
+        bullets: [
+          "Are established partners invited by name?",
+          "Who receives an open plus-one, and why?",
+          "Are children invited to every part of the day, selected by a consistent rule or not invited?",
+          "How far does family extend on both sides?",
+          "Are colleagues invited as a group, individually or not at all?",
+          "What makes someone a day guest rather than an evening guest?"
+        ],
+        paragraphs: [
+          "Rules will not remove every emotional decision, but they reduce one-off exceptions. If you choose an exception, label it as one rather than pretending the original rule still applies."
+        ]
+      },
+      {
+        heading: "Use three working groups—not public tiers",
+        paragraphs: [
+          "Keep a confirmed invitation list, a reserve list for spaces that genuinely become available and a clearly excluded list so the same debate is not repeated. These are private planning tools and should never be visible to guests.",
+          "Do not send a second wave until the first RSVP deadline has passed and you can invite the next household respectfully. Leave enough time for that guest to make the same travel and accommodation arrangements as everyone else."
+        ]
+      },
+      {
+        heading: "Make day and evening invitations unmistakable",
+        bullets: [
+          "Use different wording and times for day and evening invitations.",
+          "Name every invited person rather than writing a vague household name.",
+          "State whether children or a plus-one are included.",
+          "Give evening guests arrival, food, transport and finish information.",
+          "Keep the RSVP form aligned with the exact invitation."
+        ],
+        paragraphs: [
+          "An evening invitation is a real invitation, not a lesser version that needs apologised for. Confusion usually comes from unclear wording or from implying a wider invitation in conversation."
+        ]
+      },
+      {
+        heading: "Lock numbers without losing the live list",
+        paragraphs: [
+          "When the venue deadline arrives, save the confirmed numbers you supplied but keep the working list active. Late changes should update the seating plan, dietary list and supplier totals together.",
+          "Use one source of truth. Separate spreadsheets for invitations, meals and tables are how a declined guest ends up with a place card and a missing guest ends up without a meal."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Open the wedding table planner", href: "/wedding-table-planner" },
+      { label: "Plan day guests and evening guests", href: "/guides/day-guests-vs-evening-guests" },
+      { label: "Check venue capacity and layouts", href: "/guides/wedding-venue-capacity-layouts" },
+      { label: "Open the wedding budget planner", href: "/wedding-budget-planner" }
+    ],
+    faqs: [
+      {
+        question: "Should we invite more guests than the venue capacity because some will decline?",
+        answer:
+          "No. Invite only the number the venue can comfortably and legally hold if everyone accepts. You can invite from a private reserve list after genuine spaces become available."
+      },
+      {
+        question: "Does every single guest need a plus-one?",
+        answer:
+          "No, but use a consistent and considerate rule. Invite known partners by name and decide which guests need an open plus-one because they would otherwise know very few people, travel alone or have another clear reason."
+      },
+      {
+        question: "When should we finalise the wedding guest list?",
+        answer:
+          "Create the working list before choosing or confirming capacity. Final attendance comes after the RSVP deadline, but household names, invitation rules and your upper limit should be settled much earlier."
+      }
+    ]
+  },
+  {
+    slug: "how-to-create-wedding-seating-plan",
+    title: "How to create a wedding seating plan, step by step",
+    shortTitle: "Creating the wedding seating plan",
+    description:
+      "A practical seating-plan method for grouping guests, handling difficult relationships and giving the venue an accurate final layout.",
+    category: "Planning",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "Start with the venue's real table plan and confirmed RSVPs. Place guests in compatible groups, position accessibility and family needs first, then balance the room. Finish by checking every guest, meal and table against one master list.",
+    intro: [
+      "A seating plan does not need to produce perfect conversation at every chair. It needs to give guests a comfortable place, help the venue serve the right meals and avoid putting known tensions at the centre of the day.",
+      "The quickest route is to solve the fixed requirements first, then group everyone else. Moving names without a method turns the plan into a puzzle that never feels finished."
+    ],
+    takeaways: [
+      "Use confirmed furniture and capacity from the venue before placing guests.",
+      "Position accessibility, children and sensitive relationships before balancing friendship groups.",
+      "Keep guest, table and meal data in one live plan."
+    ],
+    sections: [
+      {
+        heading: "Do not begin with a blank diagram",
+        bullets: [
+          "Get the venue's current floor plan and available table sizes.",
+          "Confirm which tables, chairs and couple-table options are included.",
+          "Mark doors, toilets, service routes, speakers, pillars and the dance floor.",
+          "Ask for comfortable seats per table, not only the physical maximum.",
+          "Confirm where highchairs, mobility equipment and supplier tables can sit."
+        ],
+        paragraphs: [
+          "A pretty layout that the venue cannot set is wasted work. Use the exact room version planned for your guest count and season, including the indoor alternative if the weather could change the space."
+        ]
+      },
+      {
+        heading: "Build from one confirmed guest list",
+        paragraphs: [
+          "Import or enter each attending day guest once. Record their household or connection, age group where relevant, dietary requirement and any access or placement note.",
+          "Keep uncertain guests out of the final count until their attendance is confirmed. If the venue deadline arrives before every issue is settled, label the uncertainty clearly rather than duplicating a seat."
+        ],
+        bullets: [
+          "Check that every RSVP marked attending appears once.",
+          "Use a distinct status for children needing a chair and infants needing a highchair or space.",
+          "Keep dietary needs attached to the person, not only to the table.",
+          "Record mobility, hearing, visual, sensory or caring needs with the guest's agreement."
+        ]
+      },
+      {
+        heading: "Place the fixed needs first",
+        table: {
+          headers: ["Need", "Placement question"],
+          rows: [
+            ["Step-free access", "Can the guest reach the chair, toilet and exit without a blocked route?"],
+            ["Hearing or sight", "Will the guest have a clear view and useful proximity to speech or sound?"],
+            ["Young children", "Is there room for the right chair and a practical route out if needed?"],
+            ["Older guests", "Is the table away from uncomfortable speaker levels or busy service routes?"],
+            ["Known conflict", "Is there enough distance without making either guest feel visibly isolated?"],
+            ["Essential family role", "Can the person reach speeches, children or ceremony duties easily?"]
+          ]
+        }
+      },
+      {
+        heading: "Create compatible groups, not matching sets",
+        paragraphs: [
+          "Begin with households and obvious friendship groups, then look for connectors between smaller groups: shared interests, similar energy, a common place or at least one confident conversational bridge.",
+          "Avoid creating a table made entirely from people left over at the end. Mix a smaller group into a table that has a reason to welcome them, and tell a trusted guest when they can help make introductions."
+        ],
+        bullets: [
+          "Keep partners together unless they have asked otherwise.",
+          "Do not split a very small established group only to make table numbers even.",
+          "Avoid placing one person with a table where everyone else shares an exclusive history.",
+          "Use table capacity as a range where the venue allows it; every table need not have identical numbers."
+        ]
+      },
+      {
+        heading: "Choose the couple and family arrangement deliberately",
+        bullets: [
+          "Traditional top table: useful when the expected group is comfortable and the room suits it.",
+          "Sweetheart table: gives the couple a pause together and removes the need to rank family seats.",
+          "Family or friendship table: places the couple inside a round or banquet table with their chosen group.",
+          "No fixed couple table: can work for informal formats when service and speeches are planned around it."
+        ],
+        paragraphs: [
+          "There is no correct family structure for a wedding table. Choose the arrangement that supports the relationships you actually have and explain it early to anyone who might otherwise make an assumption."
+        ]
+      },
+      {
+        heading: "Run the final three-way check",
+        table: {
+          headers: ["Check", "Must match"],
+          rows: [
+            ["People", "Confirmed RSVP list and total"],
+            ["Places", "Table plan, chair count, highchairs and accessibility space"],
+            ["Meals", "Named dietary list, children's meals and supplier meals"],
+            ["Print", "Names and table labels on the plan, place cards and stationery"],
+            ["Venue handover", "Final version number, date sent and one contact for later changes"]
+          ]
+        },
+        paragraphs: [
+          "Save a final version when you hand it to the venue, but keep a record of every late change. Send the revised plan and meal list together so one update does not create a new mismatch."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Build your plan in the EverAft table planner", href: "/wedding-table-planner" },
+      { label: "Create the guest list first", href: "/guides/how-to-make-wedding-guest-list" },
+      { label: "Understand table shapes and layouts", href: "/guides/wedding-table-shapes-seating-layouts" },
+      { label: "Plan an accessible wedding", href: "/guides/planning-accessible-wedding-checklist" }
+    ],
+    faqs: [
+      {
+        question: "When should we start the wedding seating plan?",
+        answer:
+          "You can build the room and table structure as soon as the venue confirms it. Start placing likely groups before the RSVP deadline if helpful, but treat the plan as final only when attendance and the venue's final requirements are reliable."
+      },
+      {
+        question: "Do couples have to use a traditional top table?",
+        answer:
+          "No. A sweetheart table, a round table with family or friends, a different rectangular arrangement or no formal top table can all work. Check what fits the room, service and relationships."
+      },
+      {
+        question: "Should we put people who do not know anyone together?",
+        answer:
+          "Avoid a table made only from disconnected guests where possible. Place them with welcoming people and at least one plausible connection, and make introductions before or during the reception."
+      }
+    ]
+  },
+  {
+    slug: "wedding-table-shapes-seating-layouts",
+    title: "Wedding table shapes and seating layouts explained",
+    shortTitle: "Wedding table shapes and layouts",
+    description:
+      "How round, banquet, trestle and mixed wedding-table layouts affect conversation, capacity, service and the look of the room.",
+    category: "Planning",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 8,
+    answer:
+      "Choose tables from the room and guest experience backwards. Round tables support small-group conversation; long banquet tables create a shared visual line; trestles suit flexible informal layouts; and a mixed plan can solve awkward room shapes. Use the venue's exact furniture dimensions and capacity.",
+    intro: [
+      "Table shape changes more than the photographs. It affects how many guests fit comfortably, who can speak to one another, where service staff move and how much styling the room needs.",
+      "The venue's real dimensions come first. Two tables described as 'rounds for ten' can have different diameters, chair spacing and comfort once glassware, place settings and centrepieces are added."
+    ],
+    takeaways: [
+      "Ask for exact table dimensions and a scaled room plan.",
+      "Comfortable capacity matters more than squeezing in one more chair.",
+      "Test sightlines, service routes, accessibility and sound before choosing on appearance."
+    ],
+    sections: [
+      {
+        heading: "Compare the main table shapes",
+        table: {
+          headers: ["Layout", "Works well for", "Watch for"],
+          rows: [
+            ["Round tables", "Clear groups, familiar venue setups and conversation across smaller tables", "Large centrepieces, uneven final groups and the floor area between rounds"],
+            ["Long banquet tables", "A strong communal look and rooms with a clear length", "Guests speaking mainly beside and opposite, plus access to inner seats"],
+            ["Trestle rows", "Flexible, relaxed dining and spaces suited to narrower tables", "End positions, service gaps and guests facing into a wall or route"],
+            ["Square tables", "Small groups and modular layouts", "Fewer venues stock them and joining units can affect legroom"],
+            ["Mixed shapes", "Awkward rooms, varied groups and a less formal look", "Different centrepieces, linen needs and an intentional overall plan"]
+          ]
+        }
+      },
+      {
+        heading: "Start with the room's fixed points",
+        bullets: [
+          "Doors, fire exits and routes that must remain clear.",
+          "Pillars, fireplaces, windows and changes of floor level.",
+          "Bar, kitchen and service access.",
+          "Dance floor, band, DJ, speeches and projection sightlines.",
+          "Accessible routes, turning space and nearby toilets.",
+          "The couple's position, if you want one visible focal point."
+        ],
+        paragraphs: [
+          "Ask the venue to mark the non-negotiable clearances on the plan. Moving a table after every guest has been placed is much harder than reserving those routes at the start."
+        ]
+      },
+      {
+        heading: "Choose a couple-table format",
+        table: {
+          headers: ["Option", "What it changes"],
+          rows: [
+            ["Traditional top table", "Creates a clear focal line but requires a family or wedding-party seating decision"],
+            ["Sweetheart table", "Keeps the couple together and makes surrounding group choices simpler"],
+            ["Round table", "Places the couple within the room and supports a chosen family or friendship group"],
+            ["King's table", "Creates a larger central banquet group, subject to room width and service access"],
+            ["No fixed table", "Fits informal food formats but needs a clear plan for meals, speeches and belongings"]
+          ]
+        }
+      },
+      {
+        heading: "Do not estimate seats from photographs",
+        paragraphs: [
+          "Use the venue's stated comfortable number for the exact table, chair and place-setting style. Charger plates, sharing dishes, glassware, favours and centrepieces all consume space.",
+          "If a table is shown at its maximum, ask whether guests can sit and leave comfortably and whether staff can serve without reaching across people. A slightly lower count often creates a better meal."
+        ]
+      },
+      {
+        heading: "Let styling follow the layout",
+        bullets: [
+          "Long tables may need repeated low arrangements rather than one centrepiece.",
+          "Round tables can use varied centrepiece heights only where sightlines remain clear.",
+          "Candles must comply with the venue's flame and surface rules.",
+          "Hired linen needs the exact table dimension and drop.",
+          "Table numbers or names should be visible from the natural guest approach.",
+          "Keep menus, bottles and shared dishes in the plan before filling the centre."
+        ]
+      },
+      {
+        heading: "Test the plan as a working room",
+        paragraphs: [
+          "Walk the layout with the venue from guest entry to seat, then from the kitchen to every table, from each accessible place to the toilet and from the furthest table to the dance floor.",
+          "If possible, ask for photographs of the same room with a similar layout and guest count. A wide-angle empty-room image is not a capacity plan."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Try layouts in the wedding table planner", href: "/wedding-table-planner" },
+      { label: "Create your seating plan", href: "/guides/how-to-create-wedding-seating-plan" },
+      { label: "Check venue capacity and room layouts", href: "/guides/wedding-venue-capacity-layouts" },
+      { label: "Compare Scottish wedding venues", href: "/venues" }
+    ],
+    faqs: [
+      {
+        question: "Are round or long tables better for a wedding?",
+        answer:
+          "Neither is universally better. Rounds create defined conversation groups; long tables create a communal visual arrangement. The room, furniture, guest groups, service and accessibility determine which works better."
+      },
+      {
+        question: "How many people fit at a wedding table?",
+        answer:
+          "Use the venue or hire company's figure for the exact dimensions and chair style. Do not assume that every round or trestle has the same capacity, and ask for the comfortable rather than absolute maximum."
+      },
+      {
+        question: "Can we mix round and rectangular tables?",
+        answer:
+          "Yes. A mixed layout can fit the room and guest groups well. Keep the styling, spacing and table identification intentional so it looks designed rather than accidental."
+      }
+    ]
+  },
+  {
+    slug: "wedding-suppliers-booking-order",
+    title: "Which wedding suppliers should you book first?",
+    shortTitle: "Wedding supplier booking order",
+    description:
+      "A dependency-led booking order for wedding venues, ceremony providers, photographers, entertainment, styling and final-day services.",
+    category: "Planning",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "Book the venue, ceremony and any supplier whose individual availability matters most first. Then book services that depend on the confirmed place, date, guest count or timeline. There is no universal order after that—your priorities and wedding format should decide.",
+    intro: [
+      "Wedding checklists often put suppliers in a fixed order. Real weddings are less tidy. A couple who care most about a particular photographer should not wait behind a generic stationery deadline; a dry-hire wedding needs infrastructure earlier than a hotel package does.",
+      "The useful rule is to book dependencies and scarce choices first, then delay decisions that need better information."
+    ],
+    takeaways: [
+      "Secure the legal ceremony, venue and date before most dependent suppliers.",
+      "Move a named or date-scarce priority earlier.",
+      "For dry hire, book infrastructure and logistics before styling."
+    ],
+    sections: [
+      {
+        heading: "Stage one: create a bookable wedding",
+        table: {
+          headers: ["First decisions", "Why they lead"],
+          rows: [
+            ["Budget and guest range", "Define what the wedding and venue must support"],
+            ["Ceremony direction", "Determines registrar or authorised celebrant needs"],
+            ["Venue and date", "Unlock location, access, restrictions and travel"],
+            ["Insurance decision", "Is most useful before or around major financial commitments"],
+            ["Accommodation strategy", "Matters early where stock is limited or a minimum stay is attached"]
+          ]
+        },
+        paragraphs: [
+          "Do not pay a supplier who depends on the date or venue while either is still uncertain unless the contract clearly protects that uncertainty."
+        ]
+      },
+      {
+        heading: "Stage two: book scarce people and teams",
+        bullets: [
+          "The photographer or filmmaker whose work and approach you specifically want.",
+          "A registrar or authorised celebrant for the required time.",
+          "A particular band, performer or entertainment team.",
+          "A planner or coordinator with a limited annual capacity.",
+          "Specialist catering where the venue does not provide it.",
+          "Any supplier essential to culture, faith, language or accessibility."
+        ],
+        paragraphs: [
+          "Scarcity comes from individuality. A hire company may have many identical chairs; a photographer or celebrant cannot personally cover two ceremonies at the same time."
+        ]
+      },
+      {
+        heading: "Stage three: secure the operating system",
+        bullets: [
+          "Catering, bar and evening food where not included.",
+          "Power, toilets, heating, lighting, structure and furniture for dry hire.",
+          "Transport where routes or vehicles are limited.",
+          "Sound and production needed by entertainment or speeches.",
+          "Childcare, pet care or access support required for the day to work.",
+          "Setup, turnaround, cleaning and collection responsibilities."
+        ],
+        paragraphs: [
+          "This stage is easy to underestimate because the items may not appear in photographs. It is what turns a space into a functioning venue."
+        ]
+      },
+      {
+        heading: "Stage four: add clothing, design and guest communication",
+        bullets: [
+          "Clothing and alterations with the supplier's actual lead time.",
+          "Florals, decor, cake and stationery after the spaces and broad look are known.",
+          "Hair and makeup after morning numbers and locations are credible.",
+          "Save-the-dates or early travel details when guests need notice.",
+          "Invitations after the guest list rules, ceremony time and RSVP method are settled.",
+          "Rings and personal ceremony items with time for sizing or custom work."
+        ],
+        paragraphs: [
+          "Ask each supplier for its own order, proofing, production and final-change deadlines. A generic online timeline cannot know their process."
+        ]
+      },
+      {
+        heading: "Stage five: finalise services that need real numbers",
+        table: {
+          headers: ["Later decision", "Wait for"],
+          rows: [
+            ["Final catering and drinks", "Confirmed attendance and dietary needs"],
+            ["Seating and place stationery", "Final table plan and name spellings"],
+            ["Transport schedule", "Guest locations and complete running order"],
+            ["Cake portions and evening food", "Reliable day and evening numbers"],
+            ["Supplier meals", "Confirmed supplier team and coverage times"],
+            ["On-the-day handover", "Final contacts, deliveries, payments and weather decision"]
+          ]
+        }
+      },
+      {
+        heading: "Use a dependency check before every booking",
+        bullets: [
+          "What must be true for this supplier to deliver?",
+          "Which date, location, guest or timeline detail could still change?",
+          "What complete price follows from the likely version of the wedding?",
+          "What does the contract say about changes, substitutes and cancellation?",
+          "Which later supplier will need information from this booking?",
+          "Who owns the next action and when is it due?"
+        ],
+        paragraphs: [
+          "A booking is useful when it closes a decision and feeds the next one. Record the answer, contract, total, payment schedule and dependencies in the same plan."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Start with Scottish wedding venues", href: "/venues" },
+      { label: "Browse Scottish wedding photographers", href: "/photographers" },
+      { label: "Build the complete budget", href: "/wedding-budget-planner" },
+      { label: "Use the Scottish planning checklist", href: "/guides/wedding-planning-checklist-scotland" }
+    ],
+    faqs: [
+      {
+        question: "What are the first three wedding suppliers to book?",
+        answer:
+          "There is no fixed trio, but the ceremony provider, venue and the date-specific supplier you value most commonly lead. For one couple that third booking is photography; for another it may be catering, entertainment or a planner."
+      },
+      {
+        question: "Should we book a photographer before the venue?",
+        answer:
+          "Usually the date and location should be credible first because they affect availability, travel and coverage. If a photographer matters more than a specific venue, ask about their dates while shortlisting venues and coordinate both decisions."
+      },
+      {
+        question: "Which suppliers need booked early for a dry-hire wedding?",
+        answer:
+          "Prioritise the suppliers that make the site operational: catering, power, toilets, furniture, lighting, heating, bar, waste and any structure. Confirm what the venue already provides before booking duplicates."
+      }
+    ]
+  },
+  {
+    slug: "humanist-vs-civil-vs-religious-wedding-scotland",
+    title: "Humanist vs civil vs religious weddings in Scotland",
+    shortTitle: "Scottish ceremony types compared",
+    description:
+      "A clear comparison of civil, humanist and religious wedding ceremonies in Scotland, including who can make the marriage legal.",
+    category: "Legal & ceremonies",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "A civil marriage in Scotland is solemnised by a registrar or authorised assistant registrar. A humanist ceremony is a type of belief marriage and can be legal when conducted by an authorised celebrant. Religious marriages are conducted by appropriately authorised religious celebrants. Confirm the individual celebrant's authority before booking.",
+    intro: [
+      "Scotland offers several ways to create a legal wedding ceremony, but the labels used in advertising can be confusing. 'Celebrant-led' does not automatically mean the person can solemnise a legal marriage.",
+      "Start with the legal category and the person who will conduct it. Then compare how each option approaches wording, beliefs, personalisation, location and planning."
+    ],
+    takeaways: [
+      "Civil marriages are conducted by registrars or authorised assistant registrars.",
+      "Humanist ceremonies sit within religious or belief marriage law and need an authorised celebrant.",
+      "Independent or private civil celebrants cannot solemnise a civil marriage under Scots law."
+    ],
+    sections: [
+      {
+        heading: "The three broad ceremony routes",
+        table: {
+          headers: ["Ceremony", "Who solemnises it", "Broad character"],
+          rows: [
+            ["Civil marriage", "A registrar or authorised assistant registrar", "Non-religious ceremony arranged with the relevant registration service"],
+            ["Humanist marriage", "An authorised celebrant representing a belief body", "Non-religious belief ceremony, commonly built around the couple's story and values"],
+            ["Religious marriage", "An appropriately authorised religious celebrant", "Ceremony shaped by the faith body, celebrant and agreed form of service"]
+          ]
+        },
+        paragraphs: [
+          "National Records of Scotland groups humanist and other belief ceremonies with religious or belief marriages for the legal framework. Individual bodies and celebrants have their own process and ceremony approach."
+        ]
+      },
+      {
+        heading: "Civil ceremonies",
+        bullets: [
+          "Contact the registrar in the local authority area where the ceremony will take place.",
+          "Confirm the available dates, times, locations, fees and ceremony options.",
+          "Ask what readings, music or personal wording the service permits.",
+          "Check whether the registrar travels to the venue and what timing conditions apply.",
+          "Follow the registrar's current notice, document and Marriage Schedule instructions."
+        ],
+        paragraphs: [
+          "NRS states that independent or private civil celebrants are not authorised to solemnise civil marriages or civil partnerships. If you want a separate personalised ceremony led by an independent celebrant, confirm where and how the legal marriage will take place."
+        ]
+      },
+      {
+        heading: "Humanist and other belief ceremonies",
+        paragraphs: [
+          "A humanist wedding can combine a personalised, non-religious ceremony with the legal marriage when the celebrant is authorised. Humanist Society Scotland says its registered celebrants conduct legally recognised ceremonies.",
+          "Not every person using the word celebrant has the same legal authority. NRS advises contacting the registration office for the district before booking if you are unsure whether a religious or belief celebrant can solemnise the marriage."
+        ],
+        bullets: [
+          "Ask which religious or belief body the celebrant represents.",
+          "Confirm their current authority for your type and date of marriage.",
+          "Discuss vows, story, readings, music and symbolic rituals.",
+          "Confirm meetings, drafting, rehearsal, travel and fee inclusions.",
+          "Agree who handles the Marriage Schedule before and after the ceremony."
+        ]
+      },
+      {
+        heading: "Religious ceremonies",
+        paragraphs: [
+          "A religious ceremony follows the legal requirements and the practices of the faith body and celebrant. Contact the relevant place of worship or authorised celebrant early, especially if preparation, membership, meetings or particular wording is required.",
+          "Do not assume that the rules are identical between denominations, faiths or individual settings. Ask the celebrant what is required, what can be personalised and how the legal paperwork will be handled."
+        ]
+      },
+      {
+        heading: "What every legal marriage still needs",
+        bullets: [
+          "Marriage notice and the required documents submitted to the correct registrar.",
+          "A place, date and time agreed through the proper process.",
+          "A registrar or celebrant with authority to solemnise the marriage.",
+          "The declarations required by Scots law within the ceremony.",
+          "Two witnesses aged 16 or over.",
+          "The Marriage Schedule completed and returned for registration as instructed."
+        ],
+        paragraphs: [
+          "Use the current NRS guidance for forms and documents. Ceremony style does not remove the legal registration process."
+        ]
+      },
+      {
+        heading: "Choose by working through the real differences",
+        table: {
+          headers: ["Question", "Compare"],
+          rows: [
+            ["Belief and meaning", "Which approach reflects both of you?"],
+            ["Personalisation", "How are wording, story, vows, readings and rituals developed?"],
+            ["Authority", "Can the named person legally solemnise this marriage?"],
+            ["Location and time", "Who is available and permitted to conduct it there?"],
+            ["Process", "What meetings, notices, documents and deadlines apply?"],
+            ["Complete cost", "Ceremony fee, travel, venue fee, registrar charges and extras"]
+          ]
+        }
+      }
+    ],
+    venueLinks: [
+      { label: "Read how to get legally married in Scotland", href: "/guides/how-to-get-legally-married-in-scotland" },
+      { label: "Compare Scottish wedding venues", href: "/venues" },
+      { label: "Use the complete planning checklist", href: "/guides/wedding-planning-checklist-scotland" },
+      { label: "Read current NRS celebrant guidance", href: "https://www.nrscotland.gov.uk/registration/marriage-and-civil-partnership-celebrants/" }
+    ],
+    faqs: [
+      {
+        question: "Are humanist weddings legal in Scotland?",
+        answer:
+          "They can be. A humanist marriage is a belief marriage and must be solemnised by a celebrant who is authorised for that legal role. Confirm the individual before booking; Humanist Society Scotland states that its registered celebrants conduct legally recognised ceremonies."
+      },
+      {
+        question: "Can an independent celebrant legally marry us in Scotland?",
+        answer:
+          "Not simply because they call themselves a celebrant. NRS states that private or independent civil celebrants cannot solemnise a civil marriage. A religious or belief celebrant needs the relevant authority. Ask the district registrar if you are unsure."
+      },
+      {
+        question: "Which ceremony type is most personal?",
+        answer:
+          "Personalisation varies by registrar, celebrant, faith body and the legal form of ceremony. Ask each person what can be written or chosen, how they develop the service and which required words must remain."
+      },
+      {
+        question: "Do all ceremony types require marriage notice?",
+        answer:
+          "Yes. For a legal marriage in Scotland, both people must complete the current notice and document process with the registrar for the district where the marriage will take place."
+      }
+    ],
+    sources: [
+      {
+        label: "National Records of Scotland: marriage and civil partnership celebrants",
+        href: "https://www.nrscotland.gov.uk/registration/marriage-and-civil-partnership-celebrants/"
+      },
+      {
+        label: "National Records of Scotland: what your ceremony must include",
+        href: "https://www.nrscotland.gov.uk/registration/what-your-ceremony-must-include/"
+      },
+      {
+        label: "National Records of Scotland: registering a marriage or civil partnership",
+        href: "https://www.nrscotland.gov.uk/registration/registering-a-marriage-or-civil-partnership/"
+      },
+      {
+        label: "Humanist Society Scotland: weddings and civil partnerships",
+        href: "https://www.humanism.scot/ceremonies/humanist-weddings-and-civil-partnerships/"
+      }
+    ]
+  },
+  {
+    slug: "wedding-weather-backup-plan-scotland",
+    title: "How to build a wedding weather backup plan in Scotland",
+    shortTitle: "Scottish wedding weather backup plan",
+    description:
+      "A complete Plan B for Scottish wedding rain, wind, cold and heat, with clear decision points, supplier actions and guest communication.",
+    category: "Seasons & outdoors",
+    publishedAt: "2026-07-29",
+    updatedAt: "2026-07-29",
+    readMinutes: 9,
+    answer:
+      "Create a second complete version of the day that works without the outdoor space. Agree the weather triggers, decision time and decision-maker with the venue, then connect the change to setup, ceremony, photography, transport, accessibility and guest communication.",
+    intro: [
+      "A weather plan is not a row of umbrellas. Rain may change the ceremony, drinks reception, photographs, guest route and room turnaround; wind can stop structures or decor being safe; cold or heat can make an otherwise dry plan uncomfortable.",
+      "Scottish conditions vary substantially by place and season. Long-term averages are useful context, but they cannot predict one wedding date. Plan for conditions, then use the forecast only when the decision window arrives."
+    ],
+    takeaways: [
+      "Plan a complete indoor or sheltered guest journey.",
+      "Agree the trigger, deadline and person with authority to call Plan B.",
+      "Treat wind, temperature and ground conditions as seriously as rain."
+    ],
+    sections: [
+      {
+        heading: "Build Plan B in the same order as the day",
+        table: {
+          headers: ["Moment", "Backup question"],
+          rows: [
+            ["Arrival", "Can guests leave vehicles, wait and enter under cover?"],
+            ["Ceremony", "Does the indoor space hold everyone comfortably and accessibly?"],
+            ["Drinks reception", "Where do guests go while rooms or furniture change?"],
+            ["Photographs", "Which indoor, covered and quick outdoor locations are agreed?"],
+            ["Meal and speeches", "Does the change affect setup, sound, catering or sightlines?"],
+            ["Evening", "Are paths, smoking areas, transport points and accommodation safe after dark?"]
+          ]
+        },
+        paragraphs: [
+          "Walk the wet-weather route at a viewing. If one room serves two purposes, write down the turnaround time, who moves the furniture and where guests wait."
+        ]
+      },
+      {
+        heading: "Agree the decision before emotions and forecasts arrive",
+        bullets: [
+          "Who has authority to make the final weather call?",
+          "What time must the decision be made for setup and staffing?",
+          "Which conditions trigger a safety decision rather than a preference?",
+          "Can the plan change back later, or is setup irreversible?",
+          "Who tells the celebrant, photographer, musicians, transport and guests?",
+          "Which extra cost or lost outdoor element follows the change?"
+        ],
+        paragraphs: [
+          "The venue should lead on site safety and operational limits. The couple can decide preferences inside those limits, but nobody should be negotiating wind safety while guests are arriving."
+        ]
+      },
+      {
+        heading: "Plan for more than rain",
+        table: {
+          headers: ["Condition", "Check"],
+          rows: [
+            ["Heavy rain", "Drainage, covered routes, flooring, umbrellas, clothing and room capacity"],
+            ["Wind", "Structures, signage, candles, florals, sound, doors and exposed photography"],
+            ["Cold", "Heating, waiting time, blankets, outdoor duration and supplier working conditions"],
+            ["Heat and sun", "Shade, water, ventilation, food safety and guest medication needs"],
+            ["Wet ground", "Wheelchair and buggy routes, footwear, vehicles, cables and temporary flooring"],
+            ["Low light", "Ceremony visibility, photography, paths and safe evening movement"]
+          ]
+        }
+      },
+      {
+        heading: "Give photography its own flexible plan",
+        bullets: [
+          "Identify indoor locations with useful natural or controllable light.",
+          "Choose covered outdoor positions for group photographs.",
+          "Prioritise the smallest essential group list if dry gaps are brief.",
+          "Build spare minutes into the timeline rather than moving every photograph at once.",
+          "Ask the photographer what equipment and location limits apply in rain or wind.",
+          "Protect the experience: guests should not be kept cold or wet for a picture."
+        ],
+        paragraphs: [
+          "A strong photographer can work with difficult weather, but cannot make an unsafe location, impossible schedule or unwilling group workable. Agree the priority and alternatives together."
+        ]
+      },
+      {
+        heading: "Make the backup accessible and comfortable",
+        bullets: [
+          "Keep step-free routes firm, drained and clear of stored furniture.",
+          "Place accessible parking and drop-off close to the weather-safe entrance.",
+          "Provide seating during any extended indoor wait.",
+          "Check temperature, ventilation and a quiet space.",
+          "Tell guests what clothing or footwear may be useful without promising conditions.",
+          "Give anyone with a specific access need the plan directly, not only in a general update."
+        ]
+      },
+      {
+        heading: "Use forecasts at the right time",
+        paragraphs: [
+          "Use the Met Office forecast and official weather warnings as the date approaches, while following the venue's own monitoring and safety process. Long-range icons are not a reason to redesign the wedding weeks ahead.",
+          "In the final handover, record the forecast check times, decision deadline, decision-maker and communication route. Once Plan B is called, let the agreed team implement it rather than repeatedly reopening the decision."
+        ]
+      }
+    ],
+    venueLinks: [
+      { label: "Plan an outdoor wedding in Scotland", href: "/guides/outdoor-weddings-scotland" },
+      { label: "Compare Scottish wedding venues", href: "/venues" },
+      { label: "Use the venue viewing checklist", href: "/guides/wedding-venue-viewing-checklist" },
+      { label: "Build a realistic wedding-day timeline", href: "/guides/realistic-wedding-day-timeline" }
+    ],
+    faqs: [
+      {
+        question: "When should we decide to move a wedding ceremony indoors?",
+        answer:
+          "Agree the deadline with the venue, celebrant and suppliers before the wedding. It must leave enough time for safe setup and communication. Safety limits belong to the venue and relevant supplier; preferences can be decided within them."
+      },
+      {
+        question: "Can a wedding venue charge extra for the wet-weather plan?",
+        answer:
+          "It may, depending on the package and contract—for example, if extra rooms, flooring, structures or staff are needed. Ask for those costs before booking and include likely items in the budget."
+      },
+      {
+        question: "Should we trust a long-range wedding forecast?",
+        answer:
+          "Use long-range information only as broad context. Make operational decisions inside the deadline agreed with the venue using the current Met Office forecast, warnings and local site conditions."
+      },
+      {
+        question: "What if the indoor backup is much smaller?",
+        answer:
+          "Do not accept a venue capacity that depends on good weather unless you knowingly plan a smaller indoor guest count. The backup space should comfortably and safely hold the guests invited to that part of the day."
+      }
+    ],
+    sources: [
+      {
+        label: "Met Office: location-specific long-term climate averages",
+        href: "https://www.metoffice.gov.uk/research/climate/maps-and-data/location-specific-long-term-averages"
+      },
+      {
+        label: "Met Office: UK weather warnings",
+        href: "https://weather.metoffice.gov.uk/warnings-and-advice/uk-warnings"
+      }
+    ]
   }
 ] as const;
 

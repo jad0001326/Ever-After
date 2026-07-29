@@ -59,6 +59,7 @@ describe("enrichment website research", () => {
     expect(isEmailSyntaxValid("not-an-email")).toBe(false);
     expect(isEmailSyntaxValid("//outlook.office365.com/owa/calendar/book@venue.co.uk")).toBe(false);
     expect(isEmailSyntaxValid("%20info@venue.co.uk")).toBe(false);
+    expect(isEmailSyntaxValid("info@ayrehotel.co.u")).toBe(false);
   });
 
   it("does not treat script-only addresses as publicly published business contacts", () => {

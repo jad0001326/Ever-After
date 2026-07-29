@@ -1,14 +1,23 @@
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const topLevelDomainPattern = /^(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})$/i;
 
 export function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-export function isValidOutreachEmail(email: string) {
-  if (!emailPattern.test(email)) return false;
+export function isValidEmailSyntax(email: string) {
+  if (email.length > 254 || !emailPattern.test(email)) return false;
   const [localPart, domain] = email.split("@");
-  if (!localPart || !domain || /[%/\\\"]/.test(localPart) || localPart.startsWith(".") || localPart.endsWith(".") || localPart.includes("..")) return false;
+  if (!localPart || !domain || localPart.length > 64 || domain.length > 253) return false;
+  if (/[%/\\\"]/.test(localPart) || localPart.startsWith(".") || localPart.endsWith(".") || localPart.includes("..")) return false;
   if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(domain)) return false;
+  const topLevelDomain = domain.split(".").at(-1);
+  return Boolean(topLevelDomain && topLevelDomainPattern.test(topLevelDomain));
+}
+
+export function isValidOutreachEmail(email: string) {
+  if (!isValidEmailSyntax(email)) return false;
+  const [localPart, domain] = email.split("@");
   const normalizedLocalPart = localPart.replace(/[+._-].*$/, "");
   const placeholderLocalParts = new Set(["test", "testing", "sample", "example", "xxx", "dummy", "fake"]);
   const placeholderDomains = new Set(["example.com", "test.com", "invalid"]);
