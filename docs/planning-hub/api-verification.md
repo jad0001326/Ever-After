@@ -28,6 +28,16 @@ responses must validate against the checked v1 JSON Schema; outsider and
 expired tokens must receive the route's generic denial contract. See
 `native-dashboard-api.md`.
 
+Then use the dashboard's `budgetUpdatedAt` value with
+`PATCH /api/planning/v1/workspaces/{workspaceId}/budget`:
+
+- prove owner and partner can update only the linked budget;
+- prove a stale version returns `409 version_conflict` without changing data;
+- prove an outsider receives the generic workspace denial;
+- prove the stored `user_id` remains the workspace owner even when a partner
+  writes; and
+- validate the success body and subsequent GET against the checked schemas.
+
 All application assertions use publishable-key clients with real user sessions.
 The secret test key is used only to create test Auth users, confirm their
 profiles exist and delete those users during cleanup.

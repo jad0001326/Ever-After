@@ -28,7 +28,7 @@ a production deployment, migrate or enable cloud persistence.
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
-| Native-ready business logic | Twenty-one declared budget, recommendation, dashboard-contract, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. A strict versioned JSON-safe facade, checked Draft 2020-12 schema and dormant authenticated GET adapter expose the same dashboard state to future clients. | Read foundation proven locally |
+| Native-ready business logic | Twenty-two declared budget, recommendation, dashboard/update-contract, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. Strict JSON-safe facades, checked Draft 2020-12 schemas and dormant authenticated GET/PATCH adapters expose dashboard reads and conflict-safe budget writes to future clients. | Read and budget-write foundation proven locally |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
 | Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Chrome Event Timing measures four real keyboard interactions with a 24 ms slowest duration and fails above 200 ms. Real INP still requires post-release field traffic. | Target met in lab; awaiting field evidence |
@@ -81,7 +81,8 @@ they do not require rewriting or pushing it.
 | 36. Portable planning domain | Separate recommendation decisions from web routing and guard 19 reusable domain modules against framework, browser, Node and Supabase adapter coupling. | `a3bf5a7` | Architecture and tests only; no native application, API activation or hosted action. |
 | 37. Native dashboard contract | Assemble budget, payments, tasks, guests, profile readiness and the next recommendation into one versioned JSON-safe snapshot, rejecting mismatched workspace/plan joins. | `9066b3a` | Portable facade and tests only; no native application, API activation or hosted action. |
 | 38. Language-neutral client schema | Define the snapshot as a strict runtime contract, generate its stable Draft 2020-12 JSON Schema and fail tests or the check command if the artifact drifts. | `e2d09e3` | Contract tooling and tests only; no native application, API activation or hosted action. |
-| 39. Native authenticated read adapter | Add a versioned no-store dashboard GET route that verifies a Supabase access token and performs every read through the caller-bound RLS client. | Current local slice | Dormant route, refactor and local tests only; the cloud flag remains off and no hosted request, migration or data write occurred. |
+| 39. Native authenticated read adapter | Add a versioned no-store dashboard GET route that verifies a Supabase access token and performs every read through the caller-bound RLS client. | `2b4b176` | Dormant route, refactor and local tests only; the cloud flag remains off and no hosted request, migration or data write occurred. |
+| 40. Conflict-safe native budget write | Add checked request/success schemas and a dormant PATCH route that enforces the linked owner budget plus two-stage optimistic concurrency. | Current local slice | Dormant route and local tests only; no schema change, hosted request, migration or data write occurred. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -185,7 +186,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 75 Vitest files and 362 tests pass.
+- 78 Vitest files and 377 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -206,7 +207,7 @@ Use the least destructive rollback that restores safety:
   contract has focused regression coverage. The optimized browser matrix also
   confirms the computed body font resolves to the local system stack on
   Planning Hub and both public planners at mobile and desktop sizes.
-- The portable-domain gate reads 21 declared modules and rejects React/Next
+- The portable-domain gate reads 22 declared modules and rejects React/Next
   imports, client/server directives, browser globals and storage, URL
   construction, Node environment access, Supabase clients and web adapters.
   The recommendation engine now returns stable platform-neutral targets; the
@@ -228,6 +229,14 @@ Use the least destructive rollback that restores safety:
   output and mismatched-snapshot failure. A real local production HTTP request
   returned the expected no-store 503 and v1 contract header while the cloud
   flag was off.
+- The optimized build also includes the dynamic
+  `/api/planning/v1/workspaces/[workspaceId]/budget` PATCH route. Its checked
+  request ties `plan.updatedAt` to `expectedBudgetUpdatedAt`; the handler then
+  compares the loaded version and filters the eventual update on that same
+  timestamp. Tests prove the server restores the workspace owner, never writes
+  `user_id`, refuses another plan ID, caps payloads, distinguishes Data API
+  failure from a zero-row race and returns the new strict version token. The
+  built route returned the expected no-store 503 with cloud planning disabled.
 - Every planned venue or supplier can record whether availability has not been
   checked, an enquiry was sent, or the business is available or unavailable for
   the current wedding date. A date change invalidates the earlier answer, and

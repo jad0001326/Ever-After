@@ -1,77 +1,51 @@
 import { planningWorkspaceFromCloud } from "@/lib/planning-workspace/cloud";
-import { authenticatePlanningApiRequest } from "@/lib/planning-workspace/api-auth";
+import {
+  planningApiErrorResponse,
+  planningApiResponseHeaders,
+  resolvePlanningApiRequest,
+} from "@/lib/planning-workspace/api-route";
 import {
   planningDashboardSnapshotSchema,
 } from "@/lib/planning-workspace/snapshot-schema";
 import { createPlanningDashboardSnapshot } from "@/lib/planning-workspace/snapshot";
 import { loadPlanningWorkspaceContext } from "@/lib/planning-workspace/server-snapshot";
-import { planningWorkspaceIdSchema } from "@/lib/planning-workspace/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const responseHeaders = {
-  "Cache-Control": "private, no-store, max-age=0",
-  "Vary": "Authorization",
-  "X-Content-Type-Options": "nosniff",
-  "X-EverAft-Contract": "urn:everaft:planning-dashboard-snapshot:v1",
-};
-
-function errorResponse(
-  status: number,
-  code: string,
-  extraHeaders: Record<string, string> = {},
-) {
-  return Response.json(
-    { error: code },
-    {
-      status,
-      headers: {
-        ...responseHeaders,
-        ...extraHeaders,
-      },
-    },
-  );
-}
+const contractId = "urn:everaft:planning-dashboard-snapshot:v1";
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ workspaceId: string }> },
 ) {
-  if (process.env.PLANNING_WORKSPACE_CLOUD_ENABLED !== "true") {
-    return errorResponse(503, "connected_planning_disabled");
-  }
-
   const { workspaceId: rawWorkspaceId } = await context.params;
-  const workspaceId = planningWorkspaceIdSchema.safeParse(rawWorkspaceId);
-  if (!workspaceId.success) {
-    return errorResponse(400, "invalid_workspace_id");
-  }
-
-  const authentication = await authenticatePlanningApiRequest(request);
-  if (!authentication.ok) {
-    if (
-      authentication.reason === "server_not_configured"
-      || authentication.reason === "authentication_unavailable"
-    ) {
-      return errorResponse(503, "planning_api_unavailable");
-    }
-    return errorResponse(401, "authentication_required", {
-      "WWW-Authenticate": 'Bearer realm="EverAft Planning API"',
-    });
-  }
+  const api = await resolvePlanningApiRequest(
+    request,
+    rawWorkspaceId,
+    contractId,
+  );
+  if (!api.ok) return api.response;
 
   const loaded = await loadPlanningWorkspaceContext(
-    authentication.supabase,
-    workspaceId.data,
-    authentication.user.id,
+    api.supabase,
+    api.workspaceId,
+    api.user.id,
     { includeSharing: false },
   ).catch(() => null);
   if (!loaded) {
-    return errorResponse(503, "planning_api_unavailable");
+    return planningApiErrorResponse(
+      contractId,
+      503,
+      "planning_api_unavailable",
+    );
   }
   if (!loaded.ok) {
-    return errorResponse(404, "workspace_unavailable");
+    return planningApiErrorResponse(
+      contractId,
+      404,
+      "workspace_unavailable",
+    );
   }
 
   try {
@@ -80,8 +54,14 @@ export async function GET(
       planningWorkspaceFromCloud(loaded.snapshot),
     );
     const validated = planningDashboardSnapshotSchema.parse(snapshot);
-    return Response.json(validated, { headers: responseHeaders });
+    return Response.json(validated, {
+      headers: planningApiResponseHeaders(contractId),
+    });
   } catch {
-    return errorResponse(500, "snapshot_unavailable");
+    return planningApiErrorResponse(
+      contractId,
+      500,
+      "snapshot_unavailable",
+    );
   }
 }

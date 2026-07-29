@@ -26,7 +26,7 @@ describe("portable Planning Hub domain boundary", () => {
       }),
     );
 
-    expect(results).toHaveLength(21);
+    expect(results).toHaveLength(22);
     expect(results.filter((result) => result.violations.length > 0)).toEqual([]);
   });
 

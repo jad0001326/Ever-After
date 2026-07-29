@@ -185,7 +185,7 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Twenty-one
+The future native-client claim is now enforced rather than inferred. Twenty-two
 declared modules contain the shared budget, planning-state, supplier-context,
 recommendation, dashboard-snapshot, profile, task, guest, seating and
 validation rules. The
@@ -213,7 +213,8 @@ language-neutral Draft 2020-12 schema is checked in at
 the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 `npm run planning-contract:check` to fail on schema drift or
 `npm run planning-contract:write` after an intentional versioned contract
-change.
+change. The generator maintains the dashboard snapshot plus the budget-update
+request and success schemas.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
 
@@ -225,6 +226,15 @@ API query so the existing owner/partner RLS remains authoritative. It is
 dynamic, private, no-store and returns a generic 404 for both absent and
 RLS-inaccessible workspaces. The server-only cloud flag remains the outer
 fail-closed gate.
+
+The dormant
+`PATCH /api/planning/v1/workspaces/{workspaceId}/budget` route is the first
+native mutation adapter. It validates the full plan, requires the dashboard's
+exact budget version, refuses a different linked plan and conditions the
+database update on the same `updated_at`. The server supplies the real owner ID
+and writes only explicitly granted columns. This makes an owner/partner race a
+visible 409 instead of a last-write-wins overwrite, without adding a migration
+or privileged database function.
 The boundary is verified by
 `scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
 prove that the core result contains no `href`.
