@@ -49,12 +49,17 @@ It then retains that restored plan for a real keyboard-input journey:
 6. focuses `Venue not listed?`, uses Enter to expand it and Tab to reach the
    first manual-entry field;
 7. focuses the next-stage recommendation and uses Enter to reach Photography
-   with the exact restored plan context.
+   with the exact restored plan context;
+8. observes Chrome Event Timing entries for the real keyboard actions, requires
+   at least four distinct interactions and fails when the slowest presentation
+   exceeds 200 milliseconds.
 
 These actions use Chrome's native keyboard input events. Programmatic focus is
 used only to establish the starting control for each independent assertion;
 activation, sequential focus movement and navigation are performed by the
-browser.
+browser. The full optimized release run measured four interactions with a
+slowest duration of 24 milliseconds. This is repeatable lab evidence against
+the interaction budget, not a substitute for field INP.
 
 Finally, the gate reads Chrome's full accessibility tree rather than inferring
 screen-reader behavior from DOM attributes. It proves:
@@ -108,9 +113,12 @@ so the test scans the Planning Hub rather than a consent overlay. Cookie
 consent behaviour retains its separate component tests.
 
 The interaction journey requires the local server to have the normal public
-Supabase URL and anonymous key so it can read a live venue result. It fails
-closed with the rendered catalogue error when those local environment values
-are absent. The journey remains signed out and performs no Supabase mutation.
+Supabase URL and publishable key so it can read a live venue result. Those two
+public values must be present during `next build` as well as `next start`
+because the optimized image allowlist is compiled from the URL. The gate fails
+closed on missing configuration or rejected optimized images. The journey
+remains signed out and performs no Supabase mutation. Never load the
+service-role key for this verification.
 
 ## Safe local use
 
@@ -159,7 +167,7 @@ Every run:
    directory;
 3. launches the browser headlessly;
 4. runs all ten responsive scenarios plus the mobile state and keyboard
-   journeys;
+   journeys, including the 200-millisecond lab interaction gate;
 5. closes the owned browser process;
 6. verifies the temporary path belongs to the run before recursively removing
    it.

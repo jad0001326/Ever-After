@@ -2,6 +2,8 @@ import path from "node:path";
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
+export const PLANNING_LAB_INTERACTION_BUDGET_MS = 200;
+
 const browserCandidates = {
   darwin: [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -186,5 +188,55 @@ export function getPlanningBrowserJourney() {
     totalBudget: "30000",
     viewport: { height: 844, width: 390 },
     weddingDate: "2027-06-12",
+  };
+}
+
+export function summarizeInteractionTimings(entries) {
+  if (!Array.isArray(entries)) {
+    throw new TypeError("Interaction timing entries must be an array.");
+  }
+
+  const interactions = new Map();
+  for (const entry of entries) {
+    const duration = Number(entry?.duration);
+    const interactionId = Number(entry?.interactionId);
+    if (
+      !Number.isFinite(duration)
+      || duration < 0
+      || !Number.isFinite(interactionId)
+      || interactionId <= 0
+    ) {
+      continue;
+    }
+
+    const current = interactions.get(interactionId) ?? {
+      durationMs: 0,
+      events: new Set(),
+      interactionId,
+      target: "",
+    };
+    current.durationMs = Math.max(current.durationMs, duration);
+    if (typeof entry.name === "string" && entry.name) current.events.add(entry.name);
+    if (!current.target && typeof entry.target === "string") current.target = entry.target;
+    interactions.set(interactionId, current);
+  }
+
+  const measuredInteractions = Array.from(interactions.values())
+    .map((interaction) => ({
+      durationMs: interaction.durationMs,
+      events: Array.from(interaction.events).sort(),
+      interactionId: interaction.interactionId,
+      target: interaction.target,
+    }))
+    .sort((left, right) => (
+      right.durationMs - left.durationMs
+      || left.interactionId - right.interactionId
+    ));
+
+  return {
+    interactionCount: measuredInteractions.length,
+    interactions: measuredInteractions,
+    maxDurationMs: measuredInteractions[0]?.durationMs ?? 0,
+    slowestInteraction: measuredInteractions[0] ?? null,
   };
 }

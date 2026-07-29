@@ -45,7 +45,7 @@ its public profile route and category-specific browser verification before its
 | --- | --- | --- |
 | Venue-first Planning Hub milestone | Complete locally | Responsive shell, profile inputs, paginated server discovery, detail, save/compare, estimated/quoted/booked planning, connected budget and payments, Photography handoff and manual fallback all pass the optimized interaction gate. |
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
-| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; native keyboard, Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
+| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
 | Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Future-compatible architecture only | Shared domain logic and backend contracts are reusable, but native clients and physical-device QA are outside this web milestone. |
@@ -70,7 +70,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 69 test files and 336 tests passing.
+- 69 test files and 338 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -137,7 +137,10 @@ its public profile route and category-specific browser verification before its
 - The same repeatable run uses Chrome's native Enter, Space and Tab input to
   prove venue detail focus transfer, keyboard-reachable Close, exact trigger
   focus restoration, Compare pressed state, manual-entry disclosure and field
-  order, and keyboard navigation to the plan-aware Photography stage.
+  order, and keyboard navigation to the plan-aware Photography stage. Chrome
+  Event Timing records four distinct interactions; the full optimized run's
+  slowest duration is 24 milliseconds and the gate fails above 200
+  milliseconds. Field INP remains explicitly separate.
 - Chrome's full rendered accessibility tree proves unique banner/main
   landmarks, named primary/stage/result navigation, named filter/result/plan
   landmarks, correct heading levels, detail and control names, pressed and

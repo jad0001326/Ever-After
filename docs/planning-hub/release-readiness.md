@@ -31,7 +31,7 @@ a production deployment, migrate or enable cloud persistence.
 | Native-ready business logic | Budget, recommendation, supplier, payment, task, guest, seating, validation and cloud mapping rules live outside page components and use stable DTOs. | Proven as an architectural foundation |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
-| Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Real INP requires post-release field traffic. | Awaiting field evidence |
+| Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Chrome Event Timing measures four real keyboard interactions with a 24 ms slowest duration and fails above 200 ms. Real INP still requires post-release field traffic. | Target met in lab; awaiting field evidence |
 | Keyboard and screen reader access | The repeatable 390 x 844 gate uses native Enter, Space and Tab input for detail focus, close-and-return, comparison, manual entry and the Photography handoff. Chrome's full accessibility tree proves unique banner/main landmarks, named navigation/filter/result/plan landmarks, heading levels, state properties and transported context; axe remains clear. | Proven locally |
 | User-record security | Ten user-owned tables have RLS, explicit grants, owner/member predicates and anonymous denial. The eight-migration sequence passes the embedded PostgreSQL scenario, including denial of partner access to unlinked owner budgets and workspace budget relinking. | Database boundary proven |
 
@@ -77,6 +77,7 @@ they do not require rewriting or pushing it.
 | 32. Payment commitment round trip | Record a partial venue payment, surface it in Organise and return to the exact open payment editor with focus preserved. | `6865e1f` | Application routing, focus timing, semantic readiness panel and local browser evidence only; no schema or hosted action. |
 | 33. Rendered lifecycle completion | Verify date availability and staleness, complete booking/payment expansion, focused removal, duplicate-free reactivation and the computed local font stack. | `5c255a5` | Local browser tooling and release evidence only; no application, schema, catalogue or hosted mutation. |
 | 34. Upstream release sync | Merge current `origin/main`, including claimant email hardening, outreach validation and ten new planning guides, then recertify the Planning Hub release candidate. | Current working slice | Clean local merge and verification only; no remote write, migration or deployment. |
+| 35. Lab interaction timing | Measure browser-generated keyboard interactions with Chrome Event Timing and fail the release gate above 200 ms. | Current local slice | Repeatable local lab evidence only; field INP still requires approved traffic. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -180,7 +181,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 69 Vitest files and 336 tests pass.
+- 69 Vitest files and 338 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -252,7 +253,10 @@ Use the least destructive rollback that restores safety:
   first venue detail and moves focus into it, Tab reaches Close, Enter closes
   and restores the exact `View` trigger, Space toggles Compare, Enter expands
   manual venue entry, Tab reaches its first field, and Enter follows the
-  Photography recommendation with the exact remaining plan context.
+  Photography recommendation with the exact remaining plan context. Chrome
+  Event Timing records four distinct interactions; the full optimized run's
+  slowest presentation is 24 milliseconds and the gate fails above 200
+  milliseconds.
 - Chrome's full accessibility tree then proves one banner and one main,
   named primary/stage/result navigation, named filter/result/connected-plan
   landmarks, correct H1/H2/H3 levels, chosen/Compare/disclosure states, the

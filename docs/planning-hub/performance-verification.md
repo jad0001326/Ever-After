@@ -68,7 +68,9 @@ visual-regression risk while every measured target already passes.
 ## What remains unproven
 
 Lighthouse TBT is a lab responsiveness proxy, not field INP. The repeatable
-browser journey separately proves immediate budget and selection updates with
-no browser exception, but the stated INP target still needs real-user field
-data after an approved release. Physical iPhone/Safari and Android touch
-testing also remains a release gate.
+optimized browser journey now also observes Chrome Event Timing for real Enter,
+Space and Tab actions. Its full release run measured four distinct interactions
+with a slowest duration of 24 milliseconds and fails above the 200-millisecond
+budget. That strengthens the lab evidence but does not replace real-user field
+INP after an approved release. Physical iPhone/Safari and Android touch testing
+also remains a release gate.

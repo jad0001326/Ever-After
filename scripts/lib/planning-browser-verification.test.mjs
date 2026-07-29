@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   getPlanningBrowserJourney,
   getPlanningBrowserScenarios,
+  PLANNING_LAB_INTERACTION_BUDGET_MS,
   resolveBrowserExecutable,
   resolvePlanningBrowserConfig,
+  summarizeInteractionTimings,
 } from "./planning-browser-verification.mjs";
 
 describe("Planning Hub browser verification configuration", () => {
@@ -89,6 +91,71 @@ describe("Planning Hub browser verification configuration", () => {
     });
     expect(journey.expectedPhotographyText).toContain(
       "£25,000 remaining overall",
+    );
+  });
+
+  it("summarises the slowest event in each measured interaction", () => {
+    expect(PLANNING_LAB_INTERACTION_BUDGET_MS).toBe(200);
+    expect(summarizeInteractionTimings([
+      {
+        duration: 24,
+        interactionId: 17,
+        name: "keydown",
+        target: "button:View",
+      },
+      {
+        duration: 16,
+        interactionId: 17,
+        name: "keyup",
+        target: "button:View",
+      },
+      {
+        duration: 48,
+        interactionId: 23,
+        name: "click",
+        target: "summary:Venue not listed?",
+      },
+      {
+        duration: 80,
+        interactionId: 0,
+        name: "pointerdown",
+        target: "body",
+      },
+      {
+        duration: Number.NaN,
+        interactionId: 29,
+        name: "click",
+        target: "button:Compare",
+      },
+    ])).toEqual({
+      interactionCount: 2,
+      interactions: [
+        {
+          durationMs: 48,
+          events: ["click"],
+          interactionId: 23,
+          target: "summary:Venue not listed?",
+        },
+        {
+          durationMs: 24,
+          events: ["keydown", "keyup"],
+          interactionId: 17,
+          target: "button:View",
+        },
+      ],
+      maxDurationMs: 48,
+      slowestInteraction: {
+        durationMs: 48,
+        events: ["click"],
+        interactionId: 23,
+        target: "summary:Venue not listed?",
+      },
+    });
+  });
+
+  it("fails clearly when interaction timings are not an array", () => {
+    expect(() => summarizeInteractionTimings(null)).toThrow(
+      /Interaction timing entries must be an array/,
     );
   });
 });

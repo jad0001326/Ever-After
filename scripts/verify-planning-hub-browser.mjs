@@ -10,7 +10,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import {
   getPlanningBrowserJourney,
   getPlanningBrowserScenarios,
+  PLANNING_LAB_INTERACTION_BUDGET_MS,
   resolvePlanningBrowserConfig,
+  summarizeInteractionTimings,
 } from "./lib/planning-browser-verification.mjs";
 
 class CdpClient {
@@ -123,6 +125,7 @@ try {
       runtimeErrors.push({
         scenario: activeScenario,
         text: params.entry.text,
+        url: params.entry.url ?? "",
       });
     }
   });
@@ -1061,6 +1064,7 @@ async function verifyVenueKeyboardJourney({
     `Boolean(document.querySelector('section[aria-label="Matching wedding venues"] article'))`,
     "a live venue result for keyboard verification",
   );
+  await startInteractionTiming(client);
 
   const firstVenueName = await focusFirstVenueAction(client, "View");
   await pressKey(client, "Enter");
@@ -1152,6 +1156,15 @@ async function verifyVenueKeyboardJourney({
     name: "Venue name",
     role: "textbox",
   });
+  const interactionTiming = await readInteractionTiming(client);
+  assert(
+    interactionTiming.interactionCount >= 4,
+    `Expected at least four real keyboard interactions, received ${JSON.stringify(interactionTiming)}.`,
+  );
+  assert(
+    interactionTiming.maxDurationMs <= PLANNING_LAB_INTERACTION_BUDGET_MS,
+    `The slowest lab interaction exceeded ${PLANNING_LAB_INTERACTION_BUDGET_MS} ms: ${JSON.stringify(interactionTiming.slowestInteraction)}.`,
+  );
 
   const recommendationFocused = await focusLinkByText(
     client,
@@ -1175,7 +1188,7 @@ async function verifyVenueKeyboardJourney({
   );
 
   console.log(
-    "venue-keyboard-mobile: Enter opened detail, Tab reached Close, Enter restored View focus, Space compared, Enter expanded manual entry, Tab reached its first field and Enter followed Photography.",
+    `venue-keyboard-mobile: Enter opened detail, Tab reached Close, Enter restored View focus, Space compared, Enter expanded manual entry, Tab reached its first field and Enter followed Photography. ${interactionTiming.interactionCount} lab interactions measured; slowest ${interactionTiming.maxDurationMs} ms.`,
   );
 }
 
@@ -1536,6 +1549,59 @@ async function pressKey(client, key) {
     ...keyConfig,
   });
   await delay(100);
+}
+
+async function startInteractionTiming(client) {
+  const supported = await evaluate(
+    client,
+    `(() => {
+      window.__planningBrowserInteractionObserver?.disconnect();
+      window.__planningBrowserInteractionEntries = [];
+      if (!PerformanceObserver.supportedEntryTypes?.includes("event")) return false;
+      window.__planningBrowserInteractionObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const target = entry.target instanceof Element
+            ? [
+                entry.target.tagName.toLowerCase(),
+                entry.target.getAttribute("aria-label")
+                  || entry.target.textContent?.trim().slice(0, 80)
+                  || entry.target.id
+                  || ""
+              ].filter(Boolean).join(":")
+            : "";
+          window.__planningBrowserInteractionEntries.push({
+            duration: entry.duration,
+            interactionId: entry.interactionId,
+            name: entry.name,
+            target
+          });
+        }
+      });
+      window.__planningBrowserInteractionObserver.observe({
+        buffered: true,
+        durationThreshold: 16,
+        type: "event"
+      });
+      return true;
+    })()`,
+  );
+  assert.equal(
+    supported,
+    true,
+    "This browser does not expose the Event Timing API required for the lab interaction gate.",
+  );
+}
+
+async function readInteractionTiming(client) {
+  const entries = JSON.parse(await evaluate(
+    client,
+    `(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return JSON.stringify(window.__planningBrowserInteractionEntries ?? []);
+    })()`,
+    true,
+  ));
+  return summarizeInteractionTimings(entries);
 }
 
 async function setLabelledControl(client, labelText, value) {
