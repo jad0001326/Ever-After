@@ -76,6 +76,21 @@ must retain the exact plan-item ID, return to the Venue stage, open that item's
 payment disclosure and focus its summary. This covers both direct-load and
 client-navigation hash timing.
 
+The lifecycle check continues with rendered states that previously had only
+component coverage:
+
+1. records the chosen venue as available for 12 June 2027;
+2. changes the wedding date to 19 June and proves the old answer becomes a
+   visible recheck warning and the control returns to `Not checked`;
+3. expands a valid device-only seven-booking/seven-payment plan from the
+   bounded six-booking/five-payment initial DOM to all seven entries;
+4. scans that expanded Organise state for overflow, browser errors and axe
+   findings;
+5. confirms removal and verifies focus lands on the stable current-venue
+   heading;
+6. adds, removes and re-adds a live catalogue venue, proving reactivation
+   retains exactly one active record rather than creating a duplicate.
+
 For each viewport it proves:
 
 - the stable milestone content for that surface renders, including the exact
@@ -85,6 +100,8 @@ For each viewport it proves:
 - no Next.js development overlay is present;
 - no application error or browser exception is emitted;
 - axe-core reports no violations and no indeterminate checks.
+- the computed body font resolves to the local system sans stack rather than an
+  unresolved CSS variable or remote font.
 
 The cookie preference is set to essential inside the disposable browser profile
 so the test scans the Planning Hub rather than a consent overlay. Cookie
@@ -111,6 +128,9 @@ In a second terminal:
 $env:PLANNING_HUB_BROWSER_BASE_URL = "http://127.0.0.1:3001"
 npm.cmd run test:planning-browser
 ```
+
+Set `PLANNING_HUB_BROWSER_SCREENSHOT_PATH` to an absolute path outside the
+repository when a PNG of the final mobile lifecycle state is needed for review.
 
 During development, rerun only the interaction journey after a failure:
 

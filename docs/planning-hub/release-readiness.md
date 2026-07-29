@@ -72,7 +72,8 @@ they do not require rewriting or pushing it.
 | 29. Venue performance recertification | Re-measure the complete optimized Venue step after the assembled milestone and retain trace-based evidence. | `2be9c73` | Read-only local Lighthouse evidence; no application change is justified while every objective target passes. |
 | 30. Native keyboard journey | Add real Enter, Space and Tab coverage for venue detail focus, close-and-return, comparison, manual entry and the Photography recommendation. | `ee105f3` | Local browser verification only; programmatic focus establishes each starting control but never substitutes for activation or sequential navigation. |
 | 31. Screen-reader tree contract | Assert Chrome's rendered accessibility tree for Venue, the interactive detail/compare/manual states and transported Photography context. | `9d5c402` | Local browser accessibility inspection only; no application change is justified while the rendered semantic contract passes. |
-| 32. Payment commitment round trip | Record a partial venue payment, surface it in Organise and return to the exact open payment editor with focus preserved. | Current working slice | Application routing, focus timing, semantic readiness panel and local browser evidence only; no schema or hosted action. |
+| 32. Payment commitment round trip | Record a partial venue payment, surface it in Organise and return to the exact open payment editor with focus preserved. | `6865e1f` | Application routing, focus timing, semantic readiness panel and local browser evidence only; no schema or hosted action. |
+| 33. Rendered lifecycle completion | Verify date availability and staleness, complete booking/payment expansion, focused removal, duplicate-free reactivation and the computed local font stack. | Current working slice | Local browser tooling and release evidence only; no application, schema, catalogue or hosted mutation. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -168,16 +169,6 @@ Use the least destructive rollback that restores safety:
   generator are ready. The generated 27-file stack still needs its first
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
-- Fresh rendered computed-style verification must confirm the local sans stack
-  on a public page and Planning Hub page. The in-app Browser control runtime was
-  unavailable during the code-level correction, so no substitute browser result
-  is claimed.
-- Fresh rendered mobile verification must exercise the new date-availability
-  control, stale-date warning, Organise command-centre summary and long-list
-  booking/payment expansion, plus confirmed item removal and reactivation.
-  Component, domain, workspace persistence and recommendation behavior are
-  covered, but the in-app Browser control runtime remained unavailable for
-  these slices.
 - Field INP requires an approved release and real traffic.
 - Push, pull-request creation, migration, deployment and production writes all
   require explicit approval.
@@ -201,7 +192,9 @@ Use the least destructive rollback that restores safety:
   about 8.5KiB and the median total transfer is about 288KiB.
 - The global body font now resolves through a local system sans stack rather
   than an undefined custom property or a remote font request; its stylesheet
-  contract has focused regression coverage.
+  contract has focused regression coverage. The optimized browser matrix also
+  confirms the computed body font resolves to the local system stack on
+  Planning Hub and both public planners at mobile and desktop sizes.
 - Every planned venue or supplier can record whether availability has not been
   checked, an enquiry was sent, or the business is available or unavailable for
   the current wedding date. A date change invalidates the earlier answer, and
@@ -264,6 +257,15 @@ Use the least destructive rollback that restores safety:
   opens its payment disclosure and focuses the summary. The populated Organise
   view has zero axe violations and zero indeterminate checks; the date-readiness
   card is a named semantic section.
+- The optimized 390 x 844 lifecycle journey records explicit venue
+  availability for 12 June 2027, changes the wedding date to 19 June and proves
+  the prior answer becomes a visible recheck warning. A valid device-only
+  seven-booking/seven-payment fixture renders six and five entries initially;
+  both controls reveal all seven, switch to `Show fewer`, retain zero axe
+  findings and keep page width equal to the viewport.
+- That journey then confirms removal, proves focus lands on the stable current
+  venue heading, and opens a live catalogue venue. Removing and adding it again
+  restores one active retained item with no duplicate record.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
@@ -294,6 +296,10 @@ Use the least destructive rollback that restores safety:
 
 The browser verification used only the existing Supabase URL and publishable
 key for read-only catalogue access. The service-role key was not loaded.
+The in-app Browser control connection remained unavailable after both required
+discovery attempts, so the already permitted loopback-only Chrome DevTools
+verifier supplied the rendered interaction, accessibility, computed-style and
+screenshot evidence.
 
 No paid resource, cloud branch, deployment, migration or production write was
 used to create this release record.

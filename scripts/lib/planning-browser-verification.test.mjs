@@ -75,7 +75,9 @@ describe("Planning Hub browser verification configuration", () => {
     expect(journey.viewport).toEqual({ height: 844, width: 390 });
     expect(journey).toMatchObject({
       guestCount: "80",
+      laterWeddingDate: "2027-06-19",
       location: "Fife",
+      longListItemCount: 7,
       manualVenueCost: "5000",
       manualVenueName: "Browser journey hall",
       paymentAmount: "1000",

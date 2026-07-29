@@ -6,7 +6,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import {
   getPlanningBrowserJourney,
   getPlanningBrowserScenarios,
@@ -159,6 +159,7 @@ try {
     await waitForDocument(client, scenario.expectedText);
 
     const pageState = await evaluate(client, `JSON.stringify({
+      bodyFontFamily: getComputedStyle(document.body).fontFamily,
       bodyText: document.body?.innerText ?? "",
       bodyWidth: document.body?.scrollWidth ?? 0,
       documentHeight: document.documentElement.scrollHeight,
@@ -190,6 +191,11 @@ try {
     assert(
       !state.bodyText.includes("Application error"),
       `${scenario.name} rendered an application error.`,
+    );
+    assert(
+      !state.bodyFontFamily.includes("var(")
+        && (state.bodyFontFamily.includes("system-ui") || state.bodyFontFamily.includes("Segoe UI")),
+      `${scenario.name} did not resolve the local sans-serif stack: ${state.bodyFontFamily}`,
     );
     for (const expected of scenario.expectedText) {
       assert(
@@ -277,11 +283,20 @@ try {
     journey,
     runtimeErrors,
   });
+  activeScenario = "availability-lifecycle-mobile";
+  runtimeErrors.length = 0;
+  await verifyAvailabilityLifecycleJourney({
+    axeSource,
+    baseUrl: config.baseUrl,
+    client,
+    journey,
+    runtimeErrors,
+  });
 
   client.close();
   console.log(journeyOnly
-    ? "Planning Hub browser verification passed the mobile state, payment, keyboard and screen-reader journeys in interaction-only mode with no overflow, browser errors or accessibility findings."
-    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile state, payment, keyboard and screen-reader journeys with no overflow, browser errors or accessibility findings.`);
+    ? "Planning Hub browser verification passed the mobile state, payment, availability, lifecycle, long-list, keyboard and screen-reader journeys in interaction-only mode with no overflow, browser errors or accessibility findings."
+    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile state, payment, availability, lifecycle, long-list, keyboard and screen-reader journeys with no overflow, browser errors or accessibility findings.`);
 } catch (error) {
   if (browserDiagnostics.trim()) {
     console.error(browserDiagnostics.trim());
@@ -744,6 +759,295 @@ async function verifyOrganisePaymentJourney({
   );
   console.log(
     `organise-payment-mobile: the ${journeyConfig.paymentLabel} commitment returned to its exact venue payment editor, opened it and focused its summary.`,
+  );
+}
+
+async function verifyAvailabilityLifecycleJourney({
+  axeSource: source,
+  baseUrl,
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  const availabilityOpened = await evaluate(
+    client,
+    `(() => {
+      const details = Array.from(
+        document.querySelectorAll('aside[aria-label="Connected wedding plan"] details'),
+      ).find((candidate) => candidate.querySelector(":scope > summary")?.textContent?.includes("Date availability"));
+      if (!details) return false;
+      details.setAttribute("data-browser-availability", "true");
+      if (!details.open) details.querySelector(":scope > summary")?.click();
+      return details.open;
+    })()`,
+  );
+  assert.equal(availabilityOpened, true, "The venue availability control did not open.");
+  await setControlValue(
+    client,
+    'details[data-browser-availability="true"] select',
+    "available",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector('details[data-browser-availability="true"]')
+      ?.innerText.includes("You recorded that the business is available on 12 Jun 2027.")`,
+    "the explicit venue availability state",
+  );
+
+  await setLabelledControl(
+    client,
+    "Wedding date",
+    journeyConfig.laterWeddingDate,
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector('details[data-browser-availability="true"]')
+      ?.innerText.includes("This was last checked for 12 Jun 2027.")
+      && document.querySelector('details[data-browser-availability="true"]')
+        ?.innerText.includes("Confirm availability again for 19 Jun 2027.")
+      && document.querySelector('details[data-browser-availability="true"] select')?.value === "not_checked"`,
+    "the stale-date availability warning",
+  );
+
+  const seededPlan = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const storageKey = "everaft:wedding-budget:v1";
+      const plan = JSON.parse(localStorage.getItem(storageKey));
+      const sourceItem = plan.items.find((item) => item.itemName === ${JSON.stringify(journeyConfig.manualVenueName)});
+      if (!sourceItem) return JSON.stringify({ itemCount: 0, paymentCount: 0, sourceItemId: null });
+      const retainedItems = plan.items.filter((item) => !String(item.id).startsWith("browser-long-list-"));
+      const clones = Array.from(
+        { length: ${journeyConfig.longListItemCount - 1} },
+        (_, index) => {
+          const itemNumber = index + 2;
+          const itemId = "browser-long-list-" + itemNumber;
+          return {
+            ...sourceItem,
+            id: itemId,
+            itemName: "Browser overflow venue " + itemNumber,
+            supplierName: "Browser overflow venue " + itemNumber,
+            listingId: null,
+            listingUrl: null,
+            availabilityDate: null,
+            availabilityStatus: "not_checked",
+            installments: sourceItem.installments.map((installment) => ({
+              ...installment,
+              id: itemId + "-payment",
+              label: "Browser instalment " + itemNumber,
+              paidPence: 0,
+              dueDate: "2027-06-" + String(itemNumber).padStart(2, "0")
+            })),
+            depositPaidPence: 0,
+            totalPaidPence: 0,
+            paymentStatus: "unpaid",
+            costStatus: "confirmed",
+            sortOrder: retainedItems.length + index,
+            createdAt: new Date(Date.now() + itemNumber).toISOString(),
+            updatedAt: new Date(Date.now() + itemNumber).toISOString()
+          };
+        },
+      );
+      plan.items = [...retainedItems, ...clones];
+      plan.updatedAt = new Date(Date.now() + 60_000).toISOString();
+      localStorage.setItem(storageKey, JSON.stringify(plan));
+      return JSON.stringify({
+        itemCount: plan.items.filter((item) => item.bookingStatus !== "cancelled").length,
+        paymentCount: plan.items.reduce((count, item) => count + item.installments.length, 0),
+        sourceItemId: sourceItem.id
+      });
+    })()`,
+  ));
+  assert.equal(seededPlan.itemCount, journeyConfig.longListItemCount);
+  assert.equal(seededPlan.paymentCount, journeyConfig.longListItemCount);
+  assert(seededPlan.sourceItemId, "The long-list fixture lost its source venue.");
+
+  await client.send("Page.navigate", {
+    url: new URL("/planning-hub/organise", baseUrl).href,
+  });
+  await waitForDocument(client, [
+    "Budget & bookings",
+    "Payments & deadlines",
+    "7 booked",
+    "7 need action",
+    "Availability needs rechecking",
+    "Show 1 more booking",
+    "Show 2 more payments",
+  ]);
+  const initialLongListState = JSON.parse(await evaluate(
+    client,
+    `JSON.stringify({
+      bookings: document.querySelectorAll("#planning-hub-booking-pipeline > li").length,
+      payments: document.querySelectorAll("#planning-hub-payment-commitments > li").length
+    })`,
+  ));
+  assert.deepEqual(initialLongListState, { bookings: 6, payments: 5 });
+
+  assert.equal(
+    await clickButtonWithin(client, "main", "Show 1 more booking"),
+    true,
+    "The remaining booking could not be revealed.",
+  );
+  assert.equal(
+    await clickButtonWithin(client, "main", "Show 2 more payments"),
+    true,
+    "The remaining payments could not be revealed.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelectorAll("#planning-hub-booking-pipeline > li").length === 7
+      && document.querySelectorAll("#planning-hub-payment-commitments > li").length === 7
+      && Array.from(document.querySelectorAll("button")).filter((button) =>
+        button.textContent?.includes("Show fewer")
+      ).length === 2`,
+    "all bookings and payments to become reachable",
+  );
+  await assertHealthyPage({
+    axeSource: source,
+    client,
+    expectedText: [
+      "Browser overflow venue 7",
+      "Browser instalment 7",
+      "Show fewer bookings",
+      "Show fewer payments",
+    ],
+    name: "organise-long-lists-mobile",
+    runtimeErrors,
+    viewport: journeyConfig.viewport,
+  });
+
+  await client.send("Page.navigate", {
+    url: new URL(
+      `/planning-hub?planItem=${encodeURIComponent(seededPlan.sourceItemId)}#current-venue-planning`,
+      baseUrl,
+    ).href,
+  });
+  await waitForDocument(client, [journeyConfig.manualVenueName, "Remove from plan"]);
+  assert.equal(
+    await clickButtonWithin(
+      client,
+      'aside[aria-label="Connected wedding plan"]',
+      "Remove from plan",
+    ),
+    true,
+    "The venue removal confirmation did not open.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector('[role="group"]')?.innerText.includes(${JSON.stringify(`Remove ${journeyConfig.manualVenueName} from your plan?`)})
+      && document.activeElement?.textContent?.includes("Keep in plan")`,
+    "the focused venue removal confirmation",
+  );
+  assert.equal(
+    await clickButtonWithin(
+      client,
+      'aside[aria-label="Connected wedding plan"]',
+      "Yes, remove from plan",
+    ),
+    true,
+    "The venue removal was not confirmed.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning h3")?.textContent?.trim() === "Open a venue to plan it"
+      && document.activeElement === document.querySelector("#current-venue-planning h3")
+      && !document.querySelector('aside button')?.textContent?.includes("This is your chosen venue")
+      && !document.querySelector('aside')?.innerText.includes(${JSON.stringify(journeyConfig.paymentLabel)})`,
+    "the removed venue to leave active planning and totals",
+  );
+
+  const firstVenueName = await clickFirstVenueAction(client, "View");
+  await waitForCondition(
+    client,
+    `document.querySelector('#venue-detail')?.getAttribute("aria-label") === ${JSON.stringify(`${firstVenueName} details`)}`,
+    "a catalogue venue detail before lifecycle verification",
+  );
+  await evaluate(
+    client,
+    `document.querySelector('button[aria-label="Close venue details"]')?.click()`,
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning h3")?.textContent?.trim() === ${JSON.stringify(firstVenueName)}
+      && !document.querySelector("#venue-detail")`,
+    "the catalogue venue planning panel",
+  );
+  assert.equal(
+    await clickButtonWithin(client, "#current-venue-planning", "Add venue to plan"),
+    true,
+    "The catalogue venue could not be added to the plan.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning")?.innerText.includes("Update venue plan")`,
+    "the active catalogue venue",
+  );
+  assert.equal(
+    await clickButtonWithin(
+      client,
+      'aside[aria-label="Connected wedding plan"]',
+      "Remove from plan",
+    ),
+    true,
+    "The catalogue venue removal confirmation did not open.",
+  );
+  assert.equal(
+    await clickButtonWithin(
+      client,
+      'aside[aria-label="Connected wedding plan"]',
+      "Yes, remove from plan",
+    ),
+    true,
+    "The catalogue venue removal was not confirmed.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning")?.innerText.includes("Add venue to plan")`,
+    "the catalogue venue to become available for reactivation",
+  );
+  assert.equal(
+    await clickButtonWithin(client, "#current-venue-planning", "Add venue to plan"),
+    true,
+    "The catalogue venue could not be reactivated.",
+  );
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning")?.innerText.includes("Update venue plan")`,
+    "the reactivated catalogue venue",
+  );
+  const reactivationState = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const plan = JSON.parse(localStorage.getItem("everaft:wedding-budget:v1"));
+      const currentHeading = document.querySelector("#current-venue-planning h3")?.textContent?.trim();
+      const matchingItems = plan.items.filter((item) => item.itemName === currentHeading);
+      return JSON.stringify({
+        activeCount: matchingItems.filter((item) => item.bookingStatus !== "cancelled").length,
+        totalCount: matchingItems.length
+      });
+    })()`,
+  ));
+  assert.deepEqual(
+    reactivationState,
+    { activeCount: 1, totalCount: 1 },
+    "Reactivation must reuse the retained catalogue item without duplication.",
+  );
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `availability-lifecycle-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+  const screenshotPath = process.env.PLANNING_HUB_BROWSER_SCREENSHOT_PATH?.trim();
+  if (screenshotPath) {
+    assert(path.isAbsolute(screenshotPath), "PLANNING_HUB_BROWSER_SCREENSHOT_PATH must be absolute.");
+    const screenshot = await client.send("Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+    });
+    await writeFile(screenshotPath, screenshot.data, "base64");
+  }
+  console.log(
+    "availability-lifecycle-mobile: explicit availability, stale-date warning, Organise summaries, complete booking/payment expansion, focused removal and duplicate-free catalogue reactivation passed.",
   );
 }
 

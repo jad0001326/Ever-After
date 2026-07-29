@@ -113,6 +113,14 @@ its public profile route and category-specific browser verification before its
 - The restored plan then reaches Organise with its booking and payment
   commitment intact. Its review link retains the exact plan-item ID, returns
   to Venue, opens the matching payment disclosure and focuses its summary.
+- Rendered mobile coverage now records availability for the exact wedding date,
+  changes that date and proves the old answer becomes a visible stale warning.
+  Organise bounds a seven-booking/seven-payment plan at six and five entries,
+  reveals every remaining item, exposes `Show fewer` controls and passes axe
+  and overflow checks while expanded.
+- Confirmed removal places focus on the stable current-venue heading. A live
+  catalogue venue then completes add, remove and re-add in the browser while
+  retaining one active plan item and no duplicate.
 - The same repeatable run uses Chrome's native Enter, Space and Tab input to
   prove venue detail focus transfer, keyboard-reachable Close, exact trigger
   focus restoration, Compare pressed state, manual-entry disclosure and field
@@ -121,6 +129,9 @@ its public profile route and category-specific browser verification before its
   landmarks, named primary/stage/result navigation, named filter/result/plan
   landmarks, correct heading levels, detail and control names, pressed and
   expanded state, and the exact venue/date/£25,000 Photography context.
+- Every optimized mobile and desktop matrix surface resolves the computed body
+  font to the local system sans stack, including Planning Hub and both public
+  planners.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;
