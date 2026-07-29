@@ -8,6 +8,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import {
+  getPlanningBrowserJourney,
   getPlanningBrowserScenarios,
   resolvePlanningBrowserConfig,
 } from "./lib/planning-browser-verification.mjs";
@@ -74,7 +75,9 @@ class CdpClient {
 
 const require = createRequire(import.meta.url);
 const config = resolvePlanningBrowserConfig({ exists: existsSync });
-const scenarios = getPlanningBrowserScenarios();
+const journey = getPlanningBrowserJourney();
+const journeyOnly = process.env.PLANNING_HUB_BROWSER_JOURNEY_ONLY === "1";
+const scenarios = journeyOnly ? [] : getPlanningBrowserScenarios();
 const axeSource = await readFile(require.resolve("axe-core/axe.min.js"), "utf8");
 const profileDirectory = await mkdtemp(path.join(tmpdir(), "everaft-planning-browser-"));
 const debuggingPort = await reservePort();
@@ -235,10 +238,20 @@ try {
     );
   }
 
+  activeScenario = "venue-to-photography-mobile";
+  runtimeErrors.length = 0;
+  await verifyVenueToPhotographyJourney({
+    axeSource,
+    baseUrl: config.baseUrl,
+    client,
+    journey,
+    runtimeErrors,
+  });
+
   client.close();
-  console.log(
-    `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios with no overflow, browser errors or axe findings.`,
-  );
+  console.log(journeyOnly
+    ? "Planning Hub browser verification passed the mobile venue-to-photography journey in interaction-only mode with no overflow, browser errors or axe findings."
+    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios and the mobile venue-to-photography journey with no overflow, browser errors or axe findings.`);
 } catch (error) {
   if (browserDiagnostics.trim()) {
     console.error(browserDiagnostics.trim());
@@ -330,6 +343,339 @@ async function waitForDocument(client, expectedText = []) {
     `The Planning Hub page did not finish rendering within 20 seconds.`
     + ` Ready state: ${lastState.readyState}.`
     + `${missing.length ? ` Missing: ${missing.join(" | ")}` : ""}`,
+  );
+}
+
+async function verifyVenueToPhotographyJourney({
+  axeSource: source,
+  baseUrl,
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  await evaluate(
+    client,
+    `localStorage.clear();
+     sessionStorage.clear();
+     localStorage.setItem("everaft-cookie-preference-v2", "essential")`,
+  );
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    deviceScaleFactor: 1,
+    height: journeyConfig.viewport.height,
+    mobile: true,
+    width: journeyConfig.viewport.width,
+  });
+  await client.send("Page.navigate", {
+    url: new URL("/planning-hub", baseUrl).href,
+  });
+  await waitForDocument(client, [
+    "Turn venue browsing into your wedding plan.",
+    "Find your venue",
+  ]);
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector('section[aria-label="Matching wedding venues"] article'))`,
+    "a live venue result",
+  );
+
+  const firstVenueName = await clickFirstVenueAction(client, "Save");
+  await waitForCondition(
+    client,
+    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("Sign in to save venue favourites.")`,
+    "the signed-out favourite guard",
+  );
+  const savePressed = await evaluate(
+    client,
+    `document.querySelector('section[aria-label="Matching wedding venues"] article button[aria-pressed]')?.getAttribute("aria-pressed")`,
+  );
+  assert.equal(
+    savePressed,
+    "false",
+    "The signed-out favourite guard must not present the venue as saved.",
+  );
+
+  await clickFirstVenueAction(client, "Compare");
+  await waitForCondition(
+    client,
+    `document.body.innerText.toLowerCase().includes("venue comparison")
+      && document.body.innerText.includes(${JSON.stringify(firstVenueName)})`,
+    "the venue comparison panel",
+  );
+
+  await clickFirstVenueAction(client, "View");
+  await waitForCondition(
+    client,
+    `document.querySelector('#venue-detail')?.getAttribute("aria-label") === ${JSON.stringify(`${firstVenueName} details`)}`,
+    "the venue detail panel",
+  );
+  await evaluate(
+    client,
+    `document.querySelector('button[aria-label="Close venue details"]')?.click()`,
+  );
+  await waitForCondition(
+    client,
+    `!document.querySelector('#venue-detail')`,
+    "the venue detail panel to close",
+  );
+
+  await setLabelledControl(client, "Total wedding budget", journeyConfig.totalBudget);
+  await setLabelledControl(client, "Wedding date", journeyConfig.weddingDate);
+  await setLabelledControl(client, "Guest count", journeyConfig.guestCount);
+  await setLabelledControl(client, "Preferred location", journeyConfig.location);
+  await waitForCondition(
+    client,
+    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£30,000")`,
+    "the updated wedding budget",
+  );
+
+  const manualDetailsOpened = await evaluate(
+    client,
+    `(() => {
+      const details = document.querySelector("details#manual-venue");
+      if (!details) return false;
+      if (!details.open) details.querySelector("summary")?.click();
+      return details.open;
+    })()`,
+  );
+  assert.equal(manualDetailsOpened, true, "The manual venue form did not open.");
+  await setControlValue(client, 'details#manual-venue input[name="name"]', journeyConfig.manualVenueName);
+  await setControlValue(client, 'details#manual-venue input[name="cost"]', journeyConfig.manualVenueCost);
+  await setControlValue(client, 'details#manual-venue select[name="status"]', "booked");
+  const submitted = await evaluate(
+    client,
+    `(() => {
+      const form = document.querySelector("details#manual-venue form");
+      if (!form) return false;
+      form.requestSubmit();
+      return true;
+    })()`,
+  );
+  assert.equal(submitted, true, "The manual venue form was not submitted.");
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning h3")?.textContent?.trim() === ${JSON.stringify(journeyConfig.manualVenueName)}`,
+    "the manually added venue",
+  );
+
+  const choseVenue = await clickButtonWithin(
+    client,
+    "#current-venue-planning",
+    "Choose as main venue",
+  );
+  assert.equal(choseVenue, true, "The manual venue could not be chosen as the main venue.");
+  await waitForCondition(
+    client,
+    `document.querySelector("#current-venue-planning")?.innerText.includes("This is your chosen venue")
+      && document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£25,000")`,
+    "the chosen venue and immediately updated remaining budget",
+  );
+
+  const nextHref = await evaluate(
+    client,
+    `Array.from(document.querySelectorAll("a")).find((link) =>
+      link.textContent?.includes("Next: choose your photographer")
+    )?.href`,
+  );
+  assert(nextHref, "The Photography recommendation link is missing.");
+  const nextUrl = new URL(nextHref);
+  assert.equal(nextUrl.pathname, "/planning-hub/photography");
+  assert.equal(nextUrl.searchParams.get("context"), "plan");
+  assert.equal(nextUrl.searchParams.get("remainingPence"), "2500000");
+  assert.equal(nextUrl.searchParams.get("venueName"), journeyConfig.manualVenueName);
+  assert.equal(nextUrl.searchParams.get("planDate"), journeyConfig.weddingDate);
+  assert.equal(nextUrl.searchParams.get("planLocation"), journeyConfig.location);
+  assert.equal(
+    nextUrl.searchParams.has("venue"),
+    false,
+    "A manual venue must not be sent as a catalogue venue filter.",
+  );
+
+  const followedRecommendation = await clickLinkByText(
+    client,
+    "Next: choose your photographer",
+  );
+  assert.equal(followedRecommendation, true, "The Photography recommendation link was not followed.");
+  await waitForDocument(client, journeyConfig.expectedPhotographyText);
+  await assertHealthyPage({
+    axeSource: source,
+    client,
+    expectedText: journeyConfig.expectedPhotographyText,
+    name: "venue-to-photography-mobile",
+    runtimeErrors,
+    viewport: journeyConfig.viewport,
+  });
+
+  await client.send("Page.navigate", {
+    url: new URL("/planning-hub", baseUrl).href,
+  });
+  await waitForDocument(client, [
+    journeyConfig.manualVenueName,
+    "This is your chosen venue",
+  ]);
+  await waitForCondition(
+    client,
+    `document.querySelector('aside[aria-label="Connected wedding plan"]')?.innerText.includes("£25,000")`,
+    "the locally restored remaining budget",
+  );
+
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `venue-to-photography-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+  console.log(
+    `venue-to-photography-mobile: guest favourite guard, compare, detail, manual booked venue, £25,000 handoff and local restore passed at ${journeyConfig.viewport.width}x${journeyConfig.viewport.height}.`,
+  );
+}
+
+async function assertHealthyPage({
+  axeSource: source,
+  client,
+  expectedText,
+  name,
+  runtimeErrors,
+  viewport,
+}) {
+  const pageState = JSON.parse(await evaluate(client, `JSON.stringify({
+    bodyText: document.body?.innerText ?? "",
+    bodyWidth: document.body?.scrollWidth ?? 0,
+    documentWidth: document.documentElement.scrollWidth,
+    hasDevelopmentOverlay: Boolean(document.querySelector("nextjs-portal")),
+    innerHeight: window.innerHeight,
+    innerWidth: window.innerWidth
+  })`));
+  assert.equal(pageState.hasDevelopmentOverlay, false, `${name} rendered a Next.js overlay.`);
+  assert.equal(pageState.innerWidth, viewport.width, `${name} rendered at the wrong width.`);
+  assert(
+    pageState.documentWidth <= pageState.innerWidth && pageState.bodyWidth <= pageState.innerWidth,
+    `${name} overflows horizontally.`,
+  );
+  for (const expected of expectedText) {
+    assert(pageState.bodyText.includes(expected), `${name} did not render expected text: ${expected}`);
+  }
+
+  await evaluate(client, source);
+  const axe = JSON.parse(await evaluate(
+    client,
+    `axe.run(document).then((results) => JSON.stringify({
+      incomplete: results.incomplete.map((item) => ({ id: item.id, nodes: item.nodes.length })),
+      passes: results.passes.length,
+      violations: results.violations.map((item) => ({
+        id: item.id,
+        impact: item.impact,
+        nodes: item.nodes.length
+      }))
+    }))`,
+    true,
+  ));
+  assert.deepEqual(axe.violations, [], `${name} has axe violations: ${JSON.stringify(axe.violations)}`);
+  assert.deepEqual(axe.incomplete, [], `${name} has indeterminate axe checks: ${JSON.stringify(axe.incomplete)}`);
+  assert.deepEqual(runtimeErrors, [], `${name} emitted browser errors: ${JSON.stringify(runtimeErrors)}`);
+}
+
+async function clickFirstVenueAction(client, text) {
+  const result = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const card = document.querySelector('section[aria-label="Matching wedding venues"] article');
+      const button = Array.from(card?.querySelectorAll("button") ?? [])
+        .find((candidate) => candidate.textContent?.trim() === ${JSON.stringify(text)});
+      const venueName = card?.querySelector("h3")?.textContent?.trim();
+      if (!button || !venueName) return JSON.stringify({ clicked: false, venueName: null });
+      button.click();
+      return JSON.stringify({ clicked: true, venueName });
+    })()`,
+  ));
+  assert.equal(result.clicked, true, `The first venue's ${text} action was not available.`);
+  return result.venueName;
+}
+
+async function clickButtonWithin(client, selector, text) {
+  return evaluate(
+    client,
+    `(() => {
+      const root = document.querySelector(${JSON.stringify(selector)});
+      const button = Array.from(root?.querySelectorAll("button") ?? [])
+        .find((candidate) => candidate.textContent?.includes(${JSON.stringify(text)}));
+      button?.click();
+      return Boolean(button);
+    })()`,
+  );
+}
+
+async function clickLinkByText(client, text) {
+  return evaluate(
+    client,
+    `(() => {
+      const link = Array.from(document.querySelectorAll("a"))
+        .find((candidate) => candidate.textContent?.includes(${JSON.stringify(text)}));
+      link?.click();
+      return Boolean(link);
+    })()`,
+  );
+}
+
+async function setLabelledControl(client, labelText, value) {
+  const selector = await evaluate(
+    client,
+    `(() => {
+      const labels = Array.from(document.querySelectorAll('aside[aria-label="Connected wedding plan"] label'));
+      const index = labels.findIndex((label) => label.childNodes[0]?.textContent?.trim() === ${JSON.stringify(labelText)});
+      const control = index >= 0 ? labels[index].querySelector("input, select, textarea") : null;
+      if (!control) return null;
+      const marker = "planning-browser-control-" + index;
+      control.setAttribute("data-browser-control", marker);
+      return '[data-browser-control="' + marker + '"]';
+    })()`,
+  );
+  assert(selector, `Could not find the ${labelText} control.`);
+  await setControlValue(client, selector, value);
+}
+
+async function setControlValue(client, selector, value) {
+  const changed = await evaluate(
+    client,
+    `(() => {
+      const control = document.querySelector(${JSON.stringify(selector)});
+      if (!(control instanceof HTMLInputElement
+        || control instanceof HTMLSelectElement
+        || control instanceof HTMLTextAreaElement)) return false;
+      const prototype = control instanceof HTMLInputElement
+        ? HTMLInputElement.prototype
+        : control instanceof HTMLSelectElement
+          ? HTMLSelectElement.prototype
+          : HTMLTextAreaElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, "value").set.call(
+        control,
+        ${JSON.stringify(value)},
+      );
+      control.dispatchEvent(new Event("input", { bubbles: true }));
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()`,
+  );
+  assert.equal(changed, true, `Could not set browser control ${selector}.`);
+  await delay(100);
+}
+
+async function waitForCondition(client, expression, description) {
+  let lastText = "";
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (await evaluate(client, expression)) {
+      await delay(100);
+      return;
+    }
+    if (attempt === 79) {
+      lastText = await evaluate(
+        client,
+        `(document.body?.innerText ?? "").slice(0, 2_000)`,
+      );
+    }
+    await delay(250);
+  }
+  throw new Error(
+    `Timed out waiting for ${description}.`
+    + `${lastText ? ` Page text: ${JSON.stringify(lastText)}` : ""}`,
   );
 }
 

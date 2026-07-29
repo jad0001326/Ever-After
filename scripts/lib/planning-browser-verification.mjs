@@ -162,3 +162,23 @@ export function getPlanningBrowserScenarios() {
     })),
   ];
 }
+
+export function getPlanningBrowserJourney() {
+  return {
+    expectedPhotographyText: [
+      "Choose photography that fits your real plan.",
+      "Venue: Browser journey hall",
+      "Date: 12 Jun 2027",
+      "£25,000 remaining overall",
+      "From your Wedding Profile.",
+      "Using the amount remaining in your connected plan.",
+    ],
+    guestCount: "80",
+    location: "Fife",
+    manualVenueCost: "5000",
+    manualVenueName: "Browser journey hall",
+    totalBudget: "30000",
+    viewport: { height: 844, width: 390 },
+    weddingDate: "2027-06-12",
+  };
+}

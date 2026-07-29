@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  getPlanningBrowserJourney,
   getPlanningBrowserScenarios,
   resolveBrowserExecutable,
   resolvePlanningBrowserConfig,
@@ -66,5 +67,22 @@ describe("Planning Hub browser verification configuration", () => {
     );
     expect(scenarios.find((scenario) => scenario.name === "photography-context-mobile")
       ?.expectedText).toContain("Venue: Our village hall");
+  });
+
+  it("defines a deterministic local-only venue-to-photography journey", () => {
+    const journey = getPlanningBrowserJourney();
+
+    expect(journey.viewport).toEqual({ height: 844, width: 390 });
+    expect(journey).toMatchObject({
+      guestCount: "80",
+      location: "Fife",
+      manualVenueCost: "5000",
+      manualVenueName: "Browser journey hall",
+      totalBudget: "30000",
+      weddingDate: "2027-06-12",
+    });
+    expect(journey.expectedPhotographyText).toContain(
+      "£25,000 remaining overall",
+    );
   });
 });

@@ -179,7 +179,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 67 Vitest files and 321 tests pass.
+- 67 Vitest files and 322 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -230,6 +230,12 @@ Use the least destructive rollback that restores safety:
   equal to viewport width with no browser exceptions, axe violations or
   indeterminate checks. Photography additionally proves the exact
   17,000-pound transported balance.
+- The same repeatable gate then runs a signed-out 390 x 844 interaction
+  journey against the read-only catalogue. It proves the favourite sign-in
+  guard, comparison, on-demand venue detail, a £30,000 profile, a £5,000 booked
+  manual venue, immediate £25,000 balance, exact Photography URL and rendered
+  context, exclusion of manual IDs from catalogue filtering, and device-plan
+  restoration after returning to Venue.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

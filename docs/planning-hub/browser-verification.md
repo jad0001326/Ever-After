@@ -23,6 +23,20 @@ That produces ten scenarios in total: each surface at 390 x 844, representing a
 small iPhone viewport, and 1440 x 900, representing the desktop release
 viewport.
 
+The gate then runs one stateful 390 x 844 journey:
+
+1. tries to favourite the first live result and proves a signed-out browser is
+   asked to sign in without presenting the venue as saved;
+2. adds that result to comparison, opens its on-demand detail and closes it;
+3. sets a £30,000 budget, 12 June 2027 date, 80 guests and Fife location;
+4. adds a £5,000 booked manual venue and chooses it as the main venue;
+5. proves the remaining budget changes immediately to £25,000;
+6. follows the Photography recommendation and proves its URL and rendered
+   context contain the exact venue, date, location and remaining pence;
+7. proves a manual venue is not mistaken for a catalogue venue filter;
+8. returns to the Venue step and proves the chosen venue and budget restore
+   from the disposable browser's local plan.
+
 For each viewport it proves:
 
 - the stable milestone content for that surface renders, including the exact
@@ -36,6 +50,11 @@ For each viewport it proves:
 The cookie preference is set to essential inside the disposable browser profile
 so the test scans the Planning Hub rather than a consent overlay. Cookie
 consent behaviour retains its separate component tests.
+
+The interaction journey requires the local server to have the normal public
+Supabase URL and anonymous key so it can read a live venue result. It fails
+closed with the rendered catalogue error when those local environment values
+are absent. The journey remains signed out and performs no Supabase mutation.
 
 ## Safe local use
 
@@ -54,6 +73,16 @@ $env:PLANNING_HUB_BROWSER_BASE_URL = "http://127.0.0.1:3001"
 npm.cmd run test:planning-browser
 ```
 
+During development, rerun only the interaction journey after a failure:
+
+```powershell
+$env:PLANNING_HUB_BROWSER_JOURNEY_ONLY = "1"
+npm.cmd run test:planning-browser
+```
+
+The release gate must still run without `PLANNING_HUB_BROWSER_JOURNEY_ONLY` so
+all responsive surfaces are included.
+
 The verifier defaults to `http://127.0.0.1:3000`. It accepts only `localhost`,
 `127.0.0.1` or `::1` and rejects credentials in the URL. It therefore cannot
 be redirected to the live EverAft site.
@@ -70,7 +99,7 @@ Every run:
 2. creates a fresh browser profile under the operating-system temporary
    directory;
 3. launches the browser headlessly;
-4. runs all ten responsive scenarios;
+4. runs all ten responsive scenarios and the mobile interaction journey;
 5. closes the owned browser process;
 6. verifies the temporary path belongs to the run before recursively removing
    it.

@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 67 test files and 321 tests passing.
+- 67 test files and 322 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -104,6 +104,11 @@ its public profile route and category-specific browser verification before its
   viewport/document widths, no browser errors and zero axe violations or
   indeterminate checks; Photography also proves the transported venue, date,
   location and exact remaining balance.
+- That gate now appends a signed-out 390 x 844 interaction journey: favourite
+  access is safely gated, a live venue compares and opens on demand, a £5,000
+  booked manual venue reduces a £30,000 plan to £25,000 immediately, the exact
+  venue/date/location/balance reach Photography without a false catalogue
+  venue ID, and the device plan restores after returning to Venue.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;
