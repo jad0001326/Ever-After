@@ -132,6 +132,11 @@ its public profile route and category-specific browser verification before its
 - Three supplier-roadmap Lighthouse mobile runs: performance 98,
   accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
   total blocking time 70-80 milliseconds.
+- Three fresh full-milestone Venue-route Lighthouse mobile runs:
+  performance 99/98/99, accessibility 100, best practices 100, LCP
+  2.227-2.395 seconds, median TBT 34 milliseconds and CLS 0. The LCP is the
+  server-rendered hero heading; the route chunk is about 8.5KiB and the median
+  full transfer is about 288KiB.
 
 No production data, hosted Supabase migration, cloud branch, deployment or paid
 action was used.

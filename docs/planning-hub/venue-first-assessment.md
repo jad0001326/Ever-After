@@ -95,6 +95,12 @@ The test used the optimized production build with eight real venue results and t
 
 The final mobile regression for the existing public `/venues` route scored performance 98, accessibility 96, best practices 100 and SEO 100, with LCP 2.258 s, TBT 91 ms and CLS 0.
 
+The complete assembled milestone was recertified on 29 July 2026. Its fresh
+three-run Venue-route median is performance 99, accessibility 100, best
+practices 100, LCP 2.237 seconds, TBT 34 milliseconds and CLS 0. See
+`docs/planning-hub/performance-verification.md` for the current method, all
+samples and trace interpretation.
+
 Read-only production inspection confirms that `budget_plans` has RLS enabled,
 four authenticated owner policies, no anonymous grants, the composite
 `(user_id, id)` primary key and the owner/update index. The rollback-only owner

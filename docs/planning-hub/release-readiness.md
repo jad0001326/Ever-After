@@ -28,8 +28,8 @@ deploy, migrate or enable cloud persistence.
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
 | Native-ready business logic | Budget, recommendation, supplier, payment, task, guest, seating, validation and cloud mapping rules live outside page components and use stable DTOs. | Proven as an architectural foundation |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
-| Mobile performance | Three production-build Lighthouse runs score 98 performance, 100 accessibility and 100 best practices, with LCP 2.243-2.249 s and CLS 0. | Target met in lab |
-| Interaction performance | Immediate local state and small client boundaries are in place; lab TBT is 70-80 ms. Real INP requires post-release field traffic. | Awaiting field evidence |
+| Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
+| Interaction performance | Immediate local state and small client boundaries are in place; fresh Venue-route median lab TBT is 34 ms. Real INP requires post-release field traffic. | Awaiting field evidence |
 | Keyboard and screen reader access | Semantic landmarks, labelled status regions, pressed/expanded states and focus return are present. Release-candidate keyboard checks and axe scans pass at 390 x 844. | Proven locally |
 | User-record security | Ten user-owned tables have RLS, explicit grants, owner/member predicates and anonymous denial. The eight-migration sequence passes the embedded PostgreSQL scenario, including denial of partner access to unlinked owner budgets and workspace budget relinking. | Database boundary proven |
 
@@ -67,7 +67,9 @@ they do not require rewriting or pushing it.
 | 24. Complete selection lifecycle | Add confirmed removal and safe reactivation for venue, photography and generic supplier plan items, including selected-venue clearing and inactive result-card handling. | `9fbbab6` | Versioned plan JSON and the existing protected whole-plan save only; no schema, grant or cloud activation. |
 | 25. Plan-aware supplier discovery | Derive live supplier venue, location and affordable-price filters from the connected plan while retaining explicit overrides and truthful manual-venue handling. | `7a41589` | Server query and accessible filter-context changes only; no schema, catalogue activation or production data action. |
 | 26. Reproducible responsive gate | Preserve the exact device-plan balance across supplier handoff and add a fail-closed local Chrome/Edge gate for mobile, desktop, overflow, browser errors and axe. | `eaa99d8` | Local application and verification tooling only; the command refuses non-loopback URLs and uses no hosted browser or production data. |
-| 27. Whole-milestone browser matrix | Extend the reproducible gate across Venue, Photography, Organise and both public planners at small-iPhone and desktop release sizes. | Current working slice | Read-only local browser verification only; catalogue access remains read-only and every scenario uses a disposable browser profile. |
+| 27. Whole-milestone browser matrix | Extend the reproducible gate across Venue, Photography, Organise and both public planners at small-iPhone and desktop release sizes. | `27c48ee` | Read-only local browser verification only; catalogue access remains read-only and every scenario uses a disposable browser profile. |
+| 28. Venue-to-Photography interaction gate | Prove the signed-out favourite guard, comparison, on-demand detail, manual booked venue, exact remaining-budget handoff and device restore. | `7522107` | Local interaction verification only; no favourite or planning mutation reaches Supabase. |
+| 29. Venue performance recertification | Re-measure the complete optimized Venue step after the assembled milestone and retain trace-based evidence. | Current working slice | Read-only local Lighthouse evidence; no application change is justified while every objective target passes. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -189,6 +191,11 @@ Use the least destructive rollback that restores safety:
   `<img>` warning.
 - `npm audit --omit=dev` reports zero known vulnerabilities.
 - The optimized Next.js 16.2.12 build produces 78 pages.
+- Three fresh optimized Venue-route Lighthouse runs score 99/98/99
+  performance, 100 accessibility and 100 best practices. Median LCP is 2.237
+  seconds, TBT is 34 milliseconds and CLS is 0; the slowest LCP is 2.395
+  seconds. The LCP is the server-rendered hero heading, route JavaScript is
+  about 8.5KiB and the median total transfer is about 288KiB.
 - The global body font now resolves through a local system sans stack rather
   than an undefined custom property or a remote font request; its stylesheet
   contract has focused regression coverage.
