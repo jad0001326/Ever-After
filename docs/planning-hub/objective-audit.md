@@ -19,7 +19,7 @@ remain deliberately gated.
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
-| Reusable logic | Twenty declared budget, supplier, recommendation, dashboard-snapshot, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs; a versioned JSON-safe facade exposes the same dashboard state to future native presentation adapters. |
+| Reusable logic | Twenty-one declared budget, supplier, recommendation, dashboard-contract, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs; a strict versioned JSON-safe facade and checked Draft 2020-12 schema expose the same dashboard state to future native presentation adapters. |
 | Safe beta | The Planning Hub remains on separate no-index beta routes and the public planners remain available. |
 
 ## Prepared but not enabled
@@ -48,7 +48,7 @@ its public profile route and category-specific browser verification before its
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
 | Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
-| Native iPhone and Android apps | Future-compatible architecture only | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe dashboard snapshot prove a reusable client contract, but native clients and physical-device QA are outside this web milestone. |
+| Native iPhone and Android apps | Future-compatible architecture only | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe dashboard snapshot now have a language-neutral schema suitable for model generation, but native clients and physical-device QA are outside this web milestone. |
 
 ## Remaining release gates
 
@@ -70,7 +70,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 72 test files and 346 tests passing.
+- 72 test files and 348 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -141,14 +141,16 @@ its public profile route and category-specific browser verification before its
   Event Timing records four distinct interactions; the full optimized run's
   slowest duration is 24 milliseconds and the gate fails above 200
   milliseconds. Field INP remains explicitly separate.
-- The native-ready source boundary covers 20 declared domain modules and fails
+- The native-ready source boundary covers 21 declared domain modules and fails
   on framework directives, React/Next imports, browser globals or storage,
   URL construction, Node environment access, Supabase clients and web adapters.
   Recommendation decisions now return stable platform-neutral targets; the web
   workspace adapter alone converts those targets into Planning Hub URLs. A
   versioned dashboard snapshot reuses the same budget, payment, task, guest,
   profile and recommendation logic, rejects mismatched workspace/plan joins
-  and round-trips through JSON without URLs or runtime-specific values.
+  and round-trips through JSON without URLs or runtime-specific values. Its
+  strict runtime validator rejects unknown web-adapter fields, while a
+  generated Draft 2020-12 JSON Schema with a stable URN is checked for drift.
 - Chrome's full rendered accessibility tree proves unique banner/main
   landmarks, named primary/stage/result navigation, named filter/result/plan
   landmarks, correct heading levels, detail and control names, pressed and

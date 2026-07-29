@@ -6,7 +6,12 @@ import {
 } from "@/lib/planning-hub/plan";
 import { createEmptyPlanningWorkspace } from "./workspace";
 import { createPlanningDashboardSnapshot } from "./snapshot";
+import {
+  planningDashboardSnapshotJsonSchema,
+  planningDashboardSnapshotSchema,
+} from "./snapshot-schema";
 import type { PlanningWorkspace } from "./types";
+import checkedJsonSchema from "../../../docs/planning-hub/contracts/planning-dashboard-snapshot.v1.schema.json";
 
 describe("createPlanningDashboardSnapshot", () => {
   it("returns one JSON-safe, platform-neutral dashboard contract", () => {
@@ -68,6 +73,7 @@ describe("createPlanningDashboardSnapshot", () => {
     const serialized = JSON.stringify(snapshot);
 
     expect(JSON.parse(serialized)).toEqual(snapshot);
+    expect(planningDashboardSnapshotSchema.parse(snapshot)).toEqual(snapshot);
     expect(serialized).not.toContain("\"href\"");
     expect(serialized).not.toContain("\"url\"");
     expect(snapshot).toMatchObject({
@@ -124,5 +130,35 @@ describe("createPlanningDashboardSnapshot", () => {
     expect(() => createPlanningDashboardSnapshot(plan, workspace)).toThrow(
       "Planning workspace and budget plan must refer to the same plan.",
     );
+  });
+
+  it("rejects unknown web-adapter fields from the native contract", () => {
+    const plan = {
+      ...createPlanningHubStarterPlan(null),
+      id: "budget-1",
+    };
+    const workspace = createEmptyPlanningWorkspace({
+      ownerId: null,
+      budgetPlanId: plan.id,
+    });
+    const snapshot = createPlanningDashboardSnapshot(plan, workspace);
+
+    expect(planningDashboardSnapshotSchema.safeParse({
+      ...snapshot,
+      recommendation: {
+        ...snapshot.recommendation,
+        href: "/planning-hub",
+      },
+    }).success).toBe(false);
+  });
+
+  it("keeps the checked language-neutral JSON Schema in sync", () => {
+    expect(checkedJsonSchema).toEqual(planningDashboardSnapshotJsonSchema);
+    expect(checkedJsonSchema).toMatchObject({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      $id: "urn:everaft:planning-dashboard-snapshot:v1",
+      title: "EverAft Planning Dashboard Snapshot v1",
+      additionalProperties: false,
+    });
   });
 });

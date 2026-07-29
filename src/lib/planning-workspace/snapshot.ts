@@ -1,47 +1,14 @@
 import { getPaymentDeadlines } from "@/lib/budget/calculations";
-import type { BudgetPlan, CurrencyCode } from "@/lib/budget/types";
+import type { BudgetPlan } from "@/lib/budget/types";
 import { calculatePlanningHubPlan } from "@/lib/planning-hub/plan";
 import { getTablePlanGuestOverview } from "@/lib/table-plan/guests";
 import { profileCompletion } from "./profile";
 import { getPlanningRecommendationDecision } from "./recommendations";
 import { getPlanningTaskOverview } from "./tasks";
-import type {
-  PlanningRecommendationDecision,
-  PlanningWorkspace,
-} from "./types";
+import type { PlanningDashboardSnapshot } from "./snapshot-schema";
+import type { PlanningWorkspace } from "./types";
 
-export type PlanningDashboardSnapshot = {
-  schemaVersion: 1;
-  generatedAt: string;
-  workspace: {
-    id: string;
-    name: string;
-    budgetPlanId: string;
-  };
-  wedding: {
-    date: string | null;
-    guestCount: number | null;
-    location: string | null;
-    currency: CurrencyCode;
-    profileCompletionPercentage: number;
-  };
-  budget: ReturnType<typeof calculatePlanningHubPlan>;
-  payments: {
-    overdueCount: number;
-    dueSoonCount: number;
-    upcomingCount: number;
-    next: ReturnType<typeof getPaymentDeadlines>[number] | null;
-  };
-  tasks: {
-    openCount: number;
-    overdueCount: number;
-    dueTodayCount: number;
-    dueSoonCount: number;
-    nextTaskId: string | null;
-  };
-  guests: ReturnType<typeof getTablePlanGuestOverview>;
-  recommendation: PlanningRecommendationDecision;
-};
+export type { PlanningDashboardSnapshot } from "./snapshot-schema";
 
 /**
  * Produces the platform-neutral dashboard contract consumed by presentation

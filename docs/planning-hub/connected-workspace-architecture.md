@@ -185,7 +185,7 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Twenty
+The future native-client claim is now enforced rather than inferred. Twenty-one
 declared modules contain the shared budget, planning-state, supplier-context,
 recommendation, dashboard-snapshot, profile, task, guest, seating and
 validation rules. The
@@ -205,6 +205,13 @@ profile-completion and recommendation state into a versioned JSON-safe
 contract. It rejects a workspace joined to the wrong budget plan and contains
 no URL, Date, Map, framework object or persistence handle, so a future native
 presentation adapter can consume the same dashboard decision state.
+The runtime contract is strict: unknown adapter fields are rejected. Its
+language-neutral Draft 2020-12 schema is checked in at
+`docs/planning-hub/contracts/planning-dashboard-snapshot.v1.schema.json` with
+the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
+`npm run planning-contract:check` to fail on schema drift or
+`npm run planning-contract:write` after an intentional versioned contract
+change.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
 The boundary is verified by

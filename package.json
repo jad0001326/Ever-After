@@ -13,6 +13,8 @@
     "test:planning-api": "node scripts/verify-planning-workspace-api.mjs",
     "test:planning-rls": "node scripts/verify-planning-workspace-rls.mjs",
     "planning-api:prepare-local": "node scripts/prepare-planning-supabase-test.mjs",
+    "planning-contract:check": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-planning-dashboard-schema.mts",
+    "planning-contract:write": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-planning-dashboard-schema.mts --write",
     "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
     "enrichment:stage": "node scripts/stage-enrichment-review.mts",
     "pricing:recover": "node scripts/build-pricing-recovery.mts",
