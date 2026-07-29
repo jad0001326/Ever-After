@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { planningTablePlanSyncSchema } from "./validation.ts";
 
+export const planningTablePlanResourceSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  workspaceId: z.string().uuid(),
+  workspaceUpdatedAt: z.string().datetime({ offset: true }),
+  tablePlan: planningTablePlanSyncSchema.strict(),
+}).meta({
+  title: "EverAft Planning Table Plan Resource v1",
+  description: "Complete guest, table, seat and seating-rule state for web, iOS and Android clients.",
+});
+
 export const planningTablePlanUpdateRequestSchema = z.strictObject({
   schemaVersion: z.literal(1),
   expectedWorkspaceUpdatedAt: z.string().datetime({ offset: true }),
@@ -22,6 +32,10 @@ export const planningTablePlanUpdateSuccessSchema = z.strictObject({
 export const planningTablePlanUpdateRequestJsonSchema = jsonSchema(
   planningTablePlanUpdateRequestSchema,
   "urn:everaft:planning-table-plan-update-request:v1",
+);
+export const planningTablePlanResourceJsonSchema = jsonSchema(
+  planningTablePlanResourceSchema,
+  "urn:everaft:planning-table-plan-resource:v1",
 );
 export const planningTablePlanUpdateSuccessJsonSchema = jsonSchema(
   planningTablePlanUpdateSuccessSchema,

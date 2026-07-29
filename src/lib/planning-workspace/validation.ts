@@ -105,19 +105,40 @@ export const planningTablePlanSyncSchema = z.object({
   }).refine((value) => value.personAId !== value.personBId)).max(2000),
   updatedAt: z.string(),
 }).superRefine((plan, context) => {
-  const tableIds = new Set(plan.tables.map((table) => table.id));
+  const tables = new Map(plan.tables.map((table) => [table.id, table]));
   const guestIds = new Set(plan.guests.map((guest) => guest.id));
-  for (const guest of plan.guests) {
+  const occupiedSeats = new Set<string>();
+  if (tables.size !== plan.tables.length) {
+    context.addIssue({ code: "custom", message: "Duplicate table identifiers are not allowed." });
+  }
+  if (guestIds.size !== plan.guests.length) {
+    context.addIssue({ code: "custom", message: "Duplicate guest identifiers are not allowed." });
+  }
+  if (new Set(plan.rules.map((rule) => rule.id)).size !== plan.rules.length) {
+    context.addIssue({ code: "custom", message: "Duplicate seating-rule identifiers are not allowed." });
+  }
+  for (const [index, guest] of plan.guests.entries()) {
     if ((guest.tableId === null) !== (guest.seatIndex === null)) {
-      context.addIssue({ code: "custom", message: "A guest needs both a table and seat, or neither." });
+      context.addIssue({ code: "custom", message: "A guest needs both a table and seat, or neither.", path: ["guests", index] });
     }
-    if (guest.tableId && !tableIds.has(guest.tableId)) {
-      context.addIssue({ code: "custom", message: "A guest references an unavailable table." });
+    const table = guest.tableId ? tables.get(guest.tableId) : null;
+    if (guest.tableId && !table) {
+      context.addIssue({ code: "custom", message: "A guest references an unavailable table.", path: ["guests", index, "tableId"] });
+    }
+    if (table && guest.seatIndex !== null) {
+      if (guest.seatIndex >= table.capacity) {
+        context.addIssue({ code: "custom", message: "A seat is outside its table capacity.", path: ["guests", index, "seatIndex"] });
+      }
+      const seatKey = `${table.id}:${guest.seatIndex}`;
+      if (occupiedSeats.has(seatKey)) {
+        context.addIssue({ code: "custom", message: "A table seat can only hold one guest.", path: ["guests", index, "seatIndex"] });
+      }
+      occupiedSeats.add(seatKey);
     }
   }
-  for (const rule of plan.rules) {
+  for (const [index, rule] of plan.rules.entries()) {
     if (!guestIds.has(rule.personAId) || !guestIds.has(rule.personBId)) {
-      context.addIssue({ code: "custom", message: "A seating rule references an unavailable guest." });
+      context.addIssue({ code: "custom", message: "A seating rule references an unavailable guest.", path: ["rules", index] });
     }
   }
 });

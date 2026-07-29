@@ -156,7 +156,21 @@ accessible workspace returns generic `404 task_unavailable`; an inaccessible
 workspace remains `404 workspace_unavailable`. Clients cannot write workspace
 IDs, creation/update timestamps or other database identity fields.
 
-## Table-plan write contract
+## Table-plan read and write contracts
+
+```http
+GET /api/planning/v1/workspaces/{workspaceId}/table-plan
+Authorization: Bearer {supabase-access-token}
+```
+
+The checked
+`contracts/planning-table-plan-resource.v1.schema.json` response contains the
+complete guests, tables, seats and seating rules plus the exact
+`workspaceUpdatedAt` required by PATCH. Five narrow caller-bound queries run
+in parallel and omit profile, task, budget, membership and invitation data.
+Guest, table, seat and rule reads are capped one record beyond their accepted
+1000/200/1000/2000 limits so an oversized state fails explicitly rather than
+returning an unbounded or silently truncated document.
 
 ```http
 PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan
@@ -170,7 +184,7 @@ Content-Type: application/json
 }
 ```
 
-The checked request and success schemas are:
+The checked write request and success schemas are:
 
 - `contracts/planning-table-plan-update-request.v1.schema.json`
 - `contracts/planning-table-plan-update-success.v1.schema.json`
@@ -187,6 +201,11 @@ owner-or-partner workspace access check. The broader snapshot-import function
 is deliberately not exposed here because its existing-workspace path is
 owner-only. This route adds no migration, grant or service-role path.
 
+The shared validator also rejects duplicate guest, table or rule identifiers,
+duplicate occupied seats and seat indexes outside the selected table's actual
+capacity. An accessible but structurally invalid stored plan returns
+`500 table_plan_unavailable` rather than emitting an invalid client contract.
+
 ## Failure contract
 
 | Status | Code | Meaning |
@@ -202,6 +221,7 @@ owner-only. This route adds no migration, grant or service-role path.
 | 413 | `payload_too_large` | The PATCH request exceeds 1 MB. |
 | 415 | `unsupported_media_type` | The PATCH request is not JSON. |
 | 500 | `snapshot_unavailable` | Accessible records did not form a valid matched snapshot. |
+| 500 | `table_plan_unavailable` | Accessible guest/seating rows do not form a valid bounded table plan. |
 | 503 | `connected_planning_disabled` | The server-only cloud feature flag is absent. |
 | 503 | `planning_api_unavailable` | Auth, configuration or the Data API is temporarily unavailable. |
 
@@ -230,6 +250,10 @@ Local tests cover:
 - pre-write stale-version and post-read race conflicts;
 - distinct conditional-conflict and Data API failure handling;
 - strict table-plan request and success schema drift;
+- strict full table-plan resource schema drift;
+- narrow bounded owner/partner table-plan reads without unrelated records;
+- duplicate-ID, occupied-seat and real table-capacity validation;
+- generic outsider denial and distinct temporary query failure;
 - invalid seating rejection before any workspace read;
 - partner table-plan success through the caller-bound RPC;
 - generic table-plan outsider denial;
@@ -264,6 +288,15 @@ The built table-plan PATCH independently returned:
 HTTP 503
 Cache-Control: private, no-store, max-age=0
 X-EverAft-Contract: urn:everaft:planning-table-plan-update-success:v1
+{"error":"connected_planning_disabled"}
+```
+
+The built table-plan GET independently returned:
+
+```text
+HTTP 503
+Cache-Control: private, no-store, max-age=0
+X-EverAft-Contract: urn:everaft:planning-table-plan-resource:v1
 {"error":"connected_planning_disabled"}
 ```
 

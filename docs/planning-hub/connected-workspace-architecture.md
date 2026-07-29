@@ -213,9 +213,9 @@ language-neutral Draft 2020-12 schema is checked in at
 the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 `npm run planning-contract:check` to fail on schema drift or
 `npm run planning-contract:write` after an intentional versioned contract
-change. The generator maintains thirteen schemas: the dashboard snapshot,
-budget and table-plan request/success pairs, profile resource/update request,
-and six task collection/mutation contracts.
+change. The generator maintains fourteen schemas: the dashboard snapshot,
+table-plan read resource, budget and table-plan request/success pairs, profile
+resource/update request, and six task collection/mutation contracts.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
 
@@ -238,8 +238,10 @@ visible 409 instead of a last-write-wins overwrite, without adding a migration
 or privileged database function.
 
 The dormant
-`PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan` route is the
-second native mutation adapter. It validates the complete guest/seating
+`GET|PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan` resource
+provides the complete read/write table-planning boundary. GET uses only five
+bounded caller-RLS queries and returns the exact workspace version. PATCH
+validates the complete guest/seating
 document, prechecks the dashboard's workspace version, then delegates to the
 existing authenticated transaction that locks the workspace and atomically
 replaces guests, tables, seats and rules. Owner and partner access remains

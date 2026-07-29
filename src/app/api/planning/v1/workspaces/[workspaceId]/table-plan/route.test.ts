@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { authenticatePlanningApiRequest } from "@/lib/planning-workspace/api-auth";
 import { loadPlanningWorkspaceVersion } from "@/lib/planning-workspace/server-snapshot";
-import { syncPlanningTablePlan } from "@/lib/planning-workspace/table-plan-api";
-import { planningTablePlanUpdateSuccessSchema } from "@/lib/planning-workspace/table-plan-api-schema";
-import { PATCH } from "./route";
+import {
+  loadPlanningTablePlan,
+  syncPlanningTablePlan,
+} from "@/lib/planning-workspace/table-plan-api";
+import {
+  planningTablePlanResourceSchema,
+  planningTablePlanUpdateSuccessSchema,
+} from "@/lib/planning-workspace/table-plan-api-schema";
+import { GET, PATCH } from "./route";
 
 vi.mock("@/lib/planning-workspace/api-auth", () => ({
   authenticatePlanningApiRequest: vi.fn(),
@@ -12,6 +18,7 @@ vi.mock("@/lib/planning-workspace/server-snapshot", () => ({
   loadPlanningWorkspaceVersion: vi.fn(),
 }));
 vi.mock("@/lib/planning-workspace/table-plan-api", () => ({
+  loadPlanningTablePlan: vi.fn(),
   syncPlanningTablePlan: vi.fn(),
 }));
 
@@ -28,6 +35,59 @@ describe("Planning Table Plan API", () => {
     } else {
       process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = previousCloudFlag;
     }
+  });
+
+  it("returns a strict no-store table-plan resource for a partner", async () => {
+    enableAuthenticatedRequest();
+    vi.mocked(loadPlanningTablePlan).mockResolvedValue({
+      ok: true,
+      resource: tablePlanResource(),
+    });
+
+    const response = await GET(getRequest(), routeContext());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("x-everaft-contract")).toBe(
+      "urn:everaft:planning-table-plan-resource:v1",
+    );
+    expect(planningTablePlanResourceSchema.parse(body)).toEqual(body);
+  });
+
+  it("keeps inaccessible, failed and invalid table-plan reads distinct", async () => {
+    enableAuthenticatedRequest();
+    vi.mocked(loadPlanningTablePlan).mockResolvedValueOnce({
+      ok: false,
+      reason: "not_found",
+    });
+
+    const missing = await GET(getRequest(), routeContext());
+
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "workspace_unavailable" });
+
+    vi.mocked(loadPlanningTablePlan).mockResolvedValueOnce({
+      ok: false,
+      reason: "unavailable",
+    });
+
+    const failed = await GET(getRequest(), routeContext());
+
+    expect(failed.status).toBe(503);
+    expect(await failed.json()).toEqual({
+      error: "planning_api_unavailable",
+    });
+
+    vi.mocked(loadPlanningTablePlan).mockResolvedValueOnce({
+      ok: false,
+      reason: "invalid",
+    });
+
+    const invalid = await GET(getRequest(), routeContext());
+
+    expect(invalid.status).toBe(500);
+    expect(await invalid.json()).toEqual({ error: "table_plan_unavailable" });
   });
 
   it("rejects invalid seating before loading the workspace", async () => {
@@ -152,6 +212,15 @@ function validRequest() {
   });
 }
 
+function getRequest() {
+  return new Request(
+    `https://www.everaft.co.uk/api/planning/v1/workspaces/${workspaceId}/table-plan`,
+    {
+      headers: { Authorization: "Bearer test-access-token" },
+    },
+  );
+}
+
 function tablePlan() {
   return {
     schemaVersion: 1 as const,
@@ -185,4 +254,13 @@ function request(body: unknown) {
 
 function routeContext() {
   return { params: Promise.resolve({ workspaceId }) };
+}
+
+function tablePlanResource() {
+  return {
+    schemaVersion: 1 as const,
+    workspaceId,
+    workspaceUpdatedAt: updatedAt,
+    tablePlan: tablePlan(),
+  };
 }

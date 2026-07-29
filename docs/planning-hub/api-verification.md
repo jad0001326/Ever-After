@@ -41,11 +41,16 @@ Then use the dashboard's `budgetUpdatedAt` value with
 Use the same dashboard's `workspaceUpdatedAt` value with
 `PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan`:
 
+- first load `GET /table-plan` as owner and partner and validate the complete
+  resource against its checked schema;
+- prove the resource's `workspaceUpdatedAt` is accepted by PATCH;
 - prove owner and partner can atomically replace guests, tables, seats and
   seating rules through their caller-bound session;
 - prove a stale workspace version returns `409 version_conflict` without
   partially replacing any table-plan record;
 - prove an outsider receives the generic workspace denial; and
+- prove impossible stored seating fails the resource contract instead of
+  returning partially trusted data; and
 - validate the success body and subsequent dashboard GET against the checked
   schemas.
 
