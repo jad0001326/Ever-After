@@ -17,6 +17,7 @@ export const PORTABLE_PLANNING_DOMAIN_MODULES = Object.freeze([
   "src/lib/planning-workspace/snapshot-schema.ts",
   "src/lib/planning-workspace/snapshot.ts",
   "src/lib/planning-workspace/table-plan-api-schema.ts",
+  "src/lib/planning-workspace/task-api-schema.ts",
   "src/lib/planning-workspace/tasks.ts",
   "src/lib/planning-workspace/types.ts",
   "src/lib/planning-workspace/validation.ts",

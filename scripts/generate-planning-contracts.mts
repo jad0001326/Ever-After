@@ -13,6 +13,14 @@ import {
   planningTablePlanUpdateRequestJsonSchema,
   planningTablePlanUpdateSuccessJsonSchema,
 } from "../src/lib/planning-workspace/table-plan-api-schema.ts";
+import {
+  planningTaskCollectionJsonSchema,
+  planningTaskCreateRequestJsonSchema,
+  planningTaskDeleteRequestJsonSchema,
+  planningTaskDeleteSuccessJsonSchema,
+  planningTaskResourceJsonSchema,
+  planningTaskUpdateRequestJsonSchema,
+} from "../src/lib/planning-workspace/task-api-schema.ts";
 
 const contracts = [
   {
@@ -42,6 +50,30 @@ const contracts = [
   {
     file: "planning-profile-update-request.v1.schema.json",
     schema: planningProfileUpdateRequestJsonSchema,
+  },
+  {
+    file: "planning-task-resource.v1.schema.json",
+    schema: planningTaskResourceJsonSchema,
+  },
+  {
+    file: "planning-task-collection.v1.schema.json",
+    schema: planningTaskCollectionJsonSchema,
+  },
+  {
+    file: "planning-task-create-request.v1.schema.json",
+    schema: planningTaskCreateRequestJsonSchema,
+  },
+  {
+    file: "planning-task-update-request.v1.schema.json",
+    schema: planningTaskUpdateRequestJsonSchema,
+  },
+  {
+    file: "planning-task-delete-request.v1.schema.json",
+    schema: planningTaskDeleteRequestJsonSchema,
+  },
+  {
+    file: "planning-task-delete-success.v1.schema.json",
+    schema: planningTaskDeleteSuccessJsonSchema,
   },
 ];
 let stale = false;

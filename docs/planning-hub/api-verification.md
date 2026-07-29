@@ -61,6 +61,19 @@ Then exercise both methods on
 - prove an outsider receives the generic workspace denial; and
 - validate every successful response against the checked resource schema.
 
+Finally exercise the task collection and item resources:
+
+- prove owner and partner receive the same bounded, ordered task page;
+- create with both a server-generated and stable client-generated task ID;
+- prove the same stable ID cannot be inserted twice;
+- update and delete using each task's exact `updatedAt`;
+- prove stale and post-read-race versions return `409 version_conflict`
+  without changing or deleting the newer task;
+- prove a task ID from another workspace is never resolved through the current
+  workspace path;
+- prove outsider calls receive the generic workspace denial; and
+- validate collection, resource and delete responses against checked schemas.
+
 All application assertions use publishable-key clients with real user sessions.
 The secret test key is used only to create test Auth users, confirm their
 profiles exist and delete those users during cleanup.

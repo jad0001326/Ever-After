@@ -185,7 +185,7 @@ QA and three-run mobile Lighthouse verification against the stated targets.
 
 ## Portable domain boundary
 
-The future native-client claim is now enforced rather than inferred. Twenty-four
+The future native-client claim is now enforced rather than inferred. Twenty-five
 declared modules contain the shared budget, planning-state, supplier-context,
 recommendation, dashboard/update-contract, profile, task, guest, seating and
 validation rules. The
@@ -213,8 +213,9 @@ language-neutral Draft 2020-12 schema is checked in at
 the stable ID `urn:everaft:planning-dashboard-snapshot:v1`. Run
 `npm run planning-contract:check` to fail on schema drift or
 `npm run planning-contract:write` after an intentional versioned contract
-change. The generator maintains seven schemas: the dashboard snapshot, budget
-and table-plan request/success pairs, and profile resource/update request.
+change. The generator maintains thirteen schemas: the dashboard snapshot,
+budget and table-plan request/success pairs, profile resource/update request,
+and six task collection/mutation contracts.
 Catalogue queries, analytics, invitation cookies and internal-route helpers
 remain explicitly outside the portable core.
 
@@ -252,6 +253,13 @@ expected version is valid only for first creation; updates use the exact
 resource timestamp in both a precheck and conditional write. PostgreSQL
 supplies timestamps, while explicit grants and owner/partner RLS remain the
 only authorization boundary.
+
+The dormant task collection and item routes provide bounded list, create,
+update and delete operations for mobile clients. Pages are capped at 100 and
+carry `hasMore`; stable client UUIDs support offline continuity. Item reads and
+mutations always bind workspace ID and task ID, while update/delete use the
+task timestamp for two-stage optimistic concurrency. The existing web Server
+Actions remain the internal UI mutation path.
 The boundary is verified by
 `scripts/lib/planning-domain-boundary.test.mjs`; focused decision tests also
 prove that the core result contains no `href`.
