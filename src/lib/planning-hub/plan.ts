@@ -351,12 +351,30 @@ export function getPhotographyNextHref(
   workspaceId?: string | null,
 ) {
   const params = new URLSearchParams();
-  if (plan.selectedVenueId) params.set("venue", plan.selectedVenueId);
-  if (plan.location) params.set("location", plan.location);
   if (preferredStyle) params.set("style", preferredStyle);
-  const remainingPence = Math.max(calculatePlanningHubPlan(plan).remainingPence, 0);
-  if (remainingPence > 0) params.set("budget", String(Math.floor(remainingPence / 100)));
-  if (workspaceId) params.set("workspace", workspaceId);
+  if (workspaceId) {
+    params.set("workspace", workspaceId);
+  } else {
+    const selectedVenue = plan.selectedVenueId
+      ? plan.items.find((item) => (
+          item.categoryId === "venue"
+          && item.bookingStatus !== "cancelled"
+          && item.costStatus !== "cancelled"
+          && (
+            item.id === plan.selectedVenueId
+            || item.listingId === plan.selectedVenueId
+          )
+        )) ?? null
+      : null;
+    const remainingPence = Math.max(calculatePlanningHubPlan(plan).remainingPence, 0);
+
+    params.set("context", "plan");
+    if (selectedVenue?.listingId) params.set("venue", selectedVenue.listingId);
+    if (selectedVenue?.itemName) params.set("venueName", selectedVenue.itemName);
+    if (plan.weddingDate) params.set("planDate", plan.weddingDate);
+    if (plan.location) params.set("location", plan.location);
+    if (remainingPence > 0) params.set("budget", String(Math.floor(remainingPence / 100)));
+  }
   return `/planning-hub/photography${params.size ? `?${params.toString()}` : ""}`;
 }
 

@@ -7,8 +7,8 @@ import { PlanningHubHeader } from "@/components/planning-hub/planning-hub-header
 import { PlanningHubSupplierFilters } from "@/components/planning-hub/planning-hub-supplier-filters";
 import { PlanningHubSupplierWorkspace } from "@/components/planning-hub/planning-hub-supplier-workspace";
 import { getPlanningHubDateKey } from "@/lib/planning-hub/date";
-import { calculatePlanningHubPlan, createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
-import { getPlanningHubSupplierCategory } from "@/lib/planning-hub/supplier-search";
+import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import { getPlanningHubSupplierCategory, getPlanningHubSupplierDiscoveryContext } from "@/lib/planning-hub/supplier-search";
 import { searchPlanningHubSuppliers } from "@/lib/planning-hub/suppliers";
 import type {
   PlanningHubSupplierCategory,
@@ -83,28 +83,21 @@ async function PlanningHubSupplierContent({
   const user = authResult.data.user;
   const connectedContext = connectedResult?.ok ? connectedResult : null;
   const initialPlan = connectedContext?.budgetPlan ?? cloudPlan ?? createPlanningHubStarterPlan(user?.id ?? null);
-  const effectiveParams: PlanningHubSupplierSearchParams = {
-    ...params,
-    venue: params.venue ?? initialPlan.selectedVenueId ?? undefined,
-    location: params.location ?? initialPlan.location ?? undefined,
-  };
+  const discovery = getPlanningHubSupplierDiscoveryContext(initialPlan, params);
   const results = catalogueLive
-    ? await searchPlanningHubSuppliers(category.slug, effectiveParams)
+    ? await searchPlanningHubSuppliers(category.slug, discovery.effectiveParams)
     : { suppliers: [], total: 0, page: 1, totalPages: 1 };
-  const selectedVenueName = initialPlan.items.find(
-    (item) => item.categoryId === "venue" && item.listingId === initialPlan.selectedVenueId,
-  )?.itemName ?? null;
-  const budget = calculatePlanningHubPlan(initialPlan);
 
   return (
     <div className={catalogueLive ? "grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_20rem]" : ""}>
       {catalogueLive ? (
         <PlanningHubSupplierFilters
           category={category}
-          params={effectiveParams}
-          remainingPence={budget.remainingPence}
-          selectedVenueName={selectedVenueName}
-          weddingDate={initialPlan.weddingDate}
+          derivedFilters={discovery.derivedFilters}
+          params={discovery.effectiveParams}
+          remainingPence={discovery.remainingPence}
+          selectedVenueName={discovery.selectedVenueName}
+          weddingDate={discovery.weddingDate}
         />
       ) : null}
       <PlanningHubSupplierWorkspace
@@ -114,7 +107,7 @@ async function PlanningHubSupplierContent({
         initialPlan={initialPlan}
         initialPlanIsFallback={!connectedContext && !cloudPlan}
         results={results}
-        searchParams={effectiveParams}
+        searchParams={discovery.navigationParams}
         today={getPlanningHubDateKey()}
         userId={user?.id ?? null}
       />

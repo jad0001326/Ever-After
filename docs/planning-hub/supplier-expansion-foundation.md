@@ -52,6 +52,27 @@ Photography keeps its existing wrapper functions, so this refactor does not
 change the current route or browser interface. Future web and native clients can
 call the category-neutral business rules directly.
 
+## Connected discovery context
+
+Photography and every live category use one server-side context function before
+querying the catalogue. Unless the couple has entered an explicit URL filter,
+it supplies:
+
+- the selected published venue listing, when the chosen plan item has catalogue
+  identity;
+- the Wedding Profile location;
+- the current plan's positive remaining budget.
+
+Explicit filters always win. Manual venues remain visible in the planning
+context but their local budget-item IDs are never passed to catalogue matching.
+For a device-only plan, the handoff carries the venue name and wedding date for
+truthful context while only a real catalogue listing ID can affect matching.
+The interface labels plan-derived location and budget values, connects those
+explanations to the corresponding controls for screen readers and avoids
+presenting them as resettable user overrides. Pagination retains the original
+query inputs so plan-derived defaults are recalculated instead of becoming
+stale URL filters.
+
 ## Date-aware availability
 
 The supplier directory does not store supplier calendars. Planning Hub
@@ -115,8 +136,7 @@ categories. They remain available for manual planning only.
 
 ## Verification
 
-- 65 test files and 300 tests passing after the reachable booking-pipeline
-  slice;
+- 66 test files and 318 tests passing at the current local checkpoint;
 - focused category-normalization and supplier-continuity tests passing;
 - focused date-availability component, persistence, plan-domain,
   recommendation and workspace-persistence tests passing;

@@ -183,17 +183,32 @@ describe("Planning Hub plan", () => {
 
   it("supports a manual venue and a contextual photography handoff", () => {
     const plan = addManualPlanningHubVenue(createPlanningHubStarterPlan(null), "Our local hall", 300_000, "booked");
-    const contextual = { ...plan, selectedVenueId: venue.id, location: "Perthshire" };
+    const contextual = {
+      ...choosePlanningHubVenue(plan, plan.items[0].id),
+      location: "Perthshire",
+      weddingDate: "2027-06-12",
+    };
+    const cataloguePlan = choosePlanningHubVenue(
+      upsertPlanningHubVenue(createPlanningHubStarterPlan(null), venue, 650_000, "booked"),
+      venue.id,
+    );
 
     expect(plan.items[0]).toMatchObject({ source: "manual", itemName: "Our local hall", bookingStatus: "booked" });
     expect(findPlanningHubVenueItem(plan, plan.items[0].id)).toBe(plan.items[0]);
     expect(getPhotographyNextHref(contextual)).toContain("/planning-hub/photography?");
-    expect(getPhotographyNextHref(
+    expect(getPhotographyNextHref(contextual)).toContain("context=plan");
+    expect(getPhotographyNextHref(contextual)).not.toContain("venue=");
+    expect(getPhotographyNextHref(contextual)).toContain("venueName=Our+local+hall");
+    expect(getPhotographyNextHref(contextual)).toContain("planDate=2027-06-12");
+    const connectedHref = getPhotographyNextHref(
       contextual,
       "Documentary",
       "60000000-0000-4000-8000-000000000006",
-    )).toContain("workspace=60000000-0000-4000-8000-000000000006");
-    expect(getPhotographyNextHref(contextual)).toContain("venue=venue-1");
+    );
+    expect(connectedHref).toContain("workspace=60000000-0000-4000-8000-000000000006");
+    expect(connectedHref).not.toContain("context=plan");
+    expect(connectedHref).not.toContain("budget=");
+    expect(getPhotographyNextHref(cataloguePlan)).toContain("venue=venue-1");
     expect(getPhotographyNextHref(contextual)).toContain("location=Perthshire");
   });
 

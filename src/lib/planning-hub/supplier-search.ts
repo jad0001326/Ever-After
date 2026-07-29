@@ -1,8 +1,86 @@
 import { supplierCategoryBySlug } from "@/data/supplier-directory";
+import { calculateBudget } from "@/lib/budget/calculations";
+import type { BudgetPlan } from "@/lib/budget/types";
 import type { SupplierCategorySlug } from "@/types/supplier";
 import type { PlanningHubSupplierSearchParams } from "./types";
 
 export const PLANNING_HUB_SUPPLIER_PAGE_SIZE = 8;
+
+export type PlanningHubDerivedSupplierFilters = {
+  budget: boolean;
+  location: boolean;
+  venue: boolean;
+};
+
+type PlanningHubSupplierDiscoveryParams = PlanningHubSupplierSearchParams & {
+  style?: string;
+};
+
+export function getPlanningHubSupplierDiscoveryContext<
+  TParams extends PlanningHubSupplierDiscoveryParams,
+>(
+  plan: BudgetPlan,
+  params: TParams,
+) {
+  const selectedVenue = plan.selectedVenueId
+    ? plan.items.find((item) => (
+        item.categoryId === "venue"
+        && item.bookingStatus !== "cancelled"
+        && item.costStatus !== "cancelled"
+        && (
+          item.id === plan.selectedVenueId
+          || item.listingId === plan.selectedVenueId
+        )
+      )) ?? null
+    : null;
+  const remainingPence = calculateBudget(plan).remainingPence;
+  const planBudgetPounds = Math.floor(Math.max(remainingPence, 0) / 100);
+  const carriesPlanContext = params.context === "plan";
+  const hasBudget = Boolean(params.budget?.trim());
+  const hasLocation = Boolean(params.location?.trim());
+  const hasVenue = Boolean(params.venue?.trim());
+  const transportedPlanDate = cleanDate(params.planDate);
+  const transportedVenueName = cleanText(params.venueName, 120);
+  const derivedFilters: PlanningHubDerivedSupplierFilters = {
+    budget: carriesPlanContext
+      ? hasBudget
+      : !hasBudget && planBudgetPounds > 0,
+    location: carriesPlanContext
+      ? hasLocation
+      : !hasLocation && Boolean(plan.location?.trim()),
+    venue: carriesPlanContext
+      ? hasVenue
+      : !hasVenue && Boolean(selectedVenue?.listingId),
+  };
+
+  return {
+    derivedFilters,
+    effectiveParams: {
+      ...params,
+      budget: hasBudget
+        ? params.budget
+        : carriesPlanContext
+          ? undefined
+          : derivedFilters.budget
+            ? String(planBudgetPounds)
+            : undefined,
+      location: hasLocation
+        ? params.location
+        : carriesPlanContext
+          ? undefined
+          : plan.location?.trim() || undefined,
+      venue: hasVenue
+        ? params.venue
+        : carriesPlanContext
+          ? undefined
+          : selectedVenue?.listingId ?? undefined,
+    } as TParams & PlanningHubSupplierSearchParams,
+    navigationParams: { ...params },
+    remainingPence,
+    selectedVenueName: selectedVenue?.itemName ?? (transportedVenueName || null),
+    weddingDate: plan.weddingDate ?? transportedPlanDate,
+  };
+}
 
 export function normalisePlanningHubSupplierSearchParams(
   params: PlanningHubSupplierSearchParams,
@@ -40,6 +118,18 @@ export function isSupplierCategorySlug(value: string): value is SupplierCategory
 
 function cleanText(value: string | undefined, maximumLength: number) {
   return value?.trim().replace(/\s+/g, " ").slice(0, maximumLength) ?? "";
+}
+
+function cleanDate(value: string | undefined) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}T12:00:00Z`);
+  const [year, month, day] = value.split("-").map(Number);
+  return Number.isNaN(parsed.getTime())
+    || parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() + 1 !== month
+    || parsed.getUTCDate() !== day
+    ? null
+    : value;
 }
 
 function positiveInteger(value: string | undefined, maximum: number) {

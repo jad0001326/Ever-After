@@ -1,13 +1,180 @@
 import { describe, expect, it } from "vitest";
 import {
+  addManualPlanningHubVenue,
+  choosePlanningHubVenue,
+  createPlanningHubStarterPlan,
+  upsertPlanningHubVenue,
+} from "./plan";
+import type { PlanningHubVenue } from "./types";
+import {
   getLivePlanningHubSupplierCategory,
   getPlanningHubSupplierCategory,
+  getPlanningHubSupplierDiscoveryContext,
   isSupplierCategorySlug,
   normalisePlanningHubSupplierSearchParams,
   PLANNING_HUB_SUPPLIER_PAGE_SIZE,
 } from "./supplier-search";
 
+const venue: PlanningHubVenue = {
+  id: "venue-1",
+  slug: "venue-one",
+  name: "Venue One",
+  type: "Castle",
+  town: "Perth",
+  region: "Perthshire",
+  summary: "A venue.",
+  capacityMax: 120,
+  imageUrl: "/images/everaft-wedding-reception.png",
+  priceFromPence: 650_000,
+  pricingLabel: "Venue hire",
+  pricingUnit: "total",
+  hasApprovedPhoto: false,
+};
+
 describe("Planning Hub supplier search", () => {
+  it("derives catalogue venue, profile location and remaining budget from the connected plan", () => {
+    const planned = upsertPlanningHubVenue(
+      {
+        ...createPlanningHubStarterPlan(null),
+        location: "Perthshire",
+      },
+      venue,
+      650_000,
+      "shortlisted",
+    );
+    const context = getPlanningHubSupplierDiscoveryContext(
+      choosePlanningHubVenue(planned, venue.id),
+      { style: "Documentary" },
+    );
+
+    expect(context).toEqual({
+      derivedFilters: {
+        budget: true,
+        location: true,
+        venue: true,
+      },
+      effectiveParams: {
+        budget: "13500",
+        location: "Perthshire",
+        style: "Documentary",
+        venue: "venue-1",
+      },
+      navigationParams: {
+        style: "Documentary",
+      },
+      remainingPence: 1_350_000,
+      selectedVenueName: "Venue One",
+      weddingDate: null,
+    });
+  });
+
+  it("keeps a manual selected venue visible without sending its plan-item id to the catalogue", () => {
+    const planned = addManualPlanningHubVenue(
+      {
+        ...createPlanningHubStarterPlan(null),
+        location: "Fife",
+      },
+      "Our village hall",
+      300_000,
+      "booked",
+    );
+    const context = getPlanningHubSupplierDiscoveryContext(
+      choosePlanningHubVenue(planned, planned.items[0].id),
+      {},
+    );
+
+    expect(context.effectiveParams).toMatchObject({
+      budget: "17000",
+      location: "Fife",
+    });
+    expect(context.effectiveParams.venue).toBeUndefined();
+    expect(context.navigationParams).toEqual({});
+    expect(context.derivedFilters.venue).toBe(false);
+    expect(context.selectedVenueName).toBe("Our village hall");
+    expect(context.weddingDate).toBeNull();
+  });
+
+  it("preserves explicit supplier filters over connected-plan defaults", () => {
+    const plan = {
+      ...createPlanningHubStarterPlan(null),
+      location: "Perthshire",
+    };
+    const context = getPlanningHubSupplierDiscoveryContext(plan, {
+      budget: "900",
+      location: "Skye",
+      venue: "another-venue",
+    });
+
+    expect(context.effectiveParams).toMatchObject({
+      budget: "900",
+      location: "Skye",
+      venue: "another-venue",
+    });
+    expect(context.derivedFilters).toEqual({
+      budget: false,
+      location: false,
+      venue: false,
+    });
+  });
+
+  it("retains transported device-plan values as derived context", () => {
+    const context = getPlanningHubSupplierDiscoveryContext(
+      createPlanningHubStarterPlan(null),
+      {
+        budget: "17000",
+        context: "plan",
+        location: "Fife",
+        planDate: "2027-06-12",
+        venue: "catalogue-venue",
+        venueName: "Venue One",
+      },
+    );
+
+    expect(context.effectiveParams).toMatchObject({
+      budget: "17000",
+      context: "plan",
+      location: "Fife",
+      planDate: "2027-06-12",
+      venue: "catalogue-venue",
+      venueName: "Venue One",
+    });
+    expect(context.derivedFilters).toEqual({
+      budget: true,
+      location: true,
+      venue: true,
+    });
+    expect(context.selectedVenueName).toBe("Venue One");
+    expect(context.weddingDate).toBe("2027-06-12");
+
+    const emptyTransport = getPlanningHubSupplierDiscoveryContext(
+      createPlanningHubStarterPlan(null),
+      { context: "plan" },
+    );
+    expect(emptyTransport.effectiveParams).toEqual({ context: "plan" });
+    expect(emptyTransport.derivedFilters).toEqual({
+      budget: false,
+      location: false,
+      venue: false,
+    });
+  });
+
+  it("does not invent a budget filter when the plan has no remaining money", () => {
+    const plan = upsertPlanningHubVenue(
+      {
+        ...createPlanningHubStarterPlan(null),
+        totalBudgetPence: 100_000,
+      },
+      venue,
+      650_000,
+      "booked",
+    );
+    const context = getPlanningHubSupplierDiscoveryContext(plan, {});
+
+    expect(context.remainingPence).toBe(-550_000);
+    expect(context.effectiveParams.budget).toBeUndefined();
+    expect(context.derivedFilters.budget).toBe(false);
+  });
+
   it("normalises and bounds category-neutral URL filters", () => {
     expect(normalisePlanningHubSupplierSearchParams({
       search: "  Highland   films  ",

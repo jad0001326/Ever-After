@@ -13,8 +13,8 @@ release and secure cloud sharing remain deliberately gated.
 | Venue discovery | Server-side filters and pagination return lightweight cards; details and approved galleries load on demand. |
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
-| Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. |
+| Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 65 test files and 311 tests passing.
+- 66 test files and 318 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -93,6 +93,16 @@ its public profile route and category-specific browser verification before its
   matching selected venue and allows an existing catalogue item to be
   reactivated without creating a duplicate. Result cards, shortlists, totals,
   deadlines and recommendations all ignore the cancelled record.
+- Photography and live supplier searches now derive venue, location and
+  affordable-price context from the connected plan. Explicit URL filters win,
+  plan-derived values are explained and exposed to assistive technology, and
+  pagination preserves the original query rather than freezing derived values
+  into the URL.
+- The production-build photography handoff renders its transported venue, date,
+  location and remaining budget at a true 390 x 844 viewport with document
+  width equal to viewport width. Axe reports zero violations; its one
+  indeterminate check is the fixed cookie-copy contrast, whose computed
+  `#625f57` on white ratio is 6.38:1.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;

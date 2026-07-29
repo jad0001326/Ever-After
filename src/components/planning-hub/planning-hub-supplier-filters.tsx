@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
+import type { PlanningHubDerivedSupplierFilters } from "@/lib/planning-hub/supplier-search";
 import type {
   PlanningHubSupplierCategory,
   PlanningHubSupplierSearchParams,
@@ -9,19 +10,26 @@ import type {
 
 export function PlanningHubSupplierFilters({
   category,
+  derivedFilters,
   params,
   remainingPence,
   selectedVenueName,
   weddingDate,
 }: {
   category: PlanningHubSupplierCategory;
+  derivedFilters: PlanningHubDerivedSupplierFilters;
   params: PlanningHubSupplierSearchParams;
   remainingPence: number;
   selectedVenueName: string | null;
   weddingDate: string | null;
 }) {
   const route = `/planning-hub/suppliers/${category.slug}`;
-  const hasFilters = Boolean(params.search || params.location || params.budget || params.sort);
+  const hasFilters = Boolean(
+    params.search
+    || params.sort
+    || (!derivedFilters.location && params.location)
+    || (!derivedFilters.budget && params.budget)
+  );
 
   return (
     <aside aria-label={`${category.label} filters`} className="self-start rounded-3xl border border-[#cfc3b3] bg-white p-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
@@ -45,17 +53,21 @@ export function PlanningHubSupplierFilters({
       <form action={route} className="mt-5 grid gap-4">
         {params.workspace ? <input name="workspace" type="hidden" value={params.workspace} /> : null}
         {params.venue ? <input name="venue" type="hidden" value={params.venue} /> : null}
+        {params.venueName ? <input name="venueName" type="hidden" value={params.venueName} /> : null}
+        {params.planDate ? <input name="planDate" type="hidden" value={params.planDate} /> : null}
         <Field label={`${category.label} name`}>
           <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={params.search ?? ""} maxLength={100} name="search" placeholder="Search by name" />
         </Field>
         <Field label="Location">
-          <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={params.location ?? ""} maxLength={120} name="location" placeholder="Region or town" />
+          <input aria-describedby={derivedFilters.location ? `${category.slug}-location-source` : undefined} aria-label="Location" className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={params.location ?? ""} maxLength={120} name="location" placeholder="Region or town" />
+          {derivedFilters.location ? <span className="font-normal leading-5 text-[#625f57]" id={`${category.slug}-location-source`}>From your Wedding Profile. Change it here to search somewhere else.</span> : null}
         </Field>
         <Field label={`${category.label} budget`}>
           <span className="relative block">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#625f57]">£</span>
-            <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] pl-7 pr-3 text-sm" defaultValue={params.budget ?? ""} inputMode="decimal" min={0} name="budget" placeholder="1000" step="1" type="number" />
+            <input aria-describedby={derivedFilters.budget ? `${category.slug}-budget-source` : undefined} aria-label={`${category.label} budget`} className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] pl-7 pr-3 text-sm" defaultValue={params.budget ?? ""} inputMode="decimal" min={0} name="budget" placeholder="1000" step="1" type="number" />
           </span>
+          {derivedFilters.budget ? <span className="font-normal leading-5 text-[#625f57]" id={`${category.slug}-budget-source`}>Using the amount remaining in your connected plan. Change it to set a {category.label.toLowerCase()}-specific limit.</span> : null}
         </Field>
         <Field label="Sort">
           <select className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] bg-white px-3 text-sm" defaultValue={params.sort ?? ""} name="sort">

@@ -22,7 +22,7 @@ deploy, migrate or enable cloud persistence.
 | Planning states and budget | Researching, shortlisted, quoted and booked states plus derived estimated, partially paid and paid states use the shared budget calculation layer. | Proven locally |
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
-| Supplier discovery | Photography is live with server filtering and pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
+| Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
@@ -64,7 +64,8 @@ they do not require rewriting or pushing it.
 | 21. Reachable booking pipeline | Progressively reveal every active booking from Organise while keeping the initial DOM bounded. | `14e2f0a` | Client presentation only; the full plan remains the existing calculation source. |
 | 22. Reachable payment deadlines | Progressively reveal every scheduled commitment from Organise while keeping the initial mobile view bounded. | `b03357d` | Client presentation only; payment ordering and totals remain in the shared domain layer. |
 | 23. Complete task lifecycle | Add confirmed task removal to device plans and the prepared member-scoped shared action, restoring the task locally if shared deletion fails. | `0a58be0` | Existing table, grants, RLS and server action only; no schema or cloud activation. |
-| 24. Complete selection lifecycle | Add confirmed removal and safe reactivation for venue, photography and generic supplier plan items, including selected-venue clearing and inactive result-card handling. | Current working slice | Versioned plan JSON and the existing protected whole-plan save only; no schema, grant or cloud activation. |
+| 24. Complete selection lifecycle | Add confirmed removal and safe reactivation for venue, photography and generic supplier plan items, including selected-venue clearing and inactive result-card handling. | `9fbbab6` | Versioned plan JSON and the existing protected whole-plan save only; no schema, grant or cloud activation. |
+| 25. Plan-aware supplier discovery | Derive live supplier venue, location and affordable-price filters from the connected plan while retaining explicit overrides and truthful manual-venue handling. | Current working slice | Server query and accessible filter-context changes only; no schema, catalogue activation or production data action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -176,7 +177,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 65 Vitest files and 311 tests pass.
+- 66 Vitest files and 318 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -209,6 +210,19 @@ Use the least destructive rollback that restores safety:
   The same catalogue listing can be added again through the existing upsert
   without duplicating its retained history. Connected removal uses the existing
   authenticated whole-plan save and introduces no new mutation or migration.
+- Photography and live category searches use one reusable discovery-context
+  contract. A selected catalogue venue, Wedding Profile location and positive
+  remaining budget become server filters only when the URL has no explicit
+  replacement; manual plan-item IDs never enter catalogue matching. Device-only
+  handoffs retain the venue name and wedding date as display context without
+  claiming that a manual venue is a catalogue record. The derived-value
+  explanations are associated with their form controls, and pagination keeps
+  the original query so defaults are recalculated from the connected plan.
+- A fresh optimized-build 390 x 844 photography handoff renders the transported
+  venue name, wedding date, location and remaining budget with a 390 px
+  document width and no page overflow. Axe reports zero violations and one
+  indeterminate fixed-overlay contrast check; the affected cookie copy resolves
+  to `#625f57` on white, a directly calculated 6.38:1 ratio.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

@@ -71,7 +71,10 @@ export type PlanningHubPhotographerDetail = PlanningHubPhotographer & {
 };
 
 export type PlanningHubPhotographySearchParams = PhotographerSearchParams & {
+  context?: "plan";
+  planDate?: string;
   search?: string;
+  venueName?: string;
   workspace?: string;
   planItem?: string;
 };
@@ -112,6 +115,8 @@ export type PlanningHubSupplierDetail = PlanningHubSupplier & {
 };
 
 export type PlanningHubSupplierSearchParams = {
+  context?: "plan";
+  planDate?: string;
   search?: string;
   venue?: string;
   location?: string;
@@ -120,6 +125,7 @@ export type PlanningHubSupplierSearchParams = {
   page?: string;
   workspace?: string;
   planItem?: string;
+  venueName?: string;
 };
 
 export type PlanningHubSupplierResults = {
