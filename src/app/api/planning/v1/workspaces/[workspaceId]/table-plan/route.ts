@@ -5,16 +5,16 @@ import {
   resolvePlanningApiRequest,
 } from "@/lib/planning-workspace/api-route";
 import {
-  planningBudgetUpdateRequestSchema,
-  planningBudgetUpdateSuccessSchema,
-} from "@/lib/planning-workspace/budget-api-schema";
-import { updatePlanningBudgetPlan } from "@/lib/planning-workspace/budget-api";
-import { loadPlanningWorkspaceContext } from "@/lib/planning-workspace/server-snapshot";
+  planningTablePlanUpdateRequestSchema,
+  planningTablePlanUpdateSuccessSchema,
+} from "@/lib/planning-workspace/table-plan-api-schema";
+import { syncPlanningTablePlan } from "@/lib/planning-workspace/table-plan-api";
+import { loadPlanningWorkspaceVersion } from "@/lib/planning-workspace/server-snapshot";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const contractId = "urn:everaft:planning-budget-update-success:v1";
+const contractId = "urn:everaft:planning-table-plan-update-success:v1";
 
 export async function PATCH(
   request: Request,
@@ -30,25 +30,25 @@ export async function PATCH(
 
   const body = await readPlanningApiJson(request, contractId);
   if (!body.ok) return body.response;
-  const updateRequest = planningBudgetUpdateRequestSchema.safeParse(body.data);
+  const updateRequest = planningTablePlanUpdateRequestSchema.safeParse(
+    body.data,
+  );
   if (!updateRequest.success) {
     return planningApiErrorResponse(contractId, 400, "invalid_request");
   }
 
-  const loaded = await loadPlanningWorkspaceContext(
+  const version = await loadPlanningWorkspaceVersion(
     api.supabase,
     api.workspaceId,
-    api.user.id,
-    { includeSharing: false },
   ).catch(() => null);
-  if (!loaded) {
+  if (!version) {
     return planningApiErrorResponse(
       contractId,
       503,
       "planning_api_unavailable",
     );
   }
-  if (!loaded.ok) {
+  if (!version.ok) {
     return planningApiErrorResponse(
       contractId,
       404,
@@ -56,35 +56,32 @@ export async function PATCH(
     );
   }
 
-  const { expectedBudgetUpdatedAt, plan } = updateRequest.data;
-  if (
-    plan.id !== loaded.budgetPlan.id
-    || expectedBudgetUpdatedAt !== loaded.budgetPlan.updatedAt
-  ) {
+  const { expectedWorkspaceUpdatedAt, tablePlan } = updateRequest.data;
+  if (expectedWorkspaceUpdatedAt !== version.updatedAt) {
     return planningApiErrorResponse(contractId, 409, "version_conflict");
   }
 
-  const update = await updatePlanningBudgetPlan(
+  const sync = await syncPlanningTablePlan(
     api.supabase,
-    loaded.snapshot.workspace.owner_id,
-    plan,
-    expectedBudgetUpdatedAt,
+    api.workspaceId,
+    tablePlan,
+    expectedWorkspaceUpdatedAt,
   ).catch(() => null);
-  if (!update || (update.ok === false && update.reason === "unavailable")) {
+  if (!sync || (sync.ok === false && sync.reason === "unavailable")) {
     return planningApiErrorResponse(
       contractId,
       503,
       "planning_api_unavailable",
     );
   }
-  if (!update.ok) {
+  if (!sync.ok) {
     return planningApiErrorResponse(contractId, 409, "version_conflict");
   }
 
-  const success = planningBudgetUpdateSuccessSchema.parse({
+  const success = planningTablePlanUpdateSuccessSchema.parse({
     schemaVersion: 1,
-    budgetPlanId: update.budgetPlanId,
-    savedAt: update.savedAt,
+    workspaceId: sync.workspaceId,
+    savedAt: sync.savedAt,
   });
   return Response.json(success, {
     headers: planningApiResponseHeaders(contractId),

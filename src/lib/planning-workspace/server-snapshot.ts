@@ -5,6 +5,28 @@ import type { Database } from "@/types/database";
 type PlanningSupabaseClient = SupabaseClient<Database>;
 type LoadFailure = { ok: false; message: string };
 
+export async function loadPlanningWorkspaceVersion(
+  supabase: PlanningSupabaseClient,
+  id: string,
+) {
+  const { data, error } = await supabase
+    .from("planning_workspaces")
+    .select("id, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) {
+    return {
+      ok: false,
+      message: "That connected plan is unavailable or you no longer have access.",
+    } satisfies LoadFailure;
+  }
+  return {
+    ok: true,
+    workspaceId: data.id,
+    updatedAt: data.updated_at,
+  } as const;
+}
+
 export async function loadPlanningWorkspaceSnapshot(
   supabase: PlanningSupabaseClient,
   id: string,

@@ -38,6 +38,17 @@ Then use the dashboard's `budgetUpdatedAt` value with
   writes; and
 - validate the success body and subsequent GET against the checked schemas.
 
+Use the same dashboard's `workspaceUpdatedAt` value with
+`PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan`:
+
+- prove owner and partner can atomically replace guests, tables, seats and
+  seating rules through their caller-bound session;
+- prove a stale workspace version returns `409 version_conflict` without
+  partially replacing any table-plan record;
+- prove an outsider receives the generic workspace denial; and
+- validate the success body and subsequent dashboard GET against the checked
+  schemas.
+
 All application assertions use publishable-key clients with real user sessions.
 The secret test key is used only to create test Auth users, confirm their
 profiles exist and delete those users during cleanup.

@@ -19,7 +19,7 @@ remain deliberately gated.
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
-| Reusable logic | Twenty-two declared budget, supplier, recommendation, dashboard and update-contract, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs; strict versioned JSON-safe facades and checked Draft 2020-12 schemas expose dashboard reads and conflict-safe budget writes to future native presentation adapters. |
+| Reusable logic | Twenty-three declared budget, supplier, recommendation, dashboard and update-contract, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs; strict versioned JSON-safe facades and checked Draft 2020-12 schemas expose dashboard reads plus conflict-safe budget and atomic table-plan writes to future native presentation adapters. |
 | Safe beta | The Planning Hub remains on separate no-index beta routes and the public planners remain available. |
 
 ## Prepared but not enabled
@@ -48,7 +48,7 @@ its public profile route and category-specific browser verification before its
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
 | Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
-| Native iPhone and Android apps | Read and budget-write API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe contracts now have language-neutral schemas plus dormant authenticated GET and PATCH adapters. Both use the caller's RLS client; PATCH requires the exact budget version and server-enforced owner/link identity. Native applications, remaining record-specific writes, physical-device QA and live Auth/Data API execution remain future gates. |
+| Native iPhone and Android apps | Dashboard, budget and table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and versioned JSON-safe contracts now have language-neutral schemas plus dormant authenticated GET and PATCH adapters. All use the caller's RLS client; budget writes require the exact budget version and server-enforced owner/link identity, while table-plan writes require the exact workspace version and use the existing atomic owner/partner transaction. Native applications, profile/task mutations, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
 
@@ -70,7 +70,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 78 test files and 377 tests passing.
+- 81 test files and 390 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -141,7 +141,7 @@ its public profile route and category-specific browser verification before its
   Event Timing records four distinct interactions; the full optimized run's
   slowest duration is 24 milliseconds and the gate fails above 200
   milliseconds. Field INP remains explicitly separate.
-- The native-ready source boundary covers 22 declared domain modules and fails
+- The native-ready source boundary covers 23 declared domain modules and fails
   on framework directives, React/Next imports, browser globals or storage,
   URL construction, Node environment access, Supabase clients and web adapters.
   Recommendation decisions now return stable platform-neutral targets; the web
@@ -160,6 +160,12 @@ its public profile route and category-specific browser verification before its
   workspace owner ID. A second local optimized-server request proved the built
   write route also returns the expected no-store 503 while cloud planning is
   disabled.
+- Checked language-neutral request and success schemas also define atomic
+  table-plan replacement. The dormant PATCH adapter rejects invalid seating
+  before reading, checks the exact workspace version and calls the existing
+  authenticated transaction, which locks and rechecks the workspace before
+  replacing guests, tables, seats and rules. Tests cover partner success,
+  outsider denial and both stale-precheck and in-transaction conflicts.
 - The first dormant native read adapter exposes that exact contract through a
   versioned dynamic GET route. It verifies the bearer token with Supabase Auth,
   performs all reads through the same caller-bound publishable-key client,

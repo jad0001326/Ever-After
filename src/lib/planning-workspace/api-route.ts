@@ -89,3 +89,59 @@ export async function resolvePlanningApiRequest(
     user: authentication.user,
   } as const;
 }
+
+export async function readPlanningApiJson(
+  request: Request,
+  contractId: string,
+  maxBodyBytes = 1_000_000,
+) {
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("application/json")) {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        415,
+        "unsupported_media_type",
+      ),
+    } as const;
+  }
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBodyBytes) {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        413,
+        "payload_too_large",
+      ),
+    } as const;
+  }
+
+  const rawBody = await request.text().catch(() => null);
+  if (
+    rawBody === null
+    || new TextEncoder().encode(rawBody).byteLength > maxBodyBytes
+  ) {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        413,
+        "payload_too_large",
+      ),
+    } as const;
+  }
+  try {
+    return { ok: true, data: JSON.parse(rawBody) as unknown } as const;
+  } catch {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        400,
+        "invalid_request",
+      ),
+    } as const;
+  }
+}

@@ -2,8 +2,8 @@
 
 Date: 29 July 2026
 
-Status: dashboard read and conflict-safe budget write implemented and verified
-locally, but dormant. Neither route is live. Both return
+Status: dashboard read plus conflict-safe budget and table-plan writes are
+implemented and verified locally, but dormant. None of the routes is live. They return
 `503 connected_planning_disabled` before authentication unless
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true`.
 
@@ -83,6 +83,37 @@ supplied owner ID and never uses user metadata for authorization. An
 RLS-inaccessible or nonexistent workspace produces the same generic
 `404 workspace_unavailable` response.
 
+## Table-plan write contract
+
+```http
+PATCH /api/planning/v1/workspaces/{workspaceId}/table-plan
+Authorization: Bearer {supabase-access-token}
+Content-Type: application/json
+
+{
+  "schemaVersion": 1,
+  "expectedWorkspaceUpdatedAt": "2026-07-29T12:00:00.000Z",
+  "tablePlan": { "...": "the complete validated guest and seating plan" }
+}
+```
+
+The checked request and success schemas are:
+
+- `contracts/planning-table-plan-update-request.v1.schema.json`
+- `contracts/planning-table-plan-update-success.v1.schema.json`
+
+The route performs a narrow RLS-visible workspace-version read before calling
+the existing `sync_planning_table_plan` database function. That function
+rechecks workspace access, locks the workspace, compares the same exact
+version, validates limits and atomically replaces the guest, table, seat and
+seating-rule rows. A stale precheck or a race inside the transaction returns
+`409 version_conflict`.
+
+The function remains restricted to authenticated callers and preserves its
+owner-or-partner workspace access check. The broader snapshot-import function
+is deliberately not exposed here because its existing-workspace path is
+owner-only. This route adds no migration, grant or service-role path.
+
 ## Failure contract
 
 | Status | Code | Meaning |
@@ -121,7 +152,12 @@ Local tests cover:
 - server-side owner enforcement without updating `user_id`;
 - exact `user_id`, plan ID and `updated_at` conditional filters;
 - pre-write stale-version and post-read race conflicts;
-- distinct conditional-conflict and Data API failure handling; and
+- distinct conditional-conflict and Data API failure handling;
+- strict table-plan request and success schema drift;
+- invalid seating rejection before any workspace read;
+- partner table-plan success through the caller-bound RPC;
+- generic table-plan outsider denial;
+- table-plan stale-precheck and in-transaction race conflicts; and
 - the unchanged embedded PostgreSQL owner, partner, outsider and anonymous RLS
   scenarios.
 
@@ -134,6 +170,18 @@ Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-pre
 X-EverAft-Contract: urn:everaft:planning-dashboard-snapshot:v1
 {"error":"connected_planning_disabled"}
 ```
+
+The built table-plan PATCH independently returned:
+
+```text
+HTTP 503
+Cache-Control: private, no-store, max-age=0
+X-EverAft-Contract: urn:everaft:planning-table-plan-update-success:v1
+{"error":"connected_planning_disabled"}
+```
+
+A real owner/partner success still requires the gated full-stack verification
+below.
 
 This proves the built route fails closed without contacting Supabase. A `200`
 response still requires the separately gated local full-stack Auth/Data API
@@ -150,9 +198,10 @@ X-EverAft-Contract: urn:everaft:planning-budget-update-success:v1
 
 ## Activation boundary
 
-Do not enable the route in production merely because its code and database RLS
-tests pass. First run the prepared local Auth/Data API scenario, call both
-routes with owner, partner, outsider and expired tokens, prove a real stale
-budget returns 409 without changing data, and confirm successful responses
-against the checked JSON Schemas. Production activation, migration application
-and cloud-flag changes each still require explicit approval.
+Do not enable the routes in production merely because their code and database
+RLS tests pass. First run the prepared local Auth/Data API scenario, call all
+three routes with owner, partner, outsider and expired tokens, prove real stale
+budget and table-plan versions return 409 without changing data, and confirm
+successful responses against the checked JSON Schemas. Production activation,
+migration application and cloud-flag changes each still require explicit
+approval.

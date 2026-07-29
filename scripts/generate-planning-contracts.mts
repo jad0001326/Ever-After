@@ -5,6 +5,10 @@ import {
   planningBudgetUpdateSuccessJsonSchema,
 } from "../src/lib/planning-workspace/budget-api-schema.ts";
 import { planningDashboardSnapshotJsonSchema } from "../src/lib/planning-workspace/snapshot-schema.ts";
+import {
+  planningTablePlanUpdateRequestJsonSchema,
+  planningTablePlanUpdateSuccessJsonSchema,
+} from "../src/lib/planning-workspace/table-plan-api-schema.ts";
 
 const contracts = [
   {
@@ -18,6 +22,14 @@ const contracts = [
   {
     file: "planning-budget-update-success.v1.schema.json",
     schema: planningBudgetUpdateSuccessJsonSchema,
+  },
+  {
+    file: "planning-table-plan-update-request.v1.schema.json",
+    schema: planningTablePlanUpdateRequestJsonSchema,
+  },
+  {
+    file: "planning-table-plan-update-success.v1.schema.json",
+    schema: planningTablePlanUpdateSuccessJsonSchema,
   },
 ];
 let stale = false;

@@ -1,11 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
-import { loadPlanningWorkspaceContext } from "./server-snapshot";
+import {
+  loadPlanningWorkspaceContext,
+  loadPlanningWorkspaceVersion,
+} from "./server-snapshot";
 
 const workspaceId = "60000000-0000-4000-8000-000000000006";
 const ownerId = "10000000-0000-4000-8000-000000000001";
 
 describe("loadPlanningWorkspaceContext", () => {
+  it("loads only the RLS-visible workspace version for narrow mutations", async () => {
+    const workspaceQuery = query({
+      data: {
+        id: workspaceId,
+        updated_at: "2026-07-29T12:00:00.000Z",
+      },
+      error: null,
+    });
+    const from = vi.fn(() => workspaceQuery);
+
+    const result = await loadPlanningWorkspaceVersion(
+      { from } as never,
+      workspaceId,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      workspaceId,
+      updatedAt: "2026-07-29T12:00:00.000Z",
+    });
+    expect(workspaceQuery.select).toHaveBeenCalledWith("id, updated_at");
+    expect(workspaceQuery.eq).toHaveBeenCalledWith("id", workspaceId);
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
   it("loads an RLS-visible workspace and its exact owner budget", async () => {
     const plan = {
       ...createPlanningHubStarterPlan(ownerId),
