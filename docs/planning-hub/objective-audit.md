@@ -109,6 +109,10 @@ its public profile route and category-specific browser verification before its
   booked manual venue reduces a £30,000 plan to £25,000 immediately, the exact
   venue/date/location/balance reach Photography without a false catalogue
   venue ID, and the device plan restores after returning to Venue.
+- The same repeatable run uses Chrome's native Enter, Space and Tab input to
+  prove venue detail focus transfer, keyboard-reachable Close, exact trigger
+  focus restoration, Compare pressed state, manual-entry disclosure and field
+  order, and keyboard navigation to the plan-aware Photography stage.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;

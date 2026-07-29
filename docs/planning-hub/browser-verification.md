@@ -37,6 +37,23 @@ The gate then runs one stateful 390 x 844 journey:
 8. returns to the Venue step and proves the chosen venue and budget restore
    from the disposable browser's local plan.
 
+It then retains that restored plan for a real keyboard-input journey:
+
+1. focuses the first venue's `View` button and uses Enter to open details;
+2. proves focus moves into the on-demand detail panel;
+3. uses Tab to reach Close and Enter to close it;
+4. proves focus returns to the exact opening `View` button;
+5. focuses Compare and uses Space to toggle its pressed state;
+6. focuses `Venue not listed?`, uses Enter to expand it and Tab to reach the
+   first manual-entry field;
+7. focuses the next-stage recommendation and uses Enter to reach Photography
+   with the exact restored plan context.
+
+These actions use Chrome's native keyboard input events. Programmatic focus is
+used only to establish the starting control for each independent assertion;
+activation, sequential focus movement and navigation are performed by the
+browser.
+
 For each viewport it proves:
 
 - the stable milestone content for that surface renders, including the exact
@@ -99,7 +116,8 @@ Every run:
 2. creates a fresh browser profile under the operating-system temporary
    directory;
 3. launches the browser headlessly;
-4. runs all ten responsive scenarios and the mobile interaction journey;
+4. runs all ten responsive scenarios plus the mobile state and keyboard
+   journeys;
 5. closes the owned browser process;
 6. verifies the temporary path belongs to the run before recursively removing
    it.

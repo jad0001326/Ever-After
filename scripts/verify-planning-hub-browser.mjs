@@ -247,11 +247,18 @@ try {
     journey,
     runtimeErrors,
   });
+  activeScenario = "venue-keyboard-mobile";
+  runtimeErrors.length = 0;
+  await verifyVenueKeyboardJourney({
+    client,
+    journey,
+    runtimeErrors,
+  });
 
   client.close();
   console.log(journeyOnly
-    ? "Planning Hub browser verification passed the mobile venue-to-photography journey in interaction-only mode with no overflow, browser errors or axe findings."
-    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios and the mobile venue-to-photography journey with no overflow, browser errors or axe findings.`);
+    ? "Planning Hub browser verification passed the mobile venue-to-photography and keyboard journeys in interaction-only mode with no overflow, browser errors or axe findings."
+    : `Planning Hub browser verification passed ${scenarios.length} optimized local scenarios plus the mobile venue-to-photography and keyboard journeys with no overflow, browser errors or axe findings.`);
 } catch (error) {
   if (browserDiagnostics.trim()) {
     console.error(browserDiagnostics.trim());
@@ -528,6 +535,105 @@ async function verifyVenueToPhotographyJourney({
   );
 }
 
+async function verifyVenueKeyboardJourney({
+  client,
+  journey: journeyConfig,
+  runtimeErrors,
+}) {
+  await waitForCondition(
+    client,
+    `Boolean(document.querySelector('section[aria-label="Matching wedding venues"] article'))`,
+    "a live venue result for keyboard verification",
+  );
+
+  const firstVenueName = await focusFirstVenueAction(client, "View");
+  await pressKey(client, "Enter");
+  await waitForCondition(
+    client,
+    `document.querySelector('#venue-detail')?.getAttribute("aria-label") === ${JSON.stringify(`${firstVenueName} details`)}
+      && document.activeElement?.id === "venue-detail"`,
+    "Enter to open venue details and transfer focus",
+  );
+
+  await pressKey(client, "Tab");
+  await waitForCondition(
+    client,
+    `document.activeElement?.getAttribute("aria-label") === "Close venue details"`,
+    "Tab to reach the venue detail close button",
+  );
+  await pressKey(client, "Enter");
+  await waitForCondition(
+    client,
+    `!document.querySelector("#venue-detail")
+      && document.activeElement?.textContent?.trim() === "View"
+      && Boolean(document.activeElement?.closest('section[aria-label="Matching wedding venues"] article'))`,
+    "Enter to close venue details and restore focus to View",
+  );
+
+  await focusFirstVenueAction(client, "Compare");
+  await pressKey(client, "Space");
+  await waitForCondition(
+    client,
+    `document.activeElement?.textContent?.trim() === "Compare"
+      && document.activeElement?.getAttribute("aria-pressed") === "true"
+      && document.body.innerText.toLowerCase().includes("venue comparison")`,
+    "Space to add the venue to comparison",
+  );
+
+  const manualSummaryFocused = await evaluate(
+    client,
+    `(() => {
+      const summary = document.querySelector("details#manual-venue > summary");
+      if (!(summary instanceof HTMLElement)) return false;
+      summary.focus();
+      return document.activeElement === summary;
+    })()`,
+  );
+  assert.equal(
+    manualSummaryFocused,
+    true,
+    "The manual venue summary could not receive keyboard focus.",
+  );
+  await pressKey(client, "Enter");
+  await waitForCondition(
+    client,
+    `document.querySelector("details#manual-venue")?.open === true
+      && document.activeElement === document.querySelector("details#manual-venue > summary")`,
+    "Enter to expand the manual venue form",
+  );
+  await pressKey(client, "Tab");
+  await waitForCondition(
+    client,
+    `document.activeElement?.matches('details#manual-venue input[name="name"]')`,
+    "Tab to enter the expanded manual venue form",
+  );
+
+  const recommendationFocused = await focusLinkByText(
+    client,
+    "Next: choose your photographer",
+  );
+  assert.equal(
+    recommendationFocused,
+    true,
+    "The Photography recommendation could not receive keyboard focus.",
+  );
+  await pressKey(client, "Enter");
+  await waitForDocument(client, journeyConfig.expectedPhotographyText);
+  const currentUrl = new URL(await evaluate(client, "window.location.href"));
+  assert.equal(currentUrl.pathname, "/planning-hub/photography");
+  assert.equal(currentUrl.searchParams.get("remainingPence"), "2500000");
+  assert.equal(currentUrl.searchParams.get("venueName"), journeyConfig.manualVenueName);
+  assert.deepEqual(
+    runtimeErrors,
+    [],
+    `venue-keyboard-mobile emitted browser errors: ${JSON.stringify(runtimeErrors)}`,
+  );
+
+  console.log(
+    "venue-keyboard-mobile: Enter opened detail, Tab reached Close, Enter restored View focus, Space compared, Enter expanded manual entry, Tab reached its first field and Enter followed Photography.",
+  );
+}
+
 async function assertHealthyPage({
   axeSource: source,
   client,
@@ -590,6 +696,23 @@ async function clickFirstVenueAction(client, text) {
   return result.venueName;
 }
 
+async function focusFirstVenueAction(client, text) {
+  const result = JSON.parse(await evaluate(
+    client,
+    `(() => {
+      const card = document.querySelector('section[aria-label="Matching wedding venues"] article');
+      const button = Array.from(card?.querySelectorAll("button") ?? [])
+        .find((candidate) => candidate.textContent?.trim() === ${JSON.stringify(text)});
+      const venueName = card?.querySelector("h3")?.textContent?.trim();
+      if (!button || !venueName) return JSON.stringify({ focused: false, venueName: null });
+      button.focus();
+      return JSON.stringify({ focused: document.activeElement === button, venueName });
+    })()`,
+  ));
+  assert.equal(result.focused, true, `The first venue's ${text} action could not receive focus.`);
+  return result.venueName;
+}
+
 async function clickButtonWithin(client, selector, text) {
   return evaluate(
     client,
@@ -613,6 +736,52 @@ async function clickLinkByText(client, text) {
       return Boolean(link);
     })()`,
   );
+}
+
+async function focusLinkByText(client, text) {
+  return evaluate(
+    client,
+    `(() => {
+      const link = Array.from(document.querySelectorAll("a"))
+        .find((candidate) => candidate.textContent?.includes(${JSON.stringify(text)}));
+      link?.focus();
+      return document.activeElement === link;
+    })()`,
+  );
+}
+
+async function pressKey(client, key) {
+  const keyConfig = {
+    Enter: {
+      code: "Enter",
+      key: "Enter",
+      text: "\r",
+      unmodifiedText: "\r",
+      windowsVirtualKeyCode: 13,
+    },
+    Space: {
+      code: "Space",
+      key: " ",
+      text: " ",
+      unmodifiedText: " ",
+      windowsVirtualKeyCode: 32,
+    },
+    Tab: {
+      code: "Tab",
+      key: "Tab",
+      windowsVirtualKeyCode: 9,
+    },
+  }[key];
+  assert(keyConfig, `Unsupported browser verification key: ${key}`);
+  await client.send("Input.dispatchKeyEvent", {
+    type: key === "Tab" ? "rawKeyDown" : "keyDown",
+    ...keyConfig,
+  });
+  await client.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    ...keyConfig,
+  });
+  await delay(100);
 }
 
 async function setLabelledControl(client, labelText, value) {
