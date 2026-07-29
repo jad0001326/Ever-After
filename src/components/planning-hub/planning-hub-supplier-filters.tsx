@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
-import type { PlanningHubDerivedSupplierFilters } from "@/lib/planning-hub/supplier-search";
+import {
+  getPlanningHubSupplierResetHref,
+  type PlanningHubDerivedSupplierFilters,
+} from "@/lib/planning-hub/supplier-search";
 import type {
   PlanningHubSupplierCategory,
   PlanningHubSupplierSearchParams,
@@ -52,9 +55,12 @@ export function PlanningHubSupplierFilters({
 
       <form action={route} className="mt-5 grid gap-4">
         {params.workspace ? <input name="workspace" type="hidden" value={params.workspace} /> : null}
+        {params.context ? <input name="context" type="hidden" value={params.context} /> : null}
         {params.venue ? <input name="venue" type="hidden" value={params.venue} /> : null}
         {params.venueName ? <input name="venueName" type="hidden" value={params.venueName} /> : null}
         {params.planDate ? <input name="planDate" type="hidden" value={params.planDate} /> : null}
+        {params.planLocation ? <input name="planLocation" type="hidden" value={params.planLocation} /> : null}
+        {params.remainingPence ? <input name="remainingPence" type="hidden" value={params.remainingPence} /> : null}
         <Field label={`${category.label} name`}>
           <input className="focus-ring min-h-11 w-full rounded-xl border border-[#cfc3b3] px-3 text-sm" defaultValue={params.search ?? ""} maxLength={100} name="search" placeholder="Search by name" />
         </Field>
@@ -82,7 +88,7 @@ export function PlanningHubSupplierFilters({
           <Search size={16} /> Find {category.plural.toLowerCase()}
         </button>
         {hasFilters ? (
-          <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl border border-[#cfc3b3] px-4 text-sm font-semibold text-[#173526]" href={params.workspace ? `${route}?workspace=${encodeURIComponent(params.workspace)}` : route} prefetch={false}>
+          <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl border border-[#cfc3b3] px-4 text-sm font-semibold text-[#173526]" href={getPlanningHubSupplierResetHref(route, params)} prefetch={false}>
             Reset filters
           </Link>
         ) : null}

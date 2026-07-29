@@ -65,7 +65,8 @@ they do not require rewriting or pushing it.
 | 22. Reachable payment deadlines | Progressively reveal every scheduled commitment from Organise while keeping the initial mobile view bounded. | `b03357d` | Client presentation only; payment ordering and totals remain in the shared domain layer. |
 | 23. Complete task lifecycle | Add confirmed task removal to device plans and the prepared member-scoped shared action, restoring the task locally if shared deletion fails. | `0a58be0` | Existing table, grants, RLS and server action only; no schema or cloud activation. |
 | 24. Complete selection lifecycle | Add confirmed removal and safe reactivation for venue, photography and generic supplier plan items, including selected-venue clearing and inactive result-card handling. | `9fbbab6` | Versioned plan JSON and the existing protected whole-plan save only; no schema, grant or cloud activation. |
-| 25. Plan-aware supplier discovery | Derive live supplier venue, location and affordable-price filters from the connected plan while retaining explicit overrides and truthful manual-venue handling. | Current working slice | Server query and accessible filter-context changes only; no schema, catalogue activation or production data action. |
+| 25. Plan-aware supplier discovery | Derive live supplier venue, location and affordable-price filters from the connected plan while retaining explicit overrides and truthful manual-venue handling. | `7a41589` | Server query and accessible filter-context changes only; no schema, catalogue activation or production data action. |
+| 26. Reproducible responsive gate | Preserve the exact device-plan balance across supplier handoff and add a fail-closed local Chrome/Edge gate for mobile, desktop, overflow, browser errors and axe. | Current working slice | Local application and verification tooling only; the command refuses non-loopback URLs and uses no hosted browser or production data. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -177,7 +178,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 66 Vitest files and 318 tests pass.
+- 67 Vitest files and 321 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -218,11 +219,14 @@ Use the least destructive rollback that restores safety:
   claiming that a manual venue is a catalogue record. The derived-value
   explanations are associated with their form controls, and pagination keeps
   the original query so defaults are recalculated from the connected plan.
-- A fresh optimized-build 390 x 844 photography handoff renders the transported
-  venue name, wedding date, location and remaining budget with a 390 px
-  document width and no page overflow. Axe reports zero violations and one
-  indeterminate fixed-overlay contrast check; the affected cookie copy resolves
-  to `#625f57` on white, a directly calculated 6.38:1 ratio.
+- Device-only handoffs transport signed remaining pence and profile location
+  separately from editable search filters. The visible plan balance therefore
+  remains exact after navigation, pagination, filter submission and reset,
+  while a positive balance alone supplies the affordable-price filter.
+- `npm run test:planning-browser` now reproduces the optimized photography
+  handoff at 390 x 844 and 1440 x 900. Both scenarios render the exact
+  17,000-pound balance with document width equal to viewport width, no browser
+  exceptions, and 47 axe passes with zero violations or indeterminate checks.
 - The local API generator reproduces one baseline plus all 26 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at

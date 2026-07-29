@@ -10,6 +10,7 @@ import {
   getLivePlanningHubSupplierCategory,
   getPlanningHubSupplierCategory,
   getPlanningHubSupplierDiscoveryContext,
+  getPlanningHubSupplierResetHref,
   isSupplierCategorySlug,
   normalisePlanningHubSupplierSearchParams,
   PLANNING_HUB_SUPPLIER_PAGE_SIZE,
@@ -121,10 +122,10 @@ describe("Planning Hub supplier search", () => {
     const context = getPlanningHubSupplierDiscoveryContext(
       createPlanningHubStarterPlan(null),
       {
-        budget: "17000",
         context: "plan",
-        location: "Fife",
         planDate: "2027-06-12",
+        planLocation: "Fife",
+        remainingPence: "1700000",
         venue: "catalogue-venue",
         venueName: "Venue One",
       },
@@ -135,6 +136,8 @@ describe("Planning Hub supplier search", () => {
       context: "plan",
       location: "Fife",
       planDate: "2027-06-12",
+      planLocation: "Fife",
+      remainingPence: "1700000",
       venue: "catalogue-venue",
       venueName: "Venue One",
     });
@@ -144,7 +147,24 @@ describe("Planning Hub supplier search", () => {
       venue: true,
     });
     expect(context.selectedVenueName).toBe("Venue One");
+    expect(context.remainingPence).toBe(1_700_000);
     expect(context.weddingDate).toBe("2027-06-12");
+    expect(getPlanningHubSupplierResetHref(
+      "/planning-hub/photography",
+      {
+        ...context.effectiveParams,
+        budget: "900",
+        location: "Skye",
+        search: "Studio",
+      },
+    )).toBe(
+      "/planning-hub/photography?context=plan"
+      + "&planDate=2027-06-12"
+      + "&planLocation=Fife"
+      + "&remainingPence=1700000"
+      + "&venue=catalogue-venue"
+      + "&venueName=Venue+One",
+    );
 
     const emptyTransport = getPlanningHubSupplierDiscoveryContext(
       createPlanningHubStarterPlan(null),
@@ -156,6 +176,7 @@ describe("Planning Hub supplier search", () => {
       location: false,
       venue: false,
     });
+    expect(emptyTransport.remainingPence).toBe(0);
   });
 
   it("does not invent a budget filter when the plan has no remaining money", () => {
@@ -173,6 +194,17 @@ describe("Planning Hub supplier search", () => {
     expect(context.remainingPence).toBe(-550_000);
     expect(context.effectiveParams.budget).toBeUndefined();
     expect(context.derivedFilters.budget).toBe(false);
+
+    const transported = getPlanningHubSupplierDiscoveryContext(
+      createPlanningHubStarterPlan(null),
+      {
+        context: "plan",
+        remainingPence: "-550000",
+      },
+    );
+    expect(transported.remainingPence).toBe(-550_000);
+    expect(transported.effectiveParams.budget).toBeUndefined();
+    expect(transported.derivedFilters.budget).toBe(false);
   });
 
   it("normalises and bounds category-neutral URL filters", () => {

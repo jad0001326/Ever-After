@@ -73,6 +73,8 @@ export type PlanningHubPhotographerDetail = PlanningHubPhotographer & {
 export type PlanningHubPhotographySearchParams = PhotographerSearchParams & {
   context?: "plan";
   planDate?: string;
+  planLocation?: string;
+  remainingPence?: string;
   search?: string;
   venueName?: string;
   workspace?: string;
@@ -117,6 +119,8 @@ export type PlanningHubSupplierDetail = PlanningHubSupplier & {
 export type PlanningHubSupplierSearchParams = {
   context?: "plan";
   planDate?: string;
+  planLocation?: string;
+  remainingPence?: string;
   search?: string;
   venue?: string;
   location?: string;

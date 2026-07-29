@@ -66,7 +66,11 @@ it supplies:
 Explicit filters always win. Manual venues remain visible in the planning
 context but their local budget-item IDs are never passed to catalogue matching.
 For a device-only plan, the handoff carries the venue name and wedding date for
-truthful context while only a real catalogue listing ID can affect matching.
+truthful context while only a real catalogue listing ID can affect matching. It
+also keeps profile location and signed remaining pence separate from editable
+search filters, so submitting or resetting a filter cannot replace the visible
+plan balance with the anonymous server fallback. Zero and over-budget balances
+remain truthful without creating an affordable-price filter.
 The interface labels plan-derived location and budget values, connects those
 explanations to the corresponding controls for screen readers and avoids
 presenting them as resettable user overrides. Pagination retains the original
@@ -136,7 +140,7 @@ categories. They remain available for manual planning only.
 
 ## Verification
 
-- 66 test files and 318 tests passing at the current local checkpoint;
+- 67 test files and 321 tests passing at the current local checkpoint;
 - focused category-normalization and supplier-continuity tests passing;
 - focused date-availability component, persistence, plan-domain,
   recommendation and workspace-persistence tests passing;

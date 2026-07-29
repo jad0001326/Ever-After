@@ -197,6 +197,7 @@ describe("Planning Hub plan", () => {
     expect(findPlanningHubVenueItem(plan, plan.items[0].id)).toBe(plan.items[0]);
     expect(getPhotographyNextHref(contextual)).toContain("/planning-hub/photography?");
     expect(getPhotographyNextHref(contextual)).toContain("context=plan");
+    expect(getPhotographyNextHref(contextual)).toContain("remainingPence=1700000");
     expect(getPhotographyNextHref(contextual)).not.toContain("venue=");
     expect(getPhotographyNextHref(contextual)).toContain("venueName=Our+local+hall");
     expect(getPhotographyNextHref(contextual)).toContain("planDate=2027-06-12");
@@ -209,7 +210,14 @@ describe("Planning Hub plan", () => {
     expect(connectedHref).not.toContain("context=plan");
     expect(connectedHref).not.toContain("budget=");
     expect(getPhotographyNextHref(cataloguePlan)).toContain("venue=venue-1");
-    expect(getPhotographyNextHref(contextual)).toContain("location=Perthshire");
+    expect(getPhotographyNextHref(contextual)).toContain("planLocation=Perthshire");
+
+    const overBudget = {
+      ...contextual,
+      totalBudgetPence: 100_000,
+    };
+    expect(getPhotographyNextHref(overBudget)).toContain("remainingPence=-200000");
+    expect(getPhotographyNextHref(overBudget)).not.toContain("budget=");
   });
 
   it("adds quote-only photography to the same connected budget and tracks payment", () => {

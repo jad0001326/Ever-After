@@ -33,21 +33,27 @@ export function getPlanningHubSupplierDiscoveryContext<
         )
       )) ?? null
     : null;
-  const remainingPence = calculateBudget(plan).remainingPence;
-  const planBudgetPounds = Math.floor(Math.max(remainingPence, 0) / 100);
   const carriesPlanContext = params.context === "plan";
   const hasBudget = Boolean(params.budget?.trim());
   const hasLocation = Boolean(params.location?.trim());
   const hasVenue = Boolean(params.venue?.trim());
-  const transportedPlanDate = cleanDate(params.planDate);
-  const transportedVenueName = cleanText(params.venueName, 120);
+  const transportedRemainingPence = carriesPlanContext
+    ? signedInteger(params.remainingPence, 1_000_000_000)
+    : null;
+  const remainingPence = carriesPlanContext
+    ? transportedRemainingPence ?? 0
+    : calculateBudget(plan).remainingPence;
+  const planBudgetPounds = Math.floor(Math.max(remainingPence, 0) / 100);
+  const transportedLocation = carriesPlanContext
+    ? cleanText(params.planLocation, 120)
+    : "";
+  const transportedPlanDate = carriesPlanContext ? cleanDate(params.planDate) : null;
+  const transportedVenueName = carriesPlanContext
+    ? cleanText(params.venueName, 120)
+    : "";
   const derivedFilters: PlanningHubDerivedSupplierFilters = {
-    budget: carriesPlanContext
-      ? hasBudget
-      : !hasBudget && planBudgetPounds > 0,
-    location: carriesPlanContext
-      ? hasLocation
-      : !hasLocation && Boolean(plan.location?.trim()),
+    budget: !hasBudget && planBudgetPounds > 0,
+    location: !hasLocation && Boolean(transportedLocation || plan.location?.trim()),
     venue: carriesPlanContext
       ? hasVenue
       : !hasVenue && Boolean(selectedVenue?.listingId),
@@ -59,16 +65,12 @@ export function getPlanningHubSupplierDiscoveryContext<
       ...params,
       budget: hasBudget
         ? params.budget
-        : carriesPlanContext
-          ? undefined
-          : derivedFilters.budget
-            ? String(planBudgetPounds)
-            : undefined,
+        : derivedFilters.budget
+          ? String(planBudgetPounds)
+          : undefined,
       location: hasLocation
         ? params.location
-        : carriesPlanContext
-          ? undefined
-          : plan.location?.trim() || undefined,
+        : transportedLocation || plan.location?.trim() || undefined,
       venue: hasVenue
         ? params.venue
         : carriesPlanContext
@@ -80,6 +82,23 @@ export function getPlanningHubSupplierDiscoveryContext<
     selectedVenueName: selectedVenue?.itemName ?? (transportedVenueName || null),
     weddingDate: plan.weddingDate ?? transportedPlanDate,
   };
+}
+
+export function getPlanningHubSupplierResetHref(
+  route: string,
+  params: PlanningHubSupplierDiscoveryParams,
+) {
+  const query = new URLSearchParams();
+  if (params.workspace) query.set("workspace", params.workspace);
+  if (params.context === "plan") {
+    query.set("context", "plan");
+    if (params.planDate) query.set("planDate", params.planDate);
+    if (params.planLocation) query.set("planLocation", params.planLocation);
+    if (params.remainingPence) query.set("remainingPence", params.remainingPence);
+    if (params.venue) query.set("venue", params.venue);
+    if (params.venueName) query.set("venueName", params.venueName);
+  }
+  return `${route}${query.size ? `?${query}` : ""}`;
 }
 
 export function normalisePlanningHubSupplierSearchParams(
@@ -137,4 +156,11 @@ function positiveInteger(value: string | undefined, maximum: number) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return Math.min(parsed, maximum);
+}
+
+function signedInteger(value: string | undefined, maximumAbsolute: number) {
+  if (!value || !/^-?\d+$/.test(value)) return null;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isSafeInteger(parsed)) return null;
+  return Math.max(-maximumAbsolute, Math.min(parsed, maximumAbsolute));
 }

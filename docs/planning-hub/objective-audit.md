@@ -58,7 +58,7 @@ its public profile route and category-specific browser verification before its
 
 ## Current verification baseline
 
-- 66 test files and 318 tests passing.
+- 67 test files and 321 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -98,11 +98,10 @@ its public profile route and category-specific browser verification before its
   plan-derived values are explained and exposed to assistive technology, and
   pagination preserves the original query rather than freezing derived values
   into the URL.
-- The production-build photography handoff renders its transported venue, date,
-  location and remaining budget at a true 390 x 844 viewport with document
-  width equal to viewport width. Axe reports zero violations; its one
-  indeterminate check is the fixed cookie-copy contrast, whose computed
-  `#625f57` on white ratio is 6.38:1.
+- The repeatable optimized-build browser gate renders the photography handoff
+  at 390 x 844 and 1440 x 900. It proves the transported venue, date, location
+  and exact remaining balance, equal viewport/document widths, no browser
+  errors and 47 axe passes with zero violations or indeterminate checks.
 - Planning Hub home navigation verified at 390 x 844 with no horizontal
   overflow, modal obstruction or browser errors.
 - Venue and photographer details now retain a 96px sticky-header focus offset;

@@ -366,14 +366,14 @@ export function getPhotographyNextHref(
           )
         )) ?? null
       : null;
-    const remainingPence = Math.max(calculatePlanningHubPlan(plan).remainingPence, 0);
+    const remainingPence = calculatePlanningHubPlan(plan).remainingPence;
 
     params.set("context", "plan");
+    params.set("remainingPence", String(remainingPence));
     if (selectedVenue?.listingId) params.set("venue", selectedVenue.listingId);
     if (selectedVenue?.itemName) params.set("venueName", selectedVenue.itemName);
     if (plan.weddingDate) params.set("planDate", plan.weddingDate);
-    if (plan.location) params.set("location", plan.location);
-    if (remainingPence > 0) params.set("budget", String(Math.floor(remainingPence / 100)));
+    if (plan.location) params.set("planLocation", plan.location);
   }
   return `/planning-hub/photography${params.size ? `?${params.toString()}` : ""}`;
 }
