@@ -10,8 +10,8 @@ export function SortSelect() {
 
   return (
     <Select
-      aria-label="Sort venues"
-      className="max-w-56"
+      aria-label="Sort venues, with featured listings first"
+      className="max-w-64"
       defaultValue={searchParams.get("sort") ?? "price-asc"}
       onChange={(event) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -20,9 +20,9 @@ export function SortSelect() {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       }}
     >
-      <option value="price-asc">Lowest confirmed price</option>
-      <option value="price-desc">Highest confirmed price</option>
-      <option value="capacity-desc">Guest capacity</option>
+      <option value="price-asc">Featured first · lowest price</option>
+      <option value="price-desc">Featured first · highest price</option>
+      <option value="capacity-desc">Featured first · guest capacity</option>
     </Select>
   );
 }
