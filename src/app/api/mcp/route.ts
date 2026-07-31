@@ -15,7 +15,7 @@ import {
   listOutreachCandidates,
   sendApprovedOutreachCampaign
 } from "@/lib/outreach";
-import { defaultOutreachCopy } from "@/lib/outreach-email";
+import { defaultOutreachCopyFor } from "@/lib/outreach-email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,12 +60,13 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
     "outreach_candidates_list",
     {
       title: "List outreach candidates",
-      description: "List eligible EverAft venue businesses only when their contact email is valid and backed by a public page on that business's official website. Applies deduplication, invite-status filtering and suppression checks before any invitation preview.",
+      description: "List eligible EverAft venue businesses only when their contact email is valid and backed by a public page on that business's official website. For follow-ups, use stage first for the 7-day reminder or final for the one final reminder seven days later. Applies deduplication, sequence-stage limits, invite-status filtering and suppression checks before any invitation preview.",
       inputSchema: {
         kind: z.enum(["initial_invite", "follow_up"]).default("initial_invite"),
         country: z.string().min(2).max(80).default("Scotland"),
         region: z.string().min(1).max(120).optional(),
         follow_up_after_days: z.number().int().min(1).max(90).default(7),
+        follow_up_stage: z.enum(["first", "final"]).default("first"),
         limit: z.number().int().min(1).max(100).default(100)
       },
       outputSchema: {
@@ -83,13 +84,14 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
       _meta: { ...authMeta, "openai/toolInvocation/invoking": "Checking eligible venues…", "openai/toolInvocation/invoked": "Eligible venues ready" }
     },
-    async ({ country, follow_up_after_days, kind, limit, region }, extra) => {
+    async ({ country, follow_up_after_days, follow_up_stage, kind, limit, region }, extra) => {
       if (!getAuthenticatedAdminId(extra)) return authenticationError();
       const result = await listOutreachCandidates({
         kind,
         country,
         region,
         followUpAfterDays: follow_up_after_days,
+        followUpStage: follow_up_stage,
         limit
       });
       const structuredContent = {
@@ -179,6 +181,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
         region: z.string().min(1).max(120).optional(),
         venue_ids: z.array(z.string().uuid()).max(100).optional(),
         follow_up_after_days: z.number().int().min(1).max(90).default(7),
+        follow_up_stage: z.enum(["first", "final"]).default("first"),
         limit: z.number().int().min(1).max(100).default(100),
         subject: z.string().min(1).max(160).optional(),
         preheader: z.string().min(1).max(220).optional(),
@@ -215,7 +218,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
     async (args, extra) => {
       const adminUserId = getAuthenticatedAdminId(extra);
       if (!adminUserId) return authenticationError();
-      const defaults = defaultOutreachCopy[args.kind];
+      const defaults = defaultOutreachCopyFor("venue", args.kind, args.follow_up_stage);
       const preview = await createOutreachPreview({
         adminUserId,
         campaignName: args.campaign_name,
@@ -226,6 +229,7 @@ function createEverAftMcpServer(authFailureReason: McpAuthFailureReason | null, 
           region: args.region,
           venueIds: args.venue_ids,
           followUpAfterDays: args.follow_up_after_days,
+          followUpStage: args.follow_up_stage,
           limit: args.limit
         },
         copy: {
