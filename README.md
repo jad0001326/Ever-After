@@ -183,6 +183,8 @@ The `/admin/outreach` workspace and `/api/mcp` ChatGPT connection use the same a
 5. On one explicit send approval, save those exact sourced contacts, freeze the audience, send the rich HTML campaign and record provider IDs.
 6. Track accepted, delivered, failed, bounced, complained, replied, suppressed and unsubscribed states. Admins can record replies or manually suppress an address, and suppressions are re-checked immediately before every send.
 
+Venue invitations follow a capped three-message sequence: the initial invitation, one 7-day reminder, then one final reminder seven days later. The final email has distinct wording and says no further claim reminders will be sent. A venue or inbox that has already received both reminders is excluded from every later follow-up audience.
+
 The preview token is signed, tied to the connected admin, expires after 30 minutes and freezes the exact copy and recipients. A changed audience requires a new preview. Resend batches are capped at 100 recipients, and replaying the same approval is idempotent.
 
 Production sending is deliberately off by default. Keep `OUTREACH_SENDING_ENABLED=false` until all of the following are complete:
