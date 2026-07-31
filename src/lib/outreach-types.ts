@@ -1,4 +1,5 @@
 import type { OutreachAudienceType, OutreachCampaignKind, OutreachCopy } from "@/lib/outreach-email";
+import type { OutreachFollowUpStage } from "@/lib/outreach-sequence";
 
 export type OutreachAudienceFilter = {
   kind: OutreachCampaignKind;
@@ -8,6 +9,7 @@ export type OutreachAudienceFilter = {
   venueIds?: string[];
   supplierIds?: string[];
   followUpAfterDays?: number;
+  followUpStage?: OutreachFollowUpStage;
   limit?: number;
 };
 
