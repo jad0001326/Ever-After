@@ -1,4 +1,5 @@
 import { absoluteUrl } from "@/lib/utils";
+import type { OutreachFollowUpStage } from "@/lib/outreach-sequence";
 
 export type OutreachCampaignKind = "initial_invite" | "follow_up";
 export type OutreachAudienceType = "venue" | "photographer";
@@ -56,7 +57,32 @@ export const defaultPhotographerOutreachCopy: Record<OutreachCampaignKind, Outre
   }
 };
 
-export function defaultOutreachCopyFor(audienceType: OutreachAudienceType, kind: OutreachCampaignKind) {
+const defaultFinalVenueOutreachCopy: OutreachCopy = {
+  subject: "A final note about {business_name} on EverAft",
+  preheader: "Your complimentary EverAft listing remains ready whenever you would like to review it.",
+  introText:
+    "Just a final note in case our earlier emails were lost in a busy inbox. Your complimentary EverAft listing for {business_name} is ready to review, and claiming it lets your team check the details, add approved photography and keep the enquiry route accurate.",
+  offerText:
+    "There is no pressure or obligation to take part. If EverAft is not a fit right now, there is no need to reply — we will leave the listing as it is and will not send further claim reminders."
+};
+
+const defaultFinalPhotographerOutreachCopy: OutreachCopy = {
+  subject: "A final note for {business_name} from EverAft",
+  preheader: "Your complimentary EverAft photographer profile remains ready to review.",
+  introText:
+    "Just a final note in case our earlier emails were lost in a busy inbox. Your complimentary EverAft profile for {business_name} is ready to review, so you can check the details, confirm coverage and decide what may be published.",
+  offerText:
+    "There is no pressure or obligation to take part. If EverAft is not a fit right now, there is no need to reply — we will not send further profile reminders."
+};
+
+export function defaultOutreachCopyFor(
+  audienceType: OutreachAudienceType,
+  kind: OutreachCampaignKind,
+  followUpStage: OutreachFollowUpStage = "first"
+) {
+  if (kind === "follow_up" && followUpStage === "final") {
+    return audienceType === "photographer" ? defaultFinalPhotographerOutreachCopy : defaultFinalVenueOutreachCopy;
+  }
   return audienceType === "photographer" ? defaultPhotographerOutreachCopy[kind] : defaultOutreachCopy[kind];
 }
 
@@ -69,10 +95,12 @@ export function renderOutreachTemplate(value: string, recipient: Pick<OutreachEm
 export function buildOutreachEmail({
   copy,
   kind,
+  followUpStage = "first",
   recipient
 }: {
   copy: OutreachCopy;
   kind: OutreachCampaignKind;
+  followUpStage?: OutreachFollowUpStage;
   recipient: OutreachEmailRecipient;
 }) {
   const subject = renderOutreachTemplate(copy.subject, recipient).replace(/[\r\n]+/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 200);
@@ -84,7 +112,13 @@ export function buildOutreachEmail({
   const listingUrl = isPhotographer ? null : absoluteUrl(`/venues/${recipient.listingSlug}`);
   const heroUrl = absoluteUrl("/images/everaft-wedding-reception.png");
   const privacyUrl = absoluteUrl("/privacy");
-  const headline = kind === "follow_up" ? "Your invitation is still open." : isPhotographer ? "An invitation to join our founding collection." : "A thoughtful introduction for your venue.";
+  const headline = kind === "follow_up"
+    ? followUpStage === "final"
+      ? "A final note from EverAft."
+      : "Your invitation is still open."
+    : isPhotographer
+      ? "An invitation to join our founding collection."
+      : "A thoughtful introduction for your venue.";
 
   const text = [
     `Hi ${recipient.businessName} team,`,
