@@ -12,6 +12,12 @@ readiness, recurring couple value and truthful public positioning over adding
 more dormant API surface. This does not authorise a homepage launch, supplier
 category activation, push, deployment, migration or production write.
 
+The supplier clarification in `docs/planning-hub/supplier-network-roadmap.md`
+makes catalogue acquisition, public category profiles, verified claiming and
+useful owner self-service part of the active delivery goal. Photography remains
+the only locally enabled catalogue. No historical supplier count is accepted
+as a current activation baseline.
+
 This record maps the original objective to current evidence and defines a
 reviewable release sequence for the commits on
 `codex/planning-hub-venue-slice`. The user approved pushing that branch and
@@ -94,7 +100,8 @@ they do not require rewriting or pushing it.
 | 43. Native task management | Add six checked contracts plus bounded list, stable-ID create, exact-version update and exact-version delete routes. | `3a5fad8` | Caller-bound workspace/task RLS operations and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 | 44. Native table-plan read resource | Add a checked full resource and bounded narrow GET, returning the exact version consumed by the existing atomic PATCH. | `f98f0d5` | Caller-bound RLS reads, validator hardening and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 | 45. Native workspace discovery | Add a checked bounded collection that lets authenticated clients discover their RLS-visible workspaces and caller role without exposing other members. | `d45f496` | Caller-bound RLS reads and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
-| 46. Competitive priority adjustment | Incorporate the Scottish Wedding Club launch review without advertising dormant functionality or weakening supplier activation gates. | Current local slice | Goal and strategy documentation only; competitor commercial claims remain directional pending primary-source verification. |
+| 46. Competitive priority adjustment | Incorporate the Scottish Wedding Club launch review without advertising dormant functionality or weakening supplier activation gates. | `0d03317` | Goal and strategy documentation only; competitor commercial claims remain directional pending primary-source verification. |
+| 47. Supplier network workstream | Make catalogue acquisition, cross-category public profiles and claims, bounded owner self-service and connected supplier decisions a first-class activation stream. | Current local slice | Planning and local audit only; no live-count claim, supplier publication, outreach, migration, deployment or paid action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.

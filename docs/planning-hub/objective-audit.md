@@ -21,6 +21,22 @@ lower priority unless it removes a concrete client or release blocker. No
 competitor pricing, catalogue total or campaign claim is treated as verified
 commercial evidence without a fresh primary-source check.
 
+## Supplier network clarification
+
+Supplier catalogue growth, public profiles, verified claiming, future owner
+self-service and connected supplier decisions are now an explicit first-class
+workstream, documented in `supplier-network-roadmap.md`. The local application
+already has a category-neutral Planning Hub supplier engine, generic intake,
+admin listing tools and generic database records. Public discovery, full
+profiles and claim routing remain Photography-specific, and no supplier owner
+listing editor was found. Those are activation blockers rather than a reason to
+rebuild the couple-facing supplier engine.
+
+The next evidence step is a read-only current catalogue audit by category,
+status, claim state, profile completeness and approved imagery. Historical
+counts are not current evidence, and no next category will be selected or
+published from an assumed total.
+
 ## Delivered locally
 
 | Objective | Current local result |
@@ -53,6 +69,11 @@ Additional supplier catalogues are structurally ready but remain manual-only.
 Each catalogue still needs enough real published listings, approved imagery,
 its public profile route and category-specific browser verification before its
 `live` flag can change.
+
+The supplier network roadmap adds the missing operational sequence: refresh
+the real baseline, generalise the public profile and claim foundation, provide
+useful bounded owner self-service, prepare one evidence-backed category through
+a source-backed batch workflow, and activate it as a complete tested slice.
 
 ## Completion classification
 

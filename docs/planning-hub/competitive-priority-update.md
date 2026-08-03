@@ -81,6 +81,13 @@ entertainment, bridalwear and hair/makeup when real data exists. Reuse the
 shared supplier platform, claiming workflow and budget mappings. Keep every
 category manual-only until its activation checklist passes.
 
+Supplier growth is now a first-class delivery stream, covering the verified
+catalogue, category-neutral public profiles and claims, useful owner
+self-service, supplier acquisition tooling and the complete couple decision
+loop. `supplier-network-roadmap.md` records the current foundation and the
+no-cost activation sequence. Historical catalogue counts are not treated as a
+current baseline.
+
 ### 4. Structured venue and supplier acquisition pages
 
 Prefer specific, data-backed pages and filters over generic editorial volume.
