@@ -1,10 +1,25 @@
 # My EverAft Planning Hub objective audit
 
-Date: 29 July 2026
+Date: 3 August 2026
 
 Status: the local beta now covers the connected planning journey and is under
 review in draft pull request #55. Production release and secure cloud sharing
 remain deliberately gated.
+
+## Competitive priority adjustment
+
+The user-provided Scottish Wedding Club launch review has been incorporated in
+`competitive-priority-update.md`. It reinforces connected-product depth,
+weekly return value, truthful supplier activation and structured venue data as
+EverAft's defensible priorities. It also exposes a public-positioning gap: the
+current homepage still leads with venue and supplier discovery while the
+Planning Hub remains a protected, no-index beta.
+
+The next sequence therefore favours beta activation readiness and public proof
+that matches genuinely live functionality. Further dormant native API work is
+lower priority unless it removes a concrete client or release blocker. No
+competitor pricing, catalogue total or campaign claim is treated as verified
+commercial evidence without a fresh primary-source check.
 
 ## Delivered locally
 
