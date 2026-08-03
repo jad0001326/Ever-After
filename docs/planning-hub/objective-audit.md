@@ -45,6 +45,14 @@ described quote handling, so none passes the new complete-profile activation
 gate. The aggregate evidence and exact definitions are in
 `supplier-catalogue-baseline-2026-08-03.md`.
 
+The next reusable blocker is now removed locally: category-neutral public
+collection, profile and claim routes exist behind the same category activation
+gate, while existing Photography URLs remain canonical. Claim submission
+checks the validated live category, published listing identity and ownership;
+admin review no longer assumes Photography. Shared supplier mappers reject
+pending and rejected hero imagery and label representative imagery. No second
+category was activated and supplier-owner profile editing remains outstanding.
+
 ## Delivered locally
 
 | Objective | Current local result |
@@ -114,7 +122,7 @@ a source-backed batch workflow, and activate it as a complete tested slice.
 
 ## Current verification baseline
 
-- 91 test files and 452 tests passing.
+- 94 test files and 459 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can

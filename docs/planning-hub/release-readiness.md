@@ -37,6 +37,7 @@ a production deployment, migrate or enable cloud persistence.
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
 | Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
+| Public supplier profiles and claiming | Category-neutral collection, profile and claim routes are locally prepared behind the existing `live` gate. Photography retains canonical legacy URLs. Claims validate category, published identity and ownership; pending/rejected hero imagery is excluded and representative imagery is labelled. Other categories remain inaccessible because they have no current coverage and their flags remain off. | Foundation proven locally; supplier-owner editing remains |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
 | Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
@@ -102,7 +103,8 @@ they do not require rewriting or pushing it.
 | 45. Native workspace discovery | Add a checked bounded collection that lets authenticated clients discover their RLS-visible workspaces and caller role without exposing other members. | `d45f496` | Caller-bound RLS reads and local tests only; no grant, schema change, hosted request, migration or data write occurred. |
 | 46. Competitive priority adjustment | Incorporate the Scottish Wedding Club launch review without advertising dormant functionality or weakening supplier activation gates. | `0d03317` | Goal and strategy documentation only; competitor commercial claims remain directional pending primary-source verification. |
 | 47. Supplier network workstream | Make catalogue acquisition, cross-category public profiles and claims, bounded owner self-service and connected supplier decisions a first-class activation stream. | `171997d` | Planning and local audit only; no live-count claim, supplier publication, outreach, migration, deployment or paid action. |
-| 48. Supplier catalogue baseline | Add a fail-closed GET-only audit and record the current category, publication, claim, imagery, provenance and profile-completeness baseline. | Current local slice | Protected aggregate reads only; no contact data output, database write, migration, publication, outreach, deployment or paid action. |
+| 48. Supplier catalogue baseline | Add a fail-closed GET-only audit and record the current category, publication, claim, imagery, provenance and profile-completeness baseline. | `17059b8` | Protected aggregate reads only; no contact data output, database write, migration, publication, outreach, deployment or paid action. |
+| 49. Cross-category public supplier foundation | Add gated public collection/profile/claim routes, preserve Photography canonicals, generalize admin claim review and permission-bind supplier imagery. | Current local slice | Local application only; all other category flags remain off and no supplier record, claim, migration, outreach, deployment or paid service was changed. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -206,7 +208,7 @@ Use the least destructive rollback that restores safety:
 
 ## Final local release-candidate evidence
 
-- 91 Vitest files and 452 tests pass.
+- 94 Vitest files and 459 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task

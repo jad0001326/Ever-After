@@ -142,3 +142,28 @@ There are no claimed profiles or open claims.
 The next implementation slice is therefore the category-neutral public
 profile and verified claim foundation. No second category should be activated
 until a source-backed staged catalogue creates meaningful verified coverage.
+
+## Public profile and claim foundation completed — 3 August 2026
+
+The local application now has gated public routes for a reusable supplier
+category page, full profile and claim journey. Inactive categories return 404
+before querying a catalogue. Photography preserves its established
+`/photographers` URLs, and category-neutral Photography aliases permanently
+redirect to those canonicals rather than creating duplicate pages.
+
+The shared profile retains server-side bounded search, on-demand approved
+galleries, budget handoff, structured metadata, venue connections and a direct
+verified claim action. Claim submission validates the configured live
+category, supplier identifier, slug, published state and existing ownership
+before inserting through the signed-in user's RLS client. Admin claim review
+is now category-neutral.
+
+Supplier imagery is also permission-bound at the shared data mapper. Pending
+and rejected hero images never reach public profiles, catalogue cards or the
+Budget Planner; approved and representative images are allowed, with
+representative images labelled visibly.
+
+The routes are still dormant for the other fifteen categories because their
+catalogues have no current records and their `live` flags remain false. The
+remaining claim-product blocker is useful supplier-owner self-service after an
+approved claim.

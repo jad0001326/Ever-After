@@ -13,18 +13,19 @@ import type {
   PlanningHubSupplierResults,
   PlanningHubSupplierSearchParams,
 } from "./types";
+import { permittedSupplierHero } from "@/lib/supplier-media";
 
 type SupplierRow = Database["public"]["Tables"]["supplier_listings"]["Row"];
 type SupplierImageRow = Database["public"]["Tables"]["supplier_images"]["Row"];
 type PlanningHubSupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 
-const SUPPLIER_CARD_COLUMNS = "id, category_slug, slug, name, base_town, region, summary, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit, hero_image_url, is_claimed, is_featured, travels_nationwide";
+const SUPPLIER_CARD_COLUMNS = "id, category_slug, slug, name, base_town, region, summary, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit, hero_image_url, image_permission_status, is_claimed, is_featured, travels_nationwide";
 
 type SupplierCardRow = Pick<
   SupplierRow,
   "id" | "category_slug" | "slug" | "name" | "base_town" | "region" | "summary" |
   "starting_price_pence" | "typical_price_pence" | "pricing_summary" | "pricing_unit" |
-  "hero_image_url" | "is_claimed" | "is_featured" | "travels_nationwide"
+  "hero_image_url" | "image_permission_status" | "is_claimed" | "is_featured" | "travels_nationwide"
 >;
 
 export async function searchPlanningHubSuppliers(
@@ -193,6 +194,7 @@ export async function getPlanningHubSupplierDetail(
 }
 
 function supplierFromRow(row: SupplierCardRow): PlanningHubSupplier {
+  const heroImageUrl = permittedSupplierHero(row.hero_image_url, row.image_permission_status);
   return {
     id: row.id,
     categorySlug: row.category_slug as SupplierCategorySlug,
@@ -201,8 +203,11 @@ function supplierFromRow(row: SupplierCardRow): PlanningHubSupplier {
     baseTown: row.base_town,
     region: row.region,
     summary: row.summary,
-    heroImageUrl: row.hero_image_url ?? "/everaft-logo-mark.svg",
-    hasApprovedPhoto: Boolean(row.hero_image_url),
+    heroImageUrl: heroImageUrl ?? "/everaft-logo-mark.svg",
+    hasApprovedPhoto: Boolean(heroImageUrl),
+    visualStatus: heroImageUrl && (row.image_permission_status === "approved" || row.image_permission_status === "representative")
+      ? row.image_permission_status
+      : null,
     startingPricePence: row.starting_price_pence,
     typicalPricePence: row.typical_price_pence,
     pricingSummary: row.pricing_summary,

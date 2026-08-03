@@ -90,7 +90,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <Inbox size={17} /> Review claims
           </ButtonLink>
           <ButtonLink href="/admin/supplier-claims" variant="secondary">
-            <UsersRound size={17} /> Photographer claims
+            <UsersRound size={17} /> Supplier claims
           </ButtonLink>
           <ButtonLink href="/admin/images" variant="secondary">
             <Images size={17} /> Review photos

@@ -69,6 +69,7 @@ export type SupplierListing = {
   pricingUnit: "package" | "hour" | "person" | "item" | "event" | "quote";
   heroImageUrl: string | null;
   imageCredit: string | null;
+  imagePermissionStatus: "representative" | "approved" | null;
   isClaimed: boolean;
   isFeatured: boolean;
   photographer: PhotographerProfile | null;

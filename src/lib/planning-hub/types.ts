@@ -50,6 +50,7 @@ export type PlanningHubPhotographer = {
   styles: string[];
   heroImageUrl: string;
   hasApprovedPhoto: boolean;
+  visualStatus?: "approved" | "representative" | null;
   startingPricePence: number | null;
   typicalPricePence: number | null;
   pricingSummary: string | null;
@@ -99,6 +100,7 @@ export type PlanningHubSupplier = {
   summary: string;
   heroImageUrl: string;
   hasApprovedPhoto: boolean;
+  visualStatus?: "approved" | "representative" | null;
   startingPricePence: number | null;
   typicalPricePence: number | null;
   pricingSummary: string | null;
