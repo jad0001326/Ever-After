@@ -128,3 +128,17 @@ First refresh the read-only baseline. Then implement the category-neutral
 public profile and claim foundation because it removes a blocker shared by
 every future category. Activate only the best evidenced next category after
 that foundation and its real catalogue pass the release gate.
+
+## Baseline completed — 3 August 2026
+
+The first read-only audit is recorded in
+`supplier-catalogue-baseline-2026-08-03.md`. It confirmed 31 published
+Photography listings and no listings in the other fifteen categories. The
+Photography records all have core text, location and source provenance, but
+none currently passes the stricter activation gate because confirmed
+pricing/explicit quote handling and permitted visual evidence are absent.
+There are no claimed profiles or open claims.
+
+The next implementation slice is therefore the category-neutral public
+profile and verified claim foundation. No second category should be activated
+until a source-backed staged catalogue creates meaningful verified coverage.

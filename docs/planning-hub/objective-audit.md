@@ -37,6 +37,14 @@ status, claim state, profile completeness and approved imagery. Historical
 counts are not current evidence, and no next category will be selected or
 published from an assumed total.
 
+That audit completed at 11:43 UTC on 3 August 2026. It found 31 published
+Photography listings, no listings in the other fifteen categories, no claims
+and no approved images. Every Photography record has location, core copy,
+services and source provenance; none has confirmed pricing or explicit
+described quote handling, so none passes the new complete-profile activation
+gate. The aggregate evidence and exact definitions are in
+`supplier-catalogue-baseline-2026-08-03.md`.
+
 ## Delivered locally
 
 | Objective | Current local result |

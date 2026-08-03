@@ -16,6 +16,7 @@
     "planning-contract:check": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-planning-contracts.mts",
     "planning-contract:write": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-planning-contracts.mts --write",
     "enrichment:audit": "node scripts/run-enrichment-audit.mts --dry-run",
+    "supplier:audit": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/audit-supplier-catalogue.mts --read-only",
     "enrichment:stage": "node scripts/stage-enrichment-review.mts",
     "pricing:recover": "node scripts/build-pricing-recovery.mts",
     "pricing:curate": "node scripts/build-curated-pricing.mts",
