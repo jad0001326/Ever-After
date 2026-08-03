@@ -23,6 +23,12 @@ readiness, recurring couple value and truthful public positioning over adding
 more dormant API surface. This does not authorise a homepage launch, supplier
 category activation, push, deployment, migration or production write.
 
+Launch-ready public positioning is prepared behind
+`PLANNING_HUB_PUBLIC_ENTRY_ENABLED=false`. The default homepage now describes
+EverAft through Scottish wedding discovery and the currently public budget and
+table tools; the Planning Hub CTA and navigation remain absent until a separate
+post-smoke approval flips that server-side entry flag.
+
 The supplier clarification in `docs/planning-hub/supplier-network-roadmap.md`
 makes catalogue acquisition, public category profiles, verified claiming and
 useful owner self-service part of the active delivery goal. Photography remains

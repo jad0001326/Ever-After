@@ -15,6 +15,7 @@ migration history, apply SQL, create test users or enable a feature flag.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
 - Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
+  `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
   `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `OUTREACH_SENDING_ENABLED` off.
 - Stop on any identity, history, dry-run, backup, migration, advisor, RLS or
   application-smoke mismatch.
@@ -112,7 +113,7 @@ been exercised against an approved environment.
 
 ## 6. Application deployment sequence
 
-With database verification green, deploy the application while all three flags
+With database verification green, deploy the application while all four flags
 remain off. Verify:
 
 - the public home, venue catalogue, Budget Planner and Table Planner;
@@ -125,8 +126,9 @@ remain off. Verify:
 - no new warning, error or fatal runtime logs appear during the smoke window.
 
 Enabling `PLANNING_WORKSPACE_CLOUD_ENABLED=true` is a later approval after the
-real Auth/Data API boundary passes. Generic supplier drafting and email sending
-remain separate approvals and separate switches.
+real Auth/Data API boundary passes. Exposing the homepage/header Planning Hub
+entry via `PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true`, generic supplier drafting
+and email sending remain separate approvals and separate switches.
 
 ## Rollback and stop rules
 

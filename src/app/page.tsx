@@ -9,14 +9,16 @@ import { ButtonLink } from "@/components/ui/button";
 import { buildMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/utils";
 import { planningGuides } from "@/lib/planning-guides";
+import { planningHubPublicEntryEnabled } from "@/lib/planning-hub/public-entry";
+import { homePositioningFor } from "@/lib/home-positioning";
 
 export const metadata = buildMetadata({
-  title: "Find Scottish Wedding Venues",
+  title: "Plan a Scottish Wedding",
   description:
-    "Search Scottish wedding venues including castles, barns, country estates and luxury hotels with clear pricing and guest capacity.",
+    "Discover Scottish wedding venues and photographers, then turn the decisions into a practical budget, guest list and table plan.",
   path: "/",
   image: absoluteUrl("/images/everaft-wedding-reception.png"),
-  keywords: ["Scottish wedding venues", "Scotland wedding venues", "wedding venues Scotland"]
+  keywords: ["Scottish wedding planner", "Scottish wedding venues", "wedding budget planner", "wedding table planner"]
 });
 
 type CategoryCard = {
@@ -51,12 +53,6 @@ const categoryCards: CategoryCard[] = [
   }
 ];
 
-const steps = [
-  ["Discover", "Browse businesses that suit your setting, style and priorities."],
-  ["Shortlist", "Save the names you want to come back to, without losing the thread."],
-  ["Enquire", "Share the details that matter, then start a direct conversation."]
-] as const;
-
 const faqs = [
   [
     "How does EverAft choose suppliers?",
@@ -64,19 +60,21 @@ const faqs = [
   ],
   [
     "Is it free for couples?",
-    "Yes. Creating an EverAft account, saving venues and sending an enquiry are free for couples."
+    "Yes. Browsing venues and photographers and using EverAft's public budget and table planners are free for couples."
   ],
   [
     "Can I list my wedding business?",
     "Yes. Send an application with your business details, service area and portfolio links. We will review it before adding it to the directory."
   ],
   [
-    "Where in the UK do you cover?",
-    "EverAft is launching with a carefully reviewed Scottish venue collection and is opening the directory to wedding businesses across the UK."
+    "Where do you cover?",
+    "EverAft is focused on Scottish weddings, with a carefully reviewed venue collection and supplier coverage that will expand only when each category is genuinely useful."
   ]
 ] as const;
 
 export default function Home() {
+  const planningHubEnabled = planningHubPublicEntryEnabled();
+  const positioning = homePositioningFor(planningHubEnabled);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -84,7 +82,7 @@ export default function Home() {
         "@type": "Organization",
         name: "EverAft",
         url: absoluteUrl(),
-        description: "A growing wedding directory for couples planning celebrations across the UK."
+        description: "A Scottish wedding planning platform connecting venue and supplier discovery with practical planning tools."
       },
       {
         "@type": "WebSite",
@@ -116,17 +114,17 @@ export default function Home() {
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pb-12 lg:pt-24">
           <div className="max-w-3xl lg:max-w-[57%]">
             <h1 className="font-display text-[clamp(3.9rem,8.1vw,7.8rem)] font-semibold leading-[0.84] tracking-[-0.052em] text-[var(--ink)]">
-              Find the people who make it unforgettable.
+              Turn wedding browsing into an actual plan.
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-[#4c4a43] sm:text-xl">
-              Discover thoughtful wedding venues and photographers, with more trusted supplier categories opening alongside them.
+              {positioning.heroDescription}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/venues">
-                Explore venues <ArrowRight size={17} />
+              <ButtonLink href={positioning.primary.href}>
+                {positioning.primary.label} <ArrowRight size={17} />
               </ButtonLink>
-              <ButtonLink href="/for-business" variant="secondary">
-                List your business
+              <ButtonLink href={positioning.secondary.href} variant="secondary">
+                {positioning.secondary.label}
               </ButtonLink>
             </div>
           </div>
@@ -210,10 +208,10 @@ export default function Home() {
           <div>
             <p className="text-sm font-semibold tracking-[0.16em] text-[#95502b]">How it works</p>
             <h2 className="mt-3 font-display text-5xl font-semibold leading-[0.95] tracking-[-0.04em] sm:text-6xl">A calmer way to plan.</h2>
-            <p className="mt-5 max-w-sm text-base leading-7 text-[var(--muted)]">Thoughtful tools and useful information, so you can focus on what matters most.</p>
+            <p className="mt-5 max-w-sm text-base leading-7 text-[var(--muted)]">{positioning.sectionDescription}</p>
           </div>
           <ol className="grid gap-7 md:grid-cols-3 md:gap-8">
-            {steps.map(([title, copy], index) => (
+            {positioning.steps.map(([title, copy], index) => (
               <li className="border-t border-[#cfc3b4] pt-5" key={title}>
                 <span className="grid size-10 place-items-center rounded-full border border-[#b86e45] text-sm text-[#8b4825]">{index + 1}</span>
                 <h3 className="mt-6 font-display text-3xl font-semibold tracking-[-0.03em]">{title}</h3>
@@ -246,7 +244,7 @@ export default function Home() {
       <section className="border-y border-[var(--line)] bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
           <TrustItem icon={<ShieldCheck size={20} />} title="Reviewed business profiles" copy="We collect the details couples need before a new listing goes live." />
-          <TrustItem icon={<MapPinned size={20} />} title="Built for UK weddings" copy="Search experience and supplier onboarding designed around local planning." />
+          <TrustItem icon={<MapPinned size={20} />} title="Built for Scottish weddings" copy="Search and supplier onboarding shaped around how couples plan across Scotland." />
           <TrustItem icon={<Check size={20} />} title="Direct, useful enquiries" copy="Clear contact paths without forcing couples through an unfamiliar process." />
         </div>
       </section>

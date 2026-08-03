@@ -11,15 +11,15 @@ import { absoluteUrl } from "@/lib/utils";
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
   title: {
-    default: "EverAft | Trusted UK wedding suppliers",
+    default: "EverAft | Plan a Scottish Wedding",
     template: "%s | EverAft"
   },
   description:
-    "Discover thoughtful wedding venues and help shape a trusted supplier directory for celebrations across the UK.",
+    "Discover Scottish wedding venues and photographers, then turn the decisions into a practical budget, guest list and table plan.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "EverAft",
-    description: "A growing wedding directory for couples planning celebrations across the UK.",
+    description: "Scottish wedding discovery and practical planning tools in one considered experience.",
     url: absoluteUrl(),
     siteName: "EverAft",
     type: "website",
@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "EverAft | Trusted UK wedding suppliers",
-    description: "A growing wedding directory for couples planning celebrations across the UK.",
+    title: "EverAft | Plan a Scottish Wedding",
+    description: "Scottish wedding discovery and practical planning tools in one considered experience.",
     images: [absoluteUrl("/images/everaft-wedding-reception.png")]
   }
 };
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                   "@type": "Organization",
                   name: "EverAft",
                   url: absoluteUrl(),
-                  areaServed: "United Kingdom",
+                  areaServed: "Scotland",
                   ...(socialProfileUrls.length > 0 ? { sameAs: socialProfileUrls } : {})
                 }
               ]

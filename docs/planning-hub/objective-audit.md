@@ -15,6 +15,13 @@ EverAft's defensible priorities. It also exposes a public-positioning gap: the
 current homepage still leads with venue and supplier discovery while the
 Planning Hub remains a protected, no-index beta.
 
+That positioning gap is now prepared locally without prematurely exposing the
+beta. Public metadata, homepage and footer language lead with Scottish wedding
+planning and the live venue, Photography, budget and table tools. A separate
+server-side `PLANNING_HUB_PUBLIC_ENTRY_ENABLED` gate changes the homepage CTA,
+connected-journey explanation, header and footer only after direct production
+smoke testing and public-entry approval. It does not enable cloud sharing.
+
 The next sequence therefore favours beta activation readiness and public proof
 that matches genuinely live functionality. Further dormant native API work is
 lower priority unless it removes a concrete client or release blocker. No

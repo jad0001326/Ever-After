@@ -2,21 +2,24 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { CookieSettingsButton } from "@/components/privacy/cookie-settings-button";
 import { SocialLinks } from "@/components/social/social-links";
+import { planningHubPublicEntryEnabled } from "@/lib/planning-hub/public-entry";
 
 export function Footer() {
+  const planningHubEnabled = planningHubPublicEntryEnabled();
   return (
     <footer className="bg-[#152017] text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.25fr_1fr_1fr_1fr] lg:px-8 lg:py-16">
         <div>
           <Logo href="/" variant="full" wordmarkClassName="text-[2.55rem] !text-white" />
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
-            A growing wedding directory for couples planning celebrations across the UK.
+            Scottish wedding discovery and practical planning tools, built to turn decisions into a real plan.
           </p>
           <SocialLinks className="mt-5" showLabels={false} tone="dark" />
         </div>
         <div>
           <p className="text-sm font-semibold tracking-[0.16em] text-[#d19a72]">Explore</p>
           <div className="mt-4 grid gap-3 text-sm text-white/75">
+            {planningHubEnabled ? <Link className="transition hover:text-white" href="/planning-hub">My EverAft Planning Hub</Link> : null}
             <Link className="transition hover:text-white" href="/venues">Wedding venues</Link>
             <Link className="transition hover:text-white" href="/wedding-budget-planner">Wedding budget planner</Link>
             <Link className="transition hover:text-white" href="/wedding-table-planner">Wedding table planner</Link>
@@ -48,7 +51,7 @@ export function Footer() {
       </div>
       <div className="mx-auto flex max-w-7xl flex-col gap-3 border-t border-white/15 px-4 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <p>© {new Date().getFullYear()} EverAft. All rights reserved.</p>
-        <p>Built for considered UK wedding planning.</p>
+        <p>Built for considered Scottish wedding planning.</p>
       </div>
     </footer>
   );

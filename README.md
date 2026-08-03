@@ -54,6 +54,7 @@ OUTREACH_SENDING_ENABLED=false
 SUPPLIER_CATEGORY_OUTREACH_ENABLED=false
 OUTREACH_APPROVAL_SECRET=generate-a-random-secret-of-at-least-32-characters
 OUTREACH_MCP_AUDIENCE=https://www.everaft.co.uk/api/mcp
+PLANNING_HUB_PUBLIC_ENTRY_ENABLED=false
 ```
 
 For Vercel, set `NEXT_PUBLIC_SITE_URL` to the deployed site URL, not localhost. For example:
@@ -205,6 +206,11 @@ supplier outreach migration has been applied and verified. Existing venue and
 photographer drafting remains available without that migration. Enabling the
 category interface does not enable sending; `OUTREACH_SENDING_ENABLED` and the
 per-campaign approval step still apply.
+
+The public homepage, header and footer expose the Planning Hub entry point only
+when `PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true`. Keep it false until the direct
+beta route has passed production smoke testing and public-entry approval. This
+flag does not enable cloud persistence or partner sharing.
 
 ### Connect EverAft to ChatGPT
 
