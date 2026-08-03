@@ -30,9 +30,10 @@ commercial decision.
 | Supplier intake | `/for-business` accepts applications across the configured supplier taxonomy and admin approval can create a category-neutral listing. | Reusable |
 | Catalogue administration | Admin create, edit, status and category filtering use `supplier_listings`; Photography alone adds `photographer_profiles`. | Reusable with operational gaps |
 | Data model | `supplier_categories`, `supplier_listings`, `supplier_images`, `supplier_venue_connections`, `supplier_favourites`, `supplier_claims` and claim audit records are category-neutral. | Reusable; hosted state not rechecked here |
-| Public discovery | `/photographers` and `/photographers/[slug]` are the only public supplier catalogue/profile routes found. | Photography-only gap |
-| Claiming | Claim storage is generic, but the public route, redirect, eligibility query, copy, admin labels and cache refreshes hard-code Photography. | Cross-category blocker |
-| Supplier self-service | Claim approval creates vendor membership and marks ownership, but no supplier listing editor for the approved owner was found. | Product-loop blocker |
+| Public discovery | Category-neutral collection and profile routes are prepared behind the existing activation gate; Photography retains its canonical public URLs. | Reusable; other categories inactive |
+| Claiming | Category-neutral claim routing and admin review are prepared locally while Photography keeps its canonical route. | Reusable; activation-gated |
+| Supplier self-service | Approved claim members can submit bounded profile changes for atomic admin review without controlling publication, category, ownership or imagery. | Prepared locally; migration unapplied |
+| Supplier outreach | Category-aware campaign drafting, recipient snapshots, claim links and send-time revalidation are prepared behind a server-only flag. Legacy Photography rows remain compatible and sending has its own disabled-by-default gate. | Prepared locally; migration and flag unapplied |
 
 ## Activation sequence
 

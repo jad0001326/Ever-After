@@ -23,6 +23,15 @@ useful owner self-service part of the active delivery goal. Photography remains
 the only locally enabled catalogue. No historical supplier count is accepted
 as a current activation baseline.
 
+The next cross-category acquisition blocker is also removed locally. Outreach
+campaigns can carry a validated supplier category, use the matching generic or
+canonical Photography claim route, and retain the existing legal-basis,
+suppression, frozen-recipient and explicit-send checks. The schema change is
+additive: historical Photography campaigns are not rewritten, and the new
+category interface stays hidden behind
+`SUPPLIER_CATEGORY_OUTREACH_ENABLED=false` until the migration is applied and
+verified. No campaign was created or sent.
+
 This record maps the original objective to current evidence and defines a
 reviewable release sequence for the commits on
 `codex/planning-hub-venue-slice`. The user approved pushing that branch and

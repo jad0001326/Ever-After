@@ -51,6 +51,7 @@ RESEND_WEBHOOK_SECRET=whsec_your-resend-webhook-secret
 ADMIN_NOTIFICATION_EMAIL=hello@yourdomain.com
 REPLY_TO_EMAIL=hello@yourdomain.com
 OUTREACH_SENDING_ENABLED=false
+SUPPLIER_CATEGORY_OUTREACH_ENABLED=false
 OUTREACH_APPROVAL_SECRET=generate-a-random-secret-of-at-least-32-characters
 OUTREACH_MCP_AUDIENCE=https://www.everaft.co.uk/api/mcp
 ```
@@ -197,6 +198,13 @@ Production sending is deliberately off by default. Keep `OUTREACH_SENDING_ENABLE
 - Review the audience as corporate subscribers. Do not use this flow for sole traders, some partnerships or personal subscribers unless the appropriate electronic-mail permission has been established.
 
 Only after those checks should production set `OUTREACH_SENDING_ENABLED=true`.
+
+Category-based supplier campaign drafting is independently hidden by
+`SUPPLIER_CATEGORY_OUTREACH_ENABLED=false`. Keep it off until the additive
+supplier outreach migration has been applied and verified. Existing venue and
+photographer drafting remains available without that migration. Enabling the
+category interface does not enable sending; `OUTREACH_SENDING_ENABLED` and the
+per-campaign approval step still apply.
 
 ### Connect EverAft to ChatGPT
 

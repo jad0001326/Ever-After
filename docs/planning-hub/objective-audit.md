@@ -69,6 +69,15 @@ drafts; rejected and duplicate evidence is retained. This does not reuse owner
 applications as researched catalogue data and does not introduce outreach
 contacts.
 
+The protected outreach workflow is now category-neutral locally without
+weakening the existing Photography path. A generic supplier draft must name a
+configured category and still passes published/unclaimed, official-source,
+verified legal-basis, suppression, duplicate and approval checks. Existing
+Photography campaign rows remain valid without the new category column, and a
+separate server-side flag keeps generic category drafting unavailable until
+the additive migration is deliberately activated. Sending remains separately
+disabled and no supplier was contacted.
+
 ## Delivered locally
 
 | Objective | Current local result |

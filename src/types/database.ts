@@ -716,7 +716,8 @@ export type Database = {
           id: string;
           name: string;
           kind: "initial_invite" | "follow_up";
-          audience_type: "venue" | "photographer";
+          audience_type: "venue" | "photographer" | "supplier";
+          supplier_category_slug: string | null;
           source: "admin" | "chatgpt";
           status: "draft" | "sending" | "sent" | "partially_sent" | "failed" | "cancelled";
           subject: string;
@@ -754,7 +755,8 @@ export type Database = {
           campaign_id: string;
           venue_id: string | null;
           supplier_id: string | null;
-          subject_type: "venue" | "photographer";
+          subject_type: "venue" | "photographer" | "supplier";
+          supplier_category_slug: string | null;
           venue_slug: string;
           listing_slug: string;
           business_name: string;

@@ -6,15 +6,29 @@ import { requireAdmin } from "@/lib/auth";
 import { createAdminCampaignDraft, recordOutreachRecipientAction, sendCampaignById, unsubscribeOutreachRecipient } from "@/lib/outreach";
 import { defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
 import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
+import { supplierCategoryBySlug } from "@/data/supplier-directory";
 
 export async function createOutreachCampaignDraftAction(formData: FormData) {
   const { user } = await requireAdmin();
   const entityIds = Array.from(new Set(formData.getAll("entityIds").map((value) => value.toString()).filter(Boolean))).slice(0, 100);
   const kind: OutreachCampaignKind = formData.get("kind")?.toString() === "follow_up" ? "follow_up" : "initial_invite";
-  const audienceType: OutreachAudienceType = formData.get("audienceType")?.toString() === "photographer" ? "photographer" : "venue";
+  const requestedAudience = formData.get("audienceType")?.toString();
+  const genericSupplierEnabled = process.env.SUPPLIER_CATEGORY_OUTREACH_ENABLED === "true";
+  if (requestedAudience === "supplier" && !genericSupplierEnabled) {
+    redirect("/admin/outreach?audience=photographer&message=Supplier+category+outreach+is+not+enabled+yet");
+  }
+  const audienceType: OutreachAudienceType = requestedAudience === "photographer"
+    ? "photographer"
+    : requestedAudience === "supplier"
+      ? "supplier"
+      : "venue";
+  const supplierCategory = audienceType === "supplier"
+    ? supplierCategoryBySlug(formData.get("supplierCategorySlug")?.toString() ?? "")
+    : null;
+  if (audienceType === "supplier" && !supplierCategory) redirect("/admin/outreach?audience=supplier&message=Choose+a+valid+supplier+category");
   const followUpStage = kind === "follow_up" && audienceType === "venue" ? normalizeOutreachFollowUpStage(formData.get("followUpStage")) : undefined;
   const fallback = defaultOutreachCopyFor(audienceType, kind, followUpStage);
-  const returnUrl = `/admin/outreach?audience=${audienceType}&kind=${kind}${followUpStage ? `&stage=${followUpStage}` : ""}`;
+  const returnUrl = `/admin/outreach?audience=${audienceType}&kind=${kind}${supplierCategory ? `&category=${supplierCategory.slug}` : ""}${followUpStage ? `&stage=${followUpStage}` : ""}`;
 
   if (entityIds.length === 0) redirect(`${returnUrl}&message=Select+at+least+one+eligible+business`);
   if (formData.get("complianceConfirmed") !== "on") {
@@ -24,14 +38,15 @@ export async function createOutreachCampaignDraftAction(formData: FormData) {
   try {
     const campaign = await createAdminCampaignDraft({
       adminUserId: user.id,
-      campaignName: formData.get("campaignName")?.toString() || `EverAft ${audienceType} invitation ${new Date().toLocaleDateString("en-GB")}`,
+      campaignName: formData.get("campaignName")?.toString() || `EverAft ${supplierCategory?.label.toLowerCase() ?? audienceType} invitation ${new Date().toLocaleDateString("en-GB")}`,
       filter: {
         kind,
         audienceType,
         country: formData.get("country")?.toString() || "Scotland",
         region: formData.get("region")?.toString() || undefined,
         venueIds: audienceType === "venue" ? entityIds : undefined,
-        supplierIds: audienceType === "photographer" ? entityIds : undefined,
+        supplierIds: audienceType !== "venue" ? entityIds : undefined,
+        supplierCategorySlug: supplierCategory?.slug,
         followUpAfterDays: Number(formData.get("followUpAfterDays") || 7),
         followUpStage,
         limit: entityIds.length
