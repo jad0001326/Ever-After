@@ -115,7 +115,7 @@ through that staging boundary and activate it only as a complete tested slice.
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; five native keyboard interactions measure no slower than 16 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Current candidate local only | Draft pull request #55 and its authentication-protected Vercel preview contain the earlier approved snapshot. The current branch has integrated `origin/main`, passes the full local release gate and is 23 commits ahead of the remote branch. No new push, merge, production deployment, hosted migration or production write is authorised. |
+| Production release | Current candidate in draft review | Draft pull request #55 now contains the integrated candidate and is mergeable. Its Vercel preview is ready and authentication-protected on commit `9676f22`; an authenticated fetch proves `/planning-hub` renders live venue results with `noindex`. No merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
@@ -296,7 +296,7 @@ through that staging boundary and activate it only as a complete tested slice.
   full transfer is about 288KiB.
 
 No production data, hosted Supabase migration, cloud branch, paid action or
-production deployment was used. Draft pull request #55 and its automatic
-authentication-protected Vercel preview remain on the earlier approved
-snapshot. The current 23-commit local candidate has not been pushed, and the
-production domain was not changed.
+production deployment was used. Draft pull request #55 is current and its
+automatic Vercel preview is ready, authentication-protected and free of
+warning/error/fatal runtime logs during the verification window. No public
+bypass link was created, and the production domain was not changed.

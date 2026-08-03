@@ -2,9 +2,9 @@
 
 Date: 3 August 2026
 
-Status: locally complete as a connected, local-first beta. Draft pull request
-#55 contains an earlier reviewed snapshot; the current candidate is 23 local
-commits ahead of that branch after integrating current `origin/main`.
+Status: locally complete as a connected, local-first beta and current in draft
+pull request #55. Its authentication-protected Vercel preview was verified on
+application commit `9676f22` after integrating current `origin/main`.
 Production release and connected partner sharing remain gated.
 
 The competitive priority adjustment in
@@ -108,8 +108,8 @@ they do not require rewriting or pushing it.
 | 49. Cross-category public supplier foundation | Add gated public collection/profile/claim routes, preserve Photography canonicals, generalize admin claim review and permission-bind supplier imagery. | `8ce8576` | Local application only; all other category flags remain off and no supplier record, claim, migration, outreach, deployment or paid service was changed. |
 | 50. Bounded supplier-owner self-service | Let active approved claim members propose useful profile changes while preserving admin-only publication, ownership, category, featuring and imagery controls. | `b82e7a6` | Local application, unapplied migration and embedded PostgreSQL proof only; no hosted data, migration, deployment, outreach or paid action. |
 | 51. Source-backed supplier staging | Add atomic research batches, strict provenance/pricing/image validation and bulk decisions that create draft listings only. | `dfcbb01` | Local application, template, unapplied migration and embedded PostgreSQL proof only; no real supplier research, hosted data, publication, outreach, deployment or paid action. |
-| 52. Current-main integration | Merge the four current upstream commits and preserve featured-first venue ordering without losing Planning Hub query state. | `3bda64a` | Local merge only; the full application, security and optimized browser gates pass. The draft pull request is not updated without new push approval. |
-| 53. First real supplier research batch | Select videography for the next research slice and add five validated primary-source candidates with explicit pricing and no unlicensed imagery. | Current local slice | Local CSV, evidence record and regression test only; nothing imported, staged in a hosted database, published, contacted or activated. |
+| 52. Current-main integration | Merge the four current upstream commits and preserve featured-first venue ordering without losing Planning Hub query state. | `3bda64a` | The full application, security and optimized browser gates pass. The user approved updating the existing draft pull request; merge and production actions remain separate. |
+| 53. First real supplier research batch | Select videography for the next research slice and add five validated primary-source candidates with explicit pricing and no unlicensed imagery. | `9676f22` | Local CSV, evidence record and regression test only; nothing imported, staged in a hosted database, published, contacted or activated. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -210,10 +210,9 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 contains the earlier approved push. The current
-  integrated candidate is 23 commits ahead locally, so a fresh push still
-  requires explicit approval. Merge, production deployment, migration and
-  production writes require separate explicit approval.
+- Draft pull request #55 now contains the approved integrated candidate and is
+  mergeable. Merge, production deployment, migration and production writes
+  require separate explicit approval.
 
 ## Final local release-candidate evidence
 
@@ -400,15 +399,16 @@ Use the least destructive rollback that restores safety:
   browser errors or axe violations. The home page has one contrast result that
   axe leaves incomplete; it is not a violation.
 
-The browser verification used only the existing Supabase URL and publishable
-key for read-only catalogue access. The service-role key was not loaded.
-The in-app Browser control connection remained unavailable after both required
-discovery attempts, so the already permitted loopback-only Chrome DevTools
-verifier supplied the rendered interaction, accessibility, computed-style and
-screenshot evidence.
+The local browser verification used only the existing Supabase URL and
+publishable key for read-only catalogue access. The service-role key was not
+loaded. Anonymous in-app browser access to the hosted preview correctly
+redirected to Vercel login. An authenticated deployment fetch then returned
+HTTP 200 for `/planning-hub`, retained the `noindex` response/header contract,
+and rendered live paginated venue results plus the connected plan. Vercel
+reported no warning, error or fatal runtime logs for that deployment during the
+verification window. No public bypass link was created.
 
 No paid resource, cloud branch, migration, production write or production
-deployment was used to create this release record. Draft pull request #55 and
-its authentication-protected Vercel preview remain on the earlier approved
-snapshot. The current 23-commit local candidate has not been pushed, and the
-production domain was not changed.
+deployment was used to create this release record. Draft pull request #55 is
+current and its preview remains authentication-protected. The production domain
+was not changed.
