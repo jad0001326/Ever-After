@@ -6,6 +6,7 @@ import { OutreachCampaignComposer } from "@/components/admin/outreach-campaign-c
 import { requireAdmin } from "@/lib/auth";
 import { listOutreachCandidates, listRecentOutreachCampaigns, listSupplierOutreachCandidates, type OutreachCandidateResult } from "@/lib/outreach";
 import type { OutreachAudienceType, OutreachCampaignKind } from "@/lib/outreach-email";
+import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
 
 export const metadata: Metadata = { title: "Outreach campaigns" };
 
@@ -14,11 +15,12 @@ type CampaignListItem = Awaited<ReturnType<typeof listRecentOutreachCampaigns>>[
 export default async function AdminOutreachPage({
   searchParams
 }: {
-  searchParams: Promise<{ message?: string; kind?: string; region?: string; audience?: string }>;
+  searchParams: Promise<{ message?: string; kind?: string; region?: string; audience?: string; stage?: string }>;
 }) {
-  const [{ message, kind: requestedKind, region, audience: requestedAudience }] = await Promise.all([searchParams, requireAdmin()]);
+  const [{ message, kind: requestedKind, region, audience: requestedAudience, stage: requestedStage }] = await Promise.all([searchParams, requireAdmin()]);
   const kind: OutreachCampaignKind = requestedKind === "follow_up" ? "follow_up" : "initial_invite";
   const audienceType: OutreachAudienceType = requestedAudience === "photographer" ? "photographer" : "venue";
+  const followUpStage = audienceType === "venue" ? normalizeOutreachFollowUpStage(requestedStage) : "first";
   let candidateResult: OutreachCandidateResult = {
     candidates: [],
     excluded: { invalidEmail: 0, missingEmail: 0, duplicateEmail: 0, suppressed: 0, existingOutreach: 0, unverifiedContact: 0, ineligibleLegalBasis: 0, overLimit: 0 }
@@ -28,7 +30,9 @@ export default async function AdminOutreachPage({
 
   try {
     [candidateResult, campaigns] = await Promise.all([
-      audienceType === "photographer" ? listSupplierOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, limit: 100 }) : listOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, limit: 100 }),
+      audienceType === "photographer"
+        ? listSupplierOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, limit: 100 })
+        : listOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, followUpStage, limit: 100 }),
       listRecentOutreachCampaigns()
     ]);
   } catch (error) {
@@ -62,12 +66,13 @@ export default async function AdminOutreachPage({
         <Link className={audienceType === "venue" ? activePill : inactivePill} href={`/admin/outreach?audience=venue&kind=${kind}`}>Venues</Link>
         <Link className={audienceType === "photographer" ? activePill : inactivePill} href={`/admin/outreach?audience=photographer&kind=${kind}`}>Photographers</Link>
         <Link className={kind === "initial_invite" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&kind=initial_invite`}>First invitations</Link>
-        <Link className={kind === "follow_up" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&kind=follow_up`}>Follow-ups after 7 days</Link>
+        <Link className={kind === "follow_up" && followUpStage === "first" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&kind=follow_up&stage=first`}>7-day reminders</Link>
+        {audienceType === "venue" ? <Link className={kind === "follow_up" && followUpStage === "final" ? activePill : inactivePill} href="/admin/outreach?audience=venue&kind=follow_up&stage=final">Final reminders</Link> : null}
         <Link className={inactivePill} href={audienceType === "venue" ? "/admin/enrichment?blocker=missing_email" : "/admin/suppliers"}>{audienceType === "venue" ? "Find missing emails" : "Review eligibility"}</Link>
       </div>
 
       {!loadError ? (
-        <OutreachCampaignComposer audienceType={audienceType} candidates={candidateResult.candidates} country="Scotland" kind={kind} region={region} />
+        <OutreachCampaignComposer audienceType={audienceType} candidates={candidateResult.candidates} country="Scotland" followUpStage={followUpStage} kind={kind} region={region} />
       ) : null}
 
       <section className="mt-10 rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6">

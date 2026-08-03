@@ -5,14 +5,16 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminCampaignDraft, recordOutreachRecipientAction, sendCampaignById, unsubscribeOutreachRecipient } from "@/lib/outreach";
 import { defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
+import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
 
 export async function createOutreachCampaignDraftAction(formData: FormData) {
   const { user } = await requireAdmin();
   const entityIds = Array.from(new Set(formData.getAll("entityIds").map((value) => value.toString()).filter(Boolean))).slice(0, 100);
   const kind: OutreachCampaignKind = formData.get("kind")?.toString() === "follow_up" ? "follow_up" : "initial_invite";
   const audienceType: OutreachAudienceType = formData.get("audienceType")?.toString() === "photographer" ? "photographer" : "venue";
-  const fallback = defaultOutreachCopyFor(audienceType, kind);
-  const returnUrl = `/admin/outreach?audience=${audienceType}&kind=${kind}`;
+  const followUpStage = kind === "follow_up" && audienceType === "venue" ? normalizeOutreachFollowUpStage(formData.get("followUpStage")) : undefined;
+  const fallback = defaultOutreachCopyFor(audienceType, kind, followUpStage);
+  const returnUrl = `/admin/outreach?audience=${audienceType}&kind=${kind}${followUpStage ? `&stage=${followUpStage}` : ""}`;
 
   if (entityIds.length === 0) redirect(`${returnUrl}&message=Select+at+least+one+eligible+business`);
   if (formData.get("complianceConfirmed") !== "on") {
@@ -31,6 +33,7 @@ export async function createOutreachCampaignDraftAction(formData: FormData) {
         venueIds: audienceType === "venue" ? entityIds : undefined,
         supplierIds: audienceType === "photographer" ? entityIds : undefined,
         followUpAfterDays: Number(formData.get("followUpAfterDays") || 7),
+        followUpStage,
         limit: entityIds.length
       },
       copy: {

@@ -49,6 +49,9 @@ export async function searchVenueListings(params: VenueSearchParams) {
 
   if (params.type) query = query.eq("type", params.type);
 
+  // Featured listings always lead the matching results, then use the visitor's chosen sort.
+  query = query.order("is_featured", { ascending: false });
+
   if (params.sort === "price-desc") query = query.order("price_from", { ascending: false, nullsFirst: false });
   else if (params.sort === "capacity-desc") query = query.order("capacity_max", { ascending: false });
   else query = query.order("price_from", { ascending: true, nullsFirst: false });

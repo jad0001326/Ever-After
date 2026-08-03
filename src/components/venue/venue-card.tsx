@@ -37,6 +37,11 @@ export function VenueCard({ venue, priority = false }: { venue: Venue; priority?
               ) : null}
             </>
           )}
+          {venue.isFeatured ? (
+            <div className="pointer-events-none absolute right-4 top-4 rounded-full bg-[#9d7b45] px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              Featured
+            </div>
+          ) : null}
         </Link>
         <div className="flex h-full flex-col gap-4 p-5">
           <div>

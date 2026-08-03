@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 import { getOutreachCampaign } from "@/lib/outreach";
 import { buildOutreachEmail } from "@/lib/outreach-email";
+import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
 import { absoluteUrl } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Campaign approval" };
@@ -21,10 +22,16 @@ export default async function CampaignApprovalPage({
   await requireAdmin();
   const [{ id }, { message }] = await Promise.all([params, searchParams]);
   const { campaign, recipients, delivery } = await getOutreachCampaign(id);
+  const followUpStage = normalizeOutreachFollowUpStage(
+    campaign.audience_filter && typeof campaign.audience_filter === "object" && !Array.isArray(campaign.audience_filter)
+      ? campaign.audience_filter.followUpStage
+      : undefined
+  );
   const sample = recipients[0];
   const preview = sample
     ? buildOutreachEmail({
         kind: campaign.kind,
+        followUpStage,
         copy: {
           subject: campaign.subject,
           preheader: campaign.preheader,

@@ -6,6 +6,7 @@ import { createOutreachCampaignDraftAction } from "@/app/actions/outreach";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { buildOutreachEmail, defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
+import { outreachFollowUpStageLabel, type OutreachFollowUpStage } from "@/lib/outreach-sequence";
 import type { OutreachCandidate } from "@/lib/outreach-types";
 import { absoluteUrl } from "@/lib/utils";
 
@@ -14,16 +15,19 @@ export function OutreachCampaignComposer({
   country,
   kind,
   audienceType,
-  region
+  region,
+  followUpStage = "first"
 }: {
   candidates: OutreachCandidate[];
   country: string;
   kind: OutreachCampaignKind;
   audienceType: OutreachAudienceType;
   region?: string;
+  followUpStage?: OutreachFollowUpStage;
 }) {
-  const defaults = defaultOutreachCopyFor(audienceType, kind);
+  const defaults = defaultOutreachCopyFor(audienceType, kind, followUpStage);
   const audienceLabel = audienceType === "photographer" ? "photographer" : "venue";
+  const campaignLabel = kind === "initial_invite" ? "founding invitation" : outreachFollowUpStageLabel(followUpStage);
   const [selected, setSelected] = useState(() => new Set(candidates.map((candidate) => candidate.id)));
   const [subject, setSubject] = useState(defaults.subject);
   const [preheader, setPreheader] = useState(defaults.preheader);
@@ -35,6 +39,7 @@ export function OutreachCampaignComposer({
       sample
         ? buildOutreachEmail({
             kind,
+            followUpStage,
             copy: { subject, preheader, introText, offerText },
             recipient: {
               audienceType,
@@ -45,7 +50,7 @@ export function OutreachCampaignComposer({
             }
           })
         : null,
-    [audienceType, introText, kind, offerText, preheader, sample, subject]
+    [audienceType, followUpStage, introText, kind, offerText, preheader, sample, subject]
   );
 
   function toggleBusiness(id: string) {
@@ -68,6 +73,7 @@ export function OutreachCampaignComposer({
       <input name="country" type="hidden" value={country} />
       {region ? <input name="region" type="hidden" value={region} /> : null}
       <input name="followUpAfterDays" type="hidden" value="7" />
+      {kind === "follow_up" ? <input name="followUpStage" type="hidden" value={followUpStage} /> : null}
 
       <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -114,7 +120,7 @@ export function OutreachCampaignComposer({
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Use <code>{"{business_name}"}</code> and <code>{"{town}"}</code> for safe personalisation.</p>
         <div className="mt-6 grid gap-5">
           <Field label="Campaign name">
-            <Input name="campaignName" required defaultValue={`${audienceType === "photographer" ? "Photographer" : "Venue"} ${kind === "follow_up" ? "follow-up" : "founding invitation"}`} maxLength={120} />
+            <Input name="campaignName" required defaultValue={`${audienceType === "photographer" ? "Photographer" : "Venue"} ${campaignLabel}`} maxLength={120} />
           </Field>
           <Field label="Email subject">
             <Input name="subject" required maxLength={160} value={subject} onChange={(event) => setSubject(event.target.value)} />

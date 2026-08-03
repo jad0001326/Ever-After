@@ -7,6 +7,12 @@ import { buildOutreachEmail, type OutreachCopy } from "@/lib/outreach-email";
 import { summarizeOutreachDelivery, type OutreachDeliverySummary } from "@/lib/outreach-delivery";
 import { approvalFingerprint, createOutreachApprovalToken, verifyOutreachApprovalToken } from "@/lib/outreach-approval";
 import {
+  followUpHistoryMatchesStage,
+  normalizeOutreachFollowUpStage,
+  outreachFollowUpStageLabel,
+  type OutreachFollowUpStage
+} from "@/lib/outreach-sequence";
+import {
   hasOfficialContactSource,
   isTrustedVenueContact,
   isValidOutreachEmail,
@@ -26,6 +32,10 @@ type Campaign = Database["public"]["Tables"]["outreach_campaigns"]["Row"];
 type CampaignRecipient = Database["public"]["Tables"]["outreach_campaign_recipients"]["Row"];
 type SuppressionReason = Database["public"]["Tables"]["outreach_suppressions"]["Row"]["reason"];
 type SupplierOutreachContact = Database["public"]["Tables"]["supplier_outreach_contacts"]["Row"];
+type VenueFollowUpCounts = {
+  byVenue: Map<string, number>;
+  byEmail: Map<string, number>;
+};
 
 type VenueRow = Pick<
   Database["public"]["Tables"]["venues"]["Row"],
@@ -130,11 +140,11 @@ export async function listOutreachCandidates(
     };
   });
   const normalizedEmails = prepared.map((item) => item.email).filter(isValidOutreachEmail);
+  const venueIds = venues.map((venue) => venue.id);
 
   const existingOutreachVenueIds = new Set<string>();
   const existingOutreachEmails = new Set<string>();
-  if (filter.kind === "initial_invite" && venues.length > 0) {
-    const venueIds = venues.map((venue) => venue.id);
+  if (filter.kind === "initial_invite" && venueIds.length > 0) {
     const permanentHistoryByVenueBatches = await Promise.all(
       chunkValues(venueIds).map(async (venueIdBatch) => {
         const { data: permanentHistory, error: permanentHistoryError } = await supabase
@@ -161,7 +171,9 @@ export async function listOutreachCandidates(
       if (row.venue_id) existingOutreachVenueIds.add(row.venue_id);
       existingOutreachEmails.add(row.normalized_email);
     }
+  }
 
+  if (venueIds.length > 0) {
     const { data: activeCampaigns, error: campaignHistoryError } = await supabase
       .from("outreach_campaigns")
       .select("id")
@@ -204,6 +216,11 @@ export async function listOutreachCandidates(
     }
   }
 
+  const followUpStage = filter.kind === "follow_up" ? normalizeOutreachFollowUpStage(filter.followUpStage) : null;
+  const completedFollowUpCounts = filter.kind === "follow_up"
+    ? await getVenueFollowUpCounts(venueIds, normalizedEmails)
+    : null;
+
   const suppressed = new Set<string>();
   if (normalizedEmails.length > 0) {
     const suppressionBatches = await Promise.all(
@@ -244,6 +261,14 @@ export async function listOutreachCandidates(
     seen.add(email);
     if (suppressed.has(email)) {
       excluded.suppressed += 1;
+      continue;
+    }
+    if (
+      followUpStage &&
+      completedFollowUpCounts &&
+      !followUpHistoryMatchesStage(followUpStage, followUpCountForVenue(completedFollowUpCounts, venue.id, email))
+    ) {
+      excluded.existingOutreach += 1;
       continue;
     }
     if (existingOutreachVenueIds.has(venue.id) || existingOutreachEmails.has(email)) {
@@ -392,6 +417,7 @@ export async function createOutreachPreview(input: OutreachPreviewInput) {
   const sampleEmail = buildOutreachEmail({
     copy,
     kind: input.filter.kind,
+    followUpStage: normalizeOutreachFollowUpStage(input.filter.followUpStage),
     recipient: {
       businessName: sample.name,
       town: sample.town,
@@ -637,6 +663,10 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
     const audienceCountry = typeof audienceFilter.country === "string" && audienceFilter.country.trim() ? audienceFilter.country.trim() : "Scotland";
     const audienceRegion = typeof audienceFilter.region === "string" && audienceFilter.region.trim() ? audienceFilter.region.trim().toLowerCase() : null;
     const followUpDays = clampInteger(typeof audienceFilter.followUpAfterDays === "number" ? audienceFilter.followUpAfterDays : 7, 1, 90);
+    const followUpStage = normalizeOutreachFollowUpStage(audienceFilter.followUpStage);
+    const completedFollowUpCounts = locked.kind === "follow_up"
+      ? await getVenueFollowUpCounts(venueIds, recipientEmails, campaignId)
+      : null;
     const followUpCutoff = Date.now() - followUpDays * 24 * 60 * 60 * 1000;
     const noLongerEligible = new Map<string, string>();
     for (const recipient of recipients) {
@@ -657,6 +687,12 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
         noLongerEligible.set(recipient.id, "The venue invite state changed after the campaign draft was created.");
       } else if (locked.kind === "follow_up" && (!venue.invite_sent_at || Date.parse(venue.invite_sent_at) >= followUpCutoff)) {
         noLongerEligible.set(recipient.id, "The venue is no longer old enough for the approved follow-up interval.");
+      } else if (
+        locked.kind === "follow_up" &&
+        completedFollowUpCounts &&
+        !followUpHistoryMatchesStage(followUpStage, followUpCountForVenue(completedFollowUpCounts, recipient.venue_id, recipient.normalized_email))
+      ) {
+        noLongerEligible.set(recipient.id, `The venue no longer matches the approved ${outreachFollowUpStageLabel(followUpStage)} stage.`);
       } else if (normalizeEmail(venue.vendor_contact_email ?? "") !== recipient.normalized_email) {
         noLongerEligible.set(recipient.id, "The venue contact email changed after the campaign draft was created.");
       } else if (!isTrustedVenueContact(recipient.normalized_email, venue.vendor_contact_source_url, venue)) {
@@ -708,6 +744,7 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
       const email = buildOutreachEmail({
         copy: campaignCopy(locked),
         kind: locked.kind,
+        followUpStage,
         recipient: {
           audienceType: "venue",
           businessName: recipient.business_name,
@@ -1100,6 +1137,61 @@ async function finalizeCampaign(campaignId: string): Promise<CampaignSendSummary
     .single();
   if (updateError) throw new Error(`Could not update campaign totals: ${updateError.message}`);
   return toSendSummary(campaign);
+}
+
+async function getVenueFollowUpCounts(
+  venueIds: string[],
+  normalizedEmails: string[],
+  excludeCampaignId?: string
+): Promise<VenueFollowUpCounts> {
+  const counts: VenueFollowUpCounts = { byVenue: new Map(), byEmail: new Map() };
+  if (venueIds.length === 0 && normalizedEmails.length === 0) return counts;
+
+  const supabase = requireAdminClient();
+  const successfulStatuses: CampaignRecipient["status"][] = ["sent", "delivered", "replied"];
+  const loadByVenue = await Promise.all(
+    chunkValues(Array.from(new Set(venueIds))).map(async (venueIdBatch) => {
+      const request = supabase
+        .from("outreach_campaign_recipients")
+        .select("id, venue_id, normalized_email, outreach_campaigns!inner(kind)")
+        .in("venue_id", venueIdBatch)
+        .in("status", successfulStatuses)
+        .eq("outreach_campaigns.kind", "follow_up");
+      const { data, error } = excludeCampaignId
+        ? await request.neq("campaign_id", excludeCampaignId)
+        : await request;
+      if (error) throw new Error(`Could not check completed follow-up history: ${error.message}`);
+      return (data ?? []) as Array<Pick<CampaignRecipient, "id" | "venue_id" | "normalized_email">>;
+    })
+  );
+  const loadByEmail = await Promise.all(
+    chunkValues(Array.from(new Set(normalizedEmails))).map(async (emailBatch) => {
+      const request = supabase
+        .from("outreach_campaign_recipients")
+        .select("id, venue_id, normalized_email, outreach_campaigns!inner(kind)")
+        .in("normalized_email", emailBatch)
+        .in("status", successfulStatuses)
+        .eq("outreach_campaigns.kind", "follow_up");
+      const { data, error } = excludeCampaignId
+        ? await request.neq("campaign_id", excludeCampaignId)
+        : await request;
+      if (error) throw new Error(`Could not check completed follow-up history: ${error.message}`);
+      return (data ?? []) as Array<Pick<CampaignRecipient, "id" | "venue_id" | "normalized_email">>;
+    })
+  );
+
+  const seenRecipientIds = new Set<string>();
+  for (const row of [...loadByVenue.flat(), ...loadByEmail.flat()]) {
+    if (seenRecipientIds.has(row.id)) continue;
+    seenRecipientIds.add(row.id);
+    if (row.venue_id) counts.byVenue.set(row.venue_id, (counts.byVenue.get(row.venue_id) ?? 0) + 1);
+    counts.byEmail.set(row.normalized_email, (counts.byEmail.get(row.normalized_email) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function followUpCountForVenue(counts: VenueFollowUpCounts, venueId: string, normalizedEmail: string) {
+  return Math.max(counts.byVenue.get(venueId) ?? 0, counts.byEmail.get(normalizedEmail) ?? 0);
 }
 
 async function currentSuppressions(emails: string[]) {
