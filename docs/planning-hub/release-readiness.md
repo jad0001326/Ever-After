@@ -2,14 +2,18 @@
 
 Date: 3 August 2026
 
-Status: locally complete as a connected, local-first beta and current in draft
-pull request #55. Its authentication-protected Vercel preview was verified on
-application commit `9676f22` after integrating current `origin/main`.
-Production release and connected partner sharing remain gated. The approved
+Status: locally complete as a connected, local-first beta. Draft pull request
+#55 and its authentication-protected Vercel preview are current through pushed
+commit `c3a01c9`; later supplier-research, generic-outreach and migration-
+alignment work remains local and unpushed. Production release and connected
+partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
-timestamp drift and legacy Data API grants that must be resolved before schema
-activation.
+timestamp drift and legacy Data API grants. The repository now mirrors all 25
+recorded production migration identities locally, so no production history
+rewrite is expected; nine reviewed migrations remain pending activation.
+The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
+recorded in `docs/planning-hub/production-activation-runbook.md`.
 
 The competitive priority adjustment in
 `docs/planning-hub/competitive-priority-update.md` now favours activation
@@ -123,8 +127,10 @@ they do not require rewriting or pushing it.
 | 51. Source-backed supplier staging | Add atomic research batches, strict provenance/pricing/image validation and bulk decisions that create draft listings only. | `dfcbb01` | Local application, template, unapplied migration and embedded PostgreSQL proof only; no real supplier research, hosted data, publication, outreach, deployment or paid action. |
 | 52. Current-main integration | Merge the four current upstream commits and preserve featured-first venue ordering without losing Planning Hub query state. | `3bda64a` | The full application, security and optimized browser gates pass. The user approved updating the existing draft pull request; merge and production actions remain separate. |
 | 53. First real supplier research batch | Select videography for the next research slice and add five validated primary-source candidates with explicit pricing and no unlicensed imagery. | `9676f22` | Local CSV, evidence record and regression test only; nothing imported, staged in a hosted database, published, contacted or activated. |
-| 54. Production database preflight | Compare the healthy production project's migration history, table security and advisors; prepare a narrow grant hardening migration for 19 legacy tables. | Current working slice | Read-only hosted audit plus local migration and disposable PostgreSQL proof; no migration, data change, branch, paid resource or activation. |
-| 55. Regional videographer evidence | Add a second official-source batch for Aberdeen, Aberdeenshire, the Highlands and explicit Dundee service coverage, retaining a conflicting official price for operator review. | Current working slice | Local CSV, evidence and regression test only; no hosted staging, supplier contact, imagery, publication, activation or push. |
+| 54. Production database preflight | Compare the healthy production project's migration history, table security and advisors; prepare a narrow grant hardening migration for 19 legacy tables. | `c3a01c9` | Read-only hosted audit plus local migration and disposable PostgreSQL proof; no migration, data change, branch, paid resource or activation. |
+| 55. Regional videographer evidence | Add a second official-source batch for Aberdeen, Aberdeenshire, the Highlands and explicit Dundee service coverage, retaining a conflicting official price for operator review. | `3ebc805` | Local CSV, evidence and regression test only; no hosted staging, supplier contact, imagery, publication, activation or push. |
+| 56. Category-aware supplier outreach | Generalize candidate filtering, recipient snapshots, claim links and send-time checks while retaining legacy Photography rows and a disabled-by-default category flag. | `79303f4` | Local application and unapplied additive migration only; no campaign, contact, hosted write, feature activation or push. |
+| 57. Production migration alignment | Mirror the 25 recorded production identities, verify the exact nine-file pending set and document the dry-run/checkpoint/approval sequence. | Current working slice | Read-only history refresh and local filename/runbook changes only; no history repair, migration, deployment, paid resource or push. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -135,23 +141,21 @@ The application must not infer remote migration state from the presence of a
 table. Before approval, compare the remote migration history with these files.
 Supabase applies unapplied files in timestamp order:
 
-1. `20260723092444_create_budget_plans.sql`
-2. `20260723093146_tighten_budget_plan_grants.sql`
-3. `20260723093318_scope_budget_plan_ids_to_user.sql`
-4. `20260726140200_planning_workspace_foundation.sql`
-5. `20260726162254_planning_workspace_snapshot_import.sql`
-6. `20260726164304_planning_workspace_profiles.sql`
-7. `20260726185032_planning_workspace_partner_budgets.sql`
-8. `20260726191406_planning_table_plan_sync.sql`
-9. `20260803122711_supplier_owner_update_requests.sql`
-10. `20260803130045_supplier_catalogue_staging.sql`
-11. `20260803143000_tighten_data_api_table_grants.sql`
+1. `20260726140200_planning_workspace_foundation.sql`
+2. `20260726162254_planning_workspace_snapshot_import.sql`
+3. `20260726164304_planning_workspace_profiles.sql`
+4. `20260726185032_planning_workspace_partner_budgets.sql`
+5. `20260726191406_planning_table_plan_sync.sql`
+6. `20260803122711_supplier_owner_update_requests.sql`
+7. `20260803130045_supplier_catalogue_staging.sql`
+8. `20260803143000_tighten_data_api_table_grants.sql`
+9. `20260803150000_generalize_supplier_outreach.sql`
 
-The first three describe the existing owner-scoped `budget_plans` design.
-The production preflight confirmed that the first three are already applied
-under different remote timestamps. Do not replay them or repair history by
-assumption. The five workspace migrations are additive and remain dormant
-while `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent.
+The other 25 timestamped files now match production's recorded versions
+exactly. Do not replay them or repair production history. The five workspace
+migrations are additive and remain dormant while
+`PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
+sending retain their separate disabled flags.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -175,17 +179,17 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the eight Planning Hub migrations above apply in timestamp
-     order over that baseline;
+   - confirm that the baseline plus all 34 timestamped migrations apply in
+     order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
    - prove invitation redemption, RLS denial and stale-version conflicts;
    - run database advisors and retain the output.
 4. **Production preflight, only after approval**
-   - take or confirm a recoverable database checkpoint;
-   - list local and remote migration history and stop on any divergence;
-   - inspect the exact pending SQL and advisors;
-   - confirm the cloud flag is still absent.
+   - follow `production-activation-runbook.md` through its read-only CLI dry
+     run and no-cost checkpoint;
+   - require the exact 25 matching and nine pending identities;
+   - confirm all three feature flags remain off.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
    - smoke-test the existing public planners and beta local-device journey;
@@ -388,7 +392,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 30 timestamped
+- The local API generator reproduces one baseline plus all 34 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.

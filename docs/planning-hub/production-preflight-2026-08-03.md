@@ -19,12 +19,15 @@ paid resource or feature activation was created.
 
 ## Migration-history gate
 
-Remote history contains 25 entries. Twenty-two migration names match repository
-work, but fourteen of those were recorded remotely under different timestamps.
-Remote history also contains the three legacy pricing phases, while the
-repository retains those as non-timestamped phase files.
+Remote history contains 25 entries and was refreshed read-only after the
+initial audit. The repository now uses those exact 25 production versions:
+fourteen logically matching files were renamed to production's recorded
+timestamps, and the three legacy pricing phases were copied into timestamped
+migration files without changing their SQL. The captured manifest is
+`production-migration-history-2026-08-03.json`; the alignment verifier fails if
+an existing production identity is absent or the reviewed pending set changes.
 
-Seven timestamped repository migrations are genuinely pending:
+Nine timestamped repository migrations are genuinely pending:
 
 1. `20260726140200_planning_workspace_foundation.sql`
 2. `20260726162254_planning_workspace_snapshot_import.sql`
@@ -33,12 +36,14 @@ Seven timestamped repository migrations are genuinely pending:
 5. `20260726191406_planning_table_plan_sync.sql`
 6. `20260803122711_supplier_owner_update_requests.sql`
 7. `20260803130045_supplier_catalogue_staging.sql`
+8. `20260803143000_tighten_data_api_table_grants.sql`
+9. `20260803150000_generalize_supplier_outreach.sql`
 
-Do not run an unreviewed bulk migration command against production. Timestamp
-drift could cause already-applied logical migrations to be treated as new. The
-activation runbook must either reconcile history first or apply only the seven
-confirmed pending migrations by reviewed name, followed by the grant-hardening
-migration below.
+Do not run an unreviewed bulk migration command against production. First
+refresh the remote list and compare it with the captured manifest. If it is
+unchanged, a normal reviewed migration push no longer needs `migration repair`:
+the first 25 local identities match production exactly and only the nine files
+above should be pending. If it differs, stop; do not repair history or push.
 
 ## Access-control finding
 
@@ -85,11 +90,14 @@ dropped merely because a low-traffic database currently labels them unused.
 1. Review and merge the application pull request while leaving
    `PLANNING_WORKSPACE_CLOUD_ENABLED` absent.
 2. Confirm a recoverable production database checkpoint.
-3. Re-read remote migration history and stop if it differs from this record.
-4. Resolve timestamp history without replaying the 22 logically applied
-   migrations.
-5. Apply and verify the seven confirmed pending migrations in dependency order.
-6. Apply `20260803143000_tighten_data_api_table_grants.sql`.
+3. Re-read remote migration history and stop if it differs from the captured
+   25-entry manifest.
+4. Run `npm run test:production-migration-alignment`; require exactly 25
+   matching and nine pending migrations.
+5. Review the pending SQL and the migration command's proposed list; it must
+   contain only the nine files recorded above, in order.
+6. Apply those nine migrations under one explicit production approval. Do not
+   include seed data.
 7. Re-run database security and performance advisors.
 8. Exercise owner, partner, outsider and anonymous Data API tests. Stop on any
    unexpected read, write, function execution or table privilege.
@@ -97,6 +105,11 @@ dropped merely because a low-traffic database currently labels them unused.
    planners plus the local-device Planning Hub journey.
 10. Enable cloud sharing only under a separate approval after the preceding
     checks pass.
+
+`migration repair` is no longer part of the expected activation path. Supabase
+documents that it changes only the remote migration-history table, not the
+schema, so it remains a stop-and-reassess action requiring separate approval if
+the refreshed history ever diverges.
 
 ## Rollback boundary
 

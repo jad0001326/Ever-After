@@ -3,9 +3,9 @@ import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 
 const migrationPaths = [
-  "supabase/migrations/20260723092444_create_budget_plans.sql",
-  "supabase/migrations/20260723093146_tighten_budget_plan_grants.sql",
-  "supabase/migrations/20260723093318_scope_budget_plan_ids_to_user.sql",
+  "supabase/migrations/20260723093014_create_budget_plans.sql",
+  "supabase/migrations/20260723093202_tighten_budget_plan_grants.sql",
+  "supabase/migrations/20260723093341_scope_budget_plan_ids_to_user.sql",
   "supabase/migrations/20260726140200_planning_workspace_foundation.sql",
   "supabase/migrations/20260726162254_planning_workspace_snapshot_import.sql",
   "supabase/migrations/20260726164304_planning_workspace_profiles.sql",

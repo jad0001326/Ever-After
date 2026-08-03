@@ -1,0 +1,32 @@
+{
+  "projectId": "fryfdniacyhpubfiqnxj",
+  "capturedAt": "2026-08-03",
+  "mode": "read-only",
+  "migrations": [
+    { "version": "20260713151556", "name": "phase11_pricing_recovery" },
+    { "version": "20260713152210", "name": "phase12_pricing_policy_cleanup" },
+    { "version": "20260713161237", "name": "phase13_pricing_context" },
+    { "version": "20260713211617", "name": "vendor_image_submissions" },
+    { "version": "20260713212044", "name": "optimize_vendor_image_submission_policies" },
+    { "version": "20260714111010", "name": "fix_vendor_image_storage_path_policy" },
+    { "version": "20260714120457", "name": "vendor_update_review_queue" },
+    { "version": "20260714120736", "name": "optimize_vendor_update_review_policies" },
+    { "version": "20260714210230", "name": "enrichment_contact_verification_and_delivery_events" },
+    { "version": "20260714214525", "name": "fix_contact_verification_draft_history" },
+    { "version": "20260714215726", "name": "sync_enrichment_eligibility_after_outreach" },
+    { "version": "20260714220552", "name": "fix_contact_verification_regexes" },
+    { "version": "20260714222545", "name": "allow_shared_operator_inboxes" },
+    { "version": "20260716175823", "name": "supplier_directory_foundation" },
+    { "version": "20260716180002", "name": "tune_supplier_directory_policies" },
+    { "version": "20260716181451", "name": "seed_founder_photographer_drafts" },
+    { "version": "20260716182223", "name": "grant_supplier_service_role" },
+    { "version": "20260716184159", "name": "photographer_outreach_and_claims" },
+    { "version": "20260716184307", "name": "index_supplier_claim_review" },
+    { "version": "20260717182247", "name": "security_hardening_private_functions_and_storage" },
+    { "version": "20260723093014", "name": "create_budget_plans" },
+    { "version": "20260723093202", "name": "tighten_budget_plan_grants" },
+    { "version": "20260723093341", "name": "scope_budget_plan_ids_to_user" },
+    { "version": "20260725210923", "name": "fix_vendor_update_admin_check" },
+    { "version": "20260726161511", "name": "validate_venue_outreach_email" }
+  ]
+}
