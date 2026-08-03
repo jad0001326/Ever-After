@@ -139,6 +139,22 @@ try {
   const reviewedBatch = await db.query(`select status from public.supplier_catalogue_batches where id = '${stagedBatch.rows[0]?.batch_id}'`);
   assert(reviewedBatch.rows[0]?.status === "reviewed", "fully reviewed batch stayed open");
 
+  const reviewCandidate = candidate
+    .replaceAll("staged-films", "review-films")
+    .replaceAll("Staged Films", "Review Films")
+    .replaceAll("films.example", "review.example")
+    .replace('"review_notes":null', '"review_notes":"Official sources conflict; confirm the current package before acceptance."');
+  const reviewBatch = await asUser(db, ids.admin, `select * from public.stage_supplier_catalogue_batch('review.csv', 'Manual review check', '2026-08-03', '${reviewCandidate}'::jsonb)`);
+  const reviewCandidateRow = await asUser(db, ids.admin, `select id from public.supplier_catalogue_candidates where batch_id = '${reviewBatch.rows[0]?.batch_id}'`);
+  const reviewCandidateId = reviewCandidateRow.rows[0]?.id;
+  await expectDenied(
+    () => asUser(db, ids.admin, `select * from public.review_supplier_catalogue_candidates(array['${reviewCandidateId}']::uuid[], 'accepted', null)`),
+    "candidate with unresolved research notes can be accepted without a recorded resolution",
+  );
+  await asUser(db, ids.admin, `select * from public.review_supplier_catalogue_candidates(array['${reviewCandidateId}']::uuid[], 'accepted', 'Compared both current official pages and retained quote-only pricing')`);
+  const resolvedCandidate = await db.query(`select review_notes from public.supplier_catalogue_candidates where id = '${reviewCandidateId}'`);
+  assert(resolvedCandidate.rows[0]?.review_notes?.includes("Official sources conflict") && resolvedCandidate.rows[0]?.review_notes?.includes("Resolution:"), "manual review evidence or its resolution was not retained");
+
   const duplicateBatch = await asUser(db, ids.admin, `select * from public.stage_supplier_catalogue_batch('duplicate.csv', 'Duplicate check', '2026-08-03', '${candidate}'::jsonb)`);
   assert(duplicateBatch.rows[0]?.duplicate_count === 1, "duplicate batch count did not flag the existing supplier");
   const duplicateCandidate = await asUser(db, ids.admin, `select id, review_notes from public.supplier_catalogue_candidates where batch_id = '${duplicateBatch.rows[0]?.batch_id}'`);
@@ -158,7 +174,7 @@ try {
   }
   const anonymousStagingPrivileges = await db.query(`select has_table_privilege('anon', 'public.supplier_catalogue_batches', 'select') as batch_select, has_table_privilege('anon', 'public.supplier_catalogue_candidates', 'select') as candidate_select`);
   assert(anonymousStagingPrivileges.rows[0]?.batch_select === false && anonymousStagingPrivileges.rows[0]?.candidate_select === false, "anonymous role retains staging table access");
-  console.log("Supplier owner and staging RLS verification passed: member isolation, bounded owner review, admin-only atomic batches, draft-only promotion, image-rights exclusion and RPC hardening.");
+  console.log("Supplier owner and staging RLS verification passed: member isolation, bounded owner review, admin-only atomic batches, mandatory conflict resolution, draft-only promotion, image-rights exclusion and RPC hardening.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

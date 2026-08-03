@@ -243,3 +243,17 @@ remain thin. The next catalogue action is operator review of both batches,
 followed by lawful image-permission work and further regional research. Hosted
 staging, supplier contact, publication and category activation still require
 explicit approval.
+
+## Videographer operator review completed locally - 3 August 2026
+
+All ten official sources were rechecked. Seven records remained current. King
+Wedding Media's entry price was corrected to GBP 1,400; Robertson Creative's
+redirect to Pinfall Wedding Films was retained as a quote-only identity review;
+and Struie's conflicting GBP 1,095 and GBP 1,250 pages were converted to
+quote-only handling rather than choosing an unsupported amount.
+
+That review exposed and removed a reusable staging risk: research notes now
+survive import, are visible in the bulk queue, and block acceptance until an
+operator records a resolution. No hosted batch was staged and videography
+remains inactive. Lawful imagery plus genuinely Tayside-based and island-based
+coverage remain the next evidence gaps.

@@ -1,6 +1,7 @@
 # Supplier catalogue baseline
 
-Measured: 3 August 2026 at 11:43 UTC
+Measured: 3 August 2026 at 11:43 UTC; refreshed at 16:29 UTC with no count or
+readiness change.
 
 Method: the local `supplier:audit` command performed paginated GET requests
 against the configured Supabase Data API with protected server credentials. It

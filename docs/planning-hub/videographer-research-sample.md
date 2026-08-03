@@ -51,23 +51,43 @@ candidates selected for stronger north and east coverage:
 
 | Candidate | Location evidence | Pricing evidence | Review note |
 | --- | --- | --- | --- |
-| [King Wedding Media](https://www.kingweddingmedia.com/videography/) | Portlethen; Aberdeen and Aberdeenshire, with wider travel | Four official packages from GBP 1,600 | Travel outside Aberdeen may cost extra |
-| [Robertson Creative](https://robertsoncreative.co.uk/) | Aberdeen base | Half-day GBP 1,350 and full-day GBP 1,650 | Current public page does not claim nationwide travel |
+| [King Wedding Media](https://www.kingweddingmedia.com/videography/) | Portlethen; Aberdeen and Aberdeenshire, with wider travel | Current official packages from GBP 1,400 | November 2025 pricing replaced the earlier GBP 1,600 entry point |
+| [Pinfall Wedding Films](https://pinfallweddingfilms.co.uk/) | Aberdeen base and North East Scotland | Quote required until the rebrand is confirmed | Robertson Creative now redirects here; identity consolidation requires a recorded resolution |
 | [Highland Wedding Films](https://www.highlandweddingfilm.co.uk/packages-1) | Inverness base and Highland wedding focus | Gold GBP 1,300 and Diamond GBP 1,700 | Elopements remain quote-only |
-| [Struie Wedding Films](https://www.struieweddingfilms.co.uk/pricing) | Ardross base; Inverness, Dornoch and wider Highlands | Main pricing page GBP 1,095 | A second official page says GBP 1,250, so price confirmation is mandatory |
+| [Struie Wedding Films](https://www.struieweddingfilms.co.uk/pricing) | Ardross base; Inverness, Dornoch and wider Highlands | Quote required | Current official pages still conflict at GBP 1,095 and GBP 1,250; neither is treated as verified |
 | [Next Scene Films](https://www.nextscenefilms.com/) | East Lothian base; explicitly lists Dundee, Aberdeen and the Highlands | Packages from GBP 900 | Helps service-area breadth but is not a Dundee-based listing |
 
 As with the first batch, no public website image has been copied. Every row is
 `not_provided` for imagery and remains a review candidate only.
 
+## Operator source review completed locally - 3 August 2026
+
+All ten records were rechecked against current official pages. Seven retained
+their recorded identity and price evidence. Three needed intervention:
+
+- King Wedding Media now lists packages from GBP 1,400, so the earlier GBP
+  1,600 entry point was corrected.
+- Robertson Creative redirects to Pinfall Wedding Films. The candidate now uses
+  the current brand and quote-only pricing, with a mandatory identity-
+  consolidation note before acceptance.
+- Struie Wedding Films still exposes GBP 1,095 and GBP 1,250 on separate current
+  official pages. Its numeric price was removed; it remains quote-only with a
+  mandatory conflict-resolution note.
+
+The import contract now retains those manual review notes and the database
+refuses acceptance until an operator records a resolution. This review changed
+only local research evidence and code. Nothing was staged, published or
+contacted.
+
 ## What this proves
 
 - The reusable CSV contract can represent a real cross-category batch with
   public provenance, useful services, location data and pricing evidence.
-- Ten videographers now have official-source location, service and pricing
-  evidence across a materially broader part of Scotland.
-- The workflow can retain a source conflict for operator review instead of
-  converting an uncertain price into an apparently verified fact.
+- Ten videographers now have official-source location, service and either
+  current numeric pricing or explicit quote handling across a materially
+  broader part of Scotland.
+- The workflow retains source conflicts and now prevents unresolved notes from
+  being bulk-accepted as apparently verified facts.
 - Image permission remains a category-wide blocker; public website availability
   is not permission for EverAft to republish an image.
 

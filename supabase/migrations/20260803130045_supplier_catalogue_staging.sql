@@ -144,7 +144,8 @@ begin
     candidate.hero_image_url, candidate.image_credit,
     candidate.image_permission_status, candidate.image_permission_evidence_url,
     candidate.source_url, candidate.source_type, candidate.researched_at,
-    coalesce(
+    nullif(concat_ws(
+      E'\n',
       candidate.review_notes,
       case when exists (
         select 1 from public.supplier_listings
@@ -162,7 +163,7 @@ begin
             and existing.review_status in ('staged', 'accepted')
         )
       then 'Possible duplicate: matching listing or active staged identity exists. Review before accepting.' end
-    )
+    ), '')
   from jsonb_to_recordset(p_candidates) as candidate (
     row_number integer, identity_key text, category_slug text, slug text,
     business_name text, base_town text, region text, country text,
@@ -179,7 +180,7 @@ begin
   select count(*)::integer into v_duplicate_count
   from public.supplier_catalogue_candidates
   where supplier_catalogue_candidates.batch_id = v_batch_id
-    and supplier_catalogue_candidates.review_notes like 'Possible duplicate:%';
+    and supplier_catalogue_candidates.review_notes like '%Possible duplicate:%';
 
   return query select v_batch_id, v_candidate_count, v_duplicate_count;
 end;
@@ -229,6 +230,10 @@ begin
       raise exception 'Candidate % has already been reviewed', v_candidate.id using errcode = '55000';
     end if;
 
+    if p_decision = 'accepted' and v_candidate.review_notes is not null and v_notes is null then
+      raise exception 'Candidate % has a manual review note; record its resolution before acceptance', v_candidate.id using errcode = '23514';
+    end if;
+
     if p_decision = 'accepted' then
       if exists (
         select 1 from public.supplier_listings
@@ -271,7 +276,11 @@ begin
 
     update public.supplier_catalogue_candidates as candidates
     set review_status = p_decision,
-        review_notes = coalesce(v_notes, candidates.review_notes),
+        review_notes = case
+          when v_notes is not null and candidates.review_notes is not null
+            then left(candidates.review_notes || E'\nResolution: ' || v_notes, 2000)
+          else coalesce(v_notes, candidates.review_notes)
+        end,
         listing_id = v_listing_id,
         reviewed_at = now(),
         reviewed_by = (select auth.uid())

@@ -30,6 +30,8 @@ Every valid candidate contains:
 - confirmed price guidance or an explicit quote-required explanation;
 - an explicit image state, with evidence URL and credit required before an
   image can be marked approved.
+- any unresolved identity, price or provenance conflict in `Review notes`.
+  A noted candidate cannot be accepted until the operator records a resolution.
 
 The reusable template is
 `public/templates/supplier-catalogue-import-template.csv`. Services and service
@@ -57,6 +59,10 @@ Potential duplicates are flagged against existing listing slugs and active
 staged identities. The database rechecks the unique listing slug during
 acceptance so a race cannot silently create a second profile.
 
+Source research notes survive staging. Acceptance of any candidate carrying a
+note requires a non-empty operator resolution, and both the original note and
+resolution remain in the audit record.
+
 ## Security and rollback
 
 Both staging tables have RLS and explicit grants. Only authenticated admins can
@@ -80,6 +86,8 @@ The embedded PostgreSQL scenario proves:
 - unapproved imagery is excluded from that draft;
 - a matching existing supplier is flagged and cannot be accepted;
 - explicit duplicate review is retained;
+- unresolved source or price conflicts cannot be bulk-accepted without a
+  recorded resolution;
 - completed batches leave the open queue;
 - both RPCs remain security invoker with anonymous execution revoked.
 

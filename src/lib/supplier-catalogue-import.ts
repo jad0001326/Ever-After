@@ -89,6 +89,7 @@ export function parseSupplierCandidateRows(rows: string[][], defaultResearchDate
     const imageStatus = heroImage ? (imageStatuses.has(imageStatusInput) && imageStatusInput !== "not_provided" ? imageStatusInput : "pending") : "not_provided";
     const imageEvidence = httpUrl(value(raw, "Image permission evidence URL"), true);
     const imageCredit = value(raw, "Image credit") || null;
+    const reviewNotes = value(raw, "Review notes") || null;
 
     if (!business || business.length > 160) rowErrors.push("Business name is required and must be under 160 characters.");
     if (!categorySlugs.has(categorySlug)) rowErrors.push("Category must match a configured supplier category slug.");
@@ -117,6 +118,7 @@ export function parseSupplierCandidateRows(rows: string[][], defaultResearchDate
     if (value(raw, "Hero image URL") && !heroImage) rowErrors.push("Hero image URL must be http or https.");
     if (value(raw, "Image permission evidence URL") && !imageEvidence) rowErrors.push("Image permission evidence URL must be http or https.");
     if (imageCredit && imageCredit.length > 240) rowErrors.push("Image credit must be under 240 characters.");
+    if (reviewNotes && reviewNotes.length > 2000) rowErrors.push("Review notes must be under 2,000 characters.");
     if (imageStatus === "approved" && (!imageEvidence || !imageCredit)) rowErrors.push("Approved imagery requires a permission evidence URL and image credit.");
     if (sourceType === "official_website" && (!officialWebsite || !sourceUrl || hostname(officialWebsite) !== hostname(sourceUrl))) rowErrors.push("An official_website source must use the supplier's official website host.");
 
@@ -124,6 +126,7 @@ export function parseSupplierCandidateRows(rows: string[][], defaultResearchDate
     const todayDate = new Date(`${today}T00:00:00Z`);
     if (isDate(researchedAt) && (todayDate.getTime() - staleDate.getTime()) / 86_400_000 > 365) warnings.push({ row: rowNumber, business, message: "Research is more than one year old and should be refreshed before acceptance." });
     if (heroImage && imageStatus !== "approved") warnings.push({ row: rowNumber, business, message: "Image is retained for permission review but will not be copied to a listing." });
+    if (reviewNotes) warnings.push({ row: rowNumber, business, message: "Manual review notes must be resolved and recorded before acceptance." });
 
     if (rowErrors.length) {
       errors.push(...rowErrors.map((message) => ({ row: rowNumber, business, message })));
@@ -159,7 +162,7 @@ export function parseSupplierCandidateRows(rows: string[][], defaultResearchDate
       source_url: sourceUrl!,
       source_type: sourceType,
       researched_at: researchedAt,
-      review_notes: null
+      review_notes: reviewNotes
     });
   }
   return { candidates, errors, warnings };

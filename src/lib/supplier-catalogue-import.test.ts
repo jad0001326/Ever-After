@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
 
-const headers = ["Business name", "Category", "Base town", "Region", "Service areas", "Summary", "Description", "Services", "Official website URL", "Source URL", "Source type", "Research date", "Pricing unit", "Pricing summary", "Hero image URL", "Image permission status", "Image permission evidence URL", "Image credit"];
+const headers = ["Business name", "Category", "Base town", "Region", "Service areas", "Summary", "Description", "Services", "Official website URL", "Source URL", "Source type", "Research date", "Pricing unit", "Pricing summary", "Hero image URL", "Image permission status", "Image permission evidence URL", "Image credit", "Review notes"];
 const valid = ["Films Co", "videographer", "Glasgow", "Greater Glasgow", "Glasgow|Ayrshire", "Story-led wedding films across Scotland.", "A documentary wedding film team covering celebrations throughout Scotland.", "Full-day films|Highlight films", "https://films.example/", "https://films.example/about", "official_website", "2026-08-01", "quote", "Contact the supplier for a tailored quote.", "", "", "", ""];
 
 describe("supplier catalogue import", () => {
@@ -63,6 +63,17 @@ describe("supplier catalogue import", () => {
     expect(result.errors.at(-1)?.message).toBe("Slug is duplicated within this file.");
   });
 
+  it("retains manual review blockers for resolution before acceptance", () => {
+    const row = [...valid, "Official sources conflict; confirm the current package before acceptance."];
+    const result = parseSupplierCandidateRows([headers, row], "2026-08-01", "2026-08-03");
+
+    expect(result.errors).toEqual([]);
+    expect(result.candidates[0]?.review_notes).toContain("Official sources conflict");
+    expect(result.warnings.map((issue) => issue.message)).toContain(
+      "Manual review notes must be resolved and recorded before acceptance.",
+    );
+  });
+
   it("keeps the reviewed videographer research sample importable and image-free", () => {
     const source = readFileSync(
       join(process.cwd(), "docs/planning-hub/research/videographer-primary-source-sample-2026-08-03.csv"),
@@ -90,16 +101,25 @@ describe("supplier catalogue import", () => {
     const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
 
     expect(result.errors).toEqual([]);
-    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toHaveLength(2);
     expect(result.candidates).toHaveLength(5);
     expect(result.candidates.every((candidate) => (
       candidate.category_slug === "videographer"
       && candidate.source_type === "official_website"
-      && candidate.starting_price_pence != null
+      && (candidate.starting_price_pence != null || candidate.pricing_unit === "quote")
       && candidate.hero_image_url == null
       && candidate.image_permission_status === "not_provided"
     ))).toBe(true);
-    expect(result.candidates.find((candidate) => candidate.slug === "struie-wedding-films")?.pricing_summary)
-      .toContain("Operator review must confirm");
+    expect(result.candidates.find((candidate) => candidate.slug === "king-wedding-media")?.starting_price_pence)
+      .toBe(140_000);
+    expect(result.candidates.find((candidate) => candidate.slug === "pinfall-wedding-films")).toMatchObject({
+      starting_price_pence: null,
+      pricing_unit: "quote",
+    });
+    expect(result.candidates.find((candidate) => candidate.slug === "struie-wedding-films")).toMatchObject({
+      starting_price_pence: null,
+      pricing_unit: "quote",
+    });
+    expect(result.candidates.filter((candidate) => candidate.review_notes)).toHaveLength(2);
   });
 });
