@@ -14,6 +14,8 @@ recorded production migration identities locally, so no production history
 rewrite is expected; nine reviewed migrations remain pending activation.
 The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
 recorded in `docs/planning-hub/production-activation-runbook.md`.
+The nine-file lock, data-rewrite and existing-row surface is separately
+recorded in `docs/planning-hub/pending-migration-risk-review-2026-08-03.md`.
 
 The competitive priority adjustment in
 `docs/planning-hub/competitive-priority-update.md` now favours activation

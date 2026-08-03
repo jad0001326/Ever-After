@@ -45,6 +45,10 @@ unchanged, a normal reviewed migration push no longer needs `migration repair`:
 the first 25 local identities match production exactly and only the nine files
 above should be pending. If it differs, stop; do not repair history or push.
 
+The migration-time lock, rewrite and existing-row surface is reviewed in
+`pending-migration-risk-review-2026-08-03.md`. Read-only live counts and
+constraint-shape queries found no incompatible existing outreach row.
+
 ## Access-control finding
 
 Production RLS is enabled, but the Data API roles also hold `TRUNCATE`,
