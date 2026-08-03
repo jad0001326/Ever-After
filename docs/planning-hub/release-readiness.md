@@ -4,7 +4,7 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `c3a01c9`; eight later supplier-research, generic-outreach, migration-
+commit `c3a01c9`; nine later supplier-research, generic-outreach, migration-
 alignment, risk-review, public-positioning, release-verification and release-
 safety commits remain local and unpushed. Production release and connected
 partner sharing remain gated. The approved
@@ -65,7 +65,7 @@ a production deployment, migrate or enable cloud persistence.
 | Planning states and budget | Researching, shortlisted, quoted and booked states plus derived estimated, partially paid and paid states use the shared budget calculation layer. | Proven locally |
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
-| Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. Source-backed research can be batch-staged and reviewed without publishing; two five-record official-source videographer batches broaden north/east evidence without supplying unlicensed imagery. Current source review corrected one price and retained two identity/price conflicts as quote-only records that cannot be accepted without a resolution. | Proven locally; videography remains inactive |
+| Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. Source-backed research can be batch-staged and reviewed without publishing; three official-source videographer batches now contain fourteen candidates, including genuine Tayside and island bases, without supplying unlicensed imagery. Current source review corrected one price and retained two identity/price conflicts as quote-only records that cannot be accepted without a resolution. | Proven locally; videography remains inactive |
 | Public supplier profiles and claiming | Category-neutral collection, profile and claim routes are locally prepared behind the existing `live` gate. Photography retains canonical legacy URLs. Claims validate category, published identity and ownership; pending/rejected hero imagery is excluded and representative imagery is labelled. Active approved claim members can submit bounded profile proposals for atomic admin review without controlling publication, ownership, category, featuring or imagery. Other categories remain inaccessible because they have no current coverage and their flags remain off. | Foundation and owner review loop proven locally |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
@@ -147,6 +147,7 @@ they do not require rewriting or pushing it.
 | 60. Post-positioning release verification | Repeat the optimized responsive, accessibility, interaction, live-catalogue and production dependency gates after the public entry change. | `961c63c` | Read-only local and public-catalogue checks only; no service-role key, hosted write, push, deployment, migration or paid resource. |
 | 61. Integrated release safety review | Enforce generic supplier activation at the mutation and send boundaries, tighten recipient references and require the reviewed older pending migration in both dry-run and approved commands. | `6eb79b4` | Local code, SQL, documentation and regression checks only; no hosted write, supplier contact, push, migration, deployment or paid resource. |
 | 62. Supplier research resolution gate | Recheck all ten videographer sources, correct changed identity/pricing evidence and prevent unresolved research notes from being bulk-accepted. | This supplier-review commit | Read-only public-source and catalogue checks plus local code, CSV, SQL and tests only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
+| 63. Tayside and island videographer evidence | Add four official-source candidates genuinely based in Carnoustie, Alyth, Skye and the Outer Hebrides, retaining truthful quote handling and no unlicensed imagery. | This geographic-evidence commit | Public-source research, local CSV, documentation and regression test only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -252,13 +253,13 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; eight
+- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; nine
   later local commits are not yet in the pull request. Push, merge, production
   deployment, migration and production writes require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 102 Vitest files and 489 tests pass.
+- 102 Vitest files and 490 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task

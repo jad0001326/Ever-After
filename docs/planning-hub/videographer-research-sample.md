@@ -16,7 +16,7 @@ websites and the connected Planning Hub journey.
 | Connected couple decision value | 30 | 27 | Videography is a natural decision after venue and photography, with a material budget and booking commitment. |
 | Primary-source and pricing coverage | 25 | 23 | Five selected official sites expose location, services and explicit starting or package prices; a broader search found additional viable official sources. |
 | Reusable filter data | 15 | 12 | Coverage area, package type, filming style and services can support useful filters without loading a full catalogue. |
-| Scottish geographic breadth | 15 | 13 | Two five-record batches now add Aberdeen, Aberdeenshire, Inverness, the Highlands and explicit Dundee service coverage to Glasgow, Edinburgh, Central Scotland and Dumfries and Galloway. Island and Tayside-based coverage remains thin. |
+| Scottish geographic breadth | 15 | 14 | Three batches now add genuine Tayside bases in Carnoustie and Alyth plus island bases on Skye and in the Outer Hebrides to the earlier Glasgow, Edinburgh, Dumfries and Galloway, north and east evidence. Research coverage still does not equal a live catalogue. |
 | Publication-asset readiness | 15 | 0 | No supplier has granted EverAft image rights. No site image is copied or treated as approved. |
 | **Total for research priority** | **100** | **75** | Strong enough to continue structured research; still below the evidence needed to activate the category. |
 
@@ -60,6 +60,26 @@ candidates selected for stronger north and east coverage:
 As with the first batch, no public website image has been copied. Every row is
 `not_provided` for imagery and remains a review candidate only.
 
+## Tayside and islands gap batch
+
+The third machine-readable batch is
+`research/videographer-tayside-islands-sample-2026-08-03.csv`. It adds four
+draft candidates whose official sources establish a genuine local base rather
+than merely a willingness to travel into the region:
+
+| Candidate | Location evidence | Pricing evidence | Image status |
+| --- | --- | --- | --- |
+| [Burfly](https://burfly.co.uk/) | Carnoustie, Angus; serves Dundee, Tayside, Fife and Perthshire | Current packages supplied on enquiry | Not provided |
+| [Cosmic Egg Productions](https://www.cosmicegg.co.uk/wedding-videos-perthshire-scotland) | Alyth near Blairgowrie, Perthshire | Official packages at GBP 600 and GBP 1,200 | Not provided |
+| [Oli and Steph Photography](https://oliandsteph.com/) | Lives and works from the Isle of Skye | Pricing supplied after enquiry | Not provided |
+| [West Coast Weddings](https://www.westcoastweddings.online/packageoptions) | Outer Hebrides; primarily serves the Western Isles | Three official video packages from GBP 1,550 | Not provided |
+
+The batch deliberately contains four records. A further search did not produce
+a fifth current official source with equally clear wedding-videography and
+local-base evidence, so the sample was not padded with a supplier that merely
+travels into Tayside or the islands. Quote-only rows are explicit and truthful;
+no price has been inferred.
+
 ## Operator source review completed locally - 3 August 2026
 
 All ten records were rechecked against current official pages. Seven retained
@@ -83,7 +103,7 @@ contacted.
 
 - The reusable CSV contract can represent a real cross-category batch with
   public provenance, useful services, location data and pricing evidence.
-- Ten videographers now have official-source location, service and either
+- Fourteen videographers now have official-source location, service and either
   current numeric pricing or explicit quote handling across a materially
   broader part of Scotland.
 - The workflow retains source conflicts and now prevents unresolved notes from
@@ -93,13 +113,14 @@ contacted.
 
 ## What it does not prove
 
-- Ten candidates still do not constitute meaningful Scottish coverage.
+- Fourteen candidates still do not constitute meaningful published Scottish coverage.
 - A valid CSV row is not an approved profile and is never automatically live.
 - Public package prices do not prove availability for a couple's date or venue.
 - No duplicate check against a future staged or live record may be skipped.
 - No category flag, sitemap entry or public acquisition page should be enabled
   from this sample.
 
-The next evidence step is to add genuinely Tayside-based and island suppliers,
-then review both batches through `/admin/supplier-staging`. Publication still
-requires approved imagery, complete mobile verification and explicit approval.
+The next evidence step is to review all three batches through
+`/admin/supplier-staging` in an approved environment and begin a lawful image-
+permission workflow. Publication still requires complete profiles, useful
+regional depth, approved imagery, mobile verification and explicit approval.

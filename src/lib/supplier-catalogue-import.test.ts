@@ -122,4 +122,28 @@ describe("supplier catalogue import", () => {
     });
     expect(result.candidates.filter((candidate) => candidate.review_notes)).toHaveLength(2);
   });
+
+  it("keeps the Tayside and islands videographer sample importable and image-free", () => {
+    const source = readFileSync(
+      join(process.cwd(), "docs/planning-hub/research/videographer-tayside-islands-sample-2026-08-03.csv"),
+      "utf8",
+    );
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.candidates).toHaveLength(4);
+    expect(result.candidates.every((candidate) => (
+      candidate.category_slug === "videographer"
+      && candidate.source_type === "official_website"
+      && (candidate.starting_price_pence != null || candidate.pricing_unit === "quote")
+      && candidate.hero_image_url == null
+      && candidate.image_permission_status === "not_provided"
+    ))).toBe(true);
+    expect(result.candidates.find((candidate) => candidate.slug === "cosmic-egg-productions")?.starting_price_pence)
+      .toBe(60_000);
+    expect(result.candidates.find((candidate) => candidate.slug === "west-coast-weddings")?.starting_price_pence)
+      .toBe(155_000);
+    expect(result.candidates.filter((candidate) => candidate.pricing_unit === "quote")).toHaveLength(2);
+  });
 });

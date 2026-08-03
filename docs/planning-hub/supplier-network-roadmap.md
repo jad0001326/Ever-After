@@ -237,12 +237,11 @@ different prices on two current official pages; the batch records that conflict
 and requires operator confirmation rather than presenting either value as
 settled.
 
-The category remains inactive. Ten researched candidates are still not ten
-published, image-cleared profiles, and Tayside-based and island-based coverage
-remain thin. The next catalogue action is operator review of both batches,
-followed by lawful image-permission work and further regional research. Hosted
-staging, supplier contact, publication and category activation still require
-explicit approval.
+The category remains inactive. At this point ten researched candidates were
+still not ten published, image-cleared profiles, and Tayside-based and island-
+based coverage remained thin. The later geographic batch below addresses that
+research gap without changing the hosted catalogue. Hosted staging, supplier
+contact, publication and category activation still require explicit approval.
 
 ## Videographer operator review completed locally - 3 August 2026
 
@@ -255,5 +254,21 @@ quote-only handling rather than choosing an unsupported amount.
 That review exposed and removed a reusable staging risk: research notes now
 survive import, are visible in the bulk queue, and block acceptance until an
 operator records a resolution. No hosted batch was staged and videography
-remains inactive. Lawful imagery plus genuinely Tayside-based and island-based
-coverage remain the next evidence gaps.
+remains inactive. At this review point lawful imagery plus genuinely Tayside-
+based and island-based coverage were the next evidence gaps; the later batch
+below addresses only the geographic research portion.
+
+## Tayside and island videographer evidence expanded locally - 3 August 2026
+
+A third four-record official-source batch adds two genuinely Tayside-based
+businesses in Carnoustie and Alyth plus two island-based businesses on Skye and
+in the Outer Hebrides. Two rows retain current published package prices and two
+are explicitly quote-only. The smaller batch is intentional: no fifth result
+met the same current official-source and local-base standard.
+
+This closes the immediate research-location gap, not the category activation
+gate. The fourteen candidates are not hosted listings, none has approved image
+permission and videography remains inactive. The next supplier action is an
+approved operator review of all three batches followed by lawful image-
+permission work; hosted staging, contact, publication and activation still
+require explicit approval.
