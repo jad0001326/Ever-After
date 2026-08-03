@@ -78,7 +78,7 @@ contacts.
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates, and source-backed catalogue research has an admin-only batch staging path. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates, and source-backed catalogue research has an admin-only batch staging path. A first five-record videographer sample now carries official provenance and explicit package pricing while deliberately retaining no imagery. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -113,9 +113,9 @@ through that staging boundary and activate it only as a complete tested slice.
 | --- | --- | --- |
 | Venue-first Planning Hub milestone | Complete locally | Responsive shell, profile inputs, paginated server discovery, detail, save/compare, estimated/quoted/booked planning, connected budget and payments, Photography handoff and manual fallback all pass the optimized interaction gate. |
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
-| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; four native keyboard interactions measure no slower than 24 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
+| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; five native keyboard interactions measure no slower than 16 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Draft review only | The approved branch push and draft pull request #55 are complete. The existing Vercel Git integration created an authentication-protected preview automatically; no merge, production deployment, hosted migration or production write is authorised. |
+| Production release | Current candidate local only | Draft pull request #55 and its authentication-protected Vercel preview contain the earlier approved snapshot. The current branch has integrated `origin/main`, passes the full local release gate and is 23 commits ahead of the remote branch. No new push, merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
@@ -124,8 +124,9 @@ through that staging boundary and activate it only as a complete tested slice.
    Data API with the guarded `npm run test:planning-api` harness in a free local
    stack or approved disposable environment. The database-level owner, partner,
    outsider and anonymous cases now pass.
-2. Review draft pull request #55 and its accumulated release boundaries, then
-   choose the production scope.
+2. Obtain approval to update draft pull request #55 with the current integrated
+   candidate, review its accumulated release boundaries, then choose the
+   production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
    Chrome verification is already passing.
 4. Keep the development-only ESLint dependency advisory under review. The
@@ -138,7 +139,7 @@ through that staging boundary and activate it only as a complete tested slice.
 
 ## Current verification baseline
 
-- 94 test files and 459 tests passing.
+- 99 test files and 477 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -148,8 +149,8 @@ through that staging boundary and activate it only as a complete tested slice.
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.
-- Optimized Next.js build passing with 88 generated pages after merging the ten
-  new upstream planning guides.
+- Optimized Next.js build passing with 90 generated pages after integrating
+  current `origin/main` and the supplier staging/admin surfaces.
 - Production dependency audit passing with zero known vulnerabilities after
   patching Next.js, Sharp, PostCSS, MCP SDK and their affected transitives.
   The full audit retains only a development-tool ESLint/minimatch advisory.
@@ -206,8 +207,8 @@ through that staging boundary and activate it only as a complete tested slice.
   prove venue detail focus transfer, keyboard-reachable Close, exact trigger
   focus restoration, Compare pressed state, manual-entry disclosure and field
   order, and keyboard navigation to the plan-aware Photography stage. Chrome
-  Event Timing records four distinct interactions; the full optimized run's
-  slowest duration is 24 milliseconds and the gate fails above 200
+  Event Timing records five distinct interactions; the full optimized run's
+  slowest duration is 16 milliseconds and the gate fails above 200
   milliseconds. Field INP remains explicitly separate.
 - The native-ready source boundary covers 26 declared domain modules and fails
   on framework directives, React/Next imports, browser globals or storage,
@@ -295,7 +296,7 @@ through that staging boundary and activate it only as a complete tested slice.
   full transfer is about 288KiB.
 
 No production data, hosted Supabase migration, cloud branch, paid action or
-production deployment was used. The approved branch push created draft pull
-request #55, and the repository's existing Vercel Git integration automatically
-created an authentication-protected preview. The production domain was not
-changed.
+production deployment was used. Draft pull request #55 and its automatic
+authentication-protected Vercel preview remain on the earlier approved
+snapshot. The current 23-commit local candidate has not been pushed, and the
+production domain was not changed.

@@ -212,3 +212,17 @@ No real candidate batch was researched or staged in this slice. The next
 evidence step is a read-only primary-source research batch for the most useful
 candidate category, followed by review of actual coverage against the release
 gate. Nothing should be published or contacted during that step.
+
+## First videographer research sample completed locally - 3 August 2026
+
+The first real source-backed sample is recorded in
+`videographer-research-sample.md` with its machine-readable CSV under
+`docs/planning-hub/research`. Five official Scottish videography sites provide
+usable location, service and explicit package-price evidence. The import parser
+accepts all five rows and a regression test keeps the batch valid.
+
+This makes videography the current next research category, not a live category.
+Five records are not meaningful national coverage, and none has image
+permission evidence. Nothing was imported, published, contacted or staged in a
+hosted database. Expand regional coverage and obtain lawful imagery before any
+activation review.

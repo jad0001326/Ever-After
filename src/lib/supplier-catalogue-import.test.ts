@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
 
@@ -59,5 +61,24 @@ describe("supplier catalogue import", () => {
     const result = parseSupplierCandidateRows([headers, valid, valid], "2026-08-01", "2026-08-03");
     expect(result.candidates).toHaveLength(1);
     expect(result.errors.at(-1)?.message).toBe("Slug is duplicated within this file.");
+  });
+
+  it("keeps the reviewed videographer research sample importable and image-free", () => {
+    const source = readFileSync(
+      join(process.cwd(), "docs/planning-hub/research/videographer-primary-source-sample-2026-08-03.csv"),
+      "utf8",
+    );
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.candidates).toHaveLength(5);
+    expect(result.candidates.every((candidate) => (
+      candidate.category_slug === "videographer"
+      && candidate.source_type === "official_website"
+      && candidate.starting_price_pence != null
+      && candidate.hero_image_url == null
+      && candidate.image_permission_status === "not_provided"
+    ))).toBe(true);
   });
 });
