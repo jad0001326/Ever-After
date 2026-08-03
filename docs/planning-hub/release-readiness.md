@@ -4,8 +4,9 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `c3a01c9`; later supplier-research, generic-outreach and migration-
-alignment work remains local and unpushed. Production release and connected
+commit `c3a01c9`; six later supplier-research, generic-outreach, migration-
+alignment, risk-review, public-positioning and release-verification commits
+remain local and unpushed. Production release and connected
 partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
@@ -138,7 +139,10 @@ they do not require rewriting or pushing it.
 | 54. Production database preflight | Compare the healthy production project's migration history, table security and advisors; prepare a narrow grant hardening migration for 19 legacy tables. | `c3a01c9` | Read-only hosted audit plus local migration and disposable PostgreSQL proof; no migration, data change, branch, paid resource or activation. |
 | 55. Regional videographer evidence | Add a second official-source batch for Aberdeen, Aberdeenshire, the Highlands and explicit Dundee service coverage, retaining a conflicting official price for operator review. | `3ebc805` | Local CSV, evidence and regression test only; no hosted staging, supplier contact, imagery, publication, activation or push. |
 | 56. Category-aware supplier outreach | Generalize candidate filtering, recipient snapshots, claim links and send-time checks while retaining legacy Photography rows and a disabled-by-default category flag. | `79303f4` | Local application and unapplied additive migration only; no campaign, contact, hosted write, feature activation or push. |
-| 57. Production migration alignment | Mirror the 25 recorded production identities, verify the exact nine-file pending set and document the dry-run/checkpoint/approval sequence. | Current working slice | Read-only history refresh and local filename/runbook changes only; no history repair, migration, deployment, paid resource or push. |
+| 57. Production migration alignment | Mirror the 25 recorded production identities, verify the exact nine-file pending set and document the dry-run/checkpoint/approval sequence. | `4b9b309` | Read-only history refresh and local filename/runbook changes only; no history repair, migration, deployment, paid resource or push. |
+| 58. Pending migration risk review | Measure the existing-row, policy, lock and functional surface of the exact nine-file pending set before activation. | `9b2509f` | Read-only production counts and local review evidence only; no migration, data change, deployment, paid resource or push. |
+| 59. Truthful public positioning | Lead with Scottish wedding planning while keeping the Planning Hub entry behind a separate server-side approval gate. | `1c8c8e2` | Local application, tests and browser proof only; the entry flag defaults off and no push, deployment or public activation occurred. |
+| 60. Post-positioning release verification | Repeat the optimized responsive, accessibility, interaction, live-catalogue and production dependency gates after the public entry change. | Current verification record | Read-only local and public-catalogue checks only; no service-role key, hosted write, push, deployment, migration or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -197,7 +201,7 @@ public tables to
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
    - require the exact 25 matching and nine pending identities;
-   - confirm all three feature flags remain off.
+   - confirm all four feature flags remain off.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
    - smoke-test the existing public planners and beta local-device journey;
@@ -235,17 +239,17 @@ Use the least destructive rollback that restores safety:
   Docker, Podman, the Supabase CLI and `psql` are absent. `wsl.exe` is present,
   but no WSL distribution or subsystem is installed.
 - The guarded `npm run test:planning-api` harness and disposable baseline
-  generator are ready. The generated 31-file stack still needs its first
+  generator are ready. The generated 35-file stack still needs its first
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 now contains the approved integrated candidate and is
-  mergeable. Merge, production deployment, migration and production writes
-  require separate explicit approval.
+- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; six
+  later local commits are not yet in the pull request. Push, merge, production
+  deployment, migration and production writes require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 99 Vitest files and 478 tests pass.
+- 101 Vitest files and 486 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -427,6 +431,20 @@ Use the least destructive rollback that restores safety:
   planners and the home page render at 1440 x 900 without horizontal overflow,
   browser errors or axe violations. The home page has one contrast result that
   axe leaves incomplete; it is not a violation.
+- After the public-positioning slice, the complete optimized browser gate was
+  rerun against the read-only catalogue. All ten 390 x 844 and 1440 x 900
+  surfaces plus the venue-to-Photography, payment, availability, long-list,
+  keyboard and screen-reader journeys passed with zero overflow, browser errors
+  or accessibility findings. Chrome recorded four keyboard interactions; the
+  slowest presentation was 32 milliseconds against the 200 millisecond lab
+  budget.
+- A separate in-app Browser smoke enabled only the local public-entry flag. The
+  homepage entered the private Hub, the server returned 470 matching venues
+  while the UI rendered eight cards, and Blackshaw Barns opened in-place with
+  four on-demand images. Mobile and desktop stayed within the viewport, the
+  route retained `noindex, nofollow`, and no console warning or error appeared.
+- `npm audit --omit=dev` reports zero known production vulnerabilities on the
+  current lockfile.
 
 The local browser verification used only the existing Supabase URL and
 publishable key for read-only catalogue access. The service-role key was not
@@ -438,6 +456,6 @@ reported no warning, error or fatal runtime logs for that deployment during the
 verification window. No public bypass link was created.
 
 No paid resource, cloud branch, migration, production write or production
-deployment was used to create this release record. Draft pull request #55 is
-current and its preview remains authentication-protected. The production domain
-was not changed.
+deployment was used to create this release record. Draft pull request #55 and
+its authentication-protected preview remain at pushed commit `c3a01c9`; six
+newer commits are local only. The production domain was not changed.
