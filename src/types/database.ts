@@ -480,6 +480,86 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["supplier_update_requests"]["Row"]>;
         Relationships: [];
       };
+      supplier_catalogue_batches: {
+        Row: {
+          id: string;
+          file_name: string;
+          source_label: string;
+          research_date: string;
+          status: "open" | "reviewed" | "closed";
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_catalogue_batches"]["Row"]> & {
+          file_name: string;
+          source_label: string;
+          research_date: string;
+          created_by: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_catalogue_batches"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_catalogue_candidates: {
+        Row: {
+          id: string;
+          batch_id: string;
+          row_number: number;
+          identity_key: string;
+          category_slug: string;
+          slug: string;
+          business_name: string;
+          base_town: string;
+          region: string;
+          country: string;
+          service_areas: string[];
+          travels_nationwide: boolean;
+          summary: string;
+          description: string;
+          services: string[];
+          official_website_url: string | null;
+          instagram_url: string | null;
+          facebook_url: string | null;
+          enquiry_url: string | null;
+          starting_price_pence: number | null;
+          typical_price_pence: number | null;
+          pricing_summary: string | null;
+          pricing_unit: "package" | "hour" | "person" | "item" | "event" | "quote";
+          hero_image_url: string | null;
+          image_credit: string | null;
+          image_permission_status: "not_provided" | "pending" | "approved" | "rejected";
+          image_permission_evidence_url: string | null;
+          source_url: string;
+          source_type: "official_website" | "public_business_registry" | "supplier_submitted" | "other_public_source";
+          researched_at: string;
+          review_status: "staged" | "accepted" | "rejected" | "duplicate";
+          review_notes: string | null;
+          listing_id: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_catalogue_candidates"]["Row"]> & {
+          batch_id: string;
+          row_number: number;
+          identity_key: string;
+          category_slug: string;
+          slug: string;
+          business_name: string;
+          base_town: string;
+          region: string;
+          summary: string;
+          description: string;
+          services: string[];
+          official_website_url?: string | null;
+          source_url: string;
+          source_type: Database["public"]["Tables"]["supplier_catalogue_candidates"]["Row"]["source_type"];
+          researched_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_catalogue_candidates"]["Row"]>;
+        Relationships: [];
+      };
       photographer_profiles: {
         Row: {
           supplier_id: string;
@@ -1283,6 +1363,14 @@ export type Database = {
           review_status: "approved" | "rejected";
           submitted_by: string;
         }>;
+      };
+      stage_supplier_catalogue_batch: {
+        Args: { p_file_name: string; p_source_label: string; p_research_date: string; p_candidates: Json };
+        Returns: Array<{ batch_id: string; candidate_count: number; duplicate_count: number }>;
+      };
+      review_supplier_catalogue_candidates: {
+        Args: { p_candidate_ids: string[]; p_decision: "accepted" | "rejected" | "duplicate"; p_review_notes?: string | null };
+        Returns: Array<{ candidate_id: string; listing_id: string | null; review_status: "accepted" | "rejected" | "duplicate" }>;
       };
       accept_planning_workspace_invite: {
         Args: { raw_token: string };

@@ -108,6 +108,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <ButtonLink href="/admin/suppliers" variant="secondary">
             <UsersRound size={17} /> Suppliers
           </ButtonLink>
+          <ButtonLink href="/admin/supplier-staging" variant="secondary">
+            <UploadCloud size={17} /> Supplier staging
+          </ButtonLink>
           <ButtonLink href="/admin/venues/new">
             <Plus size={17} /> Add venue
           </ButtonLink>

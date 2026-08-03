@@ -36,7 +36,7 @@ a production deployment, migrate or enable cloud persistence.
 | Planning states and budget | Researching, shortlisted, quoted and booked states plus derived estimated, partially paid and paid states use the shared budget calculation layer. | Proven locally |
 | Immediate budget update | Venue and supplier edits update local plan totals without a page navigation; owner cloud saving remains a transition. Calculation and workspace tests pass. | Proven locally |
 | Logical next recommendation | Wedding state selects venue, photography, supplier, guest, table, task or payment actions through reusable domain functions. | Proven locally |
-| Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. | Proven locally |
+| Supplier discovery | Photography is live with server filtering and pagination. Live searches inherit the selected catalogue venue, Wedding Profile location and remaining plan budget unless explicitly overridden; manual venue IDs are excluded and derived values are recalculated across pagination. Fifteen further categories expose truthful manual planning and make no catalogue request until activated. Venue, photography and supplier items track user-confirmed availability for the exact wedding date and stale that result when the date changes; the directory never claims calendar knowledge it does not hold. Source-backed research can be batch-staged and reviewed without publishing. | Proven locally |
 | Public supplier profiles and claiming | Category-neutral collection, profile and claim routes are locally prepared behind the existing `live` gate. Photography retains canonical legacy URLs. Claims validate category, published identity and ownership; pending/rejected hero imagery is excluded and representative imagery is labelled. Active approved claim members can submit bounded profile proposals for atomic admin review without controlling publication, ownership, category, featuring or imagery. Other categories remain inaccessible because they have no current coverage and their flags remain off. | Foundation and owner review loop proven locally |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
@@ -105,7 +105,8 @@ they do not require rewriting or pushing it.
 | 47. Supplier network workstream | Make catalogue acquisition, cross-category public profiles and claims, bounded owner self-service and connected supplier decisions a first-class activation stream. | `171997d` | Planning and local audit only; no live-count claim, supplier publication, outreach, migration, deployment or paid action. |
 | 48. Supplier catalogue baseline | Add a fail-closed GET-only audit and record the current category, publication, claim, imagery, provenance and profile-completeness baseline. | `17059b8` | Protected aggregate reads only; no contact data output, database write, migration, publication, outreach, deployment or paid action. |
 | 49. Cross-category public supplier foundation | Add gated public collection/profile/claim routes, preserve Photography canonicals, generalize admin claim review and permission-bind supplier imagery. | `8ce8576` | Local application only; all other category flags remain off and no supplier record, claim, migration, outreach, deployment or paid service was changed. |
-| 50. Bounded supplier-owner self-service | Let active approved claim members propose useful profile changes while preserving admin-only publication, ownership, category, featuring and imagery controls. | Current local slice | Local application, unapplied migration and embedded PostgreSQL proof only; no hosted data, migration, deployment, outreach or paid action. |
+| 50. Bounded supplier-owner self-service | Let active approved claim members propose useful profile changes while preserving admin-only publication, ownership, category, featuring and imagery controls. | `b82e7a6` | Local application, unapplied migration and embedded PostgreSQL proof only; no hosted data, migration, deployment, outreach or paid action. |
+| 51. Source-backed supplier staging | Add atomic research batches, strict provenance/pricing/image validation and bulk decisions that create draft listings only. | Current local slice | Local application, template, unapplied migration and embedded PostgreSQL proof only; no real supplier research, hosted data, publication, outreach, deployment or paid action. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -125,6 +126,7 @@ Supabase applies unapplied files in timestamp order:
 7. `20260726185032_planning_workspace_partner_budgets.sql`
 8. `20260726191406_planning_table_plan_sync.sql`
 9. `20260803122711_supplier_owner_update_requests.sql`
+10. `20260803130045_supplier_catalogue_staging.sql`
 
 The first three describe the existing owner-scoped `budget_plans` design.
 Remote migration history must decide whether they are already applied; do not
@@ -365,7 +367,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 28 timestamped
+- The local API generator reproduces one baseline plus all 29 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.

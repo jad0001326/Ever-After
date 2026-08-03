@@ -61,6 +61,14 @@ claim and active membership. A dedicated embedded PostgreSQL scenario proves
 owner, outsider, admin and anonymous boundaries. The migration remains
 unapplied and no hosted supplier record changed.
 
+The catalogue acquisition workflow is now locally prepared as a distinct
+admin-only staging boundary. CSV or Excel batches require public provenance,
+research date, useful profile fields, pricing-or-explicit-quote handling and
+image permission state. Bulk acceptance creates only unclaimed, unfeatured
+drafts; rejected and duplicate evidence is retained. This does not reuse owner
+applications as researched catalogue data and does not introduce outreach
+contacts.
+
 ## Delivered locally
 
 | Objective | Current local result |
@@ -70,7 +78,7 @@ unapplied and no hosted supplier record changed.
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers now have a bounded reviewed profile-update path. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates, and source-backed catalogue research has an admin-only batch staging path. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -94,10 +102,10 @@ Each catalogue still needs enough real published listings, approved imagery,
 its public profile route and category-specific browser verification before its
 `live` flag can change.
 
-The supplier network roadmap's baseline, public profile/claim foundation and
-bounded owner self-service are now locally complete. The next operational step
-is to prepare one evidence-backed category through a source-backed batch
-workflow and activate it only as a complete tested slice.
+The supplier network roadmap's baseline, public profile/claim foundation,
+bounded owner self-service and source-backed batch workflow are now locally
+complete. The next operational step is to research one evidence-backed category
+through that staging boundary and activate it only as a complete tested slice.
 
 ## Completion classification
 

@@ -193,3 +193,22 @@ review function, request table and the two added read policies in one reviewed
 rollback. Once requests exist, preserve the audit records: disable submission
 and review grants, revert the application routes, and use a forward corrective
 migration instead of dropping the table.
+
+## Source-backed batch staging completed locally â€” 3 August 2026
+
+The next acquisition blocker is removed locally. `/admin/supplier-staging`
+validates source-backed CSV or Excel research, stages valid rows atomically and
+supports bulk acceptance, rejection and duplicate decisions. Research remains
+separate from supplier applications, outreach contacts and public listings.
+
+Every candidate retains category, public provenance, research date,
+pricing-or-quote evidence and image permission state. Acceptance creates only
+an unclaimed, unfeatured draft. Pending or rejected images are never copied;
+approved imagery additionally requires permission evidence and credit. The
+complete operator contract and rollback path are in
+`supplier-catalogue-staging-workflow.md`.
+
+No real candidate batch was researched or staged in this slice. The next
+evidence step is a read-only primary-source research batch for the most useful
+candidate category, followed by review of actual coverage against the release
+gate. Nothing should be published or contacted during that step.

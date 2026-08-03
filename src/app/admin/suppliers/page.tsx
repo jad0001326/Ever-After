@@ -22,7 +22,7 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div><Link className="text-sm font-semibold text-[#35533e]" href="/admin">Back to admin</Link><p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Directory expansion</p><h1 className="mt-3 font-display text-5xl font-semibold">Supplier profiles</h1><p className="mt-3 text-[var(--muted)]">Build and review photographers first, with the same foundation ready for every supplier category.</p></div>
-        <ButtonLink href="/admin/suppliers/new"><Plus size={17} /> Add supplier</ButtonLink>
+        <div className="flex flex-wrap gap-3"><ButtonLink href="/admin/supplier-staging" variant="secondary"><UsersRound size={17} /> Batch staging</ButtonLink><ButtonLink href="/admin/suppliers/new"><Plus size={17} /> Add supplier</ButtonLink></div>
       </div>
       {message ? <p className="mt-6 rounded-2xl bg-[#eef4ea] px-4 py-3 text-sm text-[#285237]">{message}</p> : null}
       {error ? <p className="mt-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#9e341f]">{error.message}</p> : null}
