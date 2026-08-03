@@ -1,12 +1,15 @@
 # Supplier catalogue baseline
 
-Measured: 3 August 2026 at 11:43 UTC; refreshed at 16:29 UTC with no count or
-readiness change.
+Measured: 3 August 2026 at 11:43 UTC; refreshed at 16:29 UTC and again at
+17:23 UTC with no count or readiness change.
 
-Method: the local `supplier:audit` command performed paginated GET requests
-against the configured Supabase Data API with protected server credentials. It
-read only aggregate inputs from supplier categories, listings, images and
-claims. It made no insert, update, delete, RPC, migration or storage request.
+Method: the initial measurement and first refresh used the local
+`supplier:audit` command to perform paginated GET requests against the
+configured Supabase Data API with protected server credentials. The 17:23 UTC
+refresh repeated the same readiness definitions through one aggregate,
+read-only SQL query in the connected Supabase project. Both methods read only
+supplier categories, listings, images and claims. They made no insert, update,
+delete, RPC mutation, migration or storage request.
 
 ## Current confirmed state
 

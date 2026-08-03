@@ -4,7 +4,7 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `c3a01c9`; ten later supplier-research, generic-outreach, migration-
+commit `c3a01c9`; eleven later supplier-research, generic-outreach, migration-
 alignment, risk-review, public-positioning, release-verification and release-
 safety and supplier-imagery commits remain local and unpushed. Production release and connected
 partner sharing remain gated. The approved
@@ -168,6 +168,7 @@ Supabase applies unapplied files in timestamp order:
 7. `20260803130045_supplier_catalogue_staging.sql`
 8. `20260803143000_tighten_data_api_table_grants.sql`
 9. `20260803150000_generalize_supplier_outreach.sql`
+10. `20260803165651_supplier_image_submissions.sql`
 
 The other 25 timestamped files now match production's recorded versions
 exactly. Do not replay them or repair production history. The five workspace
@@ -177,7 +178,7 @@ sending retain their separate disabled flags.
 
 The first pending migration predates production's latest recorded version, so
 the reviewed CLI dry run and approved migration command require `--include-all`.
-The alignment verifier and exact dry-run list constrain it to the nine named
+The alignment verifier and exact dry-run list constrain it to the ten named
 files; seed data and custom roles remain excluded.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
@@ -254,7 +255,7 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; ten
+- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; eleven
   later local commits are not yet in the pull request. Push, merge, production
   deployment, migration and production writes require explicit approval.
 

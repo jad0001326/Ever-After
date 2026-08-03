@@ -134,7 +134,7 @@ Activation remains a later complete-slice decision.
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; the current optimized gate measured four native keyboard interactions no slower than 32 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `c3a01c9`; ten later supplier, migration-alignment, risk-review, public-positioning, verification-record and release-safety commits remain local. An authenticated fetch proves the pushed `/planning-hub` renders live venue results with `noindex`; the current local candidate repeats that evidence against the read-only catalogue. No merge, production deployment, hosted migration or production write is authorised. |
+| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `c3a01c9`; eleven later supplier, migration-alignment, risk-review, public-positioning, verification-record and release-safety commits remain local. An authenticated fetch proves the pushed `/planning-hub` renders live venue results with `noindex`; the current local candidate repeats that evidence against the read-only catalogue. No merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
@@ -143,7 +143,7 @@ Activation remains a later complete-slice decision.
    Data API with the guarded `npm run test:planning-api` harness in a free local
    stack or approved disposable environment. The database-level owner, partner,
    outsider and anonymous cases now pass.
-2. Obtain approval to push the ten local commits after `c3a01c9` to draft pull
+2. Obtain approval to push the eleven local commits after `c3a01c9` to draft pull
    request #55, review its accumulated release boundaries, then choose the
    production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
