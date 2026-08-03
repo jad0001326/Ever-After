@@ -59,6 +59,11 @@ should still run during a quiet window and use the fail-closed CLI dry run in
 advisor regression or post-migration privilege mismatch is a stop condition,
 not a reason to broaden the command or repair history.
 
+The dry run and approved command must use `--include-all`: the reviewed
+workspace foundation migration predates production's latest recorded version.
+The exact 25-entry history verifier and nine-file dry run constrain that option;
+seed data and custom roles remain excluded.
+
 The practical rollback remains application-level: keep all feature flags off
 or redeploy the prior application commit. The additive schema should remain in
 place while a defect is investigated. Destructive rollback and migration-

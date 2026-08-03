@@ -7,13 +7,14 @@ import { createAdminCampaignDraft, recordOutreachRecipientAction, sendCampaignBy
 import { defaultOutreachCopyFor, type OutreachAudienceType, type OutreachCampaignKind } from "@/lib/outreach-email";
 import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
 import { supplierCategoryBySlug } from "@/data/supplier-directory";
+import { supplierCategoryOutreachEnabled } from "@/lib/outreach-flags";
 
 export async function createOutreachCampaignDraftAction(formData: FormData) {
   const { user } = await requireAdmin();
   const entityIds = Array.from(new Set(formData.getAll("entityIds").map((value) => value.toString()).filter(Boolean))).slice(0, 100);
   const kind: OutreachCampaignKind = formData.get("kind")?.toString() === "follow_up" ? "follow_up" : "initial_invite";
   const requestedAudience = formData.get("audienceType")?.toString();
-  const genericSupplierEnabled = process.env.SUPPLIER_CATEGORY_OUTREACH_ENABLED === "true";
+  const genericSupplierEnabled = supplierCategoryOutreachEnabled();
   if (requestedAudience === "supplier" && !genericSupplierEnabled) {
     redirect("/admin/outreach?audience=photographer&message=Supplier+category+outreach+is+not+enabled+yet");
   }

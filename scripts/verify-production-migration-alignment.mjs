@@ -5,6 +5,10 @@ const snapshot = JSON.parse(await readFile(
   new URL("../docs/planning-hub/production-migration-history-2026-08-03.json", import.meta.url),
   "utf8",
 ));
+const activationRunbook = await readFile(
+  new URL("../docs/planning-hub/production-activation-runbook.md", import.meta.url),
+  "utf8",
+);
 
 const expectedPending = [
   "20260726140200_planning_workspace_foundation.sql",
@@ -43,6 +47,37 @@ assert(
   `pending set changed; expected ${expectedPending.join(", ")}, found ${actualPending.join(", ")}`,
 );
 
+const latestRemoteVersion = snapshot.migrations
+  .map(({ version }) => version)
+  .sort()
+  .at(-1);
+const backfilledPending = actualPending.filter(
+  (file) => file.slice(0, 14) < latestRemoteVersion,
+);
+assert(
+  JSON.stringify(backfilledPending) === JSON.stringify([
+    "20260726140200_planning_workspace_foundation.sql",
+  ]),
+  `reviewed older pending set changed; found ${backfilledPending.join(", ")}`,
+);
+
+const dbPushCommands = activationRunbook
+  .split(/\r?\n/)
+  .filter((line) => line.startsWith("npx.cmd") && line.includes(" db push "));
+assert(dbPushCommands.length === 2, `activation runbook contains ${dbPushCommands.length} db push commands instead of 2`);
+assert(
+  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --include-all --dry-run$/m.test(activationRunbook),
+  "activation runbook dry run does not include the reviewed older pending migration",
+);
+assert(
+  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --include-all$/m.test(activationRunbook),
+  "activation runbook production command does not include the reviewed older pending migration",
+);
+assert(
+  dbPushCommands.every((line) => !line.includes("--include-seed") && !line.includes("--include-roles")),
+  "activation runbook db push commands must not include seed data or custom roles",
+);
+
 const legacyCopies = [
   ["../supabase/phase11_pricing_recovery.sql", "../supabase/migrations/20260713151556_phase11_pricing_recovery.sql"],
   ["../supabase/phase12_pricing_policy_cleanup.sql", "../supabase/migrations/20260713152210_phase12_pricing_policy_cleanup.sql"],
@@ -56,4 +91,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly and ${actualPending.length} reviewed local migrations remain pending.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, ${actualPending.length} reviewed local migrations remain pending, and the runbook safely includes ${backfilledPending.length} older pending migration.`);

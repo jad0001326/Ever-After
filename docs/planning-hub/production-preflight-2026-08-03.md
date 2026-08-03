@@ -98,8 +98,10 @@ dropped merely because a low-traffic database currently labels them unused.
    25-entry manifest.
 4. Run `npm run test:production-migration-alignment`; require exactly 25
    matching and nine pending migrations.
-5. Review the pending SQL and the migration command's proposed list; it must
-   contain only the nine files recorded above, in order.
+5. Use the runbook's reviewed `--include-all` command because
+   `20260726140200_planning_workspace_foundation.sql` predates production's
+   latest recorded migration. Review the proposed list; it must contain only
+   the nine files recorded above, in order.
 6. Apply those nine migrations under one explicit production approval. Do not
    include seed data.
 7. Re-run database security and performance advisors.

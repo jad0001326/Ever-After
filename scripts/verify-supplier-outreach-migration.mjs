@@ -81,6 +81,11 @@ try {
     "insert into public.outreach_campaign_recipients (id, campaign_id, venue_id, subject_type, supplier_category_slug) values ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 'supplier', 'videographer')",
     "a supplier recipient was accepted with a venue-shaped reference",
   );
+  await rejects(
+    db,
+    "insert into public.outreach_campaign_recipients (id, campaign_id, subject_type) values ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', 'venue')",
+    "a venue recipient was accepted without a venue reference",
+  );
 
   await db.exec(migration);
 

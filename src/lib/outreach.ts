@@ -28,6 +28,7 @@ import type {
   ResearchedOutreachContact
 } from "@/lib/outreach-types";
 import type { Database, Json } from "@/types/database";
+import { assertSupplierCategoryOutreachEnabled } from "@/lib/outreach-flags";
 
 type Campaign = Database["public"]["Tables"]["outreach_campaigns"]["Row"];
 type CampaignRecipient = Database["public"]["Tables"]["outreach_campaign_recipients"]["Row"];
@@ -451,6 +452,7 @@ export async function createAdminCampaignDraft({
   copy,
   filter
 }: Omit<OutreachPreviewInput, "source" | "researchedContacts">) {
+  assertSupplierCategoryOutreachEnabled(filter.audienceType ?? "venue");
   const result = filter.audienceType !== "venue" ? await listSupplierOutreachCandidates(filter) : await listOutreachCandidates(filter);
   const supplierCategory = filter.audienceType !== "venue" ? supplierCategoryBySlug(filter.audienceType === "photographer" ? "photographer" : filter.supplierCategorySlug ?? "") : null;
   if (result.candidates.length === 0) throw new Error(`No eligible ${supplierCategory?.plural.toLowerCase() ?? "venues"} remain after validation and suppression checks.`);
@@ -542,6 +544,7 @@ export async function sendCampaignById(campaignId: string, adminUserId: string):
     return toSendSummary(campaign);
   }
   if (campaign.status !== "draft") throw new Error(`Campaign cannot be sent while its status is ${campaign.status}.`);
+  assertSupplierCategoryOutreachEnabled(campaign.audience_type);
   if (campaign.audience_type !== "venue") return sendSupplierCampaign(campaign, adminUserId);
 
   const now = new Date().toISOString();

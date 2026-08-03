@@ -32,6 +32,7 @@ alter table public.outreach_campaign_recipients
   check (
     (
       subject_type = 'venue'
+      and venue_id is not null
       and supplier_id is null
       and supplier_category_slug is null
     )

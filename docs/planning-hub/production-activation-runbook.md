@@ -11,7 +11,11 @@ migration history, apply SQL, create test users or enable a feature flag.
 - Production migration history must still match the checked 25-entry manifest.
 - The dry run must list exactly the nine migrations recorded in
   `production-preflight-2026-08-03.md`, in ascending order.
-- Do not use `--include-all`, `--include-seed` or `--include-roles`.
+- Use `--include-all` because the reviewed pending migration
+  `20260726140200_planning_workspace_foundation.sql` is older than production's
+  latest recorded migration. The exact manifest check and dry run below still
+  limit the release to the nine reviewed files. Never use `--include-seed` or
+  `--include-roles`.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
 - Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
@@ -49,7 +53,7 @@ Authenticate interactively and link only to the expected project:
 npx.cmd --yes supabase@2.101.0 login
 npx.cmd --yes supabase@2.101.0 link --project-ref fryfdniacyhpubfiqnxj
 npx.cmd --yes supabase@2.101.0 migration list --linked
-npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
+npx.cmd --yes supabase@2.101.0 db push --linked --include-all --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
@@ -84,7 +88,7 @@ and rollback boundary. Ask for approval to apply those nine named migrations.
 Only that approval authorises:
 
 ```powershell
-npx.cmd --yes supabase@2.101.0 db push --linked
+npx.cmd --yes supabase@2.101.0 db push --linked --include-all
 ```
 
 It does not authorise seed data, history repair, deployment, cloud persistence,

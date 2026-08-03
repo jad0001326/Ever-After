@@ -8,6 +8,7 @@ import { listOutreachCandidates, listRecentOutreachCampaigns, listSupplierOutrea
 import type { OutreachAudienceType, OutreachCampaignKind } from "@/lib/outreach-email";
 import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
 import { supplierCategoryBySlug, supplierDirectoryCategories } from "@/data/supplier-directory";
+import { supplierCategoryOutreachEnabled } from "@/lib/outreach-flags";
 
 export const metadata: Metadata = { title: "Outreach campaigns" };
 
@@ -20,7 +21,7 @@ export default async function AdminOutreachPage({
 }) {
   const [{ message, kind: requestedKind, region, audience: requestedAudience, category: requestedCategory, stage: requestedStage }] = await Promise.all([searchParams, requireAdmin()]);
   const kind: OutreachCampaignKind = requestedKind === "follow_up" ? "follow_up" : "initial_invite";
-  const genericSupplierEnabled = process.env.SUPPLIER_CATEGORY_OUTREACH_ENABLED === "true";
+  const genericSupplierEnabled = supplierCategoryOutreachEnabled();
   const audienceType: OutreachAudienceType = requestedAudience === "photographer"
     ? "photographer"
     : requestedAudience === "supplier" && genericSupplierEnabled

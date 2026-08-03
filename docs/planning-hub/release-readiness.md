@@ -4,9 +4,9 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `c3a01c9`; six later supplier-research, generic-outreach, migration-
-alignment, risk-review, public-positioning and release-verification commits
-remain local and unpushed. Production release and connected
+commit `c3a01c9`; seven later supplier-research, generic-outreach, migration-
+alignment, risk-review, public-positioning, release-verification and release-
+safety commits remain local and unpushed. Production release and connected
 partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
@@ -43,7 +43,9 @@ suppression, frozen-recipient and explicit-send checks. The schema change is
 additive: historical Photography campaigns are not rewritten, and the new
 category interface stays hidden behind
 `SUPPLIER_CATEGORY_OUTREACH_ENABLED=false` until the migration is applied and
-verified. No campaign was created or sent.
+verified. The underlying draft and send functions enforce the same gate, so a
+non-admin caller or stale draft cannot bypass the disabled category. No
+campaign was created or sent.
 
 This record maps the original objective to current evidence and defines a
 reviewable release sequence for the commits on
@@ -142,7 +144,8 @@ they do not require rewriting or pushing it.
 | 57. Production migration alignment | Mirror the 25 recorded production identities, verify the exact nine-file pending set and document the dry-run/checkpoint/approval sequence. | `4b9b309` | Read-only history refresh and local filename/runbook changes only; no history repair, migration, deployment, paid resource or push. |
 | 58. Pending migration risk review | Measure the existing-row, policy, lock and functional surface of the exact nine-file pending set before activation. | `9b2509f` | Read-only production counts and local review evidence only; no migration, data change, deployment, paid resource or push. |
 | 59. Truthful public positioning | Lead with Scottish wedding planning while keeping the Planning Hub entry behind a separate server-side approval gate. | `1c8c8e2` | Local application, tests and browser proof only; the entry flag defaults off and no push, deployment or public activation occurred. |
-| 60. Post-positioning release verification | Repeat the optimized responsive, accessibility, interaction, live-catalogue and production dependency gates after the public entry change. | Current verification record | Read-only local and public-catalogue checks only; no service-role key, hosted write, push, deployment, migration or paid resource. |
+| 60. Post-positioning release verification | Repeat the optimized responsive, accessibility, interaction, live-catalogue and production dependency gates after the public entry change. | `961c63c` | Read-only local and public-catalogue checks only; no service-role key, hosted write, push, deployment, migration or paid resource. |
+| 61. Integrated release safety review | Enforce generic supplier activation at the mutation and send boundaries, tighten recipient references and require the reviewed older pending migration in both dry-run and approved commands. | This release-safety commit | Local code, SQL, documentation and regression checks only; no hosted write, supplier contact, push, migration, deployment or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -168,6 +171,11 @@ exactly. Do not replay them or repair production history. The five workspace
 migrations are additive and remain dormant while
 `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
 sending retain their separate disabled flags.
+
+The first pending migration predates production's latest recorded version, so
+the reviewed CLI dry run and approved migration command require `--include-all`.
+The alignment verifier and exact dry-run list constrain it to the nine named
+files; seed data and custom roles remain excluded.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -243,13 +251,13 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; six
+- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; seven
   later local commits are not yet in the pull request. Push, merge, production
   deployment, migration and production writes require explicit approval.
 
 ## Final local release-candidate evidence
 
-- 101 Vitest files and 486 tests pass.
+- 102 Vitest files and 488 tests pass.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -457,5 +465,5 @@ verification window. No public bypass link was created.
 
 No paid resource, cloud branch, migration, production write or production
 deployment was used to create this release record. Draft pull request #55 and
-its authentication-protected preview remain at pushed commit `c3a01c9`; six
+its authentication-protected preview remain at pushed commit `c3a01c9`; seven
 newer commits are local only. The production domain was not changed.
