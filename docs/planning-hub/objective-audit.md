@@ -95,7 +95,7 @@ Sending remains separately disabled and no supplier was contacted.
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates, and source-backed catalogue research has an admin-only batch staging path. Three videographer batches now contain fourteen official-source candidates, including genuine Tayside and island bases, while deliberately retaining no unlicensed imagery; current operator review corrected one changed price and made two unresolved identity/price records quote-only and acceptance-blocked. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates plus private rights-confirmed image submission with admin-only optimized publication; source-backed catalogue research has an admin-only batch staging path. Three videographer batches contain fourteen official-source candidates, including genuine Tayside and island bases, while deliberately retaining no unlicensed imagery; current operator review corrected one changed price and made two unresolved identity/price records quote-only and acceptance-blocked. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -120,9 +120,11 @@ its public profile route and category-specific browser verification before its
 `live` flag can change.
 
 The supplier network roadmap's baseline, public profile/claim foundation,
-bounded owner self-service and source-backed batch workflow are now locally
-complete. The next operational step is to research one evidence-backed category
-through that staging boundary and activate it only as a complete tested slice.
+bounded owner self-service, private image-review path and source-backed batch
+workflow are now locally complete. The next operational step requires explicit
+approval: stage the researched videographer batches, resolve duplicates and
+conflicts, then let approved claimed suppliers provide rights-confirmed images.
+Activation remains a later complete-slice decision.
 
 ## Completion classification
 
@@ -132,7 +134,7 @@ through that staging boundary and activate it only as a complete tested slice.
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; the current optimized gate measured four native keyboard interactions no slower than 32 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `c3a01c9`; nine later supplier, migration-alignment, risk-review, public-positioning, verification-record and release-safety commits remain local. An authenticated fetch proves the pushed `/planning-hub` renders live venue results with `noindex`; the current local candidate repeats that evidence against the read-only catalogue. No merge, production deployment, hosted migration or production write is authorised. |
+| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `c3a01c9`; ten later supplier, migration-alignment, risk-review, public-positioning, verification-record and release-safety commits remain local. An authenticated fetch proves the pushed `/planning-hub` renders live venue results with `noindex`; the current local candidate repeats that evidence against the read-only catalogue. No merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
@@ -141,7 +143,7 @@ through that staging boundary and activate it only as a complete tested slice.
    Data API with the guarded `npm run test:planning-api` harness in a free local
    stack or approved disposable environment. The database-level owner, partner,
    outsider and anonymous cases now pass.
-2. Obtain approval to push the nine local commits after `c3a01c9` to draft pull
+2. Obtain approval to push the ten local commits after `c3a01c9` to draft pull
    request #55, review its accumulated release boundaries, then choose the
    production scope.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
@@ -156,7 +158,7 @@ through that staging boundary and activate it only as a complete tested slice.
 
 ## Current verification baseline
 
-- 102 test files and 490 tests passing.
+- 103 test files and 494 tests passing.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -166,7 +168,7 @@ through that staging boundary and activate it only as a complete tested slice.
 - TypeScript passing.
 - ESLint passing with one unrelated pre-existing `<img>` warning in the venue
   Open Graph image route.
-- Optimized Next.js build passing with 90 generated pages after integrating
+- Optimized Next.js build passing with 91 generated pages after integrating
   current `origin/main` and the supplier staging/admin surfaces.
 - Production dependency audit passing with zero known vulnerabilities after
   patching Next.js, Sharp, PostCSS, MCP SDK and their affected transitives.

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Clock3, ImagePlus, LoaderCircle, ShieldCheck, Star, Trash2, UploadCloud, XCircle } from "lucide-react";
+import { deleteSupplierImageSubmission, registerSupplierImageSubmissions } from "@/app/actions/supplier-images";
 import { deleteVenueImageSubmission, registerVenueImageSubmissions } from "@/app/actions/vendor-images";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
@@ -15,6 +16,7 @@ import {
   VENUE_IMAGE_SUBMISSIONS_BUCKET,
   type VenueImageSubmissionStatus
 } from "@/lib/venue-image-submissions";
+import { SUPPLIER_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/supplier-image-submissions";
 
 type SelectedPhoto = {
   id: string;
@@ -26,7 +28,7 @@ type SelectedPhoto = {
 
 export type VendorImageSubmissionView = {
   id: string;
-  venueId: string;
+  resourceId: string;
   altText: string;
   creditText: string | null;
   isPreferred: boolean;
@@ -37,16 +39,20 @@ export type VendorImageSubmissionView = {
 };
 
 export function VendorImageUploader({
-  venueId,
-  venueName,
+  resourceType,
+  resourceId,
+  resourceName,
   userId,
   submissions
 }: {
-  venueId: string;
-  venueName: string;
+  resourceType: "venue" | "supplier";
+  resourceId: string;
+  resourceName: string;
   userId: string;
   submissions: VendorImageSubmissionView[];
 }) {
+  const resourceLabel = resourceType === "venue" ? "venue" : "supplier";
+  const submissionBucket = resourceType === "venue" ? VENUE_IMAGE_SUBMISSIONS_BUCKET : SUPPLIER_IMAGE_SUBMISSIONS_BUCKET;
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<string[]>([]);
@@ -109,7 +115,7 @@ export function VendorImageUploader({
   async function submitPhotos() {
     setFeedback(null);
     if (photos.length === 0) {
-      setFeedback({ ok: false, message: "Choose at least one venue photo." });
+      setFeedback({ ok: false, message: `Choose at least one ${resourceLabel} photo.` });
       return;
     }
     if (photos.some((photo) => photo.altText.trim().length < 3)) {
@@ -134,8 +140,8 @@ export function VendorImageUploader({
         const prepared = await prepareVenueImage(photo.file);
         if (prepared.size > MAX_STAGED_IMAGE_BYTES) throw new Error(`${photo.file.name} is still larger than 10 MB after preparation.`);
 
-        const path = `${userId}/${venueId}/${crypto.randomUUID()}.jpg`;
-        const { error } = await supabase.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).upload(path, prepared, {
+        const path = `${userId}/${resourceId}/${crypto.randomUUID()}.jpg`;
+        const { error } = await supabase.storage.from(submissionBucket).upload(path, prepared, {
           cacheControl: "3600",
           contentType: "image/jpeg",
           upsert: false
@@ -156,9 +162,11 @@ export function VendorImageUploader({
       }
 
       registrationAttempted = true;
-      const result = await registerVenueImageSubmissions({ venueId, permissionConfirmed: true, items });
+      const result = resourceType === "venue"
+        ? await registerVenueImageSubmissions({ venueId: resourceId, permissionConfirmed: true, items })
+        : await registerSupplierImageSubmissions({ supplierId: resourceId, permissionConfirmed: true, items });
       if (!result.ok) {
-        await supabase.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).remove(uploadedPaths);
+        await supabase.storage.from(submissionBucket).remove(uploadedPaths);
         setFeedback(result);
         return;
       }
@@ -175,7 +183,7 @@ export function VendorImageUploader({
       // database rows were created. Keep the private objects intact so the
       // review queue cannot be left pointing at deleted files.
       if (uploadedPaths.length && !registrationAttempted) {
-        await supabase.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).remove(uploadedPaths);
+        await supabase.storage.from(submissionBucket).remove(uploadedPaths);
       }
       setFeedback({ ok: false, message: error instanceof Error ? error.message : "The photos could not be uploaded." });
     } finally {
@@ -189,8 +197,8 @@ export function VendorImageUploader({
       <div className="border-b border-[#e8dece] px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-[#4a443c]"><ImagePlus size={17} /> Add venue photography</p>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">Upload your own venue photos here. EverAft checks each one before it replaces the Venue Passport or appears in the public gallery.</p>
+            <p className="flex items-center gap-2 text-sm font-semibold text-[#4a443c]"><ImagePlus size={17} /> Add {resourceLabel} photography</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">Upload your own {resourceLabel} photos here. EverAft checks each one before it becomes a main image or appears in the public gallery.</p>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#4f5e46] ring-1 ring-[#d8cfbf]"><ShieldCheck size={14} /> Private until approved</span>
         </div>
@@ -209,14 +217,14 @@ export function VendorImageUploader({
           tabIndex={-1}
         />
         <button
-          aria-label="Choose venue photos"
+          aria-label={`Choose ${resourceLabel} photos`}
           className="focus-ring group grid w-full place-items-center rounded-3xl border-2 border-dashed border-[#cdbb9f] bg-white px-5 py-8 text-center transition hover:border-[#9d7b45] hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-60"
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy || photos.length >= MAX_IMAGE_FILES_PER_BATCH}
         >
           <span className="grid size-12 place-items-center rounded-full bg-[#f4efe7] text-[#846438] transition group-hover:bg-[#eee3d2]"><UploadCloud size={21} /></span>
-          <span className="mt-3 font-semibold text-[#3f3a33]">Choose venue photos</span>
+          <span className="mt-3 font-semibold text-[#3f3a33]">Choose {resourceLabel} photos</span>
           <span className="mt-1 text-sm text-[var(--muted)]">JPEG, PNG or WebP · up to {MAX_IMAGE_FILES_PER_BATCH} photos · 20 MB each</span>
         </button>
 
@@ -227,20 +235,20 @@ export function VendorImageUploader({
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#eee8de]">
                   {/* A local object URL is deliberately rendered directly; it never leaves this browser before upload. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="h-full w-full object-cover" src={photo.previewUrl} alt="Selected venue photo preview" />
+                  <img className="h-full w-full object-cover" src={photo.previewUrl} alt={`Selected ${resourceLabel} photo preview`} />
                   <button className="focus-ring absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white/95 text-[#5b5146] shadow-sm" type="button" onClick={() => removePhoto(photo.id)} disabled={busy} aria-label={`Remove ${photo.file.name}`}><Trash2 size={15} /></button>
                 </div>
                 <div>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0"><p className="truncate text-sm font-semibold text-[#413b34]">{photo.file.name}</p><p className="mt-1 text-xs text-[var(--muted)]">Photo {index + 1} · {formatFileSize(photo.file.size)}</p></div>
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#fff9ef] px-3 py-1.5 text-xs font-semibold text-[#72572b]">
-                      <input className="size-4 accent-[#846438]" type="radio" name={`preferred-${venueId}`} checked={preferredId === photo.id} onChange={() => setPreferredId(photo.id)} disabled={busy} />
+                      <input className="size-4 accent-[#846438]" type="radio" name={`preferred-${resourceType}-${resourceId}`} checked={preferredId === photo.id} onChange={() => setPreferredId(photo.id)} disabled={busy} />
                       <Star size={13} /> Preferred main
                     </label>
                   </div>
                   <div className="mt-4 grid gap-3">
-                    <label className="grid gap-2 text-sm font-medium text-[#4a443c]">What is shown? <span className="text-xs font-normal text-[var(--muted)]">Used as accessible image description</span><Input value={photo.altText} onChange={(event) => updatePhoto(photo.id, { altText: event.target.value })} maxLength={300} placeholder={`e.g. ${venueName} ceremony room with floral aisle`} disabled={busy} required /></label>
-                    <label className="grid gap-2 text-sm font-medium text-[#4a443c]">Photo credit <span className="text-xs font-normal text-[var(--muted)]">Optional photographer or venue credit</span><Input value={photo.creditText} onChange={(event) => updatePhoto(photo.id, { creditText: event.target.value })} maxLength={200} placeholder="e.g. Photograph courtesy of the venue" disabled={busy} /></label>
+                    <label className="grid gap-2 text-sm font-medium text-[#4a443c]">What is shown? <span className="text-xs font-normal text-[var(--muted)]">Used as accessible image description</span><Input value={photo.altText} onChange={(event) => updatePhoto(photo.id, { altText: event.target.value })} maxLength={300} placeholder={`e.g. ${resourceName} at work during a wedding`} disabled={busy} required /></label>
+                    <label className="grid gap-2 text-sm font-medium text-[#4a443c]">Photo credit <span className="text-xs font-normal text-[var(--muted)]">Optional photographer or business credit</span><Input value={photo.creditText} onChange={(event) => updatePhoto(photo.id, { creditText: event.target.value })} maxLength={240} placeholder={`e.g. Photograph courtesy of ${resourceName}`} disabled={busy} /></label>
                   </div>
                 </div>
               </article>
@@ -252,7 +260,7 @@ export function VendorImageUploader({
           <div className="mt-5 rounded-2xl border border-[#d8cfbf] bg-white p-4">
             <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#4a443c]">
               <input className="mt-1 size-4 shrink-0 accent-[#334235]" type="checkbox" checked={permissionConfirmed} onChange={(event) => setPermissionConfirmed(event.target.checked)} disabled={busy} />
-              <span><strong>I have permission to display these photos on EverAft.</strong> I own them, represent the venue, or have the photographer/rightsholder&apos;s consent, and any people shown have been handled appropriately.</span>
+              <span><strong>I have permission to display these photos on EverAft.</strong> I own them, represent this {resourceLabel}, or have the photographer/rightsholder&apos;s consent, and any people shown have been handled appropriately.</span>
             </label>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-[var(--muted)]">Files are resized for the website and held privately until EverAft approves them.</p>
@@ -269,8 +277,8 @@ export function VendorImageUploader({
         <div className="mt-6 border-t border-[#e8dece] pt-5">
           <div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-[#4a443c]">Submitted photos</p><p className="text-xs text-[var(--muted)]">{submissions.length} total</p></div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {submissions.map((submission) => <SubmissionCard submission={submission} key={submission.id} />)}
-            {submissions.length === 0 ? <p className="text-sm text-[var(--muted)]">No venue photos submitted yet.</p> : null}
+            {submissions.map((submission) => <SubmissionCard resourceType={resourceType} submission={submission} key={submission.id} />)}
+            {submissions.length === 0 ? <p className="text-sm text-[var(--muted)]">No {resourceLabel} photos submitted yet.</p> : null}
           </div>
         </div>
       </div>
@@ -278,7 +286,7 @@ export function VendorImageUploader({
   );
 }
 
-function SubmissionCard({ submission }: { submission: VendorImageSubmissionView }) {
+function SubmissionCard({ resourceType, submission }: { resourceType: "venue" | "supplier"; submission: VendorImageSubmissionView }) {
   const status = submissionStatus(submission.status);
   const StatusIcon = status.icon;
   return (
@@ -297,7 +305,7 @@ function SubmissionCard({ submission }: { submission: VendorImageSubmissionView 
         <p className="mt-2 text-xs text-[var(--muted)]">Submitted {formatDate(submission.createdAt)}</p>
         {submission.adminNotes ? <p className="mt-3 rounded-xl bg-[#f7f3eb] px-3 py-2 text-xs leading-5 text-[#5d5246]">EverAft note: {submission.adminNotes}</p> : null}
         {submission.status !== "approved" ? (
-          <form action={deleteVenueImageSubmission} className="mt-3">
+          <form action={resourceType === "venue" ? deleteVenueImageSubmission : deleteSupplierImageSubmission} className="mt-3">
             <input name="submissionId" type="hidden" value={submission.id} />
             <Button className="min-h-9 px-3 text-xs" type="submit" variant="ghost"><Trash2 size={13} /> Remove</Button>
           </form>

@@ -9,6 +9,7 @@ import { VendorUpdateForm } from "@/components/vendor/vendor-update-form";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { publicSupplierProfilePath } from "@/lib/supplier-public-routes";
+import { SUPPLIER_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/supplier-image-submissions";
 import { VENUE_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/venue-image-submissions";
 import type { SupplierCategorySlug } from "@/types/supplier";
 
@@ -56,9 +57,12 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
     ? await supabase.from("supplier_listings").select("*").in("vendor_id", vendorIds).eq("is_claimed", true).eq("claim_status", "approved").order("updated_at", { ascending: false })
     : { data: [] };
   const supplierIds = (suppliers ?? []).map((supplier) => supplier.id);
-  const { data: supplierRequests } = supplierIds.length
-    ? await supabase.from("supplier_update_requests").select("*").in("supplier_id", supplierIds).order("created_at", { ascending: false })
-    : { data: [] };
+  const [{ data: supplierRequests }, { data: supplierImageSubmissions }] = supplierIds.length
+    ? await Promise.all([
+        supabase.from("supplier_update_requests").select("*").in("supplier_id", supplierIds).order("created_at", { ascending: false }),
+        supabase.from("supplier_image_submissions").select("*").in("supplier_id", supplierIds).order("created_at", { ascending: false })
+      ])
+    : [{ data: [] }, { data: [] }];
   const submissionViews = await Promise.all((imageSubmissions ?? []).map(async (submission): Promise<VendorImageSubmissionView> => {
     let previewUrl = submission.published_url;
     if (!previewUrl) {
@@ -67,7 +71,25 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
     }
     return {
       id: submission.id,
-      venueId: submission.venue_id,
+      resourceId: submission.venue_id,
+      altText: submission.alt_text,
+      creditText: submission.credit_text,
+      isPreferred: submission.is_preferred,
+      status: submission.status,
+      adminNotes: submission.admin_notes,
+      previewUrl,
+      createdAt: submission.created_at
+    };
+  }));
+  const supplierSubmissionViews = await Promise.all((supplierImageSubmissions ?? []).map(async (submission): Promise<VendorImageSubmissionView> => {
+    let previewUrl = submission.published_url;
+    if (!previewUrl) {
+      const { data } = await supabase.storage.from(SUPPLIER_IMAGE_SUBMISSIONS_BUCKET).createSignedUrl(submission.storage_path, 60 * 60);
+      previewUrl = data?.signedUrl ?? null;
+    }
+    return {
+      id: submission.id,
+      resourceId: submission.supplier_id,
       altText: submission.alt_text,
       creditText: submission.credit_text,
       isPreferred: submission.is_preferred,
@@ -105,6 +127,7 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
               const updates = (supplierRequests ?? []).filter((request) => request.supplier_id === supplier.id);
               const pendingUpdate = updates.find((request) => request.status === "pending");
               const latestUpdate = updates[0];
+              const supplierPhotos = supplierSubmissionViews.filter((submission) => submission.resourceId === supplier.id);
               const health = supplierListingHealth(supplier);
               return (
                 <article className="rounded-3xl border border-[var(--line)] bg-white p-6" key={supplier.id}>
@@ -123,6 +146,13 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
                     <p className="mt-1 text-sm text-[var(--muted)]">{health.missing.length ? `Suggested next steps: ${health.missing.join(", ")}` : "Your profile has the core details couples need."}</p>
                     {latestUpdate ? <p className="mt-2 text-sm text-[var(--muted)]">Latest review: <span className="font-semibold capitalize">{latestUpdate.status}</span>{latestUpdate.admin_notes ? ` — ${latestUpdate.admin_notes}` : ""}</p> : null}
                   </div>
+                  <VendorImageUploader
+                    resourceType="supplier"
+                    resourceId={supplier.id}
+                    resourceName={supplier.name}
+                    userId={user.id}
+                    submissions={supplierPhotos}
+                  />
                   <SupplierOwnerUpdateForm supplier={supplier} hasPendingRequest={Boolean(pendingUpdate)} />
                 </article>
               );
@@ -136,7 +166,7 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
       <div className="grid gap-6">
         {(venues ?? []).map((venue) => {
           const venueRequests = (requests ?? []).filter((request) => request.venue_id === venue.id);
-          const venueImageSubmissions = submissionViews.filter((submission) => submission.venueId === venue.id);
+          const venueImageSubmissions = submissionViews.filter((submission) => submission.resourceId === venue.id);
           const venueEnquiries = ((enquiries ?? []) as VendorEnquiry[]).filter((enquiry) => enquiry.venue_id === venue.id);
           const health = listingHealth(venue);
           return (
@@ -169,8 +199,9 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
               </div>
 
               <VendorImageUploader
-                venueId={venue.id}
-                venueName={venue.name}
+                resourceType="venue"
+                resourceId={venue.id}
+                resourceName={venue.name}
                 userId={user.id}
                 submissions={venueImageSubmissions}
               />

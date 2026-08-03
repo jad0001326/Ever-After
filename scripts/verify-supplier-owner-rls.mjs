@@ -8,7 +8,9 @@ const ids = {
   admin: "30000000-0000-4000-8000-000000000003",
   vendor: "40000000-0000-4000-8000-000000000004",
   supplier: "50000000-0000-4000-8000-000000000005",
-  removedRequest: "60000000-0000-4000-8000-000000000006"
+  removedRequest: "60000000-0000-4000-8000-000000000006",
+  supplierImage: "70000000-0000-4000-8000-000000000007",
+  imageSubmission: "71000000-0000-4000-8000-000000000007"
 };
 
 function assert(condition, message) {
@@ -29,9 +31,13 @@ const db = await PGlite.create({ extensions: { pgcrypto } });
 try {
   await db.exec(`
     create role anon nologin; create role authenticated nologin; create role service_role nologin;
-    create schema auth; create schema private authorization postgres;
+    create schema auth; create schema private authorization postgres; create schema storage authorization postgres;
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    create function storage.foldername(name text) returns text[] language sql immutable as $$ select string_to_array(regexp_replace(name, '/[^/]+$', ''), '/') $$;
+    create function storage.extension(name text) returns text language sql immutable as $$ select nullif(regexp_replace(name, '^.*\\.', ''), name) $$;
     create table public.profiles (id uuid primary key, email text, full_name text, role text not null default 'couple');
+    create table storage.buckets (id text primary key, name text not null, public boolean not null default false, file_size_limit bigint, allowed_mime_types text[]);
+    create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text not null references storage.buckets(id), name text not null, owner_id text, unique (bucket_id, name));
     create table public.vendors (id uuid primary key, name text not null, status text not null default 'active');
     create table public.vendor_users (vendor_id uuid references public.vendors, user_id uuid references public.profiles, role text default 'owner', status text default 'active', created_at timestamptz default now(), primary key (vendor_id, user_id));
     create table public.supplier_categories (slug text primary key, name text not null, plural_name text not null, description text not null default '', budget_category_id text, sort_order integer default 100, is_live boolean default false, created_at timestamptz default now(), updated_at timestamptz default now());
@@ -46,17 +52,19 @@ try {
       published_at timestamptz, reviewed_at timestamptz, reviewed_by uuid references public.profiles, created_at timestamptz default now(), updated_at timestamptz default now()
     );
     create table public.photographer_profiles (supplier_id uuid primary key references public.supplier_listings(id), styles text[] default '{}', coverage_hours_min numeric, coverage_hours_max numeric, second_photographer_available boolean, engagement_shoot_available boolean, drone_available boolean, film_photography_available boolean, albums_available boolean, turnaround_weeks_min integer, turnaround_weeks_max integer, updated_at timestamptz default now());
+    create table public.supplier_images (id uuid primary key default gen_random_uuid(), supplier_id uuid not null references public.supplier_listings(id), url text not null, alt text not null, credit_text text, permission_status text not null default 'pending', sort_order integer not null default 0, created_at timestamptz default now());
     create function public.set_updated_at() returns trigger language plpgsql set search_path = '' as $$ begin new.updated_at = now(); return new; end $$;
     create function private.is_admin() returns boolean language sql stable security definer set search_path = pg_catalog as $$
       select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
     $$;
-    grant usage on schema public, auth, private to anon, authenticated, service_role;
-    grant execute on function auth.uid(), private.is_admin() to anon, authenticated, service_role;
-    grant select, insert, update, delete on public.vendor_users, public.supplier_listings, public.photographer_profiles to authenticated;
-    alter table public.vendor_users enable row level security; alter table public.supplier_listings enable row level security;
+    grant usage on schema public, auth, private, storage to anon, authenticated, service_role;
+    grant execute on function auth.uid(), private.is_admin(), storage.foldername(text), storage.extension(text) to anon, authenticated, service_role;
+    grant select, insert, update, delete on public.vendor_users, public.supplier_listings, public.photographer_profiles, public.supplier_images, storage.objects to authenticated;
+    alter table public.vendor_users enable row level security; alter table public.supplier_listings enable row level security; alter table public.supplier_images enable row level security; alter table storage.objects enable row level security;
     create policy "Published supplier listings are public" on public.supplier_listings for select using (listing_status = 'published' or private.is_admin());
     create policy "Admins update supplier listings" on public.supplier_listings for update to authenticated using (private.is_admin()) with check (private.is_admin());
     create policy "Admins insert supplier listings" on public.supplier_listings for insert to authenticated with check (private.is_admin());
+    create policy "Admins manage supplier images" on public.supplier_images for all to authenticated using (private.is_admin()) with check (private.is_admin());
     create policy "Admins manage vendor users" on public.vendor_users for all to authenticated using (private.is_admin()) with check (private.is_admin());
     create policy "Vendor users read own links" on public.vendor_users for select to authenticated using (user_id = auth.uid());
     insert into public.profiles values ('${ids.owner}', 'owner@example.com', 'Owner', 'couple'), ('${ids.outsider}', 'outsider@example.com', 'Outsider', 'couple'), ('${ids.admin}', 'admin@example.com', 'Admin', 'admin');
@@ -70,11 +78,61 @@ try {
   await db.exec(migration);
   const stagingMigration = await readFile(new URL("../supabase/migrations/20260803130045_supplier_catalogue_staging.sql", import.meta.url), "utf8");
   await db.exec(stagingMigration);
+  const imageMigration = await readFile(new URL("../supabase/migrations/20260803165651_supplier_image_submissions.sql", import.meta.url), "utf8");
+  await db.exec(imageMigration);
 
   const ownerListing = await asUser(db, ids.owner, `select id from public.supplier_listings where id = '${ids.supplier}'`);
   assert(ownerListing.rows.length === 1, "active owner cannot read their managed draft listing");
   const outsiderListing = await asUser(db, ids.outsider, `select id from public.supplier_listings where id = '${ids.supplier}'`);
   assert(outsiderListing.rows.length === 0, "outsider can read a managed draft listing");
+
+  const privatePath = `${ids.owner}/${ids.supplier}/${ids.supplierImage}.jpg`;
+  await expectDenied(
+    () => asUser(db, ids.outsider, `insert into storage.objects (bucket_id, name, owner_id) values ('supplier-image-submissions', '${ids.outsider}/${ids.supplier}/${ids.supplierImage}.jpg', '${ids.outsider}')`),
+    "outsider can upload a private supplier image",
+  );
+  await asUser(db, ids.owner, `insert into storage.objects (bucket_id, name, owner_id) values ('supplier-image-submissions', '${privatePath}', '${ids.owner}')`);
+  await expectDenied(
+    () => asUser(db, ids.owner, `insert into public.supplier_image_submissions
+      (supplier_id, submitted_by, storage_path, original_file_name, mime_type, file_size, alt_text, permission_confirmed)
+      values ('${ids.supplier}', '${ids.owner}', '${privatePath}', 'test.jpg', 'image/jpeg', 1200, 'Supplier at work', false)`),
+    "supplier member can register an image without confirming display rights",
+  );
+  await asUser(db, ids.owner, `insert into public.supplier_image_submissions
+    (id, supplier_id, submitted_by, storage_path, original_file_name, mime_type, file_size, alt_text, credit_text, is_preferred, permission_confirmed, permission_confirmed_at)
+    values ('${ids.imageSubmission}', '${ids.supplier}', '${ids.owner}', '${privatePath}', 'test.jpg', 'image/jpeg', 1200, 'Supplier at work', 'Supplier team', true, true, now())`);
+  const ownerImage = await asUser(db, ids.owner, `select id from public.supplier_image_submissions where id = '${ids.imageSubmission}'`);
+  assert(ownerImage.rows.length === 1, "active supplier member cannot read their image submission");
+  const outsiderImage = await asUser(db, ids.outsider, `select id from public.supplier_image_submissions where id = '${ids.imageSubmission}'`);
+  assert(outsiderImage.rows.length === 0, "outsider can read a supplier image submission");
+  await asUser(db, ids.owner, `update public.supplier_image_submissions set admin_notes = 'self approved' where id = '${ids.imageSubmission}'`);
+  const ownerUnchangedImage = await db.query(`select admin_notes, status from public.supplier_image_submissions where id = '${ids.imageSubmission}'`);
+  assert(ownerUnchangedImage.rows[0]?.admin_notes == null && ownerUnchangedImage.rows[0]?.status === "pending", "supplier member can review their own image");
+  await expectDenied(
+    () => asUser(db, ids.owner, `insert into public.supplier_images (supplier_id, url, alt, permission_status) values ('${ids.supplier}', 'https://example.com/unreviewed.jpg', 'Unreviewed', 'approved')`),
+    "supplier member can directly publish an image",
+  );
+  await expectDenied(
+    () => asUser(db, ids.owner, `insert into storage.objects (bucket_id, name, owner_id) values ('supplier-images', '${ids.supplier}/owner-published.jpg', '${ids.owner}')`),
+    "supplier member can directly upload to the public image bucket",
+  );
+  await asUser(db, ids.owner, `delete from storage.objects where bucket_id = 'supplier-image-submissions' and name = '${privatePath}'`);
+  const pendingPrivateObject = await db.query(`select id from storage.objects where bucket_id = 'supplier-image-submissions' and name = '${privatePath}'`);
+  assert(pendingPrivateObject.rows.length === 1, "supplier member can orphan a pending review row by deleting its private object directly");
+  await asUser(db, ids.admin, `insert into storage.objects (bucket_id, name, owner_id) values ('supplier-images', '${ids.supplier}/admin-reviewed.jpg', '${ids.admin}')`);
+  await asUser(db, ids.admin, `delete from storage.objects where bucket_id = 'supplier-images' and name = '${ids.supplier}/admin-reviewed.jpg'`);
+  await asUser(db, ids.admin, `update public.supplier_image_submissions set status = 'rejected', admin_notes = 'Replace this image', reviewed_at = now(), reviewed_by = '${ids.admin}' where id = '${ids.imageSubmission}'`);
+  const rejectedImage = await db.query(`select status, admin_notes from public.supplier_image_submissions where id = '${ids.imageSubmission}'`);
+  assert(rejectedImage.rows[0]?.status === "rejected" && rejectedImage.rows[0]?.admin_notes === "Replace this image", "admin could not review a supplier image");
+  await asUser(db, ids.owner, `delete from public.supplier_image_submissions where id = '${ids.imageSubmission}'`);
+  await asUser(db, ids.owner, `delete from storage.objects where bucket_id = 'supplier-image-submissions' and name = '${privatePath}'`);
+  const removedPrivateObject = await db.query(`select id from storage.objects where bucket_id = 'supplier-image-submissions' and name = '${privatePath}'`);
+  assert(removedPrivateObject.rows.length === 0, "supplier member could not remove their rejected private image");
+
+  const imageBuckets = await db.query(`select id, public, file_size_limit, allowed_mime_types from storage.buckets where id in ('supplier-image-submissions', 'supplier-images') order by id`);
+  assert(imageBuckets.rows.length === 2, "supplier image buckets were not created");
+  assert(imageBuckets.rows.find((row) => row.id === "supplier-image-submissions")?.public === false, "private supplier submission bucket is public");
+  assert(imageBuckets.rows.find((row) => row.id === "supplier-images")?.public === true, "approved supplier image bucket is not public");
 
   const insertSql = (requestId, userId) => `insert into public.supplier_update_requests
     (id, supplier_id, submitted_by, proposed_base_town, proposed_region, proposed_service_areas, proposed_summary, proposed_description, proposed_services, proposed_pricing_unit, requested_message)
@@ -174,7 +232,7 @@ try {
   }
   const anonymousStagingPrivileges = await db.query(`select has_table_privilege('anon', 'public.supplier_catalogue_batches', 'select') as batch_select, has_table_privilege('anon', 'public.supplier_catalogue_candidates', 'select') as candidate_select`);
   assert(anonymousStagingPrivileges.rows[0]?.batch_select === false && anonymousStagingPrivileges.rows[0]?.candidate_select === false, "anonymous role retains staging table access");
-  console.log("Supplier owner and staging RLS verification passed: member isolation, bounded owner review, admin-only atomic batches, mandatory conflict resolution, draft-only promotion, image-rights exclusion and RPC hardening.");
+  console.log("Supplier owner, imagery and staging RLS verification passed: member isolation, private rights-confirmed uploads, admin-only image review, bounded owner updates, atomic catalogue batches, mandatory conflict resolution, draft-only promotion and RPC hardening.");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

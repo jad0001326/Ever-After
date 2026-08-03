@@ -32,7 +32,7 @@ commercial decision.
 | Data model | `supplier_categories`, `supplier_listings`, `supplier_images`, `supplier_venue_connections`, `supplier_favourites`, `supplier_claims` and claim audit records are category-neutral. | Reusable; hosted state not rechecked here |
 | Public discovery | Category-neutral collection and profile routes are prepared behind the existing activation gate; Photography retains its canonical public URLs. | Reusable; other categories inactive |
 | Claiming | Category-neutral claim routing and admin review are prepared locally while Photography keeps its canonical route. | Reusable; activation-gated |
-| Supplier self-service | Approved claim members can submit bounded profile changes for atomic admin review without controlling publication, category, ownership or imagery. | Prepared locally; migration unapplied |
+| Supplier self-service | Approved claim members can submit bounded profile changes and rights-confirmed private image uploads for separate admin review. Only an admin can publish an optimized image, change publication, category or ownership. | Prepared locally; migrations unapplied |
 | Supplier outreach | Category-aware campaign drafting, recipient snapshots, claim links and send-time revalidation are prepared behind a server-only flag. Legacy Photography rows remain compatible and sending has its own disabled-by-default gate. | Prepared locally; migration and flag unapplied |
 
 ## Activation sequence
@@ -188,6 +188,27 @@ atomic admin approval, immutable publication/ownership controls, one pending
 proposal per supplier and rejection of approval after membership is removed.
 This is local code and an unapplied migration only; it changes no hosted data.
 
+## Rights-confirmed supplier imagery completed locally - 3 August 2026
+
+Claimed supplier members can now use the same safe pattern already established
+for venues: prepare up to eight JPEG, PNG or WebP files in the browser, add
+accessible descriptions and credits, explicitly confirm display rights, and
+upload only into a private review bucket. The vendor dashboard shows pending,
+approved and returned submissions without treating a private file as public.
+
+A separate supplier-photo admin queue uses signed previews. Approval rechecks
+the staged file signature and byte count, rotates and resizes it to a bounded
+JPEG, writes a new immutable public object and approved gallery row, and only
+then may replace the profile hero. Failed approvals roll back the public object
+and gallery row. Supplier members cannot upload to the public bucket, approve
+their own files, set image permission state or bypass listing publication.
+
+The embedded PostgreSQL scenario proves active-member path ownership,
+outsider denial, mandatory permission confirmation, private-object isolation,
+admin-only review, direct-publication denial and rejected-file removal. The
+new table and two empty restricted buckets exist only in an unapplied local
+migration; no hosted object, bucket, listing or storage charge was created.
+
 Before any hosted application, compare remote migration history and take a
 schema backup. If it must be withdrawn before real requests exist, remove the
 review function, request table and the two added read policies in one reviewed
@@ -268,7 +289,7 @@ met the same current official-source and local-base standard.
 
 This closes the immediate research-location gap, not the category activation
 gate. The fourteen candidates are not hosted listings, none has approved image
-permission and videography remains inactive. The next supplier action is an
-approved operator review of all three batches followed by lawful image-
-permission work; hosted staging, contact, publication and activation still
-require explicit approval.
+permission and videography remains inactive. The reusable claimed-supplier
+image workflow is now prepared locally, but using it still requires hosted
+staging, approved claims and supplier participation. Those actions, supplier
+contact, publication and category activation still require explicit approval.

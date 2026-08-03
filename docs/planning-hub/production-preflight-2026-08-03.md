@@ -27,7 +27,7 @@ migration files without changing their SQL. The captured manifest is
 `production-migration-history-2026-08-03.json`; the alignment verifier fails if
 an existing production identity is absent or the reviewed pending set changes.
 
-Nine timestamped repository migrations are genuinely pending:
+Ten timestamped repository migrations are genuinely pending:
 
 1. `20260726140200_planning_workspace_foundation.sql`
 2. `20260726162254_planning_workspace_snapshot_import.sql`
@@ -38,11 +38,12 @@ Nine timestamped repository migrations are genuinely pending:
 7. `20260803130045_supplier_catalogue_staging.sql`
 8. `20260803143000_tighten_data_api_table_grants.sql`
 9. `20260803150000_generalize_supplier_outreach.sql`
+10. `20260803165651_supplier_image_submissions.sql`
 
 Do not run an unreviewed bulk migration command against production. First
 refresh the remote list and compare it with the captured manifest. If it is
 unchanged, a normal reviewed migration push no longer needs `migration repair`:
-the first 25 local identities match production exactly and only the nine files
+the first 25 local identities match production exactly and only the ten files
 above should be pending. If it differs, stop; do not repair history or push.
 
 The migration-time lock, rewrite and existing-row surface is reviewed in
@@ -97,7 +98,7 @@ dropped merely because a low-traffic database currently labels them unused.
 3. Re-read remote migration history and stop if it differs from the captured
    25-entry manifest.
 4. Run `npm run test:production-migration-alignment`; require exactly 25
-   matching and nine pending migrations.
+   matching and ten pending migrations.
 5. Use the runbook's reviewed `--include-all` command because
    `20260726140200_planning_workspace_foundation.sql` predates production's
    latest recorded migration. Review the proposed list; it must contain only

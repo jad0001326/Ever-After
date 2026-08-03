@@ -20,6 +20,7 @@ const expectedPending = [
   "20260803130045_supplier_catalogue_staging.sql",
   "20260803143000_tighten_data_api_table_grants.sql",
   "20260803150000_generalize_supplier_outreach.sql",
+  "20260803165651_supplier_image_submissions.sql",
 ];
 
 function assert(condition, message) {

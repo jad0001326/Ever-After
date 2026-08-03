@@ -9,12 +9,12 @@ migration history, apply SQL, create test users or enable a feature flag.
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
 - Production migration history must still match the checked 25-entry manifest.
-- The dry run must list exactly the nine migrations recorded in
+- The dry run must list exactly the ten migrations recorded in
   `production-preflight-2026-08-03.md`, in ascending order.
 - Use `--include-all` because the reviewed pending migration
   `20260726140200_planning_workspace_foundation.sql` is older than production's
   latest recorded migration. The exact manifest check and dry run below still
-  limit the release to the nine reviewed files. Never use `--include-seed` or
+  limit the release to the ten reviewed files. Never use `--include-seed` or
   `--include-roles`.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
@@ -38,7 +38,7 @@ npm.cmd run test:production-migration-alignment
 ```
 
 The status output must be empty. The alignment verifier must report 25 exact
-production identities and nine pending migrations.
+production identities and ten pending migrations.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
 time, use a reviewed stable CLI version and record it in the release log. CLI
@@ -57,7 +57,7 @@ npx.cmd --yes supabase@2.101.0 db push --linked --include-all --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-25-entry manifest or the dry run is not the exact nine-file pending set. A dry
+25-entry manifest or the dry run is not the exact ten-file pending set. A dry
 run is inspection only; it is not migration approval.
 
 ## 3. Create the no-cost checkpoint
@@ -82,8 +82,8 @@ after the release window.
 ## 4. Explicit production approval point
 
 Present the commit SHA, CLI version, project identity, unchanged 25-entry
-history, exact nine-file dry run, checkpoint confirmation, passing local gates
-and rollback boundary. Ask for approval to apply those nine named migrations.
+history, exact ten-file dry run, checkpoint confirmation, passing local gates
+and rollback boundary. Ask for approval to apply those ten named migrations.
 
 Only that approval authorises:
 
@@ -98,7 +98,7 @@ supplier activation or outreach sending.
 
 After an approved push:
 
-1. Re-run `migration list --linked`; it must show all 34 local versions on the
+1. Re-run `migration list --linked`; it must show all 35 local versions on the
    remote side with no local-only or remote-only entry.
 2. Re-run the Supabase security and performance advisors and retain the delta.
 3. Confirm every new public table has RLS enabled and the expected explicit
@@ -107,7 +107,9 @@ After an approved push:
    `REFERENCES` privilege on the 19 audited legacy tables.
 5. Confirm the generic supplier outreach columns and constraints exist, while
    historical `photographer` campaign rows remain unchanged.
-6. Stop and keep all feature flags off on any mismatch.
+6. Confirm the supplier image submission table and both empty, restricted
+   storage buckets exist with the expected RLS and object policies.
+7. Stop and keep all feature flags off on any mismatch.
 
 The embedded owner/partner/outsider and supplier-owner tests prove the SQL
 contract locally. A real Auth/Data API test creates temporary users and rows,
