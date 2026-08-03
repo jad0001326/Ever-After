@@ -226,3 +226,19 @@ Five records are not meaningful national coverage, and none has image
 permission evidence. Nothing was imported, published, contacted or staged in a
 hosted database. Expand regional coverage and obtain lawful imagery before any
 activation review.
+
+## Regional videographer evidence expanded locally - 3 August 2026
+
+A second five-record official-source batch now adds Aberdeen, Aberdeenshire,
+Inverness, the Highlands and explicit Dundee service coverage. The ten combined
+candidates all retain public pricing evidence and no imagery. One supplier has
+different prices on two current official pages; the batch records that conflict
+and requires operator confirmation rather than presenting either value as
+settled.
+
+The category remains inactive. Ten researched candidates are still not ten
+published, image-cleared profiles, and Tayside-based and island-based coverage
+remain thin. The next catalogue action is operator review of both batches,
+followed by lawful image-permission work and further regional research. Hosted
+staging, supplier contact, publication and category activation still require
+explicit approval.

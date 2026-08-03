@@ -81,4 +81,25 @@ describe("supplier catalogue import", () => {
       && candidate.image_permission_status === "not_provided"
     ))).toBe(true);
   });
+
+  it("keeps the regional videographer gap sample importable, reviewable and image-free", () => {
+    const source = readFileSync(
+      join(process.cwd(), "docs/planning-hub/research/videographer-regional-gap-sample-2026-08-03.csv"),
+      "utf8",
+    );
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.candidates).toHaveLength(5);
+    expect(result.candidates.every((candidate) => (
+      candidate.category_slug === "videographer"
+      && candidate.source_type === "official_website"
+      && candidate.starting_price_pence != null
+      && candidate.hero_image_url == null
+      && candidate.image_permission_status === "not_provided"
+    ))).toBe(true);
+    expect(result.candidates.find((candidate) => candidate.slug === "struie-wedding-films")?.pricing_summary)
+      .toContain("Operator review must confirm");
+  });
 });
