@@ -437,6 +437,49 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["supplier_listings"]["Row"]>;
         Relationships: [];
       };
+      supplier_update_requests: {
+        Row: {
+          id: string;
+          supplier_id: string;
+          submitted_by: string;
+          proposed_base_town: string;
+          proposed_region: string;
+          proposed_service_areas: string[];
+          proposed_travels_nationwide: boolean;
+          proposed_summary: string;
+          proposed_description: string;
+          proposed_services: string[];
+          proposed_official_website_url: string | null;
+          proposed_instagram_url: string | null;
+          proposed_facebook_url: string | null;
+          proposed_enquiry_url: string | null;
+          proposed_starting_price_pence: number | null;
+          proposed_typical_price_pence: number | null;
+          proposed_pricing_summary: string | null;
+          proposed_pricing_unit: "package" | "hour" | "person" | "item" | "event" | "quote";
+          requested_message: string;
+          status: "pending" | "approved" | "rejected";
+          admin_notes: string | null;
+          previous_values: Json | null;
+          applied_values: Json | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_update_requests"]["Row"]> & {
+          supplier_id: string;
+          submitted_by: string;
+          proposed_base_town: string;
+          proposed_region: string;
+          proposed_summary: string;
+          proposed_description: string;
+          proposed_services: string[];
+          requested_message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_update_requests"]["Row"]>;
+        Relationships: [];
+      };
       photographer_profiles: {
         Row: {
           supplier_id: string;
@@ -1229,6 +1272,17 @@ export type Database = {
           p_event_data?: Json;
         };
         Returns: Json;
+      };
+      review_supplier_update_request: {
+        Args: { p_request_id: string; p_decision: "approved" | "rejected"; p_admin_notes?: string | null };
+        Returns: Array<{
+          reviewed_request_id: string;
+          reviewed_supplier_id: string;
+          supplier_slug: string;
+          category_slug: string;
+          review_status: "approved" | "rejected";
+          submitted_by: string;
+        }>;
       };
       accept_planning_workspace_invite: {
         Args: { raw_token: string };

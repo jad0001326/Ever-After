@@ -47,7 +47,7 @@ type AdminVenue = {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<AdminSearchParams> }) {
   const [{ message, ...filters }] = await Promise.all([searchParams, requireAdmin()]);
   const supabase = await createClient();
-  const [{ data, error }, { data: claims }, { data: amenityLinks }, { data: newEnquiries }, { count: pendingPhotoReviews }, { count: pendingUpdateReviews }] = await Promise.all([
+  const [{ data, error }, { data: claims }, { data: amenityLinks }, { data: newEnquiries }, { count: pendingPhotoReviews }, { count: pendingUpdateReviews }, { count: pendingSupplierUpdateReviews }] = await Promise.all([
     supabase!
       .from("venues")
       .select("id, name, slug, type, region, town, price_from, price_to, capacity_max, status, listing_status, claim_status, invite_status, official_website_url, official_gallery_url, vendor_contact_email, image_is_representative, is_claimed, is_featured")
@@ -56,7 +56,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     supabase!.from("venue_amenities").select("venue_id"),
     supabase!.from("enquiries").select("id, status").eq("status", "new"),
     supabase!.from("venue_image_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase!.from("vendor_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
+    supabase!.from("vendor_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase!.from("supplier_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
   ]);
   const amenityCounts = new Map<string, number>();
   for (const link of amenityLinks ?? []) amenityCounts.set(link.venue_id, (amenityCounts.get(link.venue_id) ?? 0) + 1);
@@ -98,6 +99,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <ButtonLink href="/admin/updates" variant="secondary">
             <FilePenLine size={17} /> Review edits
           </ButtonLink>
+          <ButtonLink href="/admin/supplier-updates" variant="secondary">
+            <FilePenLine size={17} /> Supplier edits
+          </ButtonLink>
           <ButtonLink href="/admin/applications" variant="secondary">
             <ClipboardList size={17} /> Applications
           </ButtonLink>
@@ -113,7 +117,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       {message ? <p className="mb-6 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
       {error ? <p className="mb-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase error: {error.message}</p> : null}
 
-      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
         <AdminStat icon={<Edit size={18} />} label="Listings" value={venues.length.toString()} />
         <AdminStat icon={<CheckCircle2 size={18} />} label="Launch ready" value={stats.launchReady.toString()} />
         <AdminStat icon={<Archive size={18} />} label="Missing price" value={stats.missingPrice.toString()} />
@@ -121,6 +125,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminStat icon={<Inbox size={18} />} label="Pending claims" value={(claims?.length ?? 0).toString()} />
         <AdminStat icon={<Images size={18} />} label="Photo reviews" value={(pendingPhotoReviews ?? 0).toString()} />
         <AdminStat icon={<FilePenLine size={18} />} label="Pending edits" value={(pendingUpdateReviews ?? 0).toString()} />
+        <AdminStat icon={<FilePenLine size={18} />} label="Supplier edits" value={(pendingSupplierUpdateReviews ?? 0).toString()} />
       </section>
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

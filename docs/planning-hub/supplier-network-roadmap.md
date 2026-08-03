@@ -167,3 +167,29 @@ The routes are still dormant for the other fifteen categories because their
 catalogues have no current records and their `live` flags remain false. The
 remaining claim-product blocker is useful supplier-owner self-service after an
 approved claim.
+
+## Bounded supplier-owner self-service completed locally — 3 August 2026
+
+An active member of an approved claimed supplier can now see that supplier in
+the existing vendor dashboard and submit one complete, bounded profile proposal
+for review. The form covers location, service coverage, copy, services, public
+links and optional pricing guidance. It deliberately excludes business name,
+category, ownership, claim state, publication, featuring and imagery.
+
+The proposal does not edit the public listing. A separate admin queue compares
+current and proposed fields, requires a reason when returning work, and uses one
+security-invoker database function to lock, recheck membership and apply only
+the allowed fields. Previous and applied snapshots preserve the review record.
+
+The embedded PostgreSQL check proves active-member access, outsider denial,
+anonymous function denial, owner inability to approve or publish directly,
+atomic admin approval, immutable publication/ownership controls, one pending
+proposal per supplier and rejection of approval after membership is removed.
+This is local code and an unapplied migration only; it changes no hosted data.
+
+Before any hosted application, compare remote migration history and take a
+schema backup. If it must be withdrawn before real requests exist, remove the
+review function, request table and the two added read policies in one reviewed
+rollback. Once requests exist, preserve the audit records: disable submission
+and review grants, revert the application routes, and use a forward corrective
+migration instead of dropping the table.

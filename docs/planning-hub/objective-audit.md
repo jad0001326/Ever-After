@@ -45,13 +45,21 @@ described quote handling, so none passes the new complete-profile activation
 gate. The aggregate evidence and exact definitions are in
 `supplier-catalogue-baseline-2026-08-03.md`.
 
-The next reusable blocker is now removed locally: category-neutral public
+The first reusable blocker is now removed locally: category-neutral public
 collection, profile and claim routes exist behind the same category activation
 gate, while existing Photography URLs remain canonical. Claim submission
 checks the validated live category, published listing identity and ownership;
 admin review no longer assumes Photography. Shared supplier mappers reject
 pending and rejected hero imagery and label representative imagery. No second
-category was activated and supplier-owner profile editing remains outstanding.
+category was activated.
+
+The approved-claim product loop is also complete locally. Active supplier
+members can propose bounded profile changes from the vendor dashboard; they
+cannot directly change publication, identity, ownership, category, featuring
+or imagery. Admin review applies accepted fields atomically after rechecking the
+claim and active membership. A dedicated embedded PostgreSQL scenario proves
+owner, outsider, admin and anonymous boundaries. The migration remains
+unapplied and no hosted supplier record changed.
 
 ## Delivered locally
 
@@ -62,7 +70,7 @@ category was activated and supplier-owner profile editing remains outstanding.
 | Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
 | Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
 | Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
-| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers now have a bounded reviewed profile-update path. |
 | Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
 | Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
 | Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
@@ -86,10 +94,10 @@ Each catalogue still needs enough real published listings, approved imagery,
 its public profile route and category-specific browser verification before its
 `live` flag can change.
 
-The supplier network roadmap adds the missing operational sequence: refresh
-the real baseline, generalise the public profile and claim foundation, provide
-useful bounded owner self-service, prepare one evidence-backed category through
-a source-backed batch workflow, and activate it as a complete tested slice.
+The supplier network roadmap's baseline, public profile/claim foundation and
+bounded owner self-service are now locally complete. The next operational step
+is to prepare one evidence-backed category through a source-backed batch
+workflow and activate it only as a complete tested slice.
 
 ## Completion classification
 

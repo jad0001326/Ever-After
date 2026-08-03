@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { CalendarDays, Camera, CheckCircle2, ExternalLink, Globe2, Mail, MessageSquareText, Phone, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarDays, Camera, CheckCircle2, ExternalLink, Globe2, Mail, MessageSquareText, Phone, ShieldCheck, Store, UsersRound } from "lucide-react";
 import { updateVendorEnquiryStatus } from "@/app/actions/enquiries";
 import { VendorImageUploader, type VendorImageSubmissionView } from "@/components/vendor/vendor-image-uploader";
+import { SupplierOwnerUpdateForm } from "@/components/vendor/supplier-owner-update-form";
 import { VendorUpdateForm } from "@/components/vendor/vendor-update-form";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { publicSupplierProfilePath } from "@/lib/supplier-public-routes";
 import { VENUE_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/venue-image-submissions";
+import type { SupplierCategorySlug } from "@/types/supplier";
 
 export const metadata: Metadata = {
   title: "Vendor dashboard"
@@ -42,17 +44,25 @@ const statusOptions: [EnquiryStatus, string][] = [
 
 export default async function VendorPage({ searchParams }: { searchParams: Promise<VendorSearchParams> }) {
   const { message } = await searchParams;
-  const { user } = await requireUser("/vendor", "Sign in to access your vendor dashboard");
-  const supabase = await createClient();
-  const [{ data: venues }, { data: requests }, { data: imageSubmissions }] = await Promise.all([
-    supabase!.from("venues").select("*").eq("claimed_by", user.id).eq("is_claimed", true).order("updated_at", { ascending: false }),
-    supabase!.from("vendor_update_requests").select("*").eq("vendor_user_id", user.id).order("created_at", { ascending: false }),
-    supabase!.from("venue_image_submissions").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false })
+  const { user, supabase } = await requireUser("/vendor", "Sign in to access your vendor dashboard");
+  const [{ data: venues }, { data: requests }, { data: imageSubmissions }, { data: memberships }] = await Promise.all([
+    supabase.from("venues").select("*").eq("claimed_by", user.id).eq("is_claimed", true).order("updated_at", { ascending: false }),
+    supabase.from("vendor_update_requests").select("*").eq("vendor_user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("venue_image_submissions").select("*").eq("submitted_by", user.id).order("created_at", { ascending: false }),
+    supabase.from("vendor_users").select("vendor_id").eq("user_id", user.id).eq("status", "active")
   ]);
+  const vendorIds = (memberships ?? []).map((membership) => membership.vendor_id);
+  const { data: suppliers } = vendorIds.length
+    ? await supabase.from("supplier_listings").select("*").in("vendor_id", vendorIds).eq("is_claimed", true).eq("claim_status", "approved").order("updated_at", { ascending: false })
+    : { data: [] };
+  const supplierIds = (suppliers ?? []).map((supplier) => supplier.id);
+  const { data: supplierRequests } = supplierIds.length
+    ? await supabase.from("supplier_update_requests").select("*").in("supplier_id", supplierIds).order("created_at", { ascending: false })
+    : { data: [] };
   const submissionViews = await Promise.all((imageSubmissions ?? []).map(async (submission): Promise<VendorImageSubmissionView> => {
     let previewUrl = submission.published_url;
     if (!previewUrl) {
-      const { data } = await supabase!.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).createSignedUrl(submission.storage_path, 60 * 60);
+      const { data } = await supabase.storage.from(VENUE_IMAGE_SUBMISSIONS_BUCKET).createSignedUrl(submission.storage_path, 60 * 60);
       previewUrl = data?.signedUrl ?? null;
     }
     return {
@@ -69,7 +79,7 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
   }));
   const venueIds = (venues ?? []).map((venue) => venue.id);
   const { data: enquiries } = venueIds.length
-    ? await supabase!.from("enquiries").select("*").in("venue_id", venueIds).order("created_at", { ascending: false }).limit(100)
+    ? await supabase.from("enquiries").select("*").in("venue_id", venueIds).order("created_at", { ascending: false }).limit(100)
     : { data: [] };
   const leadCount = (enquiries ?? []).filter((enquiry) => enquiry.status === "new").length;
 
@@ -77,15 +87,51 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Vendor</p>
-        <h1 className="mt-3 font-display text-5xl font-semibold">Your claimed venues</h1>
-        <p className="mt-3 text-[var(--muted)]">Manage listing updates and couple leads for your claimed venues.</p>
+        <h1 className="mt-3 font-display text-5xl font-semibold">Your claimed listings</h1>
+        <p className="mt-3 text-[var(--muted)]">Keep your supplier or venue profile useful and follow up with couple enquiries.</p>
       </div>
 
       {message ? <p className="mb-6 rounded-2xl bg-white px-4 py-3 text-sm text-[#5f594f] ring-1 ring-[var(--line)]">{message}</p> : null}
 
       <p className="mb-6 rounded-3xl border border-[#e5d5b7] bg-[#fff9ef] px-5 py-4 text-sm text-[#715622]">
-        Founding partner offer: lifetime discount available during launch. {leadCount > 0 ? `${leadCount} new lead${leadCount === 1 ? "" : "s"} waiting for follow-up.` : "New enquiries will appear here automatically."}
+        {leadCount > 0 ? `${leadCount} new venue lead${leadCount === 1 ? "" : "s"} waiting for follow-up.` : "Approved profile changes and new venue enquiries appear here automatically."}
       </p>
+
+      {(suppliers ?? []).length > 0 ? (
+        <section className="mb-8">
+          <div className="mb-4 flex items-center gap-3"><Store size={20} /><h2 className="font-display text-3xl font-semibold">Supplier profiles</h2></div>
+          <div className="grid gap-6">
+            {(suppliers ?? []).map((supplier) => {
+              const updates = (supplierRequests ?? []).filter((request) => request.supplier_id === supplier.id);
+              const pendingUpdate = updates.find((request) => request.status === "pending");
+              const latestUpdate = updates[0];
+              const health = supplierListingHealth(supplier);
+              return (
+                <article className="rounded-3xl border border-[var(--line)] bg-white p-6" key={supplier.id}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="font-display text-3xl font-semibold">{supplier.name}</h3>
+                        <span className="inline-flex items-center gap-2 rounded-full bg-[#eef4ea] px-3 py-1 text-xs font-semibold text-[#3f5c35]"><ShieldCheck size={14} /> Claimed supplier</span>
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--muted)]">{supplier.category_slug} · {supplier.listing_status} · {supplier.claim_status}</p>
+                    </div>
+                    {supplier.listing_status === "published" ? <Link className="inline-flex items-center gap-2 text-sm font-semibold text-[#5c6b52]" href={publicSupplierProfilePath(supplier.category_slug as SupplierCategorySlug, supplier.slug)}>View profile <ExternalLink size={14} /></Link> : null}
+                  </div>
+                  <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf8f3] p-4">
+                    <p className="text-sm font-semibold text-[#4a443c]">Profile health: {health.score}/{health.total}</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">{health.missing.length ? `Suggested next steps: ${health.missing.join(", ")}` : "Your profile has the core details couples need."}</p>
+                    {latestUpdate ? <p className="mt-2 text-sm text-[var(--muted)]">Latest review: <span className="font-semibold capitalize">{latestUpdate.status}</span>{latestUpdate.admin_notes ? ` — ${latestUpdate.admin_notes}` : ""}</p> : null}
+                  </div>
+                  <SupplierOwnerUpdateForm supplier={supplier} hasPendingRequest={Boolean(pendingUpdate)} />
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {(venues ?? []).length > 0 ? <div className="mb-4"><h2 className="font-display text-3xl font-semibold">Venue profiles</h2></div> : null}
 
       <div className="grid gap-6">
         {(venues ?? []).map((venue) => {
@@ -190,11 +236,11 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
         })}
       </div>
 
-      {(venues ?? []).length === 0 ? (
+      {(venues ?? []).length === 0 && (suppliers ?? []).length === 0 ? (
         <div className="rounded-3xl border border-[var(--line)] bg-white p-8 text-center">
           <h2 className="font-display text-3xl font-semibold">No approved claims yet</h2>
-          <p className="mt-3 text-sm text-[var(--muted)]">Once an admin approves your venue claim, it will appear here.</p>
-          <Link className="mt-5 inline-flex text-sm font-semibold text-[#5c6b52]" href="/venues">Browse venues</Link>
+          <p className="mt-3 text-sm text-[var(--muted)]">Once EverAft approves a venue or supplier claim, it will appear here.</p>
+          <Link className="mt-5 inline-flex text-sm font-semibold text-[#5c6b52]" href="/photographers">Browse suppliers</Link>
         </div>
       ) : null}
     </div>
@@ -224,6 +270,31 @@ function listingHealth(venue: VendorVenue) {
     total: checks.length,
     missing: checks.filter((check) => !check.ok).map((check) => check.label)
   };
+}
+
+function supplierListingHealth(supplier: {
+  official_website_url: string | null;
+  enquiry_url: string | null;
+  image_permission_status: string;
+  summary: string;
+  description: string;
+  services: string[];
+  service_areas: string[];
+  travels_nationwide: boolean;
+  starting_price_pence: number | null;
+  typical_price_pence: number | null;
+  pricing_summary: string | null;
+}) {
+  const checks = [
+    { label: "add official website", ok: Boolean(supplier.official_website_url) },
+    { label: "add an enquiry link", ok: Boolean(supplier.enquiry_url) },
+    { label: "submit approved imagery", ok: supplier.image_permission_status === "approved" },
+    { label: "review summary and description", ok: supplier.summary.length >= 20 && supplier.description.length >= 40 },
+    { label: "list services", ok: supplier.services.length > 0 },
+    { label: "confirm coverage", ok: supplier.travels_nationwide || supplier.service_areas.length > 0 },
+    { label: "add useful pricing guidance", ok: supplier.starting_price_pence != null || supplier.typical_price_pence != null || Boolean(supplier.pricing_summary) }
+  ];
+  return { score: checks.filter((check) => check.ok).length, total: checks.length, missing: checks.filter((check) => !check.ok).map((check) => check.label) };
 }
 
 function HealthBadge({ icon, label, ok }: { icon: ReactNode; label: string; ok: boolean }) {
