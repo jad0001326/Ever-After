@@ -5,7 +5,11 @@ Date: 3 August 2026
 Status: locally complete as a connected, local-first beta and current in draft
 pull request #55. Its authentication-protected Vercel preview was verified on
 application commit `9676f22` after integrating current `origin/main`.
-Production release and connected partner sharing remain gated.
+Production release and connected partner sharing remain gated. The approved
+read-only production database preflight is recorded in
+`docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
+timestamp drift and legacy Data API grants that must be resolved before schema
+activation.
 
 The competitive priority adjustment in
 `docs/planning-hub/competitive-priority-update.md` now favours activation
@@ -110,6 +114,7 @@ they do not require rewriting or pushing it.
 | 51. Source-backed supplier staging | Add atomic research batches, strict provenance/pricing/image validation and bulk decisions that create draft listings only. | `dfcbb01` | Local application, template, unapplied migration and embedded PostgreSQL proof only; no real supplier research, hosted data, publication, outreach, deployment or paid action. |
 | 52. Current-main integration | Merge the four current upstream commits and preserve featured-first venue ordering without losing Planning Hub query state. | `3bda64a` | The full application, security and optimized browser gates pass. The user approved updating the existing draft pull request; merge and production actions remain separate. |
 | 53. First real supplier research batch | Select videography for the next research slice and add five validated primary-source candidates with explicit pricing and no unlicensed imagery. | `9676f22` | Local CSV, evidence record and regression test only; nothing imported, staged in a hosted database, published, contacted or activated. |
+| 54. Production database preflight | Compare the healthy production project's migration history, table security and advisors; prepare a narrow grant hardening migration for 19 legacy tables. | Current working slice | Read-only hosted audit plus local migration and disposable PostgreSQL proof; no migration, data change, branch, paid resource or activation. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -130,11 +135,13 @@ Supabase applies unapplied files in timestamp order:
 8. `20260726191406_planning_table_plan_sync.sql`
 9. `20260803122711_supplier_owner_update_requests.sql`
 10. `20260803130045_supplier_catalogue_staging.sql`
+11. `20260803143000_tighten_data_api_table_grants.sql`
 
 The first three describe the existing owner-scoped `budget_plans` design.
-Remote migration history must decide whether they are already applied; do not
-replay or repair history by assumption. The five workspace migrations are
-additive and remain dormant while `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent.
+The production preflight confirmed that the first three are already applied
+under different remote timestamps. Do not replay them or repair history by
+assumption. The five workspace migrations are additive and remain dormant
+while `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -206,7 +213,7 @@ Use the least destructive rollback that restores safety:
   Docker, Podman, the Supabase CLI and `psql` are absent. `wsl.exe` is present,
   but no WSL distribution or subsystem is installed.
 - The guarded `npm run test:planning-api` harness and disposable baseline
-  generator are ready. The generated 30-file stack still needs its first
+  generator are ready. The generated 31-file stack still needs its first
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
@@ -371,7 +378,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 29 timestamped
+- The local API generator reproduces one baseline plus all 30 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
