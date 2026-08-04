@@ -134,7 +134,7 @@ Activation remains a later complete-slice decision.
 | Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
 | Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; the current optimized gate measured four native keyboard interactions no slower than 32 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
 | Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
-| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `c3a01c9`; eleven later supplier, migration-alignment, risk-review, public-positioning, verification-record and release-safety commits remain local. An authenticated fetch proves the pushed `/planning-hub` renders live venue results with `noindex`; the current local candidate repeats that evidence against the read-only catalogue. No merge, production deployment, hosted migration or production write is authorised. |
+| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `b2e8565`. Authenticated 390 x 844 and 1440 x 900 preview smokes prove the new Scottish planning positioning, public planners, live Photography catalogue, `noindex, nofollow` Planning Hub, inactive-category 404 and manual Videography fallback without horizontal overflow. A device-only £1,800 Photography choice reaches Organise with £18,200 remaining, and neither the application console nor Vercel reports runtime errors on the tested routes. This post-push evidence record remains local. No merge, production deployment, hosted migration or production write is authorised. |
 | Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
 
 ## Remaining release gates
@@ -143,9 +143,9 @@ Activation remains a later complete-slice decision.
    Data API with the guarded `npm run test:planning-api` harness in a free local
    stack or approved disposable environment. The database-level owner, partner,
    outsider and anonymous cases now pass.
-2. Obtain approval to push the eleven local commits after `c3a01c9` to draft pull
-   request #55, review its accumulated release boundaries, then choose the
-   production scope.
+2. Review draft pull request #55 and its refreshed protected preview, agree its
+   accumulated release boundaries, then choose the production scope. The
+   previously approved eleven-commit branch update is now pushed.
 3. Complete physical iPhone/Safari and Android touch testing; automated 390px
    Chrome verification is already passing.
 4. Keep the development-only ESLint dependency advisory under review. The
@@ -159,6 +159,14 @@ Activation remains a later complete-slice decision.
 ## Current verification baseline
 
 - 103 test files and 494 tests passing.
+- Pushed commit `b2e8565` verified on the authentication-protected Vercel
+  preview at 390 x 844 and 1440 x 900. Public positioning and planners render without
+  horizontal overflow; Photography exposes live paginated results;
+  `/suppliers/videographer` remains a public 404 while the private Hub retains
+  manual Videography planning. Adding A-Fotografy with a £1,800 estimate
+  updates the plan to £18,200 remaining and carries into Organise at both
+  breakpoints. The application console is clear and Vercel reported no runtime
+  errors for the tested route set.
 - Embedded PostgreSQL RLS verification passing for 8 migrations and 10
   user-owned tables, including schema-contract assertions and transaction-safe
   owner, partner, outsider, invitee and anonymous scenarios. The partner can
@@ -316,10 +324,12 @@ Activation remains a later complete-slice decision.
 
 No production data, hosted Supabase migration, cloud branch, paid action or
 production deployment was used. Draft pull request #55 is current through
-`c3a01c9`, while the later local commits remain deliberately unpushed. Its
-automatic Vercel preview is ready, authentication-protected and free of
-warning/error/fatal runtime logs during the verification window. No public
-bypass link was created, and the production domain was not changed.
+`b2e8565`; this post-push evidence update remains local. Its automatic Vercel
+preview is ready, authentication-protected and free of application runtime
+errors during the verification window. A temporary Vercel share URL expiring
+on 5 August 2026 was created solely for the authenticated smoke test; its token
+was not recorded in the repository or shared with another party. The
+production domain was not changed.
 
 The current local candidate was rechecked after the public-positioning change.
 The complete optimized ten-surface browser matrix and its connected mobile

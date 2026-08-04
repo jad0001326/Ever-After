@@ -4,10 +4,9 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `c3a01c9`; eleven later supplier-research, generic-outreach, migration-
-alignment, risk-review, public-positioning, release-verification and release-
-safety and supplier-imagery commits remain local and unpushed. Production release and connected
-partner sharing remain gated. The approved
+commit `b2e8565`; the previously approved eleven-commit update is in the draft
+pull request, and this post-push preview-verification record remains local.
+Production release and connected partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
 timestamp drift and legacy Data API grants. The repository now mirrors all 25
@@ -146,9 +145,10 @@ they do not require rewriting or pushing it.
 | 59. Truthful public positioning | Lead with Scottish wedding planning while keeping the Planning Hub entry behind a separate server-side approval gate. | `1c8c8e2` | Local application, tests and browser proof only; the entry flag defaults off and no push, deployment or public activation occurred. |
 | 60. Post-positioning release verification | Repeat the optimized responsive, accessibility, interaction, live-catalogue and production dependency gates after the public entry change. | `961c63c` | Read-only local and public-catalogue checks only; no service-role key, hosted write, push, deployment, migration or paid resource. |
 | 61. Integrated release safety review | Enforce generic supplier activation at the mutation and send boundaries, tighten recipient references and require the reviewed older pending migration in both dry-run and approved commands. | `6eb79b4` | Local code, SQL, documentation and regression checks only; no hosted write, supplier contact, push, migration, deployment or paid resource. |
-| 62. Supplier research resolution gate | Recheck all ten videographer sources, correct changed identity/pricing evidence and prevent unresolved research notes from being bulk-accepted. | This supplier-review commit | Read-only public-source and catalogue checks plus local code, CSV, SQL and tests only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
-| 63. Tayside and island videographer evidence | Add four official-source candidates genuinely based in Carnoustie, Alyth, Skye and the Outer Hebrides, retaining truthful quote handling and no unlicensed imagery. | This geographic-evidence commit | Public-source research, local CSV, documentation and regression test only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
-| 64. Rights-confirmed supplier imagery | Extend the existing private venue-photo pattern to claimed suppliers with member-bound uploads, admin review, optimized public copies and rollback-safe hero/gallery updates. | This supplier-imagery commit | Local application, unapplied migration and embedded security proof only; no hosted bucket, object, supplier contact, publication, migration, push, deployment or paid resource. |
+| 62. Supplier research resolution gate | Recheck all ten videographer sources, correct changed identity/pricing evidence and prevent unresolved research notes from being bulk-accepted. | `acbaff0` | Read-only public-source and catalogue checks plus local code, CSV, SQL and tests only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
+| 63. Tayside and island videographer evidence | Add four official-source candidates genuinely based in Carnoustie, Alyth, Skye and the Outer Hebrides, retaining truthful quote handling and no unlicensed imagery. | `64cb1ee` | Public-source research, local CSV, documentation and regression test only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
+| 64. Rights-confirmed supplier imagery | Extend the existing private venue-photo pattern to claimed suppliers with member-bound uploads, admin review, optimized public copies and rollback-safe hero/gallery updates. | `708b9cb` | Local application, unapplied migration and embedded security proof only; no hosted bucket, object, supplier contact, publication, migration, push, deployment or paid resource. |
+| 65. Pushed-preview verification | Verify the exact `b2e8565` protected preview at 390 x 844 and 1440 x 900 across public positioning, planners, supplier gates and one connected Photography-to-Organise plan. | This preview-evidence commit | Temporary authenticated preview access and device-only planning state; no production deployment, migration, production write, supplier contact, publication or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -255,13 +255,26 @@ Use the least destructive rollback that restores safety:
   container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 is mergeable through pushed commit `c3a01c9`; eleven
-  later local commits are not yet in the pull request. Push, merge, production
-  deployment, migration and production writes require explicit approval.
+- Draft pull request #55 is mergeable through pushed commit `b2e8565`; its
+  refreshed protected preview passes the bounded smoke below. This evidence
+  update remains local. Merge, production deployment, migration and production
+  writes require separate explicit approval.
 
 ## Final local release-candidate evidence
 
 - 103 Vitest files and 494 tests pass.
+- The pushed `b2e8565` preview is ready and was verified at 390 x 844 and
+  1440 x 900 through
+  temporary authenticated access. The homepage leads with Scottish planning
+  while the public Hub entry remains off; the Budget and Table Planners render
+  without horizontal overflow; Photography returns live paginated results;
+  the Planning Hub retains `noindex, nofollow`; and inactive Videography is a
+  public 404 with manual planning still available inside the Hub.
+- A device-only preview journey adds A-Fotografy with a £1,800 working estimate,
+  updates planned and remaining totals to £1,800 and £18,200, and preserves the
+  same item and totals in Organise alongside bookings, payments, tasks, guests
+  and seating at both breakpoints. The application console is clear, and
+  Vercel reported no runtime errors for the tested route set.
 - The embedded PostgreSQL verifier passes all eight migrations and ten
   user-owned-table assertions, including denial of partner reads against an
   unlinked owner budget, denial of workspace budget relinking, partner task
@@ -458,16 +471,16 @@ Use the least destructive rollback that restores safety:
 - `npm audit --omit=dev` reports zero known production vulnerabilities on the
   current lockfile.
 
-The local browser verification used only the existing Supabase URL and
-publishable key for read-only catalogue access. The service-role key was not
-loaded. Anonymous in-app browser access to the hosted preview correctly
-redirected to Vercel login. An authenticated deployment fetch then returned
-HTTP 200 for `/planning-hub`, retained the `noindex` response/header contract,
-and rendered live paginated venue results plus the connected plan. Vercel
-reported no warning, error or fatal runtime logs for that deployment during the
-verification window. No public bypass link was created.
+The browser verification used only the preview application's existing
+publishable Supabase configuration for read-only catalogue access. The
+service-role key was not loaded. Anonymous in-app browser access correctly
+redirected to Vercel login. A temporary Vercel share URL expiring on 5 August
+2026 then enabled the bounded authenticated smoke; its token was not recorded
+in the repository or shared with another party. Vercel reported no application
+runtime errors during the verification window.
 
 No paid resource, cloud branch, migration, production write or production
 deployment was used to create this release record. Draft pull request #55 and
-its authentication-protected preview remain at pushed commit `c3a01c9`; eight
-newer commits are local only. The production domain was not changed.
+its authentication-protected preview are current through pushed commit
+`b2e8565`; this evidence update is local only. The production domain was not
+changed.
