@@ -1,6 +1,8 @@
 import { cache } from "react";
+import { supplierDirectoryCategories } from "@/data/supplier-directory";
 import { createClient } from "@/lib/supabase/server";
 import type { PlannerListing } from "@/lib/budget/types";
+import { activeSupplierRowToPlannerListing } from "@/lib/budget/supplier-listing";
 import type { Database } from "@/types/database";
 import type { PhotographerProfile, PhotographerSearchParams, PhotographerVenueOption, SupplierListing } from "@/types/supplier";
 import { permittedSupplierHero } from "@/lib/supplier-media";
@@ -136,7 +138,13 @@ export const getSupplierListingBySlug = cache(async function getSupplierListingB
     categorySlug === "photographer"
       ? supabase.from("photographer_profiles").select("*").eq("supplier_id", row.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from("supplier_images").select("*").eq("supplier_id", row.id).eq("permission_status", "approved").order("sort_order", { ascending: true }),
+    supabase
+      .from("supplier_images")
+      .select("*")
+      .eq("supplier_id", row.id)
+      .eq("permission_status", "approved")
+      .order("sort_order", { ascending: true })
+      .limit(6),
     supabase.from("supplier_venue_connections").select("venue_id, connection_type").eq("supplier_id", row.id).eq("status", "verified")
   ]);
 
@@ -170,35 +178,22 @@ export async function getPhotographerListingBySlug(slug: string): Promise<Suppli
 export async function getBudgetPlannerSupplierListings(): Promise<PlannerListing[]> {
   const supabase = await createClient();
   if (!supabase) return [];
+  const liveCategorySlugs = supplierDirectoryCategories
+    .filter((category) => category.live)
+    .map((category) => category.slug);
+  if (!liveCategorySlugs.length) return [];
   const { data } = await supabase
     .from("supplier_listings")
     .select("id, slug, name, category_slug, base_town, region, hero_image_url, image_permission_status, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit")
     .eq("listing_status", "published")
+    .in("category_slug", liveCategorySlugs)
     .order("is_featured", { ascending: false })
     .order("name", { ascending: true })
     .limit(1000);
 
-  return (data ?? []).map((supplier) => {
-    const imageUrl = permittedSupplierHero(supplier.hero_image_url, supplier.image_permission_status);
-    return {
-      id: supplier.id,
-      slug: supplier.slug,
-      name: supplier.name,
-      type: supplier.category_slug === "photographer" ? "Photographer" : supplier.category_slug,
-      categoryId: supplier.category_slug === "photographer" ? "photography" : supplier.category_slug,
-      location: `${supplier.base_town}, ${supplier.region}`,
-      imageUrl: imageUrl ?? "/everaft-logo-mark.svg",
-      listingUrl: supplier.category_slug === "photographer" ? `/photographers/${supplier.slug}` : `/suppliers/${supplier.category_slug}/${supplier.slug}`,
-      priceFromPence: supplier.starting_price_pence,
-      priceToPence: supplier.typical_price_pence,
-      pricingStatus: supplier.pricing_unit === "quote" ? "quote_required" : supplier.starting_price_pence == null ? "unavailable" : supplier.typical_price_pence != null && supplier.typical_price_pence > supplier.starting_price_pence ? "range" : "starting_from",
-      pricingKind: "supplier_package" as const,
-      pricingLabel: supplier.starting_price_pence == null ? null : "Packages from",
-      pricingUnit: supplier.pricing_unit === "person" ? "per_person" as const : supplier.pricing_unit,
-      priceQualifier: supplier.starting_price_pence == null ? "quote" as const : "from" as const,
-      pricingDescription: supplier.pricing_summary,
-      verifiedAt: null,
-    };
+  return (data ?? []).flatMap((supplier) => {
+    const listing = activeSupplierRowToPlannerListing(supplier);
+    return listing ? [listing] : [];
   });
 }
 

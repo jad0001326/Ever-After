@@ -9,7 +9,10 @@ import { trackBudgetEvent } from "@/lib/budget/analytics";
 import { calculateBudget, findDuplicateImportedListing, formatMoney, getItemPlanningCost, parseMoneyToPence } from "@/lib/budget/calculations";
 import { BUDGET_STORAGE_KEY, createEmptyBudgetPlan, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
 import { budgetStarters, createStarterBudgetPlan, type BudgetStarter } from "@/lib/budget/starters";
-import { plannerListingNeedsInput, plannerListingToBudgetItem } from "@/lib/budget/listing-pricing";
+import {
+  importPlannerListingIntoPlan,
+  plannerListingNeedsInput,
+} from "@/lib/budget/listing-pricing";
 import type { BudgetCategory, BudgetItem, BudgetPlan, PlannerListing } from "@/lib/budget/types";
 import { BudgetSummary, EmptyBudgetSummary } from "./budget-summary";
 import { CategorySection, ExpenseRow } from "./category-section";
@@ -55,9 +58,14 @@ export function BudgetPlanner({ listings, cloudPlan, userId, preselectedListing,
     const timer = window.setTimeout(() => {
       const existing = plan.items.find((item) => item.listingId === preselectedListing.id);
       if (existing) { setEditingItem(existing); setDialogOpen(true); setToast(`${preselectedListing.name} is already in your plan. You can edit it here.`); return; }
-      const imported = plannerListingToBudgetItem(preselectedListing, plan); updatePlan((current) => ({ ...current, selectedVenueId: preselectedListing.id, items: [...current.items, imported] }));
-      trackBudgetEvent("venue_imported", { pricing_available: preselectedListing.priceFromPence != null });
-      if (plannerListingNeedsInput(preselectedListing, plan.guestCount)) { setEditingItem(imported); setDialogOpen(true); setToast("Venue added. Complete the pricing details to include it safely in your totals."); }
+      const imported = importPlannerListingIntoPlan(preselectedListing, plan);
+      updatePlan(() => imported.plan);
+      if (imported.kind === "venue") {
+        trackBudgetEvent("venue_imported", { pricing_available: preselectedListing.priceFromPence != null });
+      } else {
+        trackBudgetEvent("website_listing_added", { category: preselectedListing.categoryId, source: "profile_handoff" });
+      }
+      if (plannerListingNeedsInput(preselectedListing, plan.guestCount)) { setEditingItem(imported.item); setDialogOpen(true); setToast(`${imported.kind === "venue" ? "Venue" : preselectedListing.type} added. Complete the pricing details to include it safely in your totals.`); }
       else if (preselectedListing.pricingUnit === "per_person") setToast(`${preselectedListing.name} was added using its per-person price and your guest count.`);
       else setToast(`${preselectedListing.name} was added using its listed starting price as an estimate.`);
     }, 0);

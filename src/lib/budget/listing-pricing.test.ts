@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyBudgetPlan } from "./persistence";
 import type { PlannerListing } from "./types";
-import { formatPlannerListingPrice, plannerListingNeedsInput, plannerListingToBudgetItem } from "./listing-pricing";
+import {
+  formatPlannerListingPrice,
+  importPlannerListingIntoPlan,
+  plannerListingNeedsInput,
+  plannerListingToBudgetItem,
+} from "./listing-pricing";
 
 function listing(overrides: Partial<PlannerListing> = {}): PlannerListing {
   return {
@@ -88,5 +93,41 @@ describe("budget listing pricing", () => {
     expect(item.costPerPersonPence).toBeNull();
     expect(item.importedPricePence).toBe(9_500);
     expect(plannerListingNeedsInput(taxedPerPerson, 80)).toBe(true);
+  });
+
+  it("preserves the selected venue when importing a supplier profile", () => {
+    const plan = { ...createEmptyBudgetPlan(), selectedVenueId: "venue-existing" };
+    const photographer = listing({
+      id: "supplier-1",
+      slug: "north-light",
+      name: "North Light",
+      type: "Photographer",
+      categoryId: "photography",
+      listingUrl: "/photographers/north-light",
+      pricingStatus: "quote_required",
+      pricingUnit: "quote",
+      priceFromPence: null,
+    });
+
+    const imported = importPlannerListingIntoPlan(photographer, plan);
+
+    expect(imported.kind).toBe("supplier");
+    expect(imported.plan.selectedVenueId).toBe("venue-existing");
+    expect(imported.item).toMatchObject({
+      categoryId: "photography",
+      listingId: "supplier-1",
+      listingUrl: "/photographers/north-light",
+      importedPriceType: "quote_required",
+    });
+  });
+
+  it("continues to select an imported venue", () => {
+    const imported = importPlannerListingIntoPlan(
+      listing({ id: "venue-new" }),
+      { ...createEmptyBudgetPlan(), selectedVenueId: "venue-old" },
+    );
+
+    expect(imported.kind).toBe("venue");
+    expect(imported.plan.selectedVenueId).toBe("venue-new");
   });
 });

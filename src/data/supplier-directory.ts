@@ -38,3 +38,11 @@ export function supplierCategoryBySlug(slug: string) {
   return supplierDirectoryCategories.find((category) => category.slug === slug);
 }
 
+export function canSetSupplierListingStatus(
+  categorySlug: string,
+  listingStatus: "draft" | "published" | "archived",
+) {
+  const category = supplierCategoryBySlug(categorySlug);
+  return Boolean(category && (listingStatus !== "published" || category.live));
+}
+

@@ -71,6 +71,20 @@ export function plannerListingToBudgetItem(listing: PlannerListing, plan: Budget
   };
 }
 
+export function importPlannerListingIntoPlan(listing: PlannerListing, plan: BudgetPlan) {
+  const item = plannerListingToBudgetItem(listing, plan);
+  const isVenue = listing.categoryId === "venue";
+  return {
+    item,
+    kind: isVenue ? "venue" as const : "supplier" as const,
+    plan: {
+      ...plan,
+      selectedVenueId: isVenue ? listing.id : plan.selectedVenueId,
+      items: [...plan.items, item],
+    },
+  };
+}
+
 export function plannerListingNeedsInput(listing: PlannerListing, guestCount: number | null) {
   if (listing.pricingUnit === "per_person" || listing.pricingStatus === "per_person") {
     return listing.priceFromPence == null || guestCount == null || hasUnresolvedTax(listing.taxLabel);
