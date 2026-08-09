@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Archive, CheckCircle2, ClipboardList, DatabaseZap, Edit, FilePenLine, Images, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud, UsersRound } from "lucide-react";
+import { Archive, BellRing, CheckCircle2, ClipboardList, DatabaseZap, Edit, FilePenLine, Images, Inbox, Mail, MessageSquareText, Plus, Search, Send, Star, UploadCloud, UsersRound } from "lucide-react";
 import { bulkUpdateVenues } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -79,6 +79,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </ButtonLink>
           <ButtonLink href="/admin/outreach" variant="secondary">
             <Send size={17} /> Outreach
+          </ButtonLink>
+          <ButtonLink href="/admin/listing-reminders" variant="secondary">
+            <BellRing size={17} /> Listing reminders
           </ButtonLink>
           <ButtonLink href="/admin/enrichment" variant="secondary">
             <DatabaseZap size={17} /> Enrichment review
