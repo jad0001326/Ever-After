@@ -7,6 +7,7 @@ import { VendorImageUploader, type VendorImageSubmissionView } from "@/component
 import { VendorUpdateForm } from "@/components/vendor/vendor-update-form";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
+import { getVenueListingHealth } from "@/lib/listing-health";
 import { createClient } from "@/lib/supabase/server";
 import { VENUE_IMAGE_SUBMISSIONS_BUCKET } from "@/lib/venue-image-submissions";
 
@@ -92,7 +93,7 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
           const venueRequests = (requests ?? []).filter((request) => request.venue_id === venue.id);
           const venueImageSubmissions = submissionViews.filter((submission) => submission.venueId === venue.id);
           const venueEnquiries = ((enquiries ?? []) as VendorEnquiry[]).filter((enquiry) => enquiry.venue_id === venue.id);
-          const health = listingHealth(venue);
+          const health = getVenueListingHealth(venue);
           return (
             <section className="rounded-3xl border border-[var(--line)] bg-white p-6" key={venue.id}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -199,31 +200,6 @@ export default async function VendorPage({ searchParams }: { searchParams: Promi
       ) : null}
     </div>
   );
-}
-
-type VendorVenue = {
-  official_website_url: string | null;
-  official_gallery_url: string | null;
-  vendor_contact_email: string | null;
-  image_is_representative: boolean | null;
-  summary: string | null;
-  description: string | null;
-};
-
-function listingHealth(venue: VendorVenue) {
-  const checks = [
-    { label: "add official website", ok: Boolean(venue.official_website_url) },
-    { label: "add official gallery", ok: Boolean(venue.official_gallery_url) },
-    { label: "confirm enquiry email", ok: Boolean(venue.vendor_contact_email) },
-    { label: "submit approved imagery", ok: !venue.image_is_representative },
-    { label: "review summary", ok: Boolean(venue.summary) },
-    { label: "review description", ok: Boolean(venue.description) }
-  ];
-  return {
-    score: checks.filter((check) => check.ok).length,
-    total: checks.length,
-    missing: checks.filter((check) => !check.ok).map((check) => check.label)
-  };
 }
 
 function HealthBadge({ icon, label, ok }: { icon: ReactNode; label: string; ok: boolean }) {
