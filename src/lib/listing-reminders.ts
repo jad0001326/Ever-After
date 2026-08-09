@@ -7,6 +7,7 @@ import {
   listingReminderBlockedReason
 } from "@/lib/listing-reminder-policy";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type ListingReminderCandidate = {
   id: string;
@@ -36,8 +37,11 @@ export type ListingReminderSendSummary = {
 };
 
 export async function listIncompleteListingReminderCandidates(now = new Date()) {
-  const supabase = createAdminClient();
-  if (!supabase) throw new Error("Configure the Supabase service role key before loading listing reminders.");
+  // Admin-facing listing data is protected by the signed-in user's RLS policy.
+  // The suppression table is deliberately server-only and uses the service role below.
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  if (!supabase || !admin) throw new Error("Configure Supabase server credentials before loading listing reminders.");
 
   const { data: venueRows, error: venueError } = await supabase
     .from("venues")
@@ -130,7 +134,7 @@ export async function listIncompleteListingReminderCandidates(now = new Date()) 
       .filter(Boolean)
   );
   const { data: suppressions, error: suppressionError } = normalizedEmails.length
-    ? await supabase
+    ? await admin
       .from("outreach_suppressions")
       .select("normalized_email, reason")
       .in("normalized_email", normalizedEmails)
@@ -178,8 +182,8 @@ export async function sendListingReminders({
   };
 
   if (selected.length === 0) return summary;
-  const supabase = createAdminClient();
-  if (!supabase) throw new Error("Configure the Supabase service role key before sending listing reminders.");
+  const supabase = await createClient();
+  if (!supabase) throw new Error("Configure Supabase before sending listing reminders.");
 
   for (let index = 0; index < selected.length; index += 5) {
     const batch = selected.slice(index, index + 5);
