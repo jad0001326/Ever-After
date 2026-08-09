@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { isGeneratedFileCurrent } from "./lib/generated-file-text.mjs";
 import {
   planningBudgetUpdateRequestJsonSchema,
   planningBudgetUpdateSuccessJsonSchema,
@@ -102,7 +103,7 @@ for (const contract of contracts) {
     continue;
   }
   const current = await readFile(schemaPath, "utf8").catch(() => "");
-  if (current !== generated) {
+  if (!isGeneratedFileCurrent(current, generated)) {
     stale = true;
     console.error(`Planning contract is stale: ${contract.file}`);
   } else {

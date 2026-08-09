@@ -4,8 +4,10 @@ Date: 3 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
-commit `b2e8565`; the previously approved eleven-commit update is in the draft
-pull request, and this post-push preview-verification record remains local.
+commit `3ff9769`. The full protected-preview browser evidence is included in
+the pull request through `697e979`; the post-merge preview has now passed its
+final temporary-access smoke. A production code-only beta would be an unlisted,
+`noindex` direct-link route, not an authenticated or password-protected route.
 Production release and connected partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
@@ -148,7 +150,10 @@ they do not require rewriting or pushing it.
 | 62. Supplier research resolution gate | Recheck all ten videographer sources, correct changed identity/pricing evidence and prevent unresolved research notes from being bulk-accepted. | `acbaff0` | Read-only public-source and catalogue checks plus local code, CSV, SQL and tests only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
 | 63. Tayside and island videographer evidence | Add four official-source candidates genuinely based in Carnoustie, Alyth, Skye and the Outer Hebrides, retaining truthful quote handling and no unlicensed imagery. | `64cb1ee` | Public-source research, local CSV, documentation and regression test only; no hosted staging, supplier contact, publication, migration, push, deployment or paid resource. |
 | 64. Rights-confirmed supplier imagery | Extend the existing private venue-photo pattern to claimed suppliers with member-bound uploads, admin review, optimized public copies and rollback-safe hero/gallery updates. | `708b9cb` | Local application, unapplied migration and embedded security proof only; no hosted bucket, object, supplier contact, publication, migration, push, deployment or paid resource. |
-| 65. Pushed-preview verification | Verify the exact `b2e8565` protected preview at 390 x 844 and 1440 x 900 across public positioning, planners, supplier gates and one connected Photography-to-Organise plan. | This preview-evidence commit | Temporary authenticated preview access and device-only planning state; no production deployment, migration, production write, supplier contact, publication or paid resource. |
+| 65. Pushed-preview verification | Verify the exact `b2e8565` protected preview at 390 x 844 and 1440 x 900 across public positioning, planners, supplier gates and one connected Photography-to-Organise plan. | `697e979` | Temporary authenticated preview access and device-only planning state; no production deployment, migration, production write, supplier contact, publication or paid resource. |
+| 66. Upstream merge resolution | Integrate the latest `origin/main` supplier reminder workflow while retaining the supplier-owner dashboard and shared venue-health helper. | `3ff9769` | Merge resolution, full regression suite and refreshed green Vercel deployment only; no production deployment, migration, data write, supplier contact or paid resource. |
+| 67. Authenticated API route gate | Send real owner, partner, outsider and rejected-bearer requests through the loopback Next.js routes and validate success bodies against all 15 committed contracts. | Current local verifier work | Fail-closed local tooling and documentation only; it permanently refuses the production Supabase project and still requires its first disposable full-stack run. |
+| 68. Post-merge preview smoke | Verify the exact `3ff9769` preview at 390 x 844 and 1440 x 900, including Planning Hub, both public planners, Photography, manual Videographer planning, inactive public-category denial and disabled connected APIs. | Current local evidence update | Temporary authenticated preview access and read-only runtime inspection only; no production deployment, migration, data write, supplier contact, publication or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
 series between reviews 1 and 2. It does not add a separate Planning Hub change.
@@ -248,21 +253,44 @@ Use the least destructive rollback that restores safety:
 ## Evidence still required
 
 - Supabase Auth and Data API execution cannot run on the current machine:
-  Docker, Podman, the Supabase CLI and `psql` are absent. `wsl.exe` is present,
-  but no WSL distribution or subsystem is installed.
+  Docker, Podman and `psql` are absent. The Supabase CLI can run through
+  `npx`, but its local full stack still requires a container runtime.
+  `wsl.exe` is present, but no WSL distribution or subsystem is installed.
 - The guarded `npm run test:planning-api` harness and disposable baseline
-  generator are ready. The generated 36-file stack still needs its first
-  container-runtime execution.
+  generator are ready. The harness now sends real owner, partner, outsider and
+  rejected-bearer HTTP requests through the loopback Next.js routes and checks
+  every successful body against the committed JSON Schema. The generated
+  36-file stack still needs its first container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Draft pull request #55 is mergeable through pushed commit `b2e8565`; its
-  refreshed protected preview passes the bounded smoke below. This evidence
-  update remains local. Merge, production deployment, migration and production
-  writes require separate explicit approval.
+- Before a production code-only beta deployment, verify in Vercel that
+  `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
+  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `OUTREACH_SENDING_ENABLED` are
+  absent or not exactly `true` in the Production environment. The current
+  preview proves the public-entry and connected-planning gates are off, but
+  Preview and Production environment scopes can differ.
+- Draft pull request #55 is mergeable through pushed commit `3ff9769`; its
+  refreshed Vercel deployment and bounded post-merge smoke are green. Merge,
+  production deployment, migration and production writes require separate
+  explicit approval.
 
 ## Final local release-candidate evidence
 
-- 103 Vitest files and 494 tests pass.
+- 108 Vitest files and 509 tests pass.
+- The exact pushed `3ff9769` preview passes the final post-merge smoke at
+  390 x 844 and 1440 x 900. Planning Hub renders eight of 470 venue matches
+  without horizontal overflow, undersized main controls, browser warnings or
+  errors; it retains `noindex, nofollow` and the connected API returns
+  `connected_planning_disabled`. The homepage contains no Planning Hub link
+  while retaining the public Budget and Table Planner links. Both planners and
+  the live Photography stage render at both breakpoints without overflow or
+  browser errors. Photography renders eight of 31 matching suppliers. The
+  inactive public Videographer category returns the intentional 404, while the
+  canonical beta stage renders manual entry with zero catalogue articles.
+  Vercel reports no runtime error cluster; the observed 503 and 404 responses
+  are the intentional disabled-cloud and inactive-category checks. The hosted
+  build log runs only `npm run build` and `next build --webpack`, with no
+  migration or data hook.
 - The pushed `b2e8565` preview is ready and was verified at 390 x 844 and
   1440 x 900 through
   temporary authenticated access. The homepage leads with Scottish planning
@@ -283,7 +311,7 @@ Use the least destructive rollback that restores safety:
 - ESLint has zero errors and retains one unrelated pre-existing Open Graph
   `<img>` warning.
 - `npm audit --omit=dev` reports zero known vulnerabilities.
-- The optimized Next.js 16.2.12 build produces 91 pages after integrating
+- The optimized Next.js 16.2.12 build produces 92 pages after integrating
   current `origin/main` and the supplier staging/admin surfaces.
 - Three fresh optimized Venue-route Lighthouse runs score 99/98/99
   performance, 100 accessibility and 100 best practices. Median LCP is 2.237
@@ -482,5 +510,5 @@ runtime errors during the verification window.
 No paid resource, cloud branch, migration, production write or production
 deployment was used to create this release record. Draft pull request #55 and
 its authentication-protected preview are current through pushed commit
-`b2e8565`; this evidence update is local only. The production domain was not
-changed.
+`3ff9769`; this post-merge evidence and API-verifier update remain local. The
+production domain was not changed.

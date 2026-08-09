@@ -1,9 +1,10 @@
 # Planning workspace Auth and Data API verification
 
-Date: 28 July 2026
+Date: 9 August 2026
 
-Status: verifier prepared and fail-closed; not executed because this machine
-does not have a full local Supabase stack.
+Status: direct Data API and checked Next.js route verifier prepared and
+fail-closed; not executed because this machine does not have a container
+runtime for the full local Supabase stack.
 
 ## Purpose
 
@@ -21,23 +22,22 @@ PostgreSQL cannot emulate:
 - outsider and anonymous isolation; and
 - table-plan version conflict behavior through the public RPC.
 
-After those direct Data API assertions pass, the same owner, partner, outsider
-and expired sessions must call
+After those direct Data API assertions pass, the same owner, partner and
+outsider sessions plus a deliberately rejected bearer call
 `GET /api/planning/v1/workspaces`:
 
 - prove owner and partner receive the expected bounded collection and their
   own role without owner IDs or other membership rows;
 - prove pagination and most-recently-updated ordering;
-- prove outsider and expired sessions receive an empty collection or
+- prove outsider and rejected-bearer requests receive an empty collection or
   authentication denial as appropriate; and
 - validate successful responses against the checked workspace collection
   schema.
 
-Then the same owner, partner, outsider
-and expired sessions must call
+Then the same owner, partner, outsider and rejected-bearer cases call
 `GET /api/planning/v1/workspaces/{workspaceId}/dashboard`. Owner and partner
 responses must validate against the checked v1 JSON Schema; outsider and
-expired tokens must receive the route's generic denial contract. See
+rejected tokens must receive the route's generic denial contract. See
 `native-dashboard-api.md`.
 
 Then use the dashboard's `budgetUpdatedAt` value with
@@ -103,9 +103,15 @@ application's normal Supabase variables:
 - `SUPABASE_TEST_URL`
 - `SUPABASE_TEST_PUBLISHABLE_KEY`
 - `SUPABASE_TEST_SECRET_KEY`
+- `PLANNING_API_TEST_APP_URL`
 
 Loopback hosts (`127.0.0.1`, `localhost` and `::1`) are accepted by default.
 Every remote URL is refused before a client is created.
+
+The application URL is stricter: it must be an origin-only loopback URL. The
+verifier never sends test bearer tokens to a deployed application. The known
+EverAft production Supabase hostname is permanently refused even when the
+remote-disposable override variables are present.
 
 A remote disposable project can only be selected after separate approval by
 setting both:
@@ -136,7 +142,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 27 timestamped migrations byte-for-byte in filename order;
+3. copies all 35 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 
@@ -154,19 +160,35 @@ supabase init --workdir .
 supabase start --workdir .
 ```
 
-After all 28 generated migrations apply, use the URL and keys printed by
+After all 36 generated migrations apply, start the EverAft application from a
+second terminal with the cloud gate enabled only in that process:
+
+```powershell
+$env:NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321'
+$env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = '<local publishable key>'
+$env:PLANNING_WORKSPACE_CLOUD_ENABLED = 'true'
+npm.cmd run dev -- --hostname 127.0.0.1 --port 3000
+```
+
+Then use a third terminal to run the verifier with the URL and keys printed by
 `supabase start`:
 
 ```powershell
 $env:SUPABASE_TEST_URL = 'http://127.0.0.1:54321'
 $env:SUPABASE_TEST_PUBLISHABLE_KEY = '<local publishable key>'
 $env:SUPABASE_TEST_SECRET_KEY = '<local secret key>'
+$env:PLANNING_API_TEST_APP_URL = 'http://127.0.0.1:3000'
 npm.cmd run test:planning-api
 ```
 
-The command prints only the target class (`local loopback` or
-`approved disposable`) and assertion progress. It never prints keys, passwords
-or invitation tokens.
+The command first proves that the loopback app has the connected-planning gate
+enabled and rejects an unsigned request. It then validates every successful
+response against the checked Draft 2020-12 contract, verifies the contract and
+private/no-store security headers, and covers owner, partner, outsider,
+rejected-bearer and version-conflict behavior across workspace discovery,
+dashboard, budget, table-plan, profile and task routes. It prints only the
+target class (`local loopback` or `approved disposable`) and assertion
+progress. It never prints keys, passwords, access tokens or invitation tokens.
 
 The generator and checksum verification pass on this machine, including the
 hardened workspace-foundation migration. The stack itself has not run because
