@@ -38,6 +38,7 @@ retains full legacy Photography compatibility.
 | Data API grant hardening | Revokes only `TRUNCATE`, `TRIGGER` and `REFERENCES` from browser-facing roles on 19 legacy tables. | Intentional security tightening. Application CRUD privileges are unchanged and the dedicated verifier proves the contract. |
 | Generic supplier outreach | Adds two nullable category foreign keys, replaces audience/reference checks and adds two partial indexes. | Existing-table scan is bounded by 28 campaigns and 819 recipients. Read-only live checks prove every current row satisfies the replacement constraints. No row is rewritten; the category UI and sending each remain off. |
 | Supplier image submissions | Creates one empty review table, one empty private bucket, one empty public bucket and member/admin storage policies. Existing `supplier_listings`, `vendor_users` and `supplier_images` are read only by policies at migration time. | Additive and dormant. The confirmed baseline has 31 supplier listings and no approved supplier images. No object is uploaded or copied by the migration; the embedded owner/outsider/admin verifier proves private-path ownership and direct-publication denial. |
+| Atomic supplier claim review | Replaces direct claim submission/review boundaries with supplier-first locking, a transaction-safe decision function, audit records and strict grants. It reads existing suppliers, claims, vendors, memberships and outreach rows only when the functions are later called. | No claim or supplier row is rewritten at migration time. Embedded and native two-session PostgreSQL tests prove competing approvals and late submissions serialize without deadlock or orphaned pending state. Keep claiming dormant until the post-migration privilege and concurrency checks pass. |
 
 ## Destructive-statement interpretation
 
@@ -62,7 +63,7 @@ not a reason to broaden the command or repair history.
 
 The dry run and approved command must use `--include-all`: the reviewed
 workspace foundation migration predates production's latest recorded version.
-The exact 26-entry history verifier and ten-file dry run constrain that option;
+The exact 26-entry history verifier and eleven-file dry run constrain that option;
 seed data and custom roles remain excluded.
 
 The practical rollback remains application-level: keep all feature flags off
