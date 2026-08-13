@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, CalendarCheck2, Camera, MapPinned, Sparkles, Store } from "lucide-react";
 import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
+import { planningHubPublicEntryEnabled } from "@/lib/planning-hub/public-entry";
 import type { PlanningHubSupplierCategory } from "@/lib/planning-hub/types";
 
 export function PlanningHubHeader({
@@ -17,6 +18,7 @@ export function PlanningHubHeader({
   const suppliers = stage === "suppliers";
   const supplier = stage === "supplier" && supplierCategory;
   const organise = stage === "organise";
+  const publicBeta = planningHubPublicEntryEnabled();
   return (
     <header className="border-b border-[#d9d0c3] bg-[#fbf8f2]">
       <div className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6 lg:px-8">
@@ -25,7 +27,7 @@ export function PlanningHubHeader({
             <ArrowLeft size={17} /> Public Budget Planner
           </Link>
           <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#e8efe8] px-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#24432f]">
-            <Sparkles size={14} /> Private beta
+            <Sparkles size={14} /> {publicBeta ? "Public beta" : "Private beta"}
           </span>
         </div>
         <div className="mt-6 max-w-4xl">
@@ -52,6 +54,11 @@ export function PlanningHubHeader({
                   ? `Find ${supplier.plural.toLowerCase()} who cover your venue or location, then keep estimates, quotes, bookings and payments connected to the same wedding budget.`
                   : "Find a Scottish venue, compare the strongest options and keep every estimate, quote, booking and payment connected to your wedding budget."}
           </p>
+          {publicBeta ? (
+            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-[#4f654f]">
+              Beta plans are saved in this browser on this device. Secure account sync and partner sharing are not yet enabled.
+            </p>
+          ) : null}
         </div>
         <nav aria-label="Planning stages" className="mt-6 flex gap-2 overflow-x-auto pb-1">
           <StageLink active={stage === "venue"} href={withPlanningWorkspace("/planning-hub", workspaceId)} icon={<MapPinned size={16} />} label="Venue" />
