@@ -265,19 +265,27 @@ Use the least destructive rollback that restores safety:
 - Field INP requires an approved release and real traffic.
 - Before a production code-only beta deployment, verify in Vercel that
   `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
-  `SUPPLIER_CATEGORY_OUTREACH_ENABLED`, `SUPPLIER_ADMIN_SCHEMA_ENABLED` and
-  `OUTREACH_SENDING_ENABLED` are
-  absent or not exactly `true` in the Production environment. The current
-  preview proves the public-entry and connected-planning gates are off, but
-  Preview and Production environment scopes can differ.
-- Draft pull request #55 is mergeable through pushed commit `3ff9769`; its
-  refreshed Vercel deployment and bounded post-merge smoke are green. Merge,
-  production deployment, migration and production writes require separate
+  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED` are
+  absent or not exactly `true` in the Production environment. Preserve the
+  approved Production-only `OUTREACH_SENDING_ENABLED=true` value so current
+  venue and photographer outreach continues; do not add that sending flag to
+  Preview or treat it as permission for generic supplier-category outreach.
+  Preview and Production environment scopes can differ, so check both before
+  activation.
+- Pull request #55 was squash-merged as `334cdf9` on 13 August 2026; its
+  production deployment and bounded post-merge smoke are green. Migration,
+  public-entry activation and production writes still require their own
   explicit approval.
 
 ## Final local release-candidate evidence
 
 - 108 Vitest files and 509 tests pass.
+- Venue Passport contrast is now enforced across all six generated palettes:
+  the quietest visible label clears WCAG AA at a minimum calculated ratio of
+  4.93:1. Optimized headless axe reports no contrast violations; it still
+  returns an indeterminate result for off-screen/overlapped card controls and
+  visual text inside the labelled image-role composition, so that uncertainty
+  remains visible rather than being excluded from the browser verifier.
 - The exact pushed `3ff9769` preview passes the final post-merge smoke at
   390 x 844 and 1440 x 900. Planning Hub renders eight of 470 venue matches
   without horizontal overflow, undersized main controls, browser warnings or

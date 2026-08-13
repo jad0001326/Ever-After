@@ -224,6 +224,28 @@ describe("PlanningHubWorkspace", () => {
       .toContain("workspace=60000000-0000-4000-8000-000000000006");
   });
 
+  it("does not imply an open result is chosen in the photography handoff", () => {
+    renderWorkspace();
+
+    expect(screen.getByText("Venue in view")).toBeTruthy();
+    expect(screen.getByText(/venue matching begins after you choose a main venue/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Next: choose your photographer/i }).getAttribute("href"))
+      .not.toContain("venue=");
+  });
+
+  it("describes the photography handoff as venue-matched only after choosing a main venue", () => {
+    const planned = choosePlanningHubVenue(
+      upsertPlanningHubVenue(createPlanningHubStarterPlan(null), venues[0], 650_000, "booked"),
+      venues[0].id,
+    );
+    renderWorkspace(planned);
+
+    expect(screen.getAllByText("Chosen venue").length).toBeGreaterThan(0);
+    expect(screen.getByText(/matched to your chosen venue and location/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Next: choose your photographer/i }).getAttribute("href"))
+      .toContain("venue=venue-1");
+  });
+
   it("confirms venue removal, clears the chosen venue and allows it to be added again", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "Add venue to plan" }));

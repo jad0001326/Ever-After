@@ -65,6 +65,9 @@ export function PlanningHubPlanPanel({
   const budget = calculatePlanningHubPlan(plan);
   const selectedItemId = selectedItem?.id;
   const venueItems = plan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
+  const hasChosenVenue = Boolean(plan.selectedVenueId && venueItems.some((item) => (
+    item.id === plan.selectedVenueId || item.listingId === plan.selectedVenueId
+  )));
 
   useEffect(() => {
     const openFromHash = () => {
@@ -128,7 +131,7 @@ export function PlanningHubPlanPanel({
       </details>
 
       <div className="border-b border-[#e4ddd2] p-5" data-testid="current-venue-planning" id="current-venue-planning">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">Current venue</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#7a6d59]">{hasChosenVenue ? "Chosen venue" : "Venue in view"}</p>
         <h3 className="focus-ring mt-2 rounded font-display text-2xl font-semibold text-[#173526]" ref={currentHeadingRef} tabIndex={-1}>{selectedVenue?.name ?? selectedItem?.itemName ?? "Open a venue to plan it"}</h3>
         {selectedVenue ? (
           <div className="mt-4 grid gap-3">
@@ -264,7 +267,7 @@ export function PlanningHubPlanPanel({
           <Save size={17} /> Save plan
         </button>
         <Link className="focus-ring mt-4 flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#e8efe8] px-4 text-sm font-semibold text-[#173526]" href={getPhotographyNextHref(plan, null, connectedWorkspaceId)} prefetch={false}>
-          <span>Next: choose your photographer<span className="mt-1 block text-xs font-normal text-[#5b665e]">Matched to your venue and location.</span></span>
+          <span>Next: choose your photographer<span className="mt-1 block text-xs font-normal text-[#5b665e]">{hasChosenVenue ? "Matched to your chosen venue and location." : "Start with your remaining budget; venue matching begins after you choose a main venue."}</span></span>
           <ArrowRight size={18} />
         </Link>
       </div>
