@@ -1,6 +1,6 @@
 # My EverAft Planning Hub release readiness
 
-Date: 3 August 2026
+Date: 3 August 2026; updated 13 August 2026
 
 Status: locally complete as a connected, local-first beta. Draft pull request
 #55 and its authentication-protected Vercel preview are current through pushed
@@ -11,7 +11,7 @@ final temporary-access smoke. A production code-only beta would be an unlisted,
 Production release and connected partner sharing remain gated. The approved
 read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
-timestamp drift and legacy Data API grants. The repository now mirrors all 25
+timestamp drift and legacy Data API grants. The repository now mirrors all 26
 recorded production migration identities locally, so no production history
 rewrite is expected; ten reviewed migrations remain pending activation.
 The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
@@ -175,7 +175,7 @@ Supabase applies unapplied files in timestamp order:
 9. `20260803150000_generalize_supplier_outreach.sql`
 10. `20260803165651_supplier_image_submissions.sql`
 
-The other 25 timestamped files now match production's recorded versions
+The other 26 timestamped files now match production's recorded versions
 exactly. Do not replay them or repair production history. The five workspace
 migrations are additive and remain dormant while
 `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
@@ -208,7 +208,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 35 timestamped migrations apply in
+   - confirm that the baseline plus all 36 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -217,7 +217,7 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 25 matching and ten pending identities;
+   - require the exact 26 matching and ten pending identities;
    - confirm all four feature flags remain off.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
@@ -260,12 +260,13 @@ Use the least destructive rollback that restores safety:
   generator are ready. The harness now sends real owner, partner, outsider and
   rejected-bearer HTTP requests through the loopback Next.js routes and checks
   every successful body against the committed JSON Schema. The generated
-  36-file stack still needs its first container-runtime execution.
+  37-file stack still needs its first container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Before a production code-only beta deployment, verify in Vercel that
   `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
-  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `OUTREACH_SENDING_ENABLED` are
+  `SUPPLIER_CATEGORY_OUTREACH_ENABLED`, `SUPPLIER_ADMIN_SCHEMA_ENABLED` and
+  `OUTREACH_SENDING_ENABLED` are
   absent or not exactly `true` in the Production environment. The current
   preview proves the public-entry and connected-planning gates are off, but
   Preview and Production environment scopes can differ.
@@ -457,7 +458,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 35 timestamped
+- The local API generator reproduces one baseline plus all 36 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.

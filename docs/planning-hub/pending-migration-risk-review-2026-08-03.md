@@ -62,7 +62,7 @@ not a reason to broaden the command or repair history.
 
 The dry run and approved command must use `--include-all`: the reviewed
 workspace foundation migration predates production's latest recorded version.
-The exact 25-entry history verifier and ten-file dry run constrain that option;
+The exact 26-entry history verifier and ten-file dry run constrain that option;
 seed data and custom roles remain excluded.
 
 The practical rollback remains application-level: keep all feature flags off

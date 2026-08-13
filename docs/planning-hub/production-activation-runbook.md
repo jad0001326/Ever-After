@@ -1,6 +1,6 @@
 # Planning Hub production activation runbook
 
-Date: 3 August 2026
+Date: 3 August 2026; updated 13 August 2026
 
 Status: prepared locally. This is not approval to push, merge, deploy, change
 migration history, apply SQL, create test users or enable a feature flag.
@@ -8,19 +8,20 @@ migration history, apply SQL, create test users or enable a feature flag.
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
-- Production migration history must still match the checked 25-entry manifest.
+- Production migration history must still match the checked 26-entry manifest.
 - The dry run must list exactly the ten migrations recorded in
   `production-preflight-2026-08-03.md`, in ascending order.
-- Use `--include-all` because the reviewed pending migration
-  `20260726140200_planning_workspace_foundation.sql` is older than production's
-  latest recorded migration. The exact manifest check and dry run below still
+- Use `--include-all` because all ten reviewed pending migrations are older
+  than production's latest recorded migration. The exact manifest check and
+  dry run below still
   limit the release to the ten reviewed files. Never use `--include-seed` or
   `--include-roles`.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
 - Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
   `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
-  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `OUTREACH_SENDING_ENABLED` off.
+  `SUPPLIER_CATEGORY_OUTREACH_ENABLED`, `SUPPLIER_ADMIN_SCHEMA_ENABLED` and
+  `OUTREACH_SENDING_ENABLED` off.
 - Stop on any identity, history, dry-run, backup, migration, advisor, RLS or
   application-smoke mismatch.
 
@@ -37,7 +38,7 @@ npm.cmd run build
 npm.cmd run test:production-migration-alignment
 ```
 
-The status output must be empty. The alignment verifier must report 25 exact
+The status output must be empty. The alignment verifier must report 26 exact
 production identities and ten pending migrations.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
@@ -57,7 +58,7 @@ npx.cmd --yes supabase@2.101.0 db push --linked --include-all --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-25-entry manifest or the dry run is not the exact ten-file pending set. A dry
+26-entry manifest or the dry run is not the exact ten-file pending set. A dry
 run is inspection only; it is not migration approval.
 
 ## 3. Create the no-cost checkpoint
@@ -81,7 +82,7 @@ after the release window.
 
 ## 4. Explicit production approval point
 
-Present the commit SHA, CLI version, project identity, unchanged 25-entry
+Present the commit SHA, CLI version, project identity, unchanged 26-entry
 history, exact ten-file dry run, checkpoint confirmation, passing local gates
 and rollback boundary. Ask for approval to apply those ten named migrations.
 
@@ -98,7 +99,7 @@ supplier activation or outreach sending.
 
 After an approved push:
 
-1. Re-run `migration list --linked`; it must show all 35 local versions on the
+1. Re-run `migration list --linked`; it must show all 36 local versions on the
    remote side with no local-only or remote-only entry.
 2. Re-run the Supabase security and performance advisors and retain the delta.
 3. Confirm every new public table has RLS enabled and the expected explicit
@@ -109,7 +110,9 @@ After an approved push:
    historical `photographer` campaign rows remain unchanged.
 6. Confirm the supplier image submission table and both empty, restricted
    storage buckets exist with the expected RLS and object policies.
-7. Stop and keep all feature flags off on any mismatch.
+7. Confirm `authenticated` has no table- or column-level `UPDATE` privilege on
+   `public.profiles`, especially `role`.
+8. Stop and keep all feature flags off on any mismatch.
 
 The embedded owner/partner/outsider and supplier-owner tests prove the SQL
 contract locally. A real Auth/Data API test creates temporary users and rows,

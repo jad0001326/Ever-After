@@ -1,9 +1,10 @@
 # Production database preflight
 
-Date: 3 August 2026
+Date: 3 August 2026; updated 13 August 2026
 
-Status: read-only audit complete. No migration, production data change, branch,
-paid resource or feature activation was created.
+Status: profile-role security hotfix applied and verified on 13 August. No other
+migration, production row change, branch, paid resource or feature activation
+was created.
 
 ## Confirmed production state
 
@@ -19,8 +20,8 @@ paid resource or feature activation was created.
 
 ## Migration-history gate
 
-Remote history contains 25 entries and was refreshed read-only after the
-initial audit. The repository now uses those exact 25 production versions:
+Remote history contains 26 entries after the approved profile-role hotfix. The
+repository now uses those exact 26 production versions:
 fourteen logically matching files were renamed to production's recorded
 timestamps, and the three legacy pricing phases were copied into timestamped
 migration files without changing their SQL. The captured manifest is
@@ -43,7 +44,7 @@ Ten timestamped repository migrations are genuinely pending:
 Do not run an unreviewed bulk migration command against production. First
 refresh the remote list and compare it with the captured manifest. If it is
 unchanged, a normal reviewed migration push no longer needs `migration repair`:
-the first 25 local identities match production exactly and only the ten files
+the first 26 local identities match production exactly and only the ten files
 above should be pending. If it differs, stop; do not repair history or push.
 
 The migration-time lock, rewrite and existing-row surface is reviewed in
@@ -62,6 +63,12 @@ privileges from the affected 19 tables. It deliberately leaves existing
 `SELECT`, `INSERT`, `UPDATE` and `DELETE` grants unchanged so application access
 continues to be decided by the existing grants and RLS policies. A disposable
 PostgreSQL verifier proves the narrow privilege change.
+
+The separate `20260813074826_lock_down_profile_role_updates.sql` hotfix revoked
+all authenticated `UPDATE` access to `public.profiles` and removed the unsafe
+row-only self-update policy. Post-apply verification confirmed no remaining
+table or column update grant, no unsafe policy, and an unchanged fingerprint
+across all six profile rows.
 
 Supabase's current platform direction also makes explicit grants important:
 new tables are no longer automatically exposed through the Data and GraphQL
@@ -96,14 +103,14 @@ dropped merely because a low-traffic database currently labels them unused.
    `PLANNING_WORKSPACE_CLOUD_ENABLED` absent.
 2. Confirm a recoverable production database checkpoint.
 3. Re-read remote migration history and stop if it differs from the captured
-   25-entry manifest.
-4. Run `npm run test:production-migration-alignment`; require exactly 25
+   26-entry manifest.
+4. Run `npm run test:production-migration-alignment`; require exactly 26
    matching and ten pending migrations.
 5. Use the runbook's reviewed `--include-all` command because
-   `20260726140200_planning_workspace_foundation.sql` predates production's
-   latest recorded migration. Review the proposed list; it must contain only
-   the nine files recorded above, in order.
-6. Apply those nine migrations under one explicit production approval. Do not
+   all ten reviewed migrations now predate production's latest recorded
+   migration. Review the proposed list; it must contain only the ten files
+   recorded above, in order.
+6. Apply those ten migrations under one explicit production approval. Do not
    include seed data.
 7. Re-run database security and performance advisors.
 8. Exercise owner, partner, outsider and anonymous Data API tests. Stop on any

@@ -27,6 +27,7 @@
     { "version": "20260723093202", "name": "tighten_budget_plan_grants" },
     { "version": "20260723093341", "name": "scope_budget_plan_ids_to_user" },
     { "version": "20260725210923", "name": "fix_vendor_update_admin_check" },
-    { "version": "20260726161511", "name": "validate_venue_outreach_email" }
+    { "version": "20260726161511", "name": "validate_venue_outreach_email" },
+    { "version": "20260813074826", "name": "lock_down_profile_role_updates" }
   ]
 }

@@ -35,7 +35,7 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 25, `snapshot contains ${remoteFiles.length} remote migrations instead of 25`);
+assert(remoteFiles.length === 26, `snapshot contains ${remoteFiles.length} remote migrations instead of 26`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
 const missingRemoteHistory = remoteFiles.filter((file) => !localSet.has(file));
@@ -56,9 +56,7 @@ const backfilledPending = actualPending.filter(
   (file) => file.slice(0, 14) < latestRemoteVersion,
 );
 assert(
-  JSON.stringify(backfilledPending) === JSON.stringify([
-    "20260726140200_planning_workspace_foundation.sql",
-  ]),
+  JSON.stringify(backfilledPending) === JSON.stringify(expectedPending),
   `reviewed older pending set changed; found ${backfilledPending.join(", ")}`,
 );
 
@@ -92,4 +90,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, ${actualPending.length} reviewed local migrations remain pending, and the runbook safely includes ${backfilledPending.length} older pending migration.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, ${actualPending.length} reviewed local migrations remain pending, and the runbook safely includes all ${backfilledPending.length} older pending migrations.`);
