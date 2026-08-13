@@ -20,8 +20,11 @@ migration history, apply SQL, create test users or enable a feature flag.
   Dashboard SQL as part of this release.
 - Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
   `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
-  `SUPPLIER_CATEGORY_OUTREACH_ENABLED`, `SUPPLIER_ADMIN_SCHEMA_ENABLED` and
-  `OUTREACH_SENDING_ENABLED` off.
+  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED`
+  off. Preserve the currently approved Production value of
+  `OUTREACH_SENDING_ENABLED=true` so the existing venue and photographer
+  outreach workflow remains operational; do not add it to Preview or broaden
+  it to generic supplier categories.
 - Stop on any identity, history, dry-run, backup, migration, advisor, RLS or
   application-smoke mismatch.
 
@@ -122,8 +125,9 @@ been exercised against an approved environment.
 
 ## 6. Application deployment sequence
 
-With database verification green, deploy the application while all four flags
-remain off. Verify:
+With database verification green, deploy the application while the four
+dormant Planning Hub and generic-supplier flags remain off and the existing
+Production outreach-sending flag remains unchanged. Verify:
 
 - the public home, venue catalogue, Budget Planner and Table Planner;
 - signed-out Planning Hub local-device creation, venue selection, Photography

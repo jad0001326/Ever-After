@@ -86,7 +86,7 @@ function HeritagePassport({ venue }: { venue: VenuePassportVenue }) {
             {venue.town}
             <span className="mt-1 block text-[0.72em] font-medium opacity-[0.78]">{venue.region}</span>
           </p>
-          <p className="max-w-[42%] text-right text-[clamp(0.48rem,1vw,0.62rem)] font-semibold uppercase leading-[1.35] tracking-[0.12em] opacity-70">
+          <p className="max-w-[42%] text-right text-[clamp(0.48rem,1vw,0.62rem)] font-semibold uppercase leading-[1.35] tracking-[0.12em] opacity-75">
             Illustrated venue profile
           </p>
         </div>

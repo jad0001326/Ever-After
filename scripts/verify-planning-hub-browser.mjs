@@ -213,7 +213,12 @@ try {
       `axe.run(document).then((results) => JSON.stringify({
         incomplete: results.incomplete.map((item) => ({
           id: item.id,
-          nodes: item.nodes.length
+          help: item.help,
+          nodes: item.nodes.length,
+          sample: item.nodes.slice(0, 3).map((node) => ({
+            failureSummary: node.failureSummary,
+            target: node.target
+          }))
         })),
         passes: results.passes.length,
         violations: results.violations.map((item) => ({
