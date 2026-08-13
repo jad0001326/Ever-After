@@ -1,0 +1,342 @@
+# My EverAft Planning Hub objective audit
+
+Date: 3 August 2026
+
+Status: the local beta now covers the connected planning journey and is under
+review in draft pull request #55. Production release and secure cloud sharing
+remain deliberately gated.
+
+## Competitive priority adjustment
+
+The user-provided Scottish Wedding Club launch review has been incorporated in
+`competitive-priority-update.md`. It reinforces connected-product depth,
+weekly return value, truthful supplier activation and structured venue data as
+EverAft's defensible priorities. It also exposes a public-positioning gap: the
+current homepage still leads with venue and supplier discovery while the
+Planning Hub remains a protected, no-index beta.
+
+That positioning gap is now prepared locally without prematurely exposing the
+beta. Public metadata, homepage and footer language lead with Scottish wedding
+planning and the live venue, Photography, budget and table tools. A separate
+server-side `PLANNING_HUB_PUBLIC_ENTRY_ENABLED` gate changes the homepage CTA,
+connected-journey explanation, header and footer only after direct production
+smoke testing and public-entry approval. It does not enable cloud sharing.
+
+The next sequence therefore favours beta activation readiness and public proof
+that matches genuinely live functionality. Further dormant native API work is
+lower priority unless it removes a concrete client or release blocker. No
+competitor pricing, catalogue total or campaign claim is treated as verified
+commercial evidence without a fresh primary-source check.
+
+## Supplier network clarification
+
+Supplier catalogue growth, public profiles, verified claiming, future owner
+self-service and connected supplier decisions are now an explicit first-class
+workstream, documented in `supplier-network-roadmap.md`. The local application
+already has a category-neutral Planning Hub supplier engine, generic intake,
+admin listing tools and generic database records. Public discovery, full
+profiles and claim routing remain Photography-specific, and no supplier owner
+listing editor was found. Those are activation blockers rather than a reason to
+rebuild the couple-facing supplier engine.
+
+The next evidence step is a read-only current catalogue audit by category,
+status, claim state, profile completeness and approved imagery. Historical
+counts are not current evidence, and no next category will be selected or
+published from an assumed total.
+
+That audit completed at 11:43 UTC on 3 August 2026. It found 31 published
+Photography listings, no listings in the other fifteen categories, no claims
+and no approved images. Every Photography record has location, core copy,
+services and source provenance; none has confirmed pricing or explicit
+described quote handling, so none passes the new complete-profile activation
+gate. The aggregate evidence and exact definitions are in
+`supplier-catalogue-baseline-2026-08-03.md`.
+
+The first reusable blocker is now removed locally: category-neutral public
+collection, profile and claim routes exist behind the same category activation
+gate, while existing Photography URLs remain canonical. Claim submission
+checks the validated live category, published listing identity and ownership;
+admin review no longer assumes Photography. Shared supplier mappers reject
+pending and rejected hero imagery and label representative imagery. No second
+category was activated.
+
+The approved-claim product loop is also complete locally. Active supplier
+members can propose bounded profile changes from the vendor dashboard; they
+cannot directly change publication, identity, ownership, category, featuring
+or imagery. Admin review applies accepted fields atomically after rechecking the
+claim and active membership. A dedicated embedded PostgreSQL scenario proves
+owner, outsider, admin and anonymous boundaries. The migration remains
+unapplied and no hosted supplier record changed.
+
+The catalogue acquisition workflow is now locally prepared as a distinct
+admin-only staging boundary. CSV or Excel batches require public provenance,
+research date, useful profile fields, pricing-or-explicit-quote handling and
+image permission state. Bulk acceptance creates only unclaimed, unfeatured
+drafts; rejected and duplicate evidence is retained. This does not reuse owner
+applications as researched catalogue data and does not introduce outreach
+contacts.
+
+The protected outreach workflow is now category-neutral locally without
+weakening the existing Photography path. A generic supplier draft must name a
+configured category and still passes published/unclaimed, official-source,
+verified legal-basis, suppression, duplicate and approval checks. Existing
+Photography campaign rows remain valid without the new category column, and a
+separate server-side flag keeps generic category drafting unavailable until
+the additive migration is deliberately activated. The draft mutation and send
+boundary both enforce that category flag, including against stale drafts.
+Sending remains separately disabled and no supplier was contacted.
+
+## Delivered locally
+
+| Objective | Current local result |
+| --- | --- |
+| Wedding profile | Budget, date, guest count, location and priorities drive the workspace and recommendations. |
+| Venue discovery | Server-side filters and pagination return lightweight cards; details and approved galleries load on demand. |
+| Venue planning | Couples can save, compare, manually add and select venues with estimated, quoted and booked states. A confirmed removal clears a matching main venue, removes the item from active totals and leaves a catalogue option available to add again. |
+| Connected budget | Selections update committed and remaining budget; the budget/booking overview exposes estimates, quotes, bookings, payment progress and plan-wide date readiness, with every active item reachable in progressive six-item batches. |
+| Photography next step | Selecting a venue leads into live photography discovery, comparison, manual entry and payment planning. Discovery inherits the selected catalogue venue, Wedding Profile location and genuinely remaining plan budget unless the couple sets an explicit filter. |
+| Supplier breadth | A 16-category roadmap exposes photography as catalogue live and every inactive category as an explicit manual-planning stage without catalogue queries. Live category search shares the same plan-aware context contract as photography; a manual venue stays visible to the couple but its local item ID is never sent to catalogue matching. Venue and supplier items track availability against the exact wedding date rather than inferring a calendar from directory data, and every stage shares the same confirmed removal/reactivation contract. Claimed suppliers have bounded reviewed profile updates plus private rights-confirmed image submission with admin-only optimized publication; source-backed catalogue research has an admin-only batch staging path. Three videographer batches contain fourteen official-source candidates, including genuine Tayside and island bases, while deliberately retaining no unlicensed imagery; current operator review corrected one changed price and made two unresolved identity/price records quote-only and acceptance-blocked. |
+| Payments | Deposits, instalments, paid amounts and deadlines are connected to venue and supplier items; every scheduled commitment remains reachable through progressive five-item batches and returns to its exact open payment editor. |
+| Organisation | Tasks can be created, scheduled, edited, completed and deliberately removed; guest readiness, RSVP/dietary details, table planning and supplier date-readiness remain connected in the same Organise stage. |
+| Continuity | Personal and partner-workspace query context is preserved across stages; real device plans are not overwritten by newly generated server fallback plans. |
+| Reusable logic | Twenty-six declared budget, supplier, recommendation, workspace-discovery, dashboard and update-contract, profile, task, guest, seating and validation modules are guarded against React, Next.js, browser storage, Node runtime and Supabase adapter imports. The web layer maps platform-neutral recommendation targets to URLs; strict versioned JSON-safe facades and fifteen checked Draft 2020-12 schemas expose workspace/dashboard/profile/task/table-plan reads plus conflict-safe profile, task, budget and atomic table-plan writes to future native presentation adapters. |
+| Safe beta | The Planning Hub remains on separate no-index beta routes and the public planners remain available. |
+
+## Prepared but not enabled
+
+Secure partner sharing and cloud persistence have local application foundations
+and dormant database migrations, ownership checks, grants and RLS policies.
+The release migrations and transaction-safe RLS scenario now pass against an
+embedded PostgreSQL engine with real roles, grants, policies and `auth.uid()`
+claims. Partner access is limited to the linked shared budget; a database
+trigger prevents partners from relinking a workspace to another owner budget.
+They have not been applied to production or to a paid Supabase branch.
+The cloud feature remains disabled until the Supabase Auth/Data API boundary is
+also exercised in a free local stack or approved disposable environment.
+
+Additional supplier catalogues are structurally ready but remain manual-only.
+Each catalogue still needs enough real published listings, approved imagery,
+its public profile route and category-specific browser verification before its
+`live` flag can change.
+
+The supplier network roadmap's baseline, public profile/claim foundation,
+bounded owner self-service, private image-review path and source-backed batch
+workflow are now locally complete. The next operational step requires explicit
+approval: stage the researched videographer batches, resolve duplicates and
+conflicts, then let approved claimed suppliers provide rights-confirmed images.
+Activation remains a later complete-slice decision.
+
+## Completion classification
+
+| Scope | Classification | Evidence or boundary |
+| --- | --- | --- |
+| Venue-first Planning Hub milestone | Complete locally | Responsive shell, profile inputs, paginated server discovery, detail, save/compare, estimated/quoted/booked planning, connected budget and payments, Photography handoff and manual fallback all pass the optimized interaction gate. |
+| Connected planning journey | Complete locally | Venue, Photography, supplier roadmap, Organise, tasks, guests, tables, availability and payment deadlines share one versioned plan and survive reload. |
+| Performance and accessibility targets | Complete in current lab evidence | Three mobile Lighthouse runs meet performance, LCP and CLS targets; the current optimized gate measured four native keyboard interactions no slower than 32 ms against the 200 ms lab budget; Chrome accessibility tree, axe, responsive overflow and optimized browser matrices pass. Field INP still requires real traffic. |
+| Secure partner sharing | Prepared, not release-enabled | Application actions, migrations, rollback order and embedded PostgreSQL RLS scenarios pass. Real Supabase Auth/Data API execution still requires a free local stack or separately approved disposable environment. |
+| Production release | Current candidate in draft review | Draft pull request #55 is mergeable and its authentication-protected Vercel preview is current through pushed commit `b2e8565`. Authenticated 390 x 844 and 1440 x 900 preview smokes prove the new Scottish planning positioning, public planners, live Photography catalogue, `noindex, nofollow` Planning Hub, inactive-category 404 and manual Videography fallback without horizontal overflow. A device-only £1,800 Photography choice reaches Organise with £18,200 remaining, and neither the application console nor Vercel reports runtime errors on the tested routes. This post-push evidence record remains local. No merge, production deployment, hosted migration or production write is authorised. |
+| Native iPhone and Android apps | Workspace discovery, dashboard, profile, tasks, budget and full table-plan API foundation prepared | The executable portable-domain boundary, platform-neutral recommendation DTOs and fifteen versioned language-neutral schemas now have dormant authenticated read and mutation adapters. A bounded workspace collection gives signed-in clients their accessible plans and caller role without exposing other members. All adapters use the caller's RLS client; profile, task and budget writes require exact resource versions, while a bounded table-plan GET supplies the exact workspace version consumed by the existing atomic owner/partner PATCH transaction. Native application shells, physical-device QA and live Auth/Data API execution remain future gates. |
+
+## Remaining release gates
+
+1. Run the already-passing collaboration scenario through Supabase Auth and the
+   Data API with the guarded `npm run test:planning-api` harness in a free local
+   stack or approved disposable environment. The database-level owner, partner,
+   outsider and anonymous cases now pass.
+2. Review draft pull request #55 and its refreshed protected preview, agree its
+   accumulated release boundaries, then choose the production scope. The
+   previously approved eleven-commit branch update is now pushed.
+3. Complete physical iPhone/Safari and Android touch testing; automated 390px
+   Chrome verification is already passing.
+4. Keep the development-only ESLint dependency advisory under review. The
+   production dependency audit is now clear; forcing npm's suggested fix would
+   incorrectly downgrade the Next.js ESLint configuration.
+5. Obtain separate explicit approval before merging, creating a production
+   deployment, applying a migration, changing production data or rolling back.
+6. After an approved release, collect field Core Web Vitals, especially INP,
+   because Lighthouse cannot provide a representative field INP measurement.
+
+## Current verification baseline
+
+- 103 test files and 494 tests passing.
+- Pushed commit `b2e8565` verified on the authentication-protected Vercel
+  preview at 390 x 844 and 1440 x 900. Public positioning and planners render without
+  horizontal overflow; Photography exposes live paginated results;
+  `/suppliers/videographer` remains a public 404 while the private Hub retains
+  manual Videography planning. Adding A-Fotografy with a £1,800 estimate
+  updates the plan to £18,200 remaining and carries into Organise at both
+  breakpoints. The application console is clear and Vercel reported no runtime
+  errors for the tested route set.
+- Embedded PostgreSQL RLS verification passing for 8 migrations and 10
+  user-owned tables, including schema-contract assertions and transaction-safe
+  owner, partner, outsider, invitee and anonymous scenarios. The partner can
+  update the shared budget and delete a shared task, but cannot read an unlinked
+  owner budget or change the workspace budget link; an outsider cannot delete
+  that task.
+- TypeScript passing.
+- ESLint passing with one unrelated pre-existing `<img>` warning in the venue
+  Open Graph image route.
+- Optimized Next.js build passing with 91 generated pages after integrating
+  current `origin/main` and the supplier staging/admin surfaces.
+- Production dependency audit passing with zero known vulnerabilities after
+  patching Next.js, Sharp, PostCSS, MCP SDK and their affected transitives.
+  The full audit retains only a development-tool ESLint/minimatch advisory.
+- Sharp 0.35.3 image processing verified with the application's supported
+  rotate, flatten, resize and JPEG pipeline on Node.js 24.
+- The release-series cross-site review found that removing the remote font
+  loader had left `--font-sans` undefined. A local system sans stack now keeps
+  public and beta body typography valid without adding a font request, and a
+  regression test protects that global contract.
+- Supplier roadmap and manual supplier stage verified at 390 x 844 with no
+  horizontal overflow, no browser errors and zero axe violations.
+- Date availability is part of the reusable budget-item contract for venues,
+  photography and all supplier categories. The plan records not checked,
+  enquiry sent, available or unavailable against the exact wedding date;
+  changing that date makes the prior response stale. Organise summarises
+  available, awaiting, unavailable and action-needed items, labels every
+  booking, progressively reveals long plans without an unbounded first render,
+  and recommends a recheck before advancing.
+- Venue, photography and generic supplier planning now expose the same inline
+  confirmed removal. The reusable domain mutation preserves historical costs
+  and payments in the versioned plan while marking the item inactive, clears a
+  matching selected venue and allows an existing catalogue item to be
+  reactivated without creating a duplicate. Result cards, shortlists, totals,
+  deadlines and recommendations all ignore the cancelled record.
+- Photography and live supplier searches now derive venue, location and
+  affordable-price context from the connected plan. Explicit URL filters win,
+  plan-derived values are explained and exposed to assistive technology, and
+  pagination preserves the original query rather than freezing derived values
+  into the URL.
+- The repeatable optimized-build browser gate covers Venue, the Photography
+  handoff, Organise, the public Budget Planner and the public Table Planner at
+  both 390 x 844 and 1440 x 900. All ten scenarios have equal
+  viewport/document widths, no browser errors and zero axe violations or
+  indeterminate checks; Photography also proves the transported venue, date,
+  location and exact remaining balance.
+- That gate now appends a signed-out 390 x 844 interaction journey: favourite
+  access is safely gated, a live venue compares and opens on demand, a £5,000
+  booked manual venue reduces a £30,000 plan to £25,000 immediately, a £1,000
+  deposit records £500 paid, the exact venue/date/location/balance reach
+  Photography without a false catalogue venue ID, and the device plan restores
+  after returning to Venue.
+- The restored plan then reaches Organise with its booking and payment
+  commitment intact. Its review link retains the exact plan-item ID, returns
+  to Venue, opens the matching payment disclosure and focuses its summary.
+- Rendered mobile coverage now records availability for the exact wedding date,
+  changes that date and proves the old answer becomes a visible stale warning.
+  Organise bounds a seven-booking/seven-payment plan at six and five entries,
+  reveals every remaining item, exposes `Show fewer` controls and passes axe
+  and overflow checks while expanded.
+- Confirmed removal places focus on the stable current-venue heading. A live
+  catalogue venue then completes add, remove and re-add in the browser while
+  retaining one active plan item and no duplicate.
+- The same repeatable run uses Chrome's native Enter, Space and Tab input to
+  prove venue detail focus transfer, keyboard-reachable Close, exact trigger
+  focus restoration, Compare pressed state, manual-entry disclosure and field
+  order, and keyboard navigation to the plan-aware Photography stage. Chrome
+  Event Timing records five distinct interactions; the full optimized run's
+  slowest duration is 16 milliseconds and the gate fails above 200
+  milliseconds. Field INP remains explicitly separate.
+- The native-ready source boundary covers 26 declared domain modules and fails
+  on framework directives, React/Next imports, browser globals or storage,
+  URL construction, Node environment access, Supabase clients and web adapters.
+  Recommendation decisions now return stable platform-neutral targets; the web
+  workspace adapter alone converts those targets into Planning Hub URLs. A
+  versioned dashboard snapshot reuses the same budget, payment, task, guest,
+  profile and recommendation logic, rejects mismatched workspace/plan joins
+  and round-trips through JSON without URLs or runtime-specific values. Its
+  strict runtime validator rejects unknown web-adapter fields, while a
+  generated Draft 2020-12 JSON Schema with a stable URN is checked for drift.
+  Separate workspace and budget update timestamps preserve the versions future
+  clients will need for conflict-safe writes.
+- Checked language-neutral request and success schemas now define the first
+  native mutation. The dormant PATCH adapter caps and validates the full plan,
+  rejects stale versions before writing, conditions the Data API update on the
+  same exact timestamp, prevents budget relinking and always restores the
+  workspace owner ID. A second local optimized-server request proved the built
+  write route also returns the expected no-store 503 while cloud planning is
+  disabled.
+- Checked language-neutral request and success schemas also define atomic
+  table-plan replacement. The dormant PATCH adapter rejects invalid seating
+  before reading, checks the exact workspace version and calls the existing
+  authenticated transaction, which locks and rechecks the workspace before
+  replacing guests, tables, seats and rules. Tests cover partner success,
+  outsider denial and both stale-precheck and in-transaction conflicts.
+- A checked nullable profile resource and update request now let native clients
+  load, establish and replace the full wedding profile. Clients cannot supply
+  timestamps or ownership fields; first-insert collisions and exact-version
+  update races return conflicts. The caller-bound owner/partner RLS client
+  remains authoritative.
+- Six checked task contracts now expose bounded list plus complete create,
+  update and delete behavior. Stable client IDs support offline continuity;
+  task lookup is bound to the workspace path and update/delete require the
+  exact task version in both the precheck and conditional mutation.
+- A checked workspace collection gives authenticated native clients a bounded
+  discovery entry point before they know a workspace ID. It returns only
+  RLS-visible plans and the caller's own role, omits owner/member identities,
+  and fails closed if workspace and membership results disagree.
+- A checked table-plan read resource now closes the earlier native write-only
+  gap. Five bounded parallel queries return the complete guest/seating state
+  and exact PATCH version without loading unrelated workspace records; stricter
+  validation rejects duplicate IDs, duplicate seats and seats beyond capacity.
+- The first dormant native read adapter exposes that exact contract through a
+  versioned dynamic GET route. It verifies the bearer token with Supabase Auth,
+  performs all reads through the same caller-bound publishable-key client,
+  preserves owner/partner RLS, collapses missing and inaccessible workspaces to
+  one generic 404 and sends private no-store responses. The optimized built
+  route was exercised locally with the cloud flag off and returned the expected
+  503 before authentication or any Supabase connection.
+- Chrome's full rendered accessibility tree proves unique banner/main
+  landmarks, named primary/stage/result navigation, named filter/result/plan
+  landmarks, correct heading levels, detail and control names, pressed and
+  expanded state, and the exact venue/date/£25,000 Photography context.
+- Every optimized mobile and desktop matrix surface resolves the computed body
+  font to the local system sans stack, including Planning Hub and both public
+  planners.
+- Planning Hub home navigation verified at 390 x 844 with no horizontal
+  overflow, modal obstruction or browser errors.
+- Venue and photographer details now retain a 96px sticky-header focus offset;
+  their 44px close controls remain unobstructed and return focus to the exact
+  opening control.
+- Open venue details, open photographer details and Organise each pass axe-core
+  with zero violations and zero incomplete checks.
+- A single optimized 390 x 844 journey retained one plan from venue discovery
+  through photography, a manual florist, Organise, payment scheduling, profile,
+  tasks and the example guest/table plan. After a fresh Organise reload it
+  retained the £30,000 budget, all three items, £500 paid, one task, 12 guests,
+  three tables and the photography priority.
+- That journey exposed and fixed an Organise startup defect where a newly
+  generated server fallback could overwrite a real device plan solely because
+  its timestamp was newer. A focused regression now proves a server fallback
+  always yields to the existing device plan.
+- The 1440 x 900 production-build audit covers Venue, Photography, Suppliers,
+  the open Organise table editor, both public planners and the home page with no
+  horizontal overflow, browser errors or axe violations. The home page retains
+  one automated contrast check marked incomplete rather than failed.
+- Three supplier-roadmap Lighthouse mobile runs: performance 98,
+  accessibility 100, best practices 100, LCP 2.243-2.249 seconds, CLS 0 and
+  total blocking time 70-80 milliseconds.
+- Three fresh full-milestone Venue-route Lighthouse mobile runs:
+  performance 99/98/99, accessibility 100, best practices 100, LCP
+  2.227-2.395 seconds, median TBT 34 milliseconds and CLS 0. The LCP is the
+  server-rendered hero heading; the route chunk is about 8.5KiB and the median
+  full transfer is about 288KiB.
+
+No production data, hosted Supabase migration, cloud branch, paid action or
+production deployment was used. Draft pull request #55 is current through
+`b2e8565`; this post-push evidence update remains local. Its automatic Vercel
+preview is ready, authentication-protected and free of application runtime
+errors during the verification window. A temporary Vercel share URL expiring
+on 5 August 2026 was created solely for the authenticated smoke test; its token
+was not recorded in the repository or shared with another party. The
+production domain was not changed.
+
+The current local candidate was rechecked after the public-positioning change.
+The complete optimized ten-surface browser matrix and its connected mobile
+journeys pass with no overflow, browser errors or accessibility findings; the
+slowest of four recorded keyboard interactions is 32 milliseconds. A separate
+in-app Browser smoke used the existing public Supabase URL and publishable key
+only: the locally enabled homepage entry opened the private Hub, rendered eight
+of 470 matching venue results, opened four Blackshaw Barns detail images on
+demand and retained `noindex, nofollow`. The current production dependency
+audit reports zero known vulnerabilities.

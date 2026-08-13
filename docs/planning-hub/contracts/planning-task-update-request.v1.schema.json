@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:everaft:planning-task-update-request:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "expectedTaskUpdatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "changes": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 5000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "venue",
+            "photography",
+            "budget",
+            "guests",
+            "tables",
+            "general"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "todo",
+            "in_progress",
+            "done"
+          ]
+        },
+        "dueDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sortOrder": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "expectedTaskUpdatedAt",
+    "changes"
+  ],
+  "additionalProperties": false,
+  "title": "EverAft Planning Task Update Request v1",
+  "description": "A partial task update guarded by the exact task version."
+}

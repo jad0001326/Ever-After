@@ -7,6 +7,10 @@ vi.mock("@/app/actions/vendor-images", () => ({
   deleteVenueImageSubmission: vi.fn(),
   registerVenueImageSubmissions: vi.fn()
 }));
+vi.mock("@/app/actions/supplier-images", () => ({
+  deleteSupplierImageSubmission: vi.fn(),
+  registerSupplierImageSubmissions: vi.fn()
+}));
 vi.mock("@/utils/supabase/client", () => ({ createClient: vi.fn() }));
 
 const venueId = "51fdbc32-c29c-4d5c-b517-5710fe367a55";
@@ -24,13 +28,14 @@ describe("VendorImageUploader", () => {
   it("explains the private review workflow and shows existing statuses", () => {
     render(
       <VendorImageUploader
-        venueId={venueId}
-        venueName="Blackshaw Barns"
+        resourceType="venue"
+        resourceId={venueId}
+        resourceName="Blackshaw Barns"
         userId={userId}
         submissions={[
           {
             id: "pending-photo",
-            venueId,
+            resourceId: venueId,
             altText: "Stone barn ceremony room",
             creditText: "Venue team",
             isPreferred: true,
@@ -41,7 +46,7 @@ describe("VendorImageUploader", () => {
           },
           {
             id: "rejected-photo",
-            venueId,
+            resourceId: venueId,
             altText: "Outdoor terrace",
             creditText: null,
             isPreferred: false,
@@ -63,7 +68,7 @@ describe("VendorImageUploader", () => {
 
   it("keeps submission disabled until the owner confirms display rights", () => {
     const { container } = render(
-      <VendorImageUploader venueId={venueId} venueName="Blackshaw Barns" userId={userId} submissions={[]} />
+      <VendorImageUploader resourceType="venue" resourceId={venueId} resourceName="Blackshaw Barns" userId={userId} submissions={[]} />
     );
     const input = container.querySelector('input[type="file"]');
     expect(input).toBeTruthy();
@@ -73,5 +78,21 @@ describe("VendorImageUploader", () => {
     expect(submit.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox"));
     expect(submit.disabled).toBe(false);
+  });
+
+  it("uses supplier-specific labels without weakening the private review message", () => {
+    render(
+      <VendorImageUploader
+        resourceType="supplier"
+        resourceId="50000000-0000-4000-8000-000000000005"
+        resourceName="Story Films"
+        userId={userId}
+        submissions={[]}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Choose supplier photos" })).toBeTruthy();
+    expect(screen.getByText("Private until approved")).toBeTruthy();
+    expect(screen.getByText(/checks each one before it becomes a main image/i)).toBeTruthy();
   });
 });

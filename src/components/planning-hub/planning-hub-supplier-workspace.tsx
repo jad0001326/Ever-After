@@ -1,0 +1,349 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import type { ReactNode } from "react";
+import { ClipboardCheck, SearchX, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { saveBudgetPlan } from "@/app/actions/budget";
+import { loadPlanningHubSupplierDetailAction } from "@/app/actions/planning-hub";
+import { planningHubBudgetStorageKey, restoreBudgetPlan, serializeBudgetPlan } from "@/lib/budget/persistence";
+import type { AvailabilityStatus, BudgetItem, BudgetPlan, PaymentInstallment } from "@/lib/budget/types";
+import {
+  addManualPlanningHubSupplier,
+  findPlanningHubSupplierItem,
+  removePlanningHubItem,
+  updatePlanningHubItemInstallments,
+  updatePlanningHubItemAvailability,
+  upsertPlanningHubSupplier,
+  type PlanningHubItemStatus,
+} from "@/lib/planning-hub/plan";
+import type {
+  PlanningHubSupplier,
+  PlanningHubSupplierCategory,
+  PlanningHubSupplierDetail,
+  PlanningHubSupplierResults as ResultData,
+  PlanningHubSupplierSearchParams,
+} from "@/lib/planning-hub/types";
+import { PlanningHubSupplierCompare } from "./planning-hub-supplier-compare";
+import { PlanningHubSupplierDetailPanel } from "./planning-hub-supplier-detail";
+import { PlanningHubSupplierPlanPanel } from "./planning-hub-supplier-plan-panel";
+import { PlanningHubSupplierResults } from "./planning-hub-supplier-results";
+import type { PlanningHubSaveState } from "./planning-hub-plan-panel";
+import { withPlanningWorkspace } from "@/lib/planning-hub/navigation";
+
+export function PlanningHubSupplierWorkspace({
+  catalogueLive = true,
+  category,
+  connectedWorkspaceId = null,
+  initialPlan,
+  initialPlanIsFallback = false,
+  results,
+  searchParams,
+  today = "2026-07-28",
+  userId,
+}: {
+  catalogueLive?: boolean;
+  category: PlanningHubSupplierCategory;
+  connectedWorkspaceId?: string | null;
+  initialPlan: BudgetPlan;
+  initialPlanIsFallback?: boolean;
+  results: ResultData;
+  searchParams: PlanningHubSupplierSearchParams;
+  today?: string;
+  userId: string | null;
+}) {
+  const storageKey = planningHubBudgetStorageKey(connectedWorkspaceId);
+  const firstPlannedItem = findPlanningHubSupplierItem(initialPlan, category.slug, searchParams.planItem)
+    ?? findLatestSupplierItem(initialPlan, category);
+  const firstSupplier = firstPlannedItem
+    ? results.suppliers.find((supplier) => supplier.id === firstPlannedItem.listingId) ?? null
+    : results.suppliers[0] ?? null;
+  const firstItem = firstPlannedItem ?? findPlanningHubSupplierItem(initialPlan, category.slug, firstSupplier?.id);
+  const [plan, setPlan] = useState(initialPlan);
+  const [ready, setReady] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(firstSupplier?.id ?? firstItem?.id ?? null);
+  const [status, setStatus] = useState<PlanningHubItemStatus>(normaliseStatus(firstItem?.bookingStatus));
+  const [planningCostPence, setPlanningCostPence] = useState(getSavedItemCost(firstItem) ?? firstSupplier?.startingPricePence ?? 0);
+  const [comparedSuppliers, setComparedSuppliers] = useState<PlanningHubSupplier[]>([]);
+  const [detail, setDetail] = useState<PlanningHubSupplierDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [saveState, setSaveState] = useState<PlanningHubSaveState>("idle");
+  const [saveMessage, setSaveMessage] = useState(userId ? "Changes are also kept on this device." : "Changes are saved on this device.");
+  const [pending, startTransition] = useTransition();
+  const detailRequestId = useRef(0);
+  const detailTriggerRef = useRef<HTMLElement | null>(null);
+
+  const selectedSupplier = results.suppliers.find((supplier) => supplier.id === selectedSupplierId) ?? null;
+  const selectedItem = findPlanningHubSupplierItem(plan, category.slug, selectedSupplierId);
+  const comparedIds = new Set(comparedSuppliers.map((supplier) => supplier.id));
+
+  useEffect(() => {
+    const restoreTimer = window.setTimeout(() => {
+      try {
+        const localPlan = restoreBudgetPlan(window.localStorage.getItem(storageKey));
+        if (localPlan && (initialPlanIsFallback || new Date(localPlan.updatedAt).getTime() > new Date(initialPlan.updatedAt).getTime())) {
+          const restored = { ...localPlan, userId };
+          setPlan(restored);
+          setSaveMessage("Restored newer changes from this device.");
+          const restoredItem = findPlanningHubSupplierItem(restored, category.slug, searchParams.planItem)
+            ?? findLatestSupplierItem(restored, category);
+          const restoredSupplier = restoredItem?.listingId
+            ? results.suppliers.find((supplier) => supplier.id === restoredItem.listingId) ?? null
+            : null;
+          if (restoredItem) {
+            setSelectedSupplierId(restoredSupplier?.id ?? restoredItem.id);
+            setStatus(normaliseStatus(restoredItem.bookingStatus));
+            setPlanningCostPence(getSavedItemCost(restoredItem) ?? restoredSupplier?.startingPricePence ?? 0);
+          }
+        }
+      } catch {
+        setSaveMessage("This browser could not restore local changes.");
+      } finally {
+        setReady(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [category, initialPlan.updatedAt, initialPlanIsFallback, results.suppliers, searchParams.planItem, storageKey, userId]);
+
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      window.localStorage.setItem(storageKey, serializeBudgetPlan(plan));
+    } catch {
+      queueMicrotask(() => {
+        setSaveState("error");
+        setSaveMessage("This browser could not save the latest local changes.");
+      });
+    }
+  }, [plan, ready, storageKey]);
+
+  function openSupplier(supplierId: string) {
+    const supplier = results.suppliers.find((candidate) => candidate.id === supplierId);
+    if (!supplier) return;
+    detailTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const item = findPlanningHubSupplierItem(plan, category.slug, supplier.id);
+    setSelectedSupplierId(supplier.id);
+    setStatus(normaliseStatus(item?.bookingStatus));
+    setPlanningCostPence(getSavedItemCost(item) ?? supplier.startingPricePence ?? 0);
+    setDetailLoading(true);
+    const requestId = detailRequestId.current + 1;
+    detailRequestId.current = requestId;
+    startTransition(async () => {
+      const loaded = await loadPlanningHubSupplierDetailAction(category.slug, supplier.id);
+      if (requestId !== detailRequestId.current) return;
+      setDetail(loaded);
+      setDetailLoading(false);
+      if (!loaded) {
+        setSaveState("error");
+        setSaveMessage(`${category.label} details could not be opened. The result remains available in your plan.`);
+        return;
+      }
+      requestAnimationFrame(() => {
+        const panel = document.getElementById("supplier-detail");
+        panel?.focus({ preventScroll: true });
+        panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
+  function closeSupplierDetail() {
+    setDetail(null);
+    requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }
+
+  function toggleCompare(supplierId: string) {
+    const existing = comparedSuppliers.some((supplier) => supplier.id === supplierId);
+    if (existing) {
+      setComparedSuppliers((current) => current.filter((supplier) => supplier.id !== supplierId));
+      return;
+    }
+    const supplier = results.suppliers.find((candidate) => candidate.id === supplierId);
+    if (!supplier) return;
+    if (comparedSuppliers.length >= 3) {
+      setSaveMessage(`Compare up to three ${category.plural.toLowerCase()} at a time.`);
+      return;
+    }
+    setComparedSuppliers((current) => [...current, supplier]);
+  }
+
+  function saveCurrentSupplier() {
+    if (!selectedSupplier) return;
+    persistPlan(
+      upsertPlanningHubSupplier(plan, selectedSupplier, planningCostPence, status),
+      `${selectedSupplier.name} is ${status === "quoted" ? "recorded with a quote" : status} in your plan.`,
+    );
+  }
+
+  function addManualSupplier(name: string, costPence: number, itemStatus: PlanningHubItemStatus) {
+    const nextPlan = addManualPlanningHubSupplier(plan, category.slug, name, costPence, itemStatus);
+    const addedItem = nextPlan.items.at(-1);
+    if (addedItem) {
+      setSelectedSupplierId(addedItem.id);
+      setStatus(itemStatus);
+      setPlanningCostPence(costPence);
+    }
+    persistPlan(nextPlan, `${name} was added manually.`);
+  }
+
+  function saveInstallments(installments: PaymentInstallment[]) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemInstallments(plan, selectedItem.id, installments),
+      `${category.label} payment schedule updated.`,
+    );
+  }
+
+  function saveAvailability(availabilityStatus: AvailabilityStatus) {
+    if (!selectedItem) return;
+    persistPlan(
+      updatePlanningHubItemAvailability(plan, selectedItem.id, availabilityStatus),
+      `${category.label} availability updated.`,
+    );
+  }
+
+  function removeCurrentItem() {
+    if (!selectedItem) return;
+    persistPlan(
+      removePlanningHubItem(plan, selectedItem.id),
+      `${selectedItem.itemName} was removed from your plan.`,
+    );
+  }
+
+  function persistPlan(nextPlan: BudgetPlan, successMessage: string) {
+    setPlan(nextPlan);
+    if (!userId) {
+      setSaveState("saved");
+      setSaveMessage(`${successMessage} Saved on this device.`);
+      return;
+    }
+    setSaveState("saving");
+    setSaveMessage("Saving to your account…");
+    startTransition(async () => {
+      const result = connectedWorkspaceId
+        ? await (await import("@/app/actions/planning-workspace")).saveConnectedBudgetPlanAction(connectedWorkspaceId, nextPlan)
+        : await saveBudgetPlan(nextPlan);
+      setSaveState(result.ok ? "saved" : "error");
+      setSaveMessage(result.ok ? successMessage : result.message ?? "Cloud save failed. Your changes remain on this device.");
+    });
+  }
+
+  return (
+    <div className="grid min-w-0 gap-6 lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="min-w-0">
+        {catalogueLive ? (
+          <>
+            <PlanningHubSupplierCompare category={category} onRemove={(supplierId) => setComparedSuppliers((current) => current.filter((supplier) => supplier.id !== supplierId))} suppliers={comparedSuppliers} />
+            <PlanningHubSupplierDetailPanel category={category} detail={detail} loading={detailLoading || pending && detailLoading} onClose={closeSupplierDetail} />
+            <PlanningHubSupplierResults
+              category={category}
+              comparedSupplierIds={comparedIds}
+              onCompare={toggleCompare}
+              onOpen={openSupplier}
+              plan={plan}
+              results={results}
+              searchParams={searchParams}
+            />
+          </>
+        ) : (
+          <ManualSupplierIntroduction
+            category={category}
+            connectedWorkspaceId={connectedWorkspaceId}
+          />
+        )}
+      </div>
+      <PlanningHubSupplierPlanPanel
+        manualOnly={!catalogueLive}
+        onAvailabilityChange={saveAvailability}
+        category={category}
+        connectedWorkspaceId={connectedWorkspaceId}
+        onInstallmentsSave={saveInstallments}
+        onItemRemove={removeCurrentItem}
+        onManualSupplier={addManualSupplier}
+        onPlanSave={() => persistPlan(plan, userId ? "Your plan is saved to your account." : "Your plan is up to date.")}
+        onPlanningCostChange={setPlanningCostPence}
+        onStatusChange={setStatus}
+        onSupplierSave={saveCurrentSupplier}
+        plan={plan}
+        planningCostPence={planningCostPence}
+        saveMessage={saveMessage}
+        saveState={saveState}
+        selectedItem={selectedItem}
+        selectedSupplier={selectedSupplier}
+        status={status}
+        today={today}
+      />
+    </div>
+  );
+}
+
+function ManualSupplierIntroduction({
+  category,
+  connectedWorkspaceId,
+}: {
+  category: PlanningHubSupplierCategory;
+  connectedWorkspaceId: string | null;
+}) {
+  return (
+    <section className="rounded-3xl border border-[#d8c7a7] bg-[#fff9ef] p-6 sm:p-8">
+      <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#765737]">
+        <SearchX size={15} /> Catalogue not presented
+      </span>
+      <h2 className="mt-5 max-w-2xl font-display text-4xl font-semibold text-[#173526] sm:text-5xl">Add your chosen {category.label.toLowerCase()} without losing the plan.</h2>
+      <p className="mt-4 max-w-2xl text-sm leading-6 text-[#625f57] sm:text-base">
+        EverAft has not activated this catalogue yet, so this page performs no supplier search and makes no claim about available listings. Use the form beside this guide for a business you found elsewhere.
+      </p>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <Explanation
+          icon={<ClipboardCheck size={19} />}
+          text="Record a working estimate, received quote or confirmed booking, then add deposits and instalment deadlines."
+          title="Keep the decision connected"
+        />
+        <Explanation
+          icon={<ShieldCheck size={19} />}
+          text="Your manual entry uses the same device-first budget plan. No inactive supplier profile or unapproved image is loaded."
+          title="Truthful by design"
+        />
+      </div>
+      <Link className="focus-ring mt-7 inline-flex min-h-11 items-center rounded-full border border-[#173526] bg-white px-5 text-sm font-semibold text-[#173526]" href={withPlanningWorkspace("/planning-hub/suppliers", connectedWorkspaceId)} prefetch={false}>
+        Review all supplier stages
+      </Link>
+    </section>
+  );
+}
+
+function Explanation({
+  icon,
+  text,
+  title,
+}: {
+  icon: ReactNode;
+  text: string;
+  title: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-5">
+      <span className="grid size-10 place-items-center rounded-full bg-[#edf2ec] text-[#31533b]">{icon}</span>
+      <h3 className="mt-4 font-display text-2xl font-semibold text-[#173526]">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[#625f57]">{text}</p>
+    </div>
+  );
+}
+
+function findLatestSupplierItem(plan: BudgetPlan, category: PlanningHubSupplierCategory) {
+  return [...plan.items].reverse().find((item) => (
+    item.categoryId === category.budgetCategoryId
+    && item.supplierType === category.label
+    && item.bookingStatus !== "cancelled"
+  )) ?? null;
+}
+
+function normaliseStatus(status: string | undefined): PlanningHubItemStatus {
+  return status === "researching" || status === "quoted" || status === "booked" ? status : "shortlisted";
+}
+
+function getSavedItemCost(item: BudgetItem | null) {
+  if (!item) return null;
+  return item.confirmedCostPence ?? item.estimatedCostPence ?? (
+    item.costPerPersonPence != null && item.guestCount != null ? item.costPerPersonPence * item.guestCount : null
+  );
+}

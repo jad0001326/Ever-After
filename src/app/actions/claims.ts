@@ -6,6 +6,11 @@ import { requireAdmin } from "@/lib/auth";
 import { notifyClaimReviewed, notifyClaimSubmitted } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getPublicSupplierCategory,
+  publicSupplierClaimPath,
+  publicSupplierProfilePath,
+} from "@/lib/supplier-public-routes";
 import { reserveVenueForClaim } from "@/lib/venue-claim-reservation";
 
 export type ClaimState = { ok: boolean; message: string } | null;
@@ -267,7 +272,11 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
   if (!supabase || !admin) return { ok: false, message: "Supabase is not configured, so claims cannot be stored yet." };
   const { data: { user } } = await supabase.auth.getUser();
   const slug = requiredText(formData, "slug");
-  if (!user) redirect(`/login?message=Sign+in+to+claim+this+profile&redirectTo=${encodeURIComponent(`/photographers/${slug}/claim`)}`);
+  const categorySlug = requiredText(formData, "categorySlug");
+  const category = getPublicSupplierCategory(categorySlug);
+  if (!category) return { ok: false, message: "This supplier category is not available for public claims." };
+  const claimPath = publicSupplierClaimPath(category.slug, slug);
+  if (!user) redirect(`/login?message=Sign+in+to+claim+this+profile&redirectTo=${encodeURIComponent(claimPath)}`);
 
   const supplierId = requiredText(formData, "supplierId");
   const claimantName = requiredText(formData, "claimantName");
@@ -283,8 +292,8 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
   if (!/^\S+@\S+\.\S+$/.test(businessEmail)) return { ok: false, message: "Please use a valid business email." };
   if (!authorised || !permissionConfirmed || !termsAccepted) return { ok: false, message: "Please confirm the authorisations and display permissions before submitting." };
 
-  const { data: supplier } = await admin.from("supplier_listings").select("id, slug, is_claimed").eq("id", supplierId).eq("slug", slug).eq("category_slug", "photographer").maybeSingle();
-  if (!supplier || supplier.is_claimed) return { ok: false, message: "This photographer profile is unavailable or has already been claimed." };
+  const { data: supplier } = await admin.from("supplier_listings").select("id, slug, is_claimed").eq("id", supplierId).eq("slug", slug).eq("category_slug", category.slug).eq("listing_status", "published").maybeSingle();
+  if (!supplier || supplier.is_claimed) return { ok: false, message: `This ${category.label.toLowerCase()} profile is unavailable or has already been claimed.` };
   const { data: existing } = await supabase.from("supplier_claims").select("id, status").eq("supplier_id", supplierId).eq("claimant_user_id", user.id).in("status", ["pending", "approved"]).maybeSingle();
   if (existing) return { ok: false, message: existing.status === "approved" ? "This claim has already been approved." : "You already have a claim under review for this profile." };
 
@@ -304,7 +313,7 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
   });
   if (error) return { ok: false, message: error.message };
   await admin.from("supplier_listings").update({ claim_status: "pending" }).eq("id", supplierId).eq("claim_status", "unclaimed");
-  revalidatePath(`/photographers/${slug}/claim`);
+  revalidatePath(claimPath);
   revalidatePath("/admin/supplier-claims");
   return { ok: true, message: "Your claim has been submitted for review." };
 }
@@ -317,7 +326,7 @@ export async function approveSupplierClaim(formData: FormData) {
   const adminNotes = requiredText(formData, "adminNotes") || null;
   const { data: claim, error } = await supabase.from("supplier_claims").select("*").eq("id", claimId).single();
   if (error || !claim) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
-  const { data: supplier } = await supabase.from("supplier_listings").select("id, name, slug, vendor_id").eq("id", claim.supplier_id).single();
+  const { data: supplier } = await supabase.from("supplier_listings").select("id, name, slug, category_slug, vendor_id").eq("id", claim.supplier_id).single();
   if (!supplier) redirect(`/admin/supplier-claims/${claimId}?message=Supplier+not+found`);
   const { data: existingVendor } = await supabase.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
   const vendorId = existingVendor?.id ?? (await supabase.from("vendors").insert({ name: supplier.name, contact_email: claim.business_email, contact_phone: claim.business_phone }).select("id").single()).data?.id;
@@ -336,7 +345,8 @@ export async function approveSupplierClaim(formData: FormData) {
   ]);
   revalidatePath("/admin/supplier-claims");
   revalidatePath(`/admin/supplier-claims/${claim.id}`);
-  revalidatePath(`/photographers/${supplier.slug}`);
+  const category = getPublicSupplierCategory(supplier.category_slug);
+  if (category) revalidatePath(publicSupplierProfilePath(category.slug, supplier.slug));
   redirect(`/admin/supplier-claims/${claim.id}?message=Claim+approved`);
 }
 

@@ -11,7 +11,34 @@ export const budgetPlanSchema = z.object({
     estimatedCostPence: nullableMoney, confirmedCostPence: nullableMoney, importedPricePence: nullableMoney, importedPriceToPence: nullableMoney,
     importedPriceType: z.enum(["fixed", "starting_from", "per_person", "package", "range", "quote_required", "unavailable"]).nullable(), costPerPersonPence: nullableMoney,
     guestCount: z.number().int().positive().max(10000).nullable(), depositPaidPence: z.number().int().min(0).max(1_000_000_000), totalPaidPence: z.number().int().min(0).max(1_000_000_000),
-    costStatus: z.enum(["estimated", "quoted", "booked", "deposit_paid", "partially_paid", "paid", "cancelled"]), paymentStatus: z.enum(["not_started", "deposit_paid", "partially_paid", "paid", "overpaid"]), bookingStatus: z.enum(["researching", "shortlisted", "quoted", "booked", "cancelled"]), dueDate: z.string().max(20).nullable(), websiteUrl: z.string().max(500).nullable(), notes: z.string().max(4000).nullable(), createdAt: z.string(), updatedAt: z.string(), sortOrder: z.number().int().min(0)
+    installments: z.array(z.object({
+      id: z.string().min(1).max(100),
+      kind: z.enum(["deposit", "installment", "final", "other"]),
+      label: z.string().trim().min(1).max(120),
+      amountPence: nullableMoney,
+      paidPence: z.number().int().min(0).max(1_000_000_000),
+      dueDate: z.iso.date().nullable(),
+      paidAt: z.iso.date().nullable()
+    })).max(50).default([]),
+    costStatus: z.enum(["estimated", "quoted", "booked", "deposit_paid", "partially_paid", "paid", "cancelled"]), paymentStatus: z.enum(["not_started", "deposit_paid", "partially_paid", "paid", "overpaid"]), bookingStatus: z.enum(["researching", "shortlisted", "quoted", "booked", "cancelled"]),
+    availabilityStatus: z.enum(["not_checked", "enquiry_sent", "available", "unavailable"]).default("not_checked"),
+    availabilityDate: z.iso.date().nullable().default(null),
+    dueDate: z.string().max(20).nullable(), websiteUrl: z.string().max(500).nullable(), notes: z.string().max(4000).nullable(), createdAt: z.string(), updatedAt: z.string(), sortOrder: z.number().int().min(0)
+  }).superRefine((item, context) => {
+    if (item.availabilityStatus === "not_checked" && item.availabilityDate !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["availabilityDate"],
+        message: "An unchecked item cannot retain an availability date.",
+      });
+    }
+    if (item.availabilityStatus !== "not_checked" && item.availabilityDate === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["availabilityDate"],
+        message: "A recorded availability state must name the wedding date checked.",
+      });
+    }
   })).max(500)
 });
 

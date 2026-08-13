@@ -2,7 +2,7 @@ import { absoluteUrl } from "@/lib/utils";
 import type { OutreachFollowUpStage } from "@/lib/outreach-sequence";
 
 export type OutreachCampaignKind = "initial_invite" | "follow_up";
-export type OutreachAudienceType = "venue" | "photographer";
+export type OutreachAudienceType = "venue" | "photographer" | "supplier";
 
 export type OutreachCopy = {
   subject: string;
@@ -13,6 +13,7 @@ export type OutreachCopy = {
 
 export type OutreachEmailRecipient = {
   audienceType: OutreachAudienceType;
+  supplierCategorySlug: string | null;
   businessName: string;
   town: string;
   listingSlug: string;
@@ -38,20 +39,20 @@ export const defaultOutreachCopy: Record<OutreachCampaignKind, OutreachCopy> = {
   }
 };
 
-export const defaultPhotographerOutreachCopy: Record<OutreachCampaignKind, OutreachCopy> = {
+export const defaultSupplierOutreachCopy: Record<OutreachCampaignKind, OutreachCopy> = {
   initial_invite: {
     subject: "An invitation for {business_name} from EverAft",
-    preheader: "Claim your complimentary founding photographer profile on EverAft.",
+    preheader: "Claim your complimentary founding supplier profile on EverAft.",
     introText:
-      "We’re expanding EverAft to help couples find trusted wedding photographers through useful details such as style, location, travel coverage and pricing. We’ve prepared a complimentary draft profile for {business_name} and would like to invite you to claim it, check the information and decide whether you would like it published.",
+      "We’re expanding EverAft to help couples turn supplier discovery into a practical wedding plan through useful details such as services, location, travel coverage and pricing. We’ve prepared a complimentary profile for {business_name} from publicly available business information and would like to invite you to claim it and check the details.",
     offerText:
-      "Founding photographers can claim and review their profile without obligation. Nothing is published until the business details are checked, and portfolio images are only used with permission."
+      "Founding suppliers can claim and review their profile without obligation. Only source-backed business details are shown before a claim, and portfolio images are only used with permission."
   },
   follow_up: {
     subject: "A quick follow-up for {business_name} from EverAft",
-    preheader: "Your EverAft photographer invitation is still ready to review.",
+    preheader: "Your EverAft supplier invitation is still ready to review.",
     introText:
-      "I wanted to follow up on the invitation for {business_name} to join EverAft’s founding photographer collection. Claiming the draft lets you correct the details, confirm the areas you cover and decide what may be published.",
+      "I wanted to follow up on the invitation for {business_name} to join EverAft’s founding supplier collection. Claiming the profile lets you correct the details, confirm the areas you cover and manage what couples see.",
     offerText:
       "The complimentary founding profile remains available during launch. There is no obligation to claim it, and no portfolio image will be displayed without permission."
   }
@@ -66,11 +67,11 @@ const defaultFinalVenueOutreachCopy: OutreachCopy = {
     "There is no pressure or obligation to take part. If EverAft is not a fit right now, there is no need to reply — we will leave the listing as it is and will not send further claim reminders."
 };
 
-const defaultFinalPhotographerOutreachCopy: OutreachCopy = {
+const defaultFinalSupplierOutreachCopy: OutreachCopy = {
   subject: "A final note for {business_name} from EverAft",
-  preheader: "Your complimentary EverAft photographer profile remains ready to review.",
+  preheader: "Your complimentary EverAft supplier profile remains ready to review.",
   introText:
-    "Just a final note in case our earlier emails were lost in a busy inbox. Your complimentary EverAft profile for {business_name} is ready to review, so you can check the details, confirm coverage and decide what may be published.",
+    "Just a final note in case our earlier emails were lost in a busy inbox. Your complimentary EverAft profile for {business_name} is ready to review, so you can check the details, confirm coverage and manage what couples see.",
   offerText:
     "There is no pressure or obligation to take part. If EverAft is not a fit right now, there is no need to reply — we will not send further profile reminders."
 };
@@ -80,10 +81,11 @@ export function defaultOutreachCopyFor(
   kind: OutreachCampaignKind,
   followUpStage: OutreachFollowUpStage = "first"
 ) {
+  const isSupplierAudience = audienceType !== "venue";
   if (kind === "follow_up" && followUpStage === "final") {
-    return audienceType === "photographer" ? defaultFinalPhotographerOutreachCopy : defaultFinalVenueOutreachCopy;
+    return isSupplierAudience ? defaultFinalSupplierOutreachCopy : defaultFinalVenueOutreachCopy;
   }
-  return audienceType === "photographer" ? defaultPhotographerOutreachCopy[kind] : defaultOutreachCopy[kind];
+  return isSupplierAudience ? defaultSupplierOutreachCopy[kind] : defaultOutreachCopy[kind];
 }
 
 export function renderOutreachTemplate(value: string, recipient: Pick<OutreachEmailRecipient, "businessName" | "town">) {
@@ -107,16 +109,23 @@ export function buildOutreachEmail({
   const preheader = renderOutreachTemplate(copy.preheader, recipient);
   const introText = renderOutreachTemplate(copy.introText, recipient);
   const offerText = renderOutreachTemplate(copy.offerText, recipient);
-  const isPhotographer = recipient.audienceType === "photographer";
-  const claimUrl = absoluteUrl(isPhotographer ? `/photographers/${recipient.listingSlug}/claim` : `/venues/${recipient.listingSlug}/claim`);
-  const listingUrl = isPhotographer ? null : absoluteUrl(`/venues/${recipient.listingSlug}`);
+  const isSupplier = recipient.audienceType !== "venue";
+  const supplierCategorySlug = recipient.audienceType === "photographer"
+    ? "photographer"
+    : recipient.supplierCategorySlug;
+  if (recipient.audienceType === "supplier" && !supplierCategorySlug) throw new Error("Supplier outreach requires a category slug.");
+  const supplierClaimPath = supplierCategorySlug === "photographer"
+    ? `/photographers/${recipient.listingSlug}/claim`
+    : `/suppliers/${supplierCategorySlug}/${recipient.listingSlug}/claim`;
+  const claimUrl = absoluteUrl(isSupplier ? supplierClaimPath : `/venues/${recipient.listingSlug}/claim`);
+  const listingUrl = isSupplier ? null : absoluteUrl(`/venues/${recipient.listingSlug}`);
   const heroUrl = absoluteUrl("/images/everaft-wedding-reception.png");
   const privacyUrl = absoluteUrl("/privacy");
   const headline = kind === "follow_up"
     ? followUpStage === "final"
       ? "A final note from EverAft."
       : "Your invitation is still open."
-    : isPhotographer
+    : isSupplier
       ? "An invitation to join our founding collection."
       : "A thoughtful introduction for your venue.";
 
@@ -156,10 +165,10 @@ export function buildOutreachEmail({
               <td align="center" style="padding:27px 28px 23px;background:#24432f;">
                 <div style="width:118px;height:13px;border-top:1px solid #bc845f;border-radius:50%;opacity:.9;"></div>
                 <div style="margin-top:-4px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:35px;font-weight:600;letter-spacing:2px;line-height:1;">EverAft</div>
-                <div style="margin-top:8px;color:#e8d4c0;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;">Wedding ${isPhotographer ? "supplier" : "venue"} discovery</div>
+                <div style="margin-top:8px;color:#e8d4c0;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;">Wedding ${isSupplier ? "supplier" : "venue"} discovery</div>
               </td>
             </tr>
-            ${isPhotographer ? "" : `<tr>
+            ${isSupplier ? "" : `<tr>
               <td style="padding:0;">
                 <img src="${escapeAttribute(heroUrl)}" width="620" alt="An elegant wedding reception" style="display:block;width:100%;height:auto;max-height:300px;object-fit:cover;border:0;">
               </td>

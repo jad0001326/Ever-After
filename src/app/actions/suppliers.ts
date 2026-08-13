@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { supplierDirectoryCategories } from "@/data/supplier-directory";
+import {
+  canSetSupplierListingStatus,
+  supplierCategoryBySlug,
+} from "@/data/supplier-directory";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasOfficialContactSource, isValidOutreachEmail, normalizeEmail, validPublicUrl } from "@/lib/outreach-validation";
@@ -35,7 +38,9 @@ export async function saveSupplierListing(formData: FormData) {
   const heroImageUrl = optionalUrl(text(formData, "heroImageUrl"));
   const imageRightsApproved = formData.get("imageRightsApproved") === "on";
 
-  if (!name || !baseTown || !region || !supplierDirectoryCategories.some((category) => category.slug === categorySlug)) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=Complete+the+required+supplier+fields`);
+  const category = supplierCategoryBySlug(categorySlug);
+  if (!name || !baseTown || !region || !category) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=Complete+the+required+supplier+fields`);
+  if (!canSetSupplierListingStatus(categorySlug, safeListingStatus)) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=This+supplier+category+must+pass+its+release+gate+before+publication`);
   if (!website && text(formData, "officialWebsiteUrl")) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=Use+a+valid+official+website+URL`);
   if (heroImageUrl && !imageRightsApproved) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=Confirm+image+display+rights+before+adding+a+hero+image`);
   if (listingStatus === "published" && (summary.length < 40 || description.length < 80 || !website)) redirect(`${id ? `/admin/suppliers/${id}/edit` : "/admin/suppliers/new"}?message=Published+profiles+need+a+website%2C+a+40-character+summary+and+an+80-character+description`);

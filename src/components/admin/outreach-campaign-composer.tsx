@@ -15,6 +15,8 @@ export function OutreachCampaignComposer({
   country,
   kind,
   audienceType,
+  supplierCategorySlug,
+  supplierCategoryLabel,
   region,
   followUpStage = "first"
 }: {
@@ -22,11 +24,13 @@ export function OutreachCampaignComposer({
   country: string;
   kind: OutreachCampaignKind;
   audienceType: OutreachAudienceType;
+  supplierCategorySlug?: string;
+  supplierCategoryLabel?: string;
   region?: string;
   followUpStage?: OutreachFollowUpStage;
 }) {
   const defaults = defaultOutreachCopyFor(audienceType, kind, followUpStage);
-  const audienceLabel = audienceType === "photographer" ? "photographer" : "venue";
+  const audienceLabel = audienceType === "venue" ? "venue" : supplierCategoryLabel?.toLowerCase() ?? (audienceType === "photographer" ? "photographer" : "supplier");
   const campaignLabel = kind === "initial_invite" ? "founding invitation" : outreachFollowUpStageLabel(followUpStage);
   const [selected, setSelected] = useState(() => new Set(candidates.map((candidate) => candidate.id)));
   const [subject, setSubject] = useState(defaults.subject);
@@ -43,6 +47,7 @@ export function OutreachCampaignComposer({
             copy: { subject, preheader, introText, offerText },
             recipient: {
               audienceType,
+              supplierCategorySlug: audienceType === "supplier" ? supplierCategorySlug ?? null : null,
               businessName: sample.name,
               town: sample.town,
               listingSlug: sample.slug,
@@ -50,7 +55,7 @@ export function OutreachCampaignComposer({
             }
           })
         : null,
-    [audienceType, followUpStage, introText, kind, offerText, preheader, sample, subject]
+    [audienceType, followUpStage, introText, kind, offerText, preheader, sample, subject, supplierCategorySlug]
   );
 
   function toggleBusiness(id: string) {
@@ -70,6 +75,7 @@ export function OutreachCampaignComposer({
     <form action={createOutreachCampaignDraftAction} className="grid gap-6">
       <input name="kind" type="hidden" value={kind} />
       <input name="audienceType" type="hidden" value={audienceType} />
+      {audienceType === "supplier" ? <input name="supplierCategorySlug" type="hidden" value={supplierCategorySlug ?? ""} /> : null}
       <input name="country" type="hidden" value={country} />
       {region ? <input name="region" type="hidden" value={region} /> : null}
       <input name="followUpAfterDays" type="hidden" value="7" />
@@ -80,7 +86,7 @@ export function OutreachCampaignComposer({
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">1. Audience</p>
             <h2 className="mt-2 font-display text-4xl font-semibold">Choose the businesses</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{audienceType === "photographer" ? "Only unclaimed photographers with a verified eligible legal basis, official source and unsuppressed address are shown." : "Only published, unclaimed venues with valid, unsuppressed contact addresses are shown."}</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{audienceType !== "venue" ? `Only published, unclaimed ${audienceLabel}s with a verified eligible legal basis, official source and unsuppressed address are shown.` : "Only published, unclaimed venues with valid, unsuppressed contact addresses are shown."}</p>
           </div>
           <div className="rounded-2xl bg-[#f4efe7] px-4 py-3 text-sm text-[#4a443c]">
             <Users className="mr-2 inline text-[#95502b]" size={17} />
@@ -120,7 +126,7 @@ export function OutreachCampaignComposer({
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Use <code>{"{business_name}"}</code> and <code>{"{town}"}</code> for safe personalisation.</p>
         <div className="mt-6 grid gap-5">
           <Field label="Campaign name">
-            <Input name="campaignName" required defaultValue={`${audienceType === "photographer" ? "Photographer" : "Venue"} ${campaignLabel}`} maxLength={120} />
+            <Input name="campaignName" required defaultValue={`${audienceType === "venue" ? "Venue" : supplierCategoryLabel ?? (audienceType === "photographer" ? "Photographer" : "Supplier")} ${campaignLabel}`} maxLength={120} />
           </Field>
           <Field label="Email subject">
             <Input name="subject" required maxLength={160} value={subject} onChange={(event) => setSubject(event.target.value)} />

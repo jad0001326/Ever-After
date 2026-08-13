@@ -22,6 +22,18 @@ const supabaseImagePattern = (() => {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["read-excel-file"],
+  async headers() {
+    const invitationHeaders = [
+      { key: "Referrer-Policy", value: "no-referrer" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }
+    ];
+
+    return [
+      { source: "/planning-hub/join", headers: invitationHeaders },
+      { source: "/planning-hub/join/:path*", headers: invitationHeaders }
+    ];
+  },
   images: {
     remotePatterns: [
       {
@@ -32,7 +44,8 @@ const nextConfig: NextConfig = {
     ]
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"]
+    optimizePackageImports: ["lucide-react"],
+    webpackBuildWorker: process.env.EVERAFT_LOW_MEMORY_BUILD === "1" ? false : undefined
   }
 };
 

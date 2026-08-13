@@ -25,6 +25,16 @@ describe("TablePlanner", () => {
     expect(screen.getByRole("button", { name: "Export guest list CSV" })).toBeTruthy();
   });
 
+  it("renders empty-seat labels with the accessible muted foreground", async () => {
+    render(<TablePlanner />);
+    await screen.findByText("Saved on this device");
+
+    expect(screen.getAllByText("Empty seat")[0]).toHaveProperty(
+      "className",
+      expect.stringContaining("text-[#6f675f]"),
+    );
+  });
+
   it("pastes multiple guests from a line-separated list", async () => {
     render(<TablePlanner />);
     await screen.findByText("Saved on this device");
@@ -33,6 +43,25 @@ describe("TablePlanner", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add these guests" }));
     expect(screen.getAllByText("Mairi Ross").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Callum Ross").length).toBeGreaterThan(0);
+  });
+
+  it("records RSVP and dietary details and removes declined guests from seating", async () => {
+    render(<TablePlanner />);
+    await screen.findByText("Saved on this device");
+    fireEvent.change(screen.getByPlaceholderText("Guest name"), { target: { value: "Ailsa Grant" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add guest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Ailsa Grant" }));
+    fireEvent.change(screen.getByLabelText("RSVP"), { target: { value: "declined" } });
+    fireEvent.change(screen.getByLabelText("Dietary or accessibility notes"), { target: { value: "Wheelchair access" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save guest" }));
+
+    expect(await screen.findByText(/Not attending/)).toBeTruthy();
+    expect(screen.getByText("No seat needed")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Generate arrangement" }).hasAttribute("disabled")).toBe(true);
+    await waitFor(() => {
+      expect(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY)).toContain('"rsvpStatus":"declined"');
+      expect(window.localStorage.getItem(TABLE_PLAN_STORAGE_KEY)).toContain("Wheelchair access");
+    });
   });
 
   it("lets a table capacity be replaced before enforcing its limits", async () => {

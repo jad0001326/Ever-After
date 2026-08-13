@@ -2,6 +2,7 @@
 
 import { GoogleAnalytics, sendGAEvent } from "@next/third-parties/google";
 import { usePathname } from "next/navigation";
+import { useReportWebVitals } from "next/web-vitals";
 import { useEffect, useSyncExternalStore } from "react";
 import { getCookiePreference, subscribeToCookiePreference } from "@/lib/analytics/consent";
 
@@ -32,9 +33,29 @@ export function GoogleAnalyticsController({ measurementId }: { measurementId?: s
     return () => window.removeEventListener("everaft:analytics", handleAnalyticsEvent);
   }, [enabled]);
 
-  return enabled ? <GoogleAnalytics gaId={gaId} /> : null;
+  return enabled ? (
+    <>
+      <GoogleAnalytics gaId={gaId} />
+      <WebVitalsReporter pathname={pathname} />
+    </>
+  ) : null;
 }
 
 export function isExcludedAnalyticsPath(pathname: string) {
   return excludedPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function WebVitalsReporter({ pathname }: { pathname: string }) {
+  useReportWebVitals((metric) => {
+    sendGAEvent("event", "web_vital", {
+      metric_name: metric.name,
+      metric_id: metric.id,
+      metric_value: metric.name === "CLS" ? Math.round(metric.value * 1000) : Math.round(metric.value),
+      metric_delta: metric.name === "CLS" ? Math.round(metric.delta * 1000) : Math.round(metric.delta),
+      metric_rating: metric.rating,
+      page_path: pathname,
+      non_interaction: true
+    });
+  });
+  return null;
 }

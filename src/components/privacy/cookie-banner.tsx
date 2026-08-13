@@ -42,7 +42,7 @@ export function CookieBanner() {
     <aside aria-label="Cookie preferences" className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-3xl border border-[var(--line)] bg-white p-5 shadow-[0_24px_70px_rgba(25,23,19,0.17)] sm:flex sm:items-end sm:gap-6">
       <div className="flex-1">
         <p className="font-semibold text-[var(--ink)]">Your cookie choices</p>
-        <p className="mt-1 text-sm leading-6 text-[var(--muted)]">We use essential storage for sign-in and security. With your permission, Google Analytics helps us understand visitor numbers, pages viewed and how EverAft is used. Read our <Link className="font-semibold text-[var(--brand)] underline underline-offset-2" href="/privacy">Privacy Notice</Link>.</p>
+        <p className="mt-1 text-sm leading-6 text-[var(--muted)]">Essential storage keeps sign-in secure. Allow Google Analytics to help us improve EverAft. Read our <Link className="font-semibold text-[var(--brand)] underline underline-offset-2" href="/privacy" prefetch={false}>Privacy Notice</Link>.</p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2 sm:mt-0 sm:shrink-0">
         <button className="focus-ring min-h-10 rounded-full border border-[var(--line)] px-4 text-sm font-semibold text-[#423e37] transition hover:bg-[#f7f3eb]" onClick={() => choose("essential")} type="button">Essential only</button>

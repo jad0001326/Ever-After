@@ -1,7 +1,8 @@
 "use client";
 
-import { ClipboardPaste, Lock, Plus, Search, Trash2, Unlock, UserPlus } from "lucide-react";
+import { ClipboardPaste, Lock, Pencil, Plus, Search, Trash2, Unlock, UserPlus, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { getGuestRsvpStatus, isGuestForSeating } from "@/lib/table-plan/guests";
 import type { SeatingRuleType, TablePlan, TablePlanGuest, TablePlanTable } from "@/lib/table-plan/types";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,10 @@ type PlannerSidebarProps = {
   onPasteGuests: (names: string[]) => void;
   onDeleteGuest: (guestId: string) => void;
   onSelectGuest: (guestId: string) => void;
+  onUpdateGuest: (
+    guestId: string,
+    updates: Partial<Pick<TablePlanGuest, "email" | "rsvpStatus" | "dietaryNotes">>,
+  ) => void;
   onAddTable: () => void;
   onUpdateTable: (tableId: string, updates: Partial<TablePlanTable>) => void;
   onDeleteTable: (tableId: string) => void;
@@ -37,7 +42,7 @@ export function PlannerSidebar(props: PlannerSidebarProps) {
     { id: "rules", label: "Rules" },
   ];
   return (
-    <aside className="print:hidden overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white">
+    <aside aria-label="Guest and table controls" className="print:hidden overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white">
       <div className="grid grid-cols-3 border-b border-[var(--line)]">
         {tabs.map((tab) => (
           <button
@@ -57,7 +62,7 @@ export function PlannerSidebar(props: PlannerSidebarProps) {
   );
 }
 
-function GuestPanel({ plan, selectedGuestId, onAddGuest, onPasteGuests, onDeleteGuest, onSelectGuest }: PlannerSidebarProps) {
+function GuestPanel({ plan, selectedGuestId, onAddGuest, onPasteGuests, onDeleteGuest, onSelectGuest, onUpdateGuest }: PlannerSidebarProps) {
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -98,25 +103,89 @@ function GuestPanel({ plan, selectedGuestId, onAddGuest, onPasteGuests, onDelete
           <button className="focus-ring mt-2 min-h-10 w-full rounded-full bg-[var(--brand)] px-4 text-sm font-semibold text-white" onClick={submitPastedGuests} type="button">Add these guests</button>
         </div>
       ) : null}
-      <div className="mt-5 flex items-center justify-between text-xs text-[var(--muted)]"><span>{plan.guests.length} guests</span><span>Select to move</span></div>
+      <div className="mt-5 flex items-center justify-between text-xs text-[var(--muted)]"><span>{plan.guests.length} guests</span><span>Edit RSVP or select to move</span></div>
       <div className="mt-2 max-h-[34rem] divide-y divide-[#eee8de] overflow-y-auto">
-        {guests.map((guest) => <GuestRow guest={guest} isSelected={selectedGuestId === guest.id} key={guest.id} onDelete={onDeleteGuest} onSelect={onSelectGuest} tableName={guest.tableId ? tableNames.get(guest.tableId) : undefined} />)}
+        {guests.map((guest) => <GuestRow guest={guest} isSelected={selectedGuestId === guest.id} key={guest.id} onDelete={onDeleteGuest} onSelect={onSelectGuest} onUpdate={onUpdateGuest} tableName={guest.tableId ? tableNames.get(guest.tableId) : undefined} />)}
         {guests.length === 0 ? <p className="py-8 text-center text-sm text-[var(--muted)]">{plan.guests.length === 0 ? "Add your first guest to begin." : "No guests match that search."}</p> : null}
       </div>
     </div>
   );
 }
 
-function GuestRow({ guest, tableName, isSelected, onSelect, onDelete }: { guest: TablePlanGuest; tableName?: string; isSelected: boolean; onSelect: (id: string) => void; onDelete: (id: string) => void }) {
+function GuestRow({
+  guest,
+  tableName,
+  isSelected,
+  onSelect,
+  onDelete,
+  onUpdate,
+}: {
+  guest: TablePlanGuest;
+  tableName?: string;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdate: PlannerSidebarProps["onUpdateGuest"];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [rsvpStatus, setRsvpStatus] = useState(getGuestRsvpStatus(guest));
+  const [email, setEmail] = useState(guest.email ?? "");
+  const [dietaryNotes, setDietaryNotes] = useState(guest.dietaryNotes ?? "");
   const initials = guest.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+
+  function resetDraft() {
+    setRsvpStatus(getGuestRsvpStatus(guest));
+    setEmail(guest.email ?? "");
+    setDietaryNotes(guest.dietaryNotes ?? "");
+  }
+
+  function save() {
+    onUpdate(guest.id, {
+      rsvpStatus,
+      email: email.trim() || null,
+      dietaryNotes: dietaryNotes.trim() || null,
+    });
+    setEditing(false);
+  }
+
   return (
-    <div className={cn("group flex items-center gap-2 rounded-lg px-1 py-2", isSelected ? "bg-[#e6efe8] ring-1 ring-[#9eb4a3]" : "hover:bg-[#fbf7f0]")}>
-      <button className="focus-ring flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => onSelect(guest.id)} type="button">
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e0e9e2] text-xs font-semibold text-[var(--brand)]">{initials}</span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">{guest.name}</span>
-        <span className="max-w-20 truncate text-[11px] text-[var(--muted)]">{tableName ?? "Unassigned"}</span>
-      </button>
-      <button aria-label={`Delete ${guest.name}`} className="focus-ring grid size-8 shrink-0 place-items-center rounded-full text-[#8c8378] opacity-60 hover:bg-white hover:text-[#8f3f2b] group-hover:opacity-100" onClick={() => onDelete(guest.id)} type="button"><Trash2 size={15} /></button>
+    <div className={cn("group rounded-lg px-1 py-2", isSelected ? "bg-[#e6efe8] ring-1 ring-[#9eb4a3]" : "hover:bg-[#fbf7f0]")}>
+      <div className="flex items-center gap-2">
+        <button className="focus-ring flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default" disabled={!isGuestForSeating(guest)} onClick={() => onSelect(guest.id)} type="button">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e0e9e2] text-xs font-semibold text-[var(--brand)]">{initials}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{guest.name}</span>
+            <span className="block truncate text-[11px] text-[var(--muted)]">
+              {getGuestRsvpStatus(guest) === "accepted" ? "Attending" : getGuestRsvpStatus(guest) === "declined" ? "Not attending" : "Awaiting reply"}
+              {guest.dietaryNotes?.trim() ? " · Dietary note" : ""}
+            </span>
+          </span>
+          <span className="max-w-20 truncate text-[11px] text-[var(--muted)]">{getGuestRsvpStatus(guest) === "declined" ? "No seat needed" : tableName ?? "Unassigned"}</span>
+        </button>
+        <button aria-expanded={editing} aria-label={`Edit ${guest.name}`} className="focus-ring grid size-10 shrink-0 place-items-center rounded-full text-[#31533b] hover:bg-white" onClick={() => { resetDraft(); setEditing((open) => !open); }} type="button"><Pencil size={15} /></button>
+        <button aria-label={`Delete ${guest.name}`} className="focus-ring grid size-10 shrink-0 place-items-center rounded-full text-[#8c8378] opacity-60 hover:bg-white hover:text-[#8f3f2b] group-hover:opacity-100" onClick={() => onDelete(guest.id)} type="button"><Trash2 size={15} /></button>
+      </div>
+      {editing ? (
+        <div className="mt-2 space-y-3 rounded-xl border border-[#d8c7a7] bg-white p-3">
+          <label className="block text-xs font-semibold text-[#514b43]" htmlFor={`rsvp-${guest.id}`}>RSVP
+            <select className="focus-ring mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm font-normal" id={`rsvp-${guest.id}`} onChange={(event) => setRsvpStatus(event.target.value as NonNullable<TablePlanGuest["rsvpStatus"]>)} value={rsvpStatus}>
+              <option value="pending">Awaiting reply</option>
+              <option value="accepted">Attending</option>
+              <option value="declined">Not attending</option>
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-[#514b43]" htmlFor={`email-${guest.id}`}>Email (optional)
+            <input className="focus-ring mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3 text-sm font-normal" id={`email-${guest.id}`} onChange={(event) => setEmail(event.target.value)} type="email" value={email} />
+          </label>
+          <label className="block text-xs font-semibold text-[#514b43]" htmlFor={`dietary-${guest.id}`}>Dietary or accessibility notes
+            <textarea className="focus-ring mt-1 min-h-20 w-full resize-y rounded-lg border border-[var(--line)] p-3 text-sm font-normal" id={`dietary-${guest.id}`} onChange={(event) => setDietaryNotes(event.target.value)} value={dietaryNotes} />
+          </label>
+          <div className="flex gap-2">
+            <button className="focus-ring min-h-11 flex-1 rounded-full bg-[var(--brand)] px-3 text-sm font-semibold text-white" onClick={save} type="button">Save guest</button>
+            <button aria-label={`Cancel editing ${guest.name}`} className="focus-ring grid size-11 place-items-center rounded-full border border-[var(--line)]" onClick={() => { resetDraft(); setEditing(false); }} type="button"><X size={16} /></button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -176,18 +245,19 @@ function RulePanel({ plan, onAddRule, onDeleteRule }: PlannerSidebarProps) {
   const [personBId, setPersonBId] = useState("");
   const [type, setType] = useState<SeatingRuleType>("must_next_to");
   const guestNames = useMemo(() => new Map(plan.guests.map((guest) => [guest.id, guest.name])), [plan.guests]);
+  const seatingGuests = useMemo(() => plan.guests.filter(isGuestForSeating), [plan.guests]);
   const canAdd = Boolean(personAId && personBId && personAId !== personBId);
   return (
     <div className="p-4">
       <p className="text-sm leading-6 text-[var(--muted)]">Hard rules are always prioritised. Preferences are used when the arrangement allows.</p>
       <div className="mt-4 space-y-3 rounded-xl bg-[#f8f3ea] p-3">
-        <GuestSelect id="rule-person-a" label="Person A" onChange={setPersonAId} value={personAId} guests={plan.guests} />
+        <GuestSelect id="rule-person-a" label="Person A" onChange={setPersonAId} value={personAId} guests={seatingGuests} />
         <label className="block text-xs font-semibold text-[#514b43]" htmlFor="rule-type">Rule
           <select className="focus-ring mt-1 min-h-10 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm font-normal text-[var(--foreground)]" id="rule-type" onChange={(event) => setType(event.target.value as SeatingRuleType)} value={type}>
             {Object.entries(RULE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
-        <GuestSelect id="rule-person-b" label="Person B" onChange={setPersonBId} value={personBId} guests={plan.guests.filter((guest) => guest.id !== personAId)} />
+        <GuestSelect id="rule-person-b" label="Person B" onChange={setPersonBId} value={personBId} guests={seatingGuests.filter((guest) => guest.id !== personAId)} />
         <button className="focus-ring min-h-10 w-full rounded-full bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:opacity-50" disabled={!canAdd} onClick={() => { if (!canAdd) return; onAddRule(personAId, type, personBId); setPersonAId(""); setPersonBId(""); }} type="button"><span className="inline-flex items-center gap-2"><Plus size={16} /> Add rule</span></button>
       </div>
       <div className="mt-5 space-y-2">

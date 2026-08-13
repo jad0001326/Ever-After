@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -9,31 +8,18 @@ import { CookieBanner } from "@/components/privacy/cookie-banner";
 import { socialProfileUrls } from "@/lib/social";
 import { absoluteUrl } from "@/lib/utils";
 
-const sans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap"
-});
-
-const display = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap"
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl()),
   title: {
-    default: "EverAft | Trusted UK wedding suppliers",
+    default: "EverAft | Plan a Scottish Wedding",
     template: "%s | EverAft"
   },
   description:
-    "Discover thoughtful wedding venues and help shape a trusted supplier directory for celebrations across the UK.",
+    "Discover Scottish wedding venues and photographers, then turn the decisions into a practical budget, guest list and table plan.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "EverAft",
-    description: "A growing wedding directory for couples planning celebrations across the UK.",
+    description: "Scottish wedding discovery and practical planning tools in one considered experience.",
     url: absoluteUrl(),
     siteName: "EverAft",
     type: "website",
@@ -42,8 +28,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "EverAft | Trusted UK wedding suppliers",
-    description: "A growing wedding directory for couples planning celebrations across the UK.",
+    title: "EverAft | Plan a Scottish Wedding",
+    description: "Scottish wedding discovery and practical planning tools in one considered experience.",
     images: [absoluteUrl("/images/everaft-wedding-reception.png")]
   }
 };
@@ -51,7 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html data-scroll-behavior="smooth" lang="en-GB">
-      <body className={`${sans.variable} ${display.variable} antialiased`}>
+      <body className="antialiased">
         <Header />
         <script
           type="application/ld+json"
@@ -73,7 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                   "@type": "Organization",
                   name: "EverAft",
                   url: absoluteUrl(),
-                  areaServed: "United Kingdom",
+                  areaServed: "Scotland",
                   ...(socialProfileUrls.length > 0 ? { sameAs: socialProfileUrls } : {})
                 }
               ]

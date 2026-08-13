@@ -8,6 +8,7 @@ export type OutreachAudienceFilter = {
   region?: string;
   venueIds?: string[];
   supplierIds?: string[];
+  supplierCategorySlug?: string;
   followUpAfterDays?: number;
   followUpStage?: OutreachFollowUpStage;
   limit?: number;
@@ -15,6 +16,7 @@ export type OutreachAudienceFilter = {
 
 export type OutreachCandidate = {
   audienceType: OutreachAudienceType;
+  supplierCategorySlug: string | null;
   id: string;
   slug: string;
   name: string;

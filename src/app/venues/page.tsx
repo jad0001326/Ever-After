@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { FilterPanel } from "@/components/search/filter-panel";
 import { SortSelect } from "@/components/search/sort-select";
@@ -43,17 +42,13 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
           <p className="mt-3 text-[var(--muted)]">{results.total} venues matched your search.</p>
           {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase connection needed: {results.error}</p> : null}
         </div>
-        <Suspense fallback={null}>
-          <SortSelect />
-        </Suspense>
+        <SortSelect params={params} />
       </div>
 
       <ActiveFilterSummary params={params} />
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <Suspense fallback={null}>
-          <FilterPanel />
-        </Suspense>
+        <FilterPanel params={params} />
         <section>
           {results.venues.length > 0 ? (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

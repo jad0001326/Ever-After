@@ -1,6 +1,7 @@
 "use client";
 
 import { Lock, MousePointer2 } from "lucide-react";
+import { isGuestForSeating } from "@/lib/table-plan/guests";
 import type { TablePlan, TablePlanGuest, TablePlanTable } from "@/lib/table-plan/types";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,7 @@ type SeatingCanvasProps = {
 };
 
 export function SeatingCanvas({ plan, selectedGuestId, onSeatClick, onSelectGuest }: SeatingCanvasProps) {
-  const unassigned = plan.guests.filter((guest) => !guest.tableId);
+  const unassigned = plan.guests.filter((guest) => isGuestForSeating(guest) && !guest.tableId);
   return (
     <section aria-label="Seating arrangement" className="min-w-0 rounded-[1.5rem] border border-[var(--line)] bg-[#fffdf9] p-4 sm:p-5">
       <div className="print:hidden mb-4 flex flex-col gap-2 border-b border-[var(--line)] pb-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
@@ -34,7 +35,7 @@ export function SeatingCanvas({ plan, selectedGuestId, onSeatClick, onSelectGues
 }
 
 function TableDiagram({ table, plan, selectedGuestId, onSeatClick, onSelectGuest }: { table: TablePlanTable; plan: TablePlan; selectedGuestId: string | null; onSeatClick: SeatingCanvasProps["onSeatClick"]; onSelectGuest: SeatingCanvasProps["onSelectGuest"] }) {
-  const seats = Array.from({ length: table.capacity }, (_, seatIndex) => plan.guests.find((guest) => guest.tableId === table.id && guest.seatIndex === seatIndex) ?? null);
+  const seats = Array.from({ length: table.capacity }, (_, seatIndex) => plan.guests.find((guest) => isGuestForSeating(guest) && guest.tableId === table.id && guest.seatIndex === seatIndex) ?? null);
   const occupied = seats.filter(Boolean).length;
   return (
     <article className="print:break-inside-avoid overflow-hidden rounded-[1.35rem] border border-[#ded4c5] bg-white">
@@ -62,7 +63,7 @@ function SeatButton({ guest, seatIndex, hasSelection, isSelected, locked, onClic
       type="button"
     >
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e9e1d4] text-[10px] font-bold text-[#6b6257]">{seatIndex + 1}</span>
-      <span className={cn("min-w-0 truncate text-xs font-semibold", guest ? "text-[var(--foreground)]" : "text-[#8a8176]")}>{guest?.name ?? "Empty seat"}</span>
+      <span className={cn("min-w-0 truncate text-xs font-semibold", guest ? "text-[var(--foreground)]" : "text-[#6f675f]")}>{guest?.name ?? "Empty seat"}</span>
     </button>
   );
 }

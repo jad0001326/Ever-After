@@ -1,13 +1,17 @@
+import { cache } from "react";
+import { supplierDirectoryCategories } from "@/data/supplier-directory";
 import { createClient } from "@/lib/supabase/server";
 import type { PlannerListing } from "@/lib/budget/types";
+import { activeSupplierRowToPlannerListing } from "@/lib/budget/supplier-listing";
 import type { Database } from "@/types/database";
 import type { PhotographerProfile, PhotographerSearchParams, PhotographerVenueOption, SupplierListing } from "@/types/supplier";
+import { permittedSupplierHero } from "@/lib/supplier-media";
 
 type SupplierRow = Database["public"]["Tables"]["supplier_listings"]["Row"];
 type PhotographerRow = Database["public"]["Tables"]["photographer_profiles"]["Row"];
 type SupplierImageRow = Database["public"]["Tables"]["supplier_images"]["Row"];
 
-const LISTING_COLUMNS = "id, category_slug, slug, name, base_town, region, country, service_areas, travel_radius_miles, travels_nationwide, summary, description, services, official_website_url, instagram_url, facebook_url, enquiry_url, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit, hero_image_url, image_credit, is_claimed, is_featured, updated_at";
+const LISTING_COLUMNS = "id, category_slug, slug, name, base_town, region, country, service_areas, travel_radius_miles, travels_nationwide, summary, description, services, official_website_url, instagram_url, facebook_url, enquiry_url, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit, hero_image_url, image_credit, image_permission_status, is_claimed, is_featured, updated_at";
 
 export async function searchPhotographerListings(params: PhotographerSearchParams) {
   const supabase = await createClient();
@@ -113,14 +117,17 @@ export async function getPhotographerVenueOptions(): Promise<PhotographerVenueOp
   return data ?? [];
 }
 
-export async function getPhotographerListingBySlug(slug: string): Promise<SupplierListing | undefined> {
+export const getSupplierListingBySlug = cache(async function getSupplierListingBySlug(
+  categorySlug: SupplierListing["categorySlug"],
+  slug: string,
+): Promise<SupplierListing | undefined> {
   const supabase = await createClient();
   if (!supabase) return undefined;
 
   const { data } = await supabase
     .from("supplier_listings")
     .select(LISTING_COLUMNS)
-    .eq("category_slug", "photographer")
+    .eq("category_slug", categorySlug)
     .eq("listing_status", "published")
     .eq("slug", slug)
     .maybeSingle();
@@ -128,8 +135,16 @@ export async function getPhotographerListingBySlug(slug: string): Promise<Suppli
 
   const row = data as SupplierRow;
   const [{ data: photographer }, { data: images }, { data: connections }] = await Promise.all([
-    supabase.from("photographer_profiles").select("*").eq("supplier_id", row.id).maybeSingle(),
-    supabase.from("supplier_images").select("*").eq("supplier_id", row.id).eq("permission_status", "approved").order("sort_order", { ascending: true }),
+    categorySlug === "photographer"
+      ? supabase.from("photographer_profiles").select("*").eq("supplier_id", row.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("supplier_images")
+      .select("*")
+      .eq("supplier_id", row.id)
+      .eq("permission_status", "approved")
+      .order("sort_order", { ascending: true })
+      .limit(6),
     supabase.from("supplier_venue_connections").select("venue_id, connection_type").eq("supplier_id", row.id).eq("status", "verified")
   ]);
 
@@ -154,38 +169,32 @@ export async function getPhotographerListingBySlug(slug: string): Promise<Suppli
       }] : [];
     })
   );
+});
+
+export async function getPhotographerListingBySlug(slug: string): Promise<SupplierListing | undefined> {
+  return getSupplierListingBySlug("photographer", slug);
 }
 
 export async function getBudgetPlannerSupplierListings(): Promise<PlannerListing[]> {
   const supabase = await createClient();
   if (!supabase) return [];
+  const liveCategorySlugs = supplierDirectoryCategories
+    .filter((category) => category.live)
+    .map((category) => category.slug);
+  if (!liveCategorySlugs.length) return [];
   const { data } = await supabase
     .from("supplier_listings")
-    .select("id, slug, name, category_slug, base_town, region, hero_image_url, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit")
+    .select("id, slug, name, category_slug, base_town, region, hero_image_url, image_permission_status, starting_price_pence, typical_price_pence, pricing_summary, pricing_unit")
     .eq("listing_status", "published")
+    .in("category_slug", liveCategorySlugs)
     .order("is_featured", { ascending: false })
     .order("name", { ascending: true })
     .limit(1000);
 
-  return (data ?? []).map((supplier) => ({
-    id: supplier.id,
-    slug: supplier.slug,
-    name: supplier.name,
-    type: supplier.category_slug === "photographer" ? "Photographer" : supplier.category_slug,
-    categoryId: supplier.category_slug === "photographer" ? "photography" : supplier.category_slug,
-    location: `${supplier.base_town}, ${supplier.region}`,
-    imageUrl: supplier.hero_image_url ?? "/everaft-logo-mark.svg",
-    listingUrl: supplier.category_slug === "photographer" ? `/photographers/${supplier.slug}` : `/suppliers/${supplier.category_slug}/${supplier.slug}`,
-    priceFromPence: supplier.starting_price_pence,
-    priceToPence: supplier.typical_price_pence,
-    pricingStatus: supplier.pricing_unit === "quote" ? "quote_required" : supplier.starting_price_pence == null ? "unavailable" : supplier.typical_price_pence != null && supplier.typical_price_pence > supplier.starting_price_pence ? "range" : "starting_from",
-    pricingKind: "supplier_package",
-    pricingLabel: supplier.starting_price_pence == null ? null : "Packages from",
-    pricingUnit: supplier.pricing_unit === "person" ? "per_person" : supplier.pricing_unit,
-    priceQualifier: supplier.starting_price_pence == null ? "quote" : "from",
-    pricingDescription: supplier.pricing_summary,
-    verifiedAt: null
-  }));
+  return (data ?? []).flatMap((supplier) => {
+    const listing = activeSupplierRowToPlannerListing(supplier);
+    return listing ? [listing] : [];
+  });
 }
 
 function supplierFromRow(
@@ -194,6 +203,7 @@ function supplierFromRow(
   images: SupplierImageRow[] = [],
   venues: SupplierListing["venues"] = []
 ): SupplierListing {
+  const heroImageUrl = permittedSupplierHero(row.hero_image_url, row.image_permission_status);
   return {
     id: row.id,
     categorySlug: row.category_slug as SupplierListing["categorySlug"],
@@ -216,8 +226,11 @@ function supplierFromRow(
     typicalPricePence: row.typical_price_pence,
     pricingSummary: row.pricing_summary,
     pricingUnit: row.pricing_unit,
-    heroImageUrl: row.hero_image_url,
-    imageCredit: row.image_credit,
+    heroImageUrl,
+    imageCredit: heroImageUrl ? row.image_credit : null,
+    imagePermissionStatus: heroImageUrl && (row.image_permission_status === "approved" || row.image_permission_status === "representative")
+      ? row.image_permission_status
+      : null,
     isClaimed: row.is_claimed,
     isFeatured: row.is_featured,
     photographer,

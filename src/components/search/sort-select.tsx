@@ -1,20 +1,23 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Select } from "@/components/ui/field";
+import type { VenueSearchParams } from "@/types/venue";
 
-export function SortSelect() {
+export function SortSelect({ params: initialParams }: { params: VenueSearchParams }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   return (
     <Select
       aria-label="Sort venues, with featured listings first"
       className="max-w-64"
-      defaultValue={searchParams.get("sort") ?? "price-asc"}
+      defaultValue={initialParams.sort ?? "price-asc"}
       onChange={(event) => {
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams();
+        Object.entries(initialParams).forEach(([key, value]) => {
+          if (value) params.set(key, value);
+        });
         params.set("sort", event.target.value);
         params.delete("page");
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });

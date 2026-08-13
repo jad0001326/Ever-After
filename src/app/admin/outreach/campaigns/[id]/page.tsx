@@ -40,6 +40,7 @@ export default async function CampaignApprovalPage({
         },
         recipient: {
           audienceType: campaign.audience_type,
+          supplierCategorySlug: campaign.supplier_category_slug,
           businessName: sample.business_name,
           town: sample.town,
           listingSlug: sample.listing_slug,

@@ -7,6 +7,8 @@ import { requireAdmin } from "@/lib/auth";
 import { listOutreachCandidates, listRecentOutreachCampaigns, listSupplierOutreachCandidates, type OutreachCandidateResult } from "@/lib/outreach";
 import type { OutreachAudienceType, OutreachCampaignKind } from "@/lib/outreach-email";
 import { normalizeOutreachFollowUpStage } from "@/lib/outreach-sequence";
+import { supplierCategoryBySlug, supplierDirectoryCategories } from "@/data/supplier-directory";
+import { supplierCategoryOutreachEnabled } from "@/lib/outreach-flags";
 
 export const metadata: Metadata = { title: "Outreach campaigns" };
 
@@ -15,11 +17,17 @@ type CampaignListItem = Awaited<ReturnType<typeof listRecentOutreachCampaigns>>[
 export default async function AdminOutreachPage({
   searchParams
 }: {
-  searchParams: Promise<{ message?: string; kind?: string; region?: string; audience?: string; stage?: string }>;
+  searchParams: Promise<{ message?: string; kind?: string; region?: string; audience?: string; category?: string; stage?: string }>;
 }) {
-  const [{ message, kind: requestedKind, region, audience: requestedAudience, stage: requestedStage }] = await Promise.all([searchParams, requireAdmin()]);
+  const [{ message, kind: requestedKind, region, audience: requestedAudience, category: requestedCategory, stage: requestedStage }] = await Promise.all([searchParams, requireAdmin()]);
   const kind: OutreachCampaignKind = requestedKind === "follow_up" ? "follow_up" : "initial_invite";
-  const audienceType: OutreachAudienceType = requestedAudience === "photographer" ? "photographer" : "venue";
+  const genericSupplierEnabled = supplierCategoryOutreachEnabled();
+  const audienceType: OutreachAudienceType = requestedAudience === "photographer"
+    ? "photographer"
+    : requestedAudience === "supplier" && genericSupplierEnabled
+      ? "supplier"
+      : "venue";
+  const supplierCategory = supplierCategoryBySlug(requestedCategory ?? "") ?? supplierDirectoryCategories[0];
   const followUpStage = audienceType === "venue" ? normalizeOutreachFollowUpStage(requestedStage) : "first";
   let candidateResult: OutreachCandidateResult = {
     candidates: [],
@@ -30,8 +38,8 @@ export default async function AdminOutreachPage({
 
   try {
     [candidateResult, campaigns] = await Promise.all([
-      audienceType === "photographer"
-        ? listSupplierOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, limit: 100 })
+      audienceType !== "venue"
+        ? listSupplierOutreachCandidates({ audienceType, supplierCategorySlug: supplierCategory.slug, kind, country: "Scotland", region, followUpAfterDays: 7, limit: 100 })
         : listOutreachCandidates({ audienceType, kind, country: "Scotland", region, followUpAfterDays: 7, followUpStage, limit: 100 }),
       listRecentOutreachCampaigns()
     ]);
@@ -47,7 +55,7 @@ export default async function AdminOutreachPage({
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Admin outreach</p>
           <h1 className="mt-3 font-display text-5xl font-semibold">Business invitations</h1>
-          <p className="mt-3 max-w-2xl text-[var(--muted)]">Build, preview, approve and track personalised EverAft venue and photographer invitations from one protected queue.</p>
+          <p className="mt-3 max-w-2xl text-[var(--muted)]">Build, preview, approve and track personalised EverAft venue and supplier invitations from one protected queue.</p>
         </div>
         <Link className="text-sm font-semibold text-[#5c6b52]" href="/admin">Back to admin</Link>
       </div>
@@ -65,14 +73,29 @@ export default async function AdminOutreachPage({
       <div className="mb-8 flex flex-wrap gap-3 rounded-3xl border border-[var(--line)] bg-white p-4">
         <Link className={audienceType === "venue" ? activePill : inactivePill} href={`/admin/outreach?audience=venue&kind=${kind}`}>Venues</Link>
         <Link className={audienceType === "photographer" ? activePill : inactivePill} href={`/admin/outreach?audience=photographer&kind=${kind}`}>Photographers</Link>
-        <Link className={kind === "initial_invite" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&kind=initial_invite`}>First invitations</Link>
-        <Link className={kind === "follow_up" && followUpStage === "first" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&kind=follow_up&stage=first`}>7-day reminders</Link>
+        {genericSupplierEnabled ? <Link className={audienceType === "supplier" ? activePill : inactivePill} href={`/admin/outreach?audience=supplier&category=${supplierCategory.slug}&kind=${kind}`}>Suppliers</Link> : null}
+        <Link className={kind === "initial_invite" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&category=${supplierCategory.slug}&kind=initial_invite`}>First invitations</Link>
+        <Link className={kind === "follow_up" && followUpStage === "first" ? activePill : inactivePill} href={`/admin/outreach?audience=${audienceType}&category=${supplierCategory.slug}&kind=follow_up&stage=first`}>7-day reminders</Link>
         {audienceType === "venue" ? <Link className={kind === "follow_up" && followUpStage === "final" ? activePill : inactivePill} href="/admin/outreach?audience=venue&kind=follow_up&stage=final">Final reminders</Link> : null}
-        <Link className={inactivePill} href={audienceType === "venue" ? "/admin/enrichment?blocker=missing_email" : "/admin/suppliers"}>{audienceType === "venue" ? "Find missing emails" : "Review eligibility"}</Link>
+        <Link className={inactivePill} href={audienceType === "venue" ? "/admin/enrichment?blocker=missing_email" : `/admin/suppliers?category=${audienceType === "photographer" ? "photographer" : supplierCategory.slug}`}>{audienceType === "venue" ? "Find missing emails" : "Review eligibility"}</Link>
       </div>
 
+      {audienceType === "supplier" ? (
+        <form className="mb-8 flex flex-col gap-3 rounded-3xl border border-[var(--line)] bg-white p-4 sm:flex-row sm:items-end" method="get">
+          <input name="audience" type="hidden" value="supplier" />
+          <input name="kind" type="hidden" value={kind} />
+          <label className="flex-1 text-sm font-semibold text-[#4a443c]">
+            Supplier category
+            <select className="mt-2 w-full rounded-2xl border border-[var(--line)] bg-white px-4 py-3 font-normal" defaultValue={supplierCategory.slug} name="category">
+              {supplierDirectoryCategories.map((category) => <option key={category.slug} value={category.slug}>{category.plural}</option>)}
+            </select>
+          </label>
+          <button className={activePill} type="submit">Load category</button>
+        </form>
+      ) : null}
+
       {!loadError ? (
-        <OutreachCampaignComposer audienceType={audienceType} candidates={candidateResult.candidates} country="Scotland" followUpStage={followUpStage} kind={kind} region={region} />
+        <OutreachCampaignComposer audienceType={audienceType} candidates={candidateResult.candidates} country="Scotland" followUpStage={followUpStage} kind={kind} region={region} supplierCategoryLabel={audienceType === "supplier" ? supplierCategory.label : audienceType === "photographer" ? "Photographer" : undefined} supplierCategorySlug={audienceType === "supplier" ? supplierCategory.slug : undefined} />
       ) : null}
 
       <section className="mt-10 rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-6">

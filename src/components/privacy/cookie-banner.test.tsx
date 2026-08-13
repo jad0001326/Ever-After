@@ -8,7 +8,7 @@ describe("CookieBanner", () => {
 
   it("asks explicitly before enabling analytics", () => {
     render(<CookieBanner />);
-    expect(screen.getByText(/Google Analytics helps us understand visitor numbers/i)).toBeTruthy();
+    expect(screen.getByText(/Allow Google Analytics to help us improve EverAft/i)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Allow analytics" }));
 

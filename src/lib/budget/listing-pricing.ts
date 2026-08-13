@@ -56,15 +56,32 @@ export function plannerListingToBudgetItem(listing: PlannerListing, plan: Budget
     guestCount: canUsePerPerson ? plan.guestCount : null,
     depositPaidPence: 0,
     totalPaidPence: 0,
+    installments: [],
     costStatus: "estimated",
     paymentStatus: "not_started",
     bookingStatus: "shortlisted",
+    availabilityStatus: "not_checked",
+    availabilityDate: null,
     dueDate: null,
     websiteUrl: listing.listingUrl,
     notes: null,
     createdAt: now,
     updatedAt: now,
     sortOrder: plan.items.length
+  };
+}
+
+export function importPlannerListingIntoPlan(listing: PlannerListing, plan: BudgetPlan) {
+  const item = plannerListingToBudgetItem(listing, plan);
+  const isVenue = listing.categoryId === "venue";
+  return {
+    item,
+    kind: isVenue ? "venue" as const : "supplier" as const,
+    plan: {
+      ...plan,
+      selectedVenueId: isVenue ? listing.id : plan.selectedVenueId,
+      items: [...plan.items, item],
+    },
   };
 }
 
