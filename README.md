@@ -52,6 +52,7 @@ ADMIN_NOTIFICATION_EMAIL=hello@yourdomain.com
 REPLY_TO_EMAIL=hello@yourdomain.com
 OUTREACH_SENDING_ENABLED=false
 SUPPLIER_CATEGORY_OUTREACH_ENABLED=false
+SUPPLIER_ADMIN_SCHEMA_ENABLED=false
 OUTREACH_APPROVAL_SECRET=generate-a-random-secret-of-at-least-32-characters
 OUTREACH_MCP_AUDIENCE=https://www.everaft.co.uk/api/mcp
 PLANNING_HUB_PUBLIC_ENTRY_ENABLED=false
@@ -206,6 +207,11 @@ supplier outreach migration has been applied and verified. Existing venue and
 photographer drafting remains available without that migration. Enabling the
 category interface does not enable sending; `OUTREACH_SENDING_ENABLED` and the
 per-campaign approval step still apply.
+
+Supplier staging, owner-update review and supplier-image review are independently
+hidden by `SUPPLIER_ADMIN_SCHEMA_ENABLED=false`. Keep it off until all three
+supporting supplier migrations have been applied and verified. The admin landing
+page does not query those absent tables while the flag is off.
 
 The public homepage, header and footer expose the Planning Hub entry point only
 when `PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true`. Keep it false until the direct

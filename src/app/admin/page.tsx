@@ -6,6 +6,7 @@ import { bulkUpdateVenues } from "@/app/actions/admin";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { supplierAdminSchemaEnabled } from "@/lib/supplier-admin-flags";
 import { formatPriceRange } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -47,7 +48,8 @@ type AdminVenue = {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<AdminSearchParams> }) {
   const [{ message, ...filters }] = await Promise.all([searchParams, requireAdmin()]);
   const supabase = await createClient();
-  const [{ data, error }, { data: claims }, { data: amenityLinks }, { data: newEnquiries }, { count: pendingPhotoReviews }, { count: pendingSupplierPhotoReviews }, { count: pendingUpdateReviews }, { count: pendingSupplierUpdateReviews }] = await Promise.all([
+  const supplierAdminEnabled = supplierAdminSchemaEnabled();
+  const coreAdminQueries = Promise.all([
     supabase!
       .from("venues")
       .select("id, name, slug, type, region, town, price_from, price_to, capacity_max, status, listing_status, claim_status, invite_status, official_website_url, official_gallery_url, vendor_contact_email, image_is_representative, is_claimed, is_featured")
@@ -56,10 +58,20 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     supabase!.from("venue_amenities").select("venue_id"),
     supabase!.from("enquiries").select("id, status").eq("status", "new"),
     supabase!.from("venue_image_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase!.from("supplier_image_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase!.from("vendor_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase!.from("supplier_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
+    supabase!.from("vendor_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
   ]);
+  const supplierAdminQueries = supplierAdminEnabled
+    ? Promise.all([
+        supabase!.from("supplier_image_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase!.from("supplier_update_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
+      ])
+    : Promise.resolve([null, null] as const);
+  const [
+    [{ data, error }, { data: claims }, { data: amenityLinks }, { data: newEnquiries }, { count: pendingPhotoReviews }, { count: pendingUpdateReviews }],
+    supplierAdminResults
+  ] = await Promise.all([coreAdminQueries, supplierAdminQueries]);
+  const pendingSupplierPhotoReviews = supplierAdminResults[0]?.count ?? null;
+  const pendingSupplierUpdateReviews = supplierAdminResults[1]?.count ?? null;
   const amenityCounts = new Map<string, number>();
   for (const link of amenityLinks ?? []) amenityCounts.set(link.venue_id, (amenityCounts.get(link.venue_id) ?? 0) + 1);
   const venues = (data ?? []) as AdminVenue[];
@@ -100,24 +112,30 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <ButtonLink href="/admin/images" variant="secondary">
             <Images size={17} /> Venue photos
           </ButtonLink>
-          <ButtonLink href="/admin/supplier-images" variant="secondary">
-            <Images size={17} /> Supplier photos
-          </ButtonLink>
+          {supplierAdminEnabled ? (
+            <ButtonLink href="/admin/supplier-images" variant="secondary">
+              <Images size={17} /> Supplier photos
+            </ButtonLink>
+          ) : null}
           <ButtonLink href="/admin/updates" variant="secondary">
             <FilePenLine size={17} /> Review edits
           </ButtonLink>
-          <ButtonLink href="/admin/supplier-updates" variant="secondary">
-            <FilePenLine size={17} /> Supplier edits
-          </ButtonLink>
+          {supplierAdminEnabled ? (
+            <ButtonLink href="/admin/supplier-updates" variant="secondary">
+              <FilePenLine size={17} /> Supplier edits
+            </ButtonLink>
+          ) : null}
           <ButtonLink href="/admin/applications" variant="secondary">
             <ClipboardList size={17} /> Applications
           </ButtonLink>
           <ButtonLink href="/admin/suppliers" variant="secondary">
             <UsersRound size={17} /> Suppliers
           </ButtonLink>
-          <ButtonLink href="/admin/supplier-staging" variant="secondary">
-            <UploadCloud size={17} /> Supplier staging
-          </ButtonLink>
+          {supplierAdminEnabled ? (
+            <ButtonLink href="/admin/supplier-staging" variant="secondary">
+              <UploadCloud size={17} /> Supplier staging
+            </ButtonLink>
+          ) : null}
           <ButtonLink href="/admin/venues/new">
             <Plus size={17} /> Add venue
           </ButtonLink>
@@ -134,9 +152,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <AdminStat icon={<MessageSquareText size={18} />} label="New leads" value={(newEnquiries?.length ?? 0).toString()} />
         <AdminStat icon={<Inbox size={18} />} label="Pending claims" value={(claims?.length ?? 0).toString()} />
         <AdminStat icon={<Images size={18} />} label="Venue photos" value={(pendingPhotoReviews ?? 0).toString()} />
-        <AdminStat icon={<Images size={18} />} label="Supplier photos" value={(pendingSupplierPhotoReviews ?? 0).toString()} />
+        {supplierAdminEnabled ? <AdminStat icon={<Images size={18} />} label="Supplier photos" value={(pendingSupplierPhotoReviews ?? 0).toString()} /> : null}
         <AdminStat icon={<FilePenLine size={18} />} label="Pending edits" value={(pendingUpdateReviews ?? 0).toString()} />
-        <AdminStat icon={<FilePenLine size={18} />} label="Supplier edits" value={(pendingSupplierUpdateReviews ?? 0).toString()} />
+        {supplierAdminEnabled ? <AdminStat icon={<FilePenLine size={18} />} label="Supplier edits" value={(pendingSupplierUpdateReviews ?? 0).toString()} /> : null}
       </section>
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
