@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink, ImageIcon, MapPin, UsersRound, X } from "lucide-react";
 import { formatMoney } from "@/lib/budget/calculations";
 import type { PlanningHubVenueDetail } from "@/lib/planning-hub/types";
+import { VenuePassport } from "@/components/venue/venue-passport";
 
 export function PlanningHubVenueDetailPanel({
   detail,
@@ -36,7 +37,11 @@ export function PlanningHubVenueDetailPanel({
       ) : detail ? (
         <>
           <div className="relative aspect-[16/9] bg-[#eee8dd]">
-            <Image alt={detail.gallery[0].alt} className="object-cover" fill priority sizes="(min-width: 1024px) 55vw, 100vw" src={detail.gallery[0].url} />
+            {detail.hasApprovedPhoto ? (
+              <Image alt={detail.gallery[0].alt} className="object-cover" fill priority sizes="(min-width: 1024px) 55vw, 100vw" src={detail.gallery[0].url} />
+            ) : (
+              <VenuePassport className="h-full w-full rounded-none" venue={detail} />
+            )}
             <button aria-label="Close venue details" className="focus-ring absolute right-4 top-4 z-10 grid size-11 place-items-center rounded-full bg-white/95 text-[#173526] shadow-lg" onClick={onClose} type="button">
               <X size={20} />
             </button>
