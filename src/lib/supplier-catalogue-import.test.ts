@@ -79,7 +79,7 @@ describe("supplier catalogue import", () => {
       join(process.cwd(), "docs/planning-hub/research/videographer-primary-source-sample-2026-08-03.csv"),
       "utf8",
     );
-    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-13", "2026-08-13");
 
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
@@ -98,10 +98,10 @@ describe("supplier catalogue import", () => {
       join(process.cwd(), "docs/planning-hub/research/videographer-regional-gap-sample-2026-08-03.csv"),
       "utf8",
     );
-    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-13", "2026-08-13");
 
     expect(result.errors).toEqual([]);
-    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings).toHaveLength(1);
     expect(result.candidates).toHaveLength(5);
     expect(result.candidates.every((candidate) => (
       candidate.category_slug === "videographer"
@@ -111,7 +111,7 @@ describe("supplier catalogue import", () => {
       && candidate.image_permission_status === "not_provided"
     ))).toBe(true);
     expect(result.candidates.find((candidate) => candidate.slug === "king-wedding-media")?.starting_price_pence)
-      .toBe(140_000);
+      .toBe(160_000);
     expect(result.candidates.find((candidate) => candidate.slug === "pinfall-wedding-films")).toMatchObject({
       starting_price_pence: null,
       pricing_unit: "quote",
@@ -120,7 +120,7 @@ describe("supplier catalogue import", () => {
       starting_price_pence: null,
       pricing_unit: "quote",
     });
-    expect(result.candidates.filter((candidate) => candidate.review_notes)).toHaveLength(2);
+    expect(result.candidates.filter((candidate) => candidate.review_notes)).toHaveLength(1);
   });
 
   it("keeps the Tayside and islands videographer sample importable and image-free", () => {
@@ -128,7 +128,7 @@ describe("supplier catalogue import", () => {
       join(process.cwd(), "docs/planning-hub/research/videographer-tayside-islands-sample-2026-08-03.csv"),
       "utf8",
     );
-    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-03", "2026-08-03");
+    const result = parseSupplierCandidateRows(parseCsv(source), "2026-08-13", "2026-08-13");
 
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);

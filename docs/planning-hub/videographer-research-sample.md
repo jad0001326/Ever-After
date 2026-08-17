@@ -1,6 +1,6 @@
 # Videographer primary-source research sample
 
-Date: 3 August 2026
+Date: 13 August 2026
 
 Status: local review evidence only. Nothing has been imported, staged in a
 database, published, contacted or approved for imagery.
@@ -98,6 +98,31 @@ The import contract now retains those manual review notes and the database
 refuses acceptance until an operator records a resolution. This review changed
 only local research evidence and code. Nothing was staged, published or
 contacted.
+
+## Primary-source refresh completed locally - 13 August 2026
+
+All fourteen official source URLs were reachable and every candidate was
+rechecked. Ten retain numeric package or starting prices and four remain
+truthfully quote-only. The material changes are:
+
+- King Wedding Media now labels its pricing as updated July 2026 and lists
+  Brass at GBP 1,600, Bronze at GBP 1,800, Silver at GBP 2,000 and Gold at GBP
+  2,200. The older GBP 1,400 starting price has been replaced.
+- The former Robertson Creative domain redirects to Pinfall Wedding Films.
+  This resolves the duplicate-identity review note; Pinfall remains quote-only
+  because its current official page does not publish a current price.
+- Struie Wedding Films still publishes conflicting GBP 1,095 and GBP 1,250
+  figures on current official pages. It remains quote-only and is the one
+  unresolved operator review blocker.
+- Burfly's official 2026 brochure confirms videography-only and combined
+  photography-and-video packages, a 3-5 minute highlight film and included
+  drone footage, but it does not publish prices. Burfly therefore remains
+  quote-only.
+
+Every row still has `not_provided` image permission. Publicly visible supplier
+photos and brochure images are source evidence only, not permission for
+EverAft to copy or publish them. Nothing was imported, staged, published or
+contacted during this refresh.
 
 ## What this proves
 

@@ -293,3 +293,17 @@ permission and videography remains inactive. The reusable claimed-supplier
 image workflow is now prepared locally, but using it still requires hosted
 staging, approved claims and supplier participation. Those actions, supplier
 contact, publication and category activation still require explicit approval.
+
+## Videographer source evidence refreshed locally - 13 August 2026
+
+All fourteen official sources were rechecked. Ten candidates retain a current
+numeric package or starting price; four remain quote-only. King Wedding Media's
+official July 2026 packages now start at GBP 1,600, replacing the earlier GBP
+1,400 evidence. The former Robertson Creative domain's redirect resolves the
+Pinfall identity-consolidation note. Struie's conflicting official prices remain
+the sole unresolved review note. Burfly's official 2026 brochure confirms
+videography-only coverage but contains no numeric price.
+
+This refresh changes research evidence only. All fourteen rows remain without
+image-permission evidence, none has been staged or imported, and videography
+remains inactive.
