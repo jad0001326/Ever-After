@@ -146,4 +146,36 @@ describe("supplier catalogue import", () => {
       .toBe(155_000);
     expect(result.candidates.filter((candidate) => candidate.pricing_unit === "quote")).toHaveLength(2);
   });
+
+  it("validates the complete videographer research set without cross-file duplicates", () => {
+    const files = [
+      "videographer-primary-source-sample-2026-08-03.csv",
+      "videographer-regional-gap-sample-2026-08-03.csv",
+      "videographer-tayside-islands-sample-2026-08-03.csv",
+    ];
+    const results = files.map((file) => parseSupplierCandidateRows(
+      parseCsv(readFileSync(join(process.cwd(), "docs/planning-hub/research", file), "utf8")),
+      "2026-08-13",
+      "2026-08-17",
+    ));
+    const candidates = results.flatMap((result) => result.candidates);
+    const errors = results.flatMap((result) => result.errors);
+    const warnings = results.flatMap((result) => result.warnings);
+
+    expect(errors).toEqual([]);
+    expect(candidates).toHaveLength(14);
+    expect(new Set(candidates.map((candidate) => candidate.slug))).toHaveProperty("size", 14);
+    expect(candidates.filter((candidate) => candidate.starting_price_pence != null)).toHaveLength(10);
+    expect(candidates.filter((candidate) => candidate.pricing_unit === "quote")).toHaveLength(4);
+    expect(candidates.every((candidate) => (
+      candidate.category_slug === "videographer"
+      && candidate.source_type === "official_website"
+      && candidate.hero_image_url == null
+      && candidate.image_permission_status === "not_provided"
+    ))).toBe(true);
+    expect(warnings).toEqual([expect.objectContaining({
+      business: "Struie Wedding Films",
+      message: "Manual review notes must be resolved and recorded before acceptance.",
+    })]);
+  });
 });
