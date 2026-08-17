@@ -277,6 +277,16 @@ Use the least destructive rollback that restores safety:
   public-entry activation and production writes still require their own
   explicit approval.
 
+## Public-beta device-storage disclosure - 13 August 2026
+
+The Planning Hub release badge now follows the existing public-entry flag.
+While entry remains closed it continues to say `Private beta`. When
+`PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true`, it says `Public beta` and tells
+couples that beta plans are saved in that browser on that device. Secure
+account sync and partner sharing remain explicitly unavailable. This is
+server-rendered release messaging only; it adds no client bundle, persistence,
+database, catalogue or outreach behavior.
+
 ## Final local release-candidate evidence
 
 - 108 Vitest files and 509 tests pass.
