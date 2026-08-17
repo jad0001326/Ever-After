@@ -6,6 +6,7 @@ import { supplierCategoryBySlug, supplierDirectoryCategories } from "@/data/supp
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 import {
+  buildSupplierAdminNamePattern,
   buildSupplierAdminDirectoryHref,
   getSupplierAdminDirectoryPageCount,
   getSupplierAdminDirectoryRange,
@@ -21,6 +22,7 @@ type SearchParams = Promise<{
   category?: string;
   message?: string;
   page?: string;
+  query?: string;
   status?: string;
 }>;
 
@@ -38,6 +40,7 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
     );
   if (query && filters.status) query = query.eq("listing_status", filters.status);
   if (query && filters.category) query = query.eq("category_slug", filters.category);
+  if (query && filters.query) query = query.ilike("name", buildSupplierAdminNamePattern(filters.query));
   query = query
     ?.order("updated_at", { ascending: false })
     .order("id", { ascending: true })
@@ -70,7 +73,11 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
       {params.message ? <p className="mt-6 rounded-2xl bg-[#eef4ea] px-4 py-3 text-sm text-[#285237]">{params.message}</p> : null}
       {result.error ? <p className="mt-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#9e341f]">{result.error.message}</p> : null}
 
-      <form action="/admin/suppliers" className="mt-7 grid gap-3 rounded-3xl border border-[var(--line)] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end" method="get">
+      <form action="/admin/suppliers" className="mt-7 grid gap-3 rounded-3xl border border-[var(--line)] bg-white p-4 sm:grid-cols-2 sm:items-end lg:grid-cols-[minmax(180px,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]" method="get">
+        <label className="text-sm font-semibold text-[#4d483f] sm:col-span-2 lg:col-span-1">
+          <span className="mb-2 block">Supplier name</span>
+          <input className="focus-ring min-h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 font-normal" defaultValue={filters.query} maxLength={80} name="query" placeholder="Search supplier name" type="search" />
+        </label>
         <label className="text-sm font-semibold text-[#4d483f]">
           <span className="mb-2 block">Category</span>
           <select className="focus-ring min-h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 font-normal" defaultValue={filters.category ?? ""} name="category">
@@ -85,12 +92,12 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
             {supplierAdminStatuses.map((status) => <option className="capitalize" key={status} value={status}>{status}</option>)}
           </select>
         </label>
-        <button className="focus-ring min-h-11 rounded-full bg-[var(--brand)] px-5 text-sm font-semibold text-white" type="submit">Apply filters</button>
+        <button className="focus-ring min-h-11 rounded-full bg-[var(--brand)] px-5 text-sm font-semibold text-white" type="submit">Search and filter</button>
         <Link className="focus-ring inline-flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-[#35533e] ring-1 ring-[var(--line)]" href="/admin/suppliers">Clear</Link>
       </form>
 
       <p aria-live="polite" className="mt-4 text-sm text-[var(--muted)]">
-        {total} {total === 1 ? "profile" : "profiles"}{filters.category ? ` in ${supplierCategoryBySlug(filters.category)?.plural}` : ""}{filters.status ? ` · ${filters.status}` : ""}
+        {total} {total === 1 ? "profile" : "profiles"}{filters.query ? ` matching “${filters.query}”` : ""}{filters.category ? ` in ${supplierCategoryBySlug(filters.category)?.plural}` : ""}{filters.status ? ` · ${filters.status}` : ""}
       </p>
 
       <section className="mt-4 overflow-hidden rounded-3xl border border-[var(--line)] bg-white">

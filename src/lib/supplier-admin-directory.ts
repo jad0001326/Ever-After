@@ -8,12 +8,14 @@ export type SupplierAdminStatus = (typeof supplierAdminStatuses)[number];
 export type SupplierAdminDirectoryFilters = {
   category: string | null;
   page: number;
+  query: string;
   status: SupplierAdminStatus | null;
 };
 
 type SupplierAdminSearchParams = {
   category?: string;
   page?: string;
+  query?: string;
   status?: string;
 };
 
@@ -24,10 +26,15 @@ export function parseSupplierAdminDirectoryFilters(
   return {
     category: params.category && supplierCategoryBySlug(params.category) ? params.category : null,
     page: Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+    query: normalizeSupplierAdminSearch(params.query),
     status: supplierAdminStatuses.includes(params.status as SupplierAdminStatus)
       ? params.status as SupplierAdminStatus
       : null,
   };
+}
+
+export function buildSupplierAdminNamePattern(query: string) {
+  return `%${query.replace(/[\\%_]/g, "\\$&")}%`;
 }
 
 export function getSupplierAdminDirectoryRange(page: number) {
@@ -46,7 +53,12 @@ export function buildSupplierAdminDirectoryHref(
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.category) params.set("category", filters.category);
+  if (filters.query) params.set("query", filters.query);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/admin/suppliers?${query}` : "/admin/suppliers";
+}
+
+function normalizeSupplierAdminSearch(query: string | undefined) {
+  return query?.trim().replace(/\s+/g, " ").slice(0, 80) ?? "";
 }
