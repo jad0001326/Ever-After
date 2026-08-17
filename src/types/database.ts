@@ -18,12 +18,7 @@ export type Database = {
           full_name?: string | null;
           role?: string;
         };
-        Update: {
-          email?: string | null;
-          full_name?: string | null;
-          role?: string;
-          updated_at?: string;
-        };
+        Update: never;
         Relationships: [];
       };
       venues: {
@@ -1389,6 +1384,18 @@ export type Database = {
           p_event_data?: Json;
         };
         Returns: Json;
+      };
+      review_supplier_claim: {
+        Args: { p_claim_id: string; p_decision: "approved" | "rejected"; p_admin_notes?: string | null };
+        Returns: Array<{
+          reviewed_claim_id: string;
+          reviewed_supplier_id: string;
+          supplier_slug: string;
+          category_slug: string;
+          review_status: "approved" | "rejected";
+          claimant_user_id: string;
+          reviewed_vendor_id: string | null;
+        }>;
       };
       review_supplier_update_request: {
         Args: { p_request_id: string; p_decision: "approved" | "rejected"; p_admin_notes?: string | null };

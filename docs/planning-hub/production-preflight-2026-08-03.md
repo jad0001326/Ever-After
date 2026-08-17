@@ -105,12 +105,12 @@ dropped merely because a low-traffic database currently labels them unused.
 3. Re-read remote migration history and stop if it differs from the captured
    26-entry manifest.
 4. Run `npm run test:production-migration-alignment`; require exactly 26
-   matching and ten pending migrations.
+   matching and eleven pending migrations.
 5. Use the runbook's reviewed `--include-all` command because
-   all ten reviewed migrations now predate production's latest recorded
-   migration. Review the proposed list; it must contain only the ten files
+   all eleven reviewed migrations now predate production's latest recorded
+   migration. Review the proposed list; it must contain only the eleven files
    recorded above, in order.
-6. Apply those ten migrations under one explicit production approval. Do not
+6. Apply those eleven migrations under one explicit production approval. Do not
    include seed data.
 7. Re-run database security and performance advisors.
 8. Exercise owner, partner, outsider and anonymous Data API tests. Stop on any

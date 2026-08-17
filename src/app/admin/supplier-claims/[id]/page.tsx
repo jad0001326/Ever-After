@@ -48,8 +48,18 @@ export default async function SupplierClaimReviewPage({
           <div className="mt-8 rounded-2xl bg-[#fbf8f3] p-5"><p className="text-sm font-semibold">Message</p><p className="mt-2 text-sm leading-6 text-[var(--muted)]">{claim.message}</p></div>
         </section>
         <aside className="grid gap-5 self-start">
-          <form action={approveSupplierClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5"><input name="claimId" type="hidden" value={claim.id} /><h2 className="font-display text-3xl font-semibold">Approve</h2><p className="mt-2 text-sm leading-6 text-[var(--muted)]">Grant supplier access after the evidence is verified.</p><Textarea className="mt-4" defaultValue={claim.admin_notes ?? ""} name="adminNotes" placeholder="Admin notes" /><Button className="mt-4 w-full" disabled={claim.status === "approved"}>Approve claim</Button></form>
-          <form action={rejectSupplierClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5"><input name="claimId" type="hidden" value={claim.id} /><h2 className="font-display text-3xl font-semibold">Reject</h2><Textarea className="mt-4" defaultValue={claim.admin_notes ?? ""} name="adminNotes" required placeholder="Reason or internal notes" /><Button className="mt-4 w-full" disabled={claim.status === "rejected"} variant="secondary">Reject claim</Button></form>
+          {claim.status === "pending" ? (
+            <>
+              <form action={approveSupplierClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5"><input name="claimId" type="hidden" value={claim.id} /><h2 className="font-display text-3xl font-semibold">Approve</h2><p className="mt-2 text-sm leading-6 text-[var(--muted)]">Grant supplier access after the evidence is verified.</p><Textarea className="mt-4" defaultValue={claim.admin_notes ?? ""} name="adminNotes" placeholder="Admin notes" /><Button className="mt-4 w-full">Approve claim</Button></form>
+              <form action={rejectSupplierClaim} className="rounded-3xl border border-[var(--line)] bg-white p-5"><input name="claimId" type="hidden" value={claim.id} /><h2 className="font-display text-3xl font-semibold">Reject</h2><Textarea className="mt-4" defaultValue={claim.admin_notes ?? ""} name="adminNotes" required placeholder="Reason or internal notes" /><Button className="mt-4 w-full" variant="secondary">Reject claim</Button></form>
+            </>
+          ) : (
+            <section className="rounded-3xl border border-[var(--line)] bg-white p-5">
+              <h2 className="font-display text-3xl font-semibold">Review complete</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">This claim was {claim.status}. Completed decisions cannot be reversed from this page.</p>
+              {claim.admin_notes ? <p className="mt-4 rounded-2xl bg-[#fbf8f3] px-4 py-3 text-sm">{claim.admin_notes}</p> : null}
+            </section>
+          )}
         </aside>
       </div>
       <section className="mt-8 rounded-3xl border border-[var(--line)] bg-white p-6"><h2 className="font-display text-3xl font-semibold">Audit log</h2><div className="mt-5 grid gap-3">{(audit ?? []).map((entry) => <div className="rounded-2xl bg-[#fbf8f3] px-4 py-3 text-sm" key={entry.id}><p className="font-semibold">{entry.action}</p><p className="mt-1 text-[var(--muted)]">{entry.notes || "No notes"} — {new Date(entry.created_at).toLocaleString("en-GB")}</p></div>)}{(audit ?? []).length === 0 ? <p className="text-sm text-[var(--muted)]">No audit events yet.</p> : null}</div></section>

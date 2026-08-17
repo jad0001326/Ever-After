@@ -13,10 +13,10 @@ read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
 timestamp drift and legacy Data API grants. The repository now mirrors all 26
 recorded production migration identities locally, so no production history
-rewrite is expected; ten reviewed migrations remain pending activation.
+rewrite is expected; eleven reviewed migrations remain pending activation.
 The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
 recorded in `docs/planning-hub/production-activation-runbook.md`.
-The ten-file lock, data-rewrite and existing-row surface is separately
+The eleven-file lock, data-rewrite and existing-row surface is separately
 recorded in `docs/planning-hub/pending-migration-risk-review-2026-08-03.md`.
 
 The competitive priority adjustment in
@@ -208,7 +208,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 36 timestamped migrations apply in
+   - confirm that the baseline plus all 37 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -217,7 +217,7 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 26 matching and ten pending identities;
+   - require the exact 26 matching and eleven pending identities;
    - confirm all four feature flags remain off.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
@@ -260,7 +260,7 @@ Use the least destructive rollback that restores safety:
   generator are ready. The harness now sends real owner, partner, outsider and
   rejected-bearer HTTP requests through the loopback Next.js routes and checks
   every successful body against the committed JSON Schema. The generated
-  37-file stack still needs its first container-runtime execution.
+  38-file stack still needs its first container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Before a production code-only beta deployment, verify in Vercel that
@@ -276,6 +276,42 @@ Use the least destructive rollback that restores safety:
   production deployment and bounded post-merge smoke are green. Migration,
   public-entry activation and production writes still require their own
   explicit approval.
+
+## Production local-first beta smoke - 13 August 2026
+
+A fresh read-only production check confirms the intended release boundary:
+
+- `/`, `/venues`, `/wedding-budget-planner`, `/wedding-table-planner`,
+  `/planning-hub` and `/photographers` return HTTP 200;
+- the homepage links to both established public planners but does not link to
+  `/planning-hub` while `PLANNING_HUB_PUBLIC_ENTRY_ENABLED` remains off;
+- `/planning-hub` remains `noindex` and renders the venue-first local-device
+  journey;
+- Photography exposes 31 matches in bounded pagination;
+- `/videographers` remains an intentional public 404 while the manual
+  Videography stage remains available inside the Hub; and
+- the connected workspace collection returns the expected no-store HTTP 503
+  body `connected_planning_disabled` while cloud persistence remains off.
+
+This proves the code-only local-first beta is live without exposing dormant
+cloud or supplier-category functionality. The next public-positioning action
+can be the single reversible `PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true` flag,
+followed by homepage/header, Hub, planner and rollback smoke. It does not
+require or authorise the eleven pending database migrations, cloud persistence,
+generic supplier activation, catalogue publication or outreach changes.
+
+## Supplier-claim release-order gate - 13 August 2026
+
+The atomic supplier-claim application and its migration are one deployable
+unit, but their production order is migration first. The application replaces
+the legacy service-role review sequence with `review_supplier_claim` and relies
+on the new insert triggers to synchronise `supplier_listings.claim_status`.
+Production does not have those database objects yet. Therefore the security
+pull request may be reviewed independently, but it must remain draft and must
+not be deployed until the eleven migrations receive explicit approval, pass
+the exact dry run and checkpoint, are applied, and pass the immediate privilege
+and native-concurrency verification. Public-beta entry messaging remains a
+separate code-only release and does not depend on this schema activation.
 
 ## Final local release-candidate evidence
 
@@ -466,7 +502,7 @@ Use the least destructive rollback that restores safety:
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 36 timestamped
+- The local API generator reproduces one baseline plus all 37 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
