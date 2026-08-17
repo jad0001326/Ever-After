@@ -29,7 +29,7 @@ export function SupplierCatalogueImportForm({ defaultResearchDate }: { defaultRe
       </form>
       {state ? <div aria-live="polite" className="mt-5 rounded-2xl bg-[#fbf8f3] p-4">
         <p className={state.ok ? "text-sm font-semibold text-[#35533e]" : "text-sm font-semibold text-[#8a3c19]"}>{state.message}</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4"><Metric label="Rows read" value={state.rowsRead} /><Metric label="Valid" value={state.validRows} /><Metric label="Staged" value={state.stagedRows} /><Metric label="Duplicate hints" value={state.duplicateHints} /></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Metric label="Rows read" value={state.rowsRead} /><Metric label="Structurally valid" value={state.validRows} /><Metric label="Acceptance-ready" value={state.acceptanceReadyRows} /><Metric label="Manual review" value={state.manualReviewRows} /><Metric label="Staged" value={state.stagedRows} /><Metric label="Duplicate hints" value={state.duplicateHints} /></div>
         {state.errors.length ? <IssueList title="Issues" issues={state.errors} tone="error" /> : null}
         {state.warnings.length ? <IssueList title="Warnings" issues={state.warnings} tone="warning" /> : null}
       </div> : null}

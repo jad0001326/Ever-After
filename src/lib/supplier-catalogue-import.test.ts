@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
+import { formatSupplierImportReadiness, getSupplierImportReadiness, parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
 
 const headers = ["Business name", "Category", "Base town", "Region", "Service areas", "Summary", "Description", "Services", "Official website URL", "Source URL", "Source type", "Research date", "Pricing unit", "Pricing summary", "Hero image URL", "Image permission status", "Image permission evidence URL", "Image credit", "Review notes"];
 const valid = ["Films Co", "videographer", "Glasgow", "Greater Glasgow", "Glasgow|Ayrshire", "Story-led wedding films across Scotland.", "A documentary wedding film team covering celebrations throughout Scotland.", "Full-day films|Highlight films", "https://films.example/", "https://films.example/about", "official_website", "2026-08-01", "quote", "Contact the supplier for a tailored quote.", "", "", "", ""];
@@ -177,5 +177,14 @@ describe("supplier catalogue import", () => {
       business: "Struie Wedding Films",
       message: "Manual review notes must be resolved and recorded before acceptance.",
     })]);
+    const readiness = getSupplierImportReadiness(candidates);
+    expect(readiness).toEqual({
+      acceptanceReadyRows: 13,
+      manualReviewRows: 1,
+      validRows: 14,
+    });
+    expect(formatSupplierImportReadiness(readiness)).toBe(
+      "13 have no manual-review note; 1 requires a recorded resolution before acceptance.",
+    );
   });
 });

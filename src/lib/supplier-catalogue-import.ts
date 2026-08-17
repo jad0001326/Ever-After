@@ -38,12 +38,40 @@ export type SupplierCandidate = {
 
 export type SupplierImportIssue = { row: number; business?: string; message: string };
 export type SupplierImportParseResult = { candidates: SupplierCandidate[]; errors: SupplierImportIssue[]; warnings: SupplierImportIssue[] };
+export type SupplierImportReadiness = {
+  acceptanceReadyRows: number;
+  manualReviewRows: number;
+  validRows: number;
+};
 
 type RawRow = Record<string, string>;
 const categorySlugs = new Set<string>(supplierDirectoryCategories.map((category) => category.slug));
 const sourceTypes = new Set<SupplierCandidateSourceType>(["official_website", "public_business_registry", "supplier_submitted", "other_public_source"]);
 const pricingUnits = new Set<SupplierCandidatePricingUnit>(["package", "hour", "person", "item", "event", "quote"]);
 const imageStatuses = new Set<SupplierCandidateImageStatus>(["not_provided", "pending", "approved", "rejected"]);
+
+export function getSupplierImportReadiness(candidates: readonly SupplierCandidate[]): SupplierImportReadiness {
+  let manualReviewRows = 0;
+  for (const candidate of candidates) {
+    if (candidate.review_notes) manualReviewRows += 1;
+  }
+  return {
+    acceptanceReadyRows: candidates.length - manualReviewRows,
+    manualReviewRows,
+    validRows: candidates.length,
+  };
+}
+
+export function formatSupplierImportReadiness(readiness: SupplierImportReadiness) {
+  if (readiness.manualReviewRows === 0) {
+    return readiness.acceptanceReadyRows === 1
+      ? "The structurally valid row has no manual-review note."
+      : `All ${readiness.acceptanceReadyRows} structurally valid rows have no manual-review note.`;
+  }
+  const readyVerb = readiness.acceptanceReadyRows === 1 ? "has" : "have";
+  const reviewVerb = readiness.manualReviewRows === 1 ? "requires" : "require";
+  return `${readiness.acceptanceReadyRows} ${readyVerb} no manual-review note; ${readiness.manualReviewRows} ${reviewVerb} a recorded resolution before acceptance.`;
+}
 
 export function parseSupplierCandidateRows(rows: string[][], defaultResearchDate: string, today = new Date().toISOString().slice(0, 10)): SupplierImportParseResult {
   const headerIndex = rows.findIndex((row) => row.some((cell) => normalizeHeader(cell) === "businessname"));
