@@ -12,6 +12,7 @@ const migrationPaths = [
   "supabase/migrations/20260726185032_planning_workspace_partner_budgets.sql",
   "supabase/migrations/20260726191406_planning_table_plan_sync.sql",
   "supabase/migrations/20260820164604_atomic_planning_workspace_import.sql",
+  "supabase/migrations/20260820184000_allow_planning_owner_bootstrap_read.sql",
 ];
 
 const planningTables = [
@@ -165,6 +166,21 @@ async function assertSchemaContract(db) {
   assert(
     unsafePolicyRoles.rows.length === 0,
     "a planning policy is assigned to public or anon",
+  );
+
+  const workspaceReadPolicy = await db.query(`
+    select qual
+    from pg_catalog.pg_policies
+    where schemaname = 'public'
+      and tablename = 'planning_workspaces'
+      and policyname = 'Members read planning workspaces'
+  `);
+  const workspaceReadQual = workspaceReadPolicy.rows[0]?.qual ?? "";
+  assert(
+    workspaceReadPolicy.rows.length === 1
+      && workspaceReadQual.includes("owner_id")
+      && workspaceReadQual.includes("can_access_planning_workspace"),
+    "workspace SELECT policy does not support owner bootstrap and member access",
   );
 
   const functionResult = await db.query(`

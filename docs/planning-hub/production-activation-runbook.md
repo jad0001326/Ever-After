@@ -2,21 +2,22 @@
 
 Date: 3 August 2026; updated 20 August 2026
 
-Status: the ten reviewed migrations were applied and verified on 20 August
-2026. Production contains all 36 historical migrations; the repository has
-exactly one newer, unapplied atomic-import candidate. Connected workspace
-persistence remains off. This document is not
+Status: the ten reviewed migrations and the separately approved atomic-import
+migration were applied and verified on 20 August 2026. Production contains
+all 37 applied migrations; one narrow owner-bootstrap correction is pending
+after the real Auth/Data API test exposed PostgreSQL's `INSERT ... RETURNING`
+policy timing. Connected workspace persistence remains off. This document is not
 approval to push, merge, deploy, create test users or enable a feature flag.
 
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
 - Production migration history and local source hashes must match the checked
-  36-entry manifest in
+  37-entry manifest in
   `production-migration-history-2026-08-20.json`.
 - The dry run must report exactly
-  `20260820164604_atomic_planning_workspace_import.sql` as pending. Any other
-  local-only or remote-only migration is a stop condition.
+  `20260820184000_allow_planning_owner_bootstrap_read.sql` as pending. Any
+  other local-only or remote-only migration is a stop condition.
 - This runbook contains no production migration command. Never use
   `--include-seed`, `--include-roles`, history repair or an unreviewed push.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
@@ -45,9 +46,9 @@ npm.cmd run test:production-migration-alignment
 ```
 
 The only permitted local changes during preparation must be explicitly
-reviewed. The alignment verifier must report 36 exact production identities,
-exactly one reviewed newer local migration and no production migration command
-in this runbook.
+reviewed. The alignment verifier must report all 37 applied migrations with
+matching source hashes, exactly one hash-pinned correction and no production
+migration command in this runbook.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
 time, use a reviewed stable CLI version and record it in the release log. CLI
@@ -66,8 +67,9 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-36-entry manifest or the dry run proposes anything other than the one atomic
-import candidate. A dry run is inspection only; it is not migration approval.
+37-entry manifest or the dry run proposes anything other than the named
+owner-bootstrap correction. A dry run is inspection only; it is not migration
+approval.
 
 ## 3. Verified no-cost checkpoint
 
@@ -88,10 +90,11 @@ assume it can be decrypted from another Windows profile.
 The user explicitly approved the checkpoint and exact ten-file apply. CLI
 2.101.0 applied those files in ascending timestamp order and returned success.
 The immediate follow-up ledger was 36/36 and its completion-time dry run was up
-to date. The repository has since added the one atomic-import candidate; do not
-re-run or repair the historical ten-file activation. That approval did not
-authorise deployment, cloud persistence, supplier activation or outreach
-changes.
+to date. The separately approved atomic-import migration
+`20260820164604_atomic_planning_workspace_import.sql` was then applied; its
+follow-up ledger was 37/37 and the dry run was up to date. Do not re-run or
+repair either activation. Those approvals did not authorise cloud persistence,
+supplier activation or outreach changes.
 
 ## 5. Completed database verification
 
@@ -121,13 +124,14 @@ been exercised against an approved environment.
 
 ## 6. Connected-cloud activation sequence
 
-Database verification is green and the public code-only beta is already live.
-Do not enable connected planning yet: the reviewed application must first use
-`20260820164604_atomic_planning_workspace_import.sql` so a budget and its
-workspace import either both succeed or both roll back. That migration, its
-application code, preview and production deployment each require their own
-explicit approval. Only after the atomic path and a real Auth/Data API boundary
-smoke are green may a later approval set
+Database verification and the atomic migration are green, while the cloud flag
+remains off. The real Auth/Data API smoke proved user creation, sign-in and
+profile visibility, but PostgreSQL rejected the new-workspace `RETURNING`
+clause because the read policy depended solely on an AFTER INSERT membership.
+The narrow pending policy correction recognizes the already-authoritative
+`owner_id` during that statement and retains member access. Only after that
+correction is separately approved, applied and the full smoke is green may the
+approved release set
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true` for Production. Keep generic-supplier
 flags off and the existing Production-only outreach-sending flag unchanged.
 Then verify:

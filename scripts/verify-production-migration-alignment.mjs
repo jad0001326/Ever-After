@@ -11,7 +11,7 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = ["20260820164604_atomic_planning_workspace_import.sql"];
+const expectedPending = ["20260820184000_allow_planning_owner_bootstrap_read.sql"];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -29,7 +29,7 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 36, `snapshot contains ${remoteFiles.length} remote migrations instead of 36`);
+assert(remoteFiles.length === 37, `snapshot contains ${remoteFiles.length} remote migrations instead of 37`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
 for (const [index, file] of remoteFiles.entries()) {
@@ -58,7 +58,6 @@ assert(
   sha256(await readFile(new URL(candidateFile, migrationDirectory))) === snapshot.candidate.sha256,
   `${candidateFile} differs from its reviewed candidate hash`,
 );
-
 const latestRemoteVersion = snapshot.migrations
   .map(({ version }) => version)
   .sort()
@@ -81,16 +80,16 @@ assert(
   "activation runbook db push commands must not include seed data or custom roles",
 );
 assert(
-  activationRunbook.includes("exactly one reviewed newer local migration"),
+  activationRunbook.includes("all 37 applied migrations"),
   "activation runbook does not state the one-candidate alignment contract",
 );
 assert(
-  activationRunbook.includes("20260820164604_atomic_planning_workspace_import.sql"),
-  "activation runbook does not name the sole pending atomic migration",
+  activationRunbook.includes("20260820184000_allow_planning_owner_bootstrap_read.sql"),
+  "activation runbook does not name the pending owner-bootstrap migration",
 );
 assert(
   !activationRunbook.includes("zero pending migrations"),
-  "activation runbook still claims that no local migration is pending",
+  "activation runbook incorrectly claims that no local migration is pending",
 );
 
 const legacyCopies = [
@@ -106,4 +105,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, one hash-pinned newer local migration remains pending, and the runbook contains no production migration command.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, one hash-pinned owner-bootstrap migration remains pending, and the runbook contains no production migration command.`);
