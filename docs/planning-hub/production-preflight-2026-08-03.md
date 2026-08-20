@@ -99,6 +99,11 @@ dropped merely because a low-traffic database currently labels them unused.
 
 ## Exact no-cost activation sequence
 
+Historical note (20 August 2026): this sequence was completed. Production now
+matches all 36 migrations and has no historical files pending. Follow
+`production-activation-runbook.md` and the current alignment verifier; do not
+repeat the ten-file apply described below.
+
 1. Review and merge the application pull request while leaving
    `PLANNING_WORKSPACE_CLOUD_ENABLED` absent.
 2. Confirm a recoverable production database checkpoint.

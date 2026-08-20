@@ -1435,6 +1435,18 @@ export type Database = {
           workspace_updated_at: string;
         }>;
       };
+      import_planning_workspace_with_budget: {
+        Args: {
+          workspace_snapshot: Json;
+          budget_plan: Json;
+          target_workspace_id?: string | null;
+          expected_updated_at?: string | null;
+        };
+        Returns: Array<{
+          workspace_id: string;
+          workspace_updated_at: string;
+        }>;
+      };
       sync_planning_table_plan: {
         Args: {
           target_workspace_id: string;

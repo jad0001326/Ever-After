@@ -125,7 +125,7 @@ planning records before deleting the users and their cascaded data.
 
 ## Local-stack precondition
 
-The target must already contain the EverAft baseline schema and the eight
+The target must already contain the EverAft baseline schema and the nine
 Planning Hub migrations verified by `npm run test:planning-rls`.
 
 The repository's migration folder contains incremental changes rather than the
@@ -142,7 +142,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 36 timestamped migrations byte-for-byte in filename order;
+3. copies all 37 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 
@@ -160,7 +160,7 @@ supabase init --workdir .
 supabase start --workdir .
 ```
 
-After all 37 generated migrations apply, start the EverAft application from a
+After all 38 generated migrations apply, start the EverAft application from a
 second terminal with the cloud gate enabled only in that process:
 
 ```powershell

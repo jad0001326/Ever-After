@@ -42,6 +42,10 @@ const validSnapshot = {
   seats: [],
   rules: [],
 };
+const validBudgetPlan = {
+  ...createPlanningHubStarterPlan("owner-1"),
+  id: "budget-1",
+};
 
 describe("planning workspace server actions", () => {
   const previousCloudFlag = process.env.PLANNING_WORKSPACE_CLOUD_ENABLED;
@@ -59,6 +63,7 @@ describe("planning workspace server actions", () => {
     process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "false";
 
     const result = await importPlanningWorkspaceSnapshotAction({
+      budgetPlan: validBudgetPlan,
       snapshot: validSnapshot,
       targetWorkspaceId: null,
       expectedUpdatedAt: null,
@@ -69,6 +74,34 @@ describe("planning workspace server actions", () => {
       message: "Connected planning is still in private testing. Your current plan remains saved on this device.",
     });
     expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("sends the budget and workspace through one atomic database function", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { code: "22023" },
+    }));
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "owner-1" } }, error: null })) },
+      rpc,
+    } as never);
+
+    const result = await importPlanningWorkspaceSnapshotAction({
+      budgetPlan: { ...validBudgetPlan, userId: "untrusted-user" },
+      snapshot: validSnapshot,
+      targetWorkspaceId: null,
+      expectedUpdatedAt: null,
+    });
+
+    expect(result).toEqual({ ok: false, message: "That change could not be saved. Please try again." });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("import_planning_workspace_with_budget", {
+      budget_plan: expect.objectContaining({ id: "budget-1", userId: "owner-1" }),
+      workspace_snapshot: validSnapshot,
+      target_workspace_id: null,
+      expected_updated_at: null,
+    });
   });
 
   it("rejects a budget that is not linked to the requested workspace", async () => {

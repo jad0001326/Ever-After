@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { importPlanningWorkspaceSnapshotAction } from "@/app/actions/planning-workspace";
 import { createEmptyBudgetPlan } from "@/lib/budget/persistence";
 import type { PlanningWorkspaceCloudSnapshot } from "@/lib/planning-workspace/cloud";
 import {
@@ -8,6 +9,10 @@ import {
   PLANNING_WORKSPACE_BACKUP_STORAGE_KEY,
 } from "@/lib/planning-workspace/workspace";
 import { PlanningWorkspaceCloudImport } from "./planning-workspace-cloud-import";
+
+vi.mock("@/app/actions/planning-workspace", () => ({
+  importPlanningWorkspaceSnapshotAction: vi.fn(),
+}));
 
 const cloudSnapshot: PlanningWorkspaceCloudSnapshot = {
   members: [],
@@ -96,5 +101,37 @@ describe("PlanningWorkspaceCloudImport", () => {
       }),
       cloudSnapshot,
     );
+  });
+
+  it("imports the budget and workspace through one atomic action", async () => {
+    const budgetPlan = { ...createEmptyBudgetPlan(), id: "budget-1" };
+    const workspace = createEmptyPlanningWorkspace({ ownerId: null, budgetPlanId: budgetPlan.id });
+    const onWorkspaceResolved = vi.fn();
+    vi.mocked(importPlanningWorkspaceSnapshotAction).mockResolvedValueOnce({
+      ok: true,
+      snapshot: { ok: true, ...cloudSnapshot },
+    });
+
+    render(
+      <PlanningWorkspaceCloudImport
+        budgetPlan={budgetPlan}
+        cloudEnabled
+        cloudSnapshot={null}
+        mode="device_only"
+        onWorkspaceResolved={onWorkspaceResolved}
+        userId="user-1"
+        workspace={workspace}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Review secure cloud import" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create cloud copy from this device" }));
+
+    await waitFor(() => expect(importPlanningWorkspaceSnapshotAction).toHaveBeenCalledTimes(1));
+    expect(importPlanningWorkspaceSnapshotAction).toHaveBeenCalledWith(expect.objectContaining({
+      budgetPlan,
+      snapshot: expect.objectContaining({ budgetPlanId: budgetPlan.id }),
+    }));
+    expect(onWorkspaceResolved).toHaveBeenCalledTimes(1);
   });
 });

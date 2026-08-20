@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 
 const migrationDirectory = new URL("../supabase/migrations/", import.meta.url);
 const snapshot = JSON.parse(await readFile(
-  new URL("../docs/planning-hub/production-migration-history-2026-08-03.json", import.meta.url),
+  new URL("../docs/planning-hub/production-migration-history-2026-08-20.json", import.meta.url),
   "utf8",
 ));
 const activationRunbook = await readFile(
@@ -10,18 +10,7 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = [
-  "20260726140200_planning_workspace_foundation.sql",
-  "20260726162254_planning_workspace_snapshot_import.sql",
-  "20260726164304_planning_workspace_profiles.sql",
-  "20260726185032_planning_workspace_partner_budgets.sql",
-  "20260726191406_planning_table_plan_sync.sql",
-  "20260803122711_supplier_owner_update_requests.sql",
-  "20260803130045_supplier_catalogue_staging.sql",
-  "20260803143000_tighten_data_api_table_grants.sql",
-  "20260803150000_generalize_supplier_outreach.sql",
-  "20260803165651_supplier_image_submissions.sql",
-];
+const expectedPending = ["20260820164604_atomic_planning_workspace_import.sql"];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -35,7 +24,7 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 26, `snapshot contains ${remoteFiles.length} remote migrations instead of 26`);
+assert(remoteFiles.length === 36, `snapshot contains ${remoteFiles.length} remote migrations instead of 36`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
 const missingRemoteHistory = remoteFiles.filter((file) => !localSet.has(file));
@@ -55,26 +44,31 @@ const latestRemoteVersion = snapshot.migrations
 const backfilledPending = actualPending.filter(
   (file) => file.slice(0, 14) < latestRemoteVersion,
 );
-assert(
-  JSON.stringify(backfilledPending) === JSON.stringify(expectedPending),
-  `reviewed older pending set changed; found ${backfilledPending.join(", ")}`,
-);
+assert(backfilledPending.length === 0, `older pending migrations reappeared: ${backfilledPending.join(", ")}`);
 
 const dbPushCommands = activationRunbook
   .split(/\r?\n/)
   .filter((line) => line.startsWith("npx.cmd") && line.includes(" db push "));
-assert(dbPushCommands.length === 2, `activation runbook contains ${dbPushCommands.length} db push commands instead of 2`);
+assert(dbPushCommands.length === 1, `activation runbook contains ${dbPushCommands.length} db push commands instead of one read-only dry run`);
 assert(
-  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --include-all --dry-run$/m.test(activationRunbook),
-  "activation runbook dry run does not include the reviewed older pending migration",
-);
-assert(
-  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --include-all$/m.test(activationRunbook),
-  "activation runbook production command does not include the reviewed older pending migration",
+  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --dry-run$/m.test(activationRunbook),
+  "activation runbook does not retain the read-only migration dry run",
 );
 assert(
   dbPushCommands.every((line) => !line.includes("--include-seed") && !line.includes("--include-roles")),
   "activation runbook db push commands must not include seed data or custom roles",
+);
+assert(
+  activationRunbook.includes("exactly one reviewed newer local migration"),
+  "activation runbook does not state the one-candidate alignment contract",
+);
+assert(
+  activationRunbook.includes("20260820164604_atomic_planning_workspace_import.sql"),
+  "activation runbook does not name the sole pending atomic migration",
+);
+assert(
+  !activationRunbook.includes("zero pending migrations"),
+  "activation runbook still claims that no local migration is pending",
 );
 
 const legacyCopies = [
@@ -90,4 +84,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, ${actualPending.length} reviewed local migrations remain pending, and the runbook safely includes all ${backfilledPending.length} older pending migrations.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, one reviewed newer local migration remains pending, and the runbook contains no production migration command.`);

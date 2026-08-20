@@ -37,6 +37,9 @@ const CLOUD_DISABLED_MESSAGE =
   "Connected planning is still in private testing. Your current plan remains saved on this device.";
 const AUTH_REQUIRED_MESSAGE = "Sign in to use your connected wedding plan.";
 const SAVE_FAILED_MESSAGE = "That change could not be saved. Please try again.";
+const atomicPlanningWorkspaceImportSchema = importPlanningWorkspaceSchema.extend({
+  budgetPlan: budgetPlanSchema,
+});
 
 type ActionFailure = { ok: false; message: string };
 export type PlanningInviteAcceptanceState = {
@@ -213,7 +216,7 @@ export async function saveConnectedBudgetPlanAction(workspaceId: unknown, input:
 }
 
 export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
-  const parsed = importPlanningWorkspaceSchema.safeParse(input);
+  const parsed = atomicPlanningWorkspaceImportSchema.safeParse(input);
   if (!parsed.success) {
     return {
       ok: false,
@@ -221,7 +224,10 @@ export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
     } satisfies ActionFailure;
   }
 
-  if (JSON.stringify(parsed.data.snapshot).length > 1_000_000) {
+  if (
+    JSON.stringify(parsed.data.snapshot).length > 1_000_000
+    || JSON.stringify(parsed.data.budgetPlan).length > 1_000_000
+  ) {
     return {
       ok: false,
       message: "This device plan is too large to import safely in one request."
@@ -231,10 +237,17 @@ export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
   const context = await getPlanningContext();
   if (!context.ok) return context;
 
+  const budgetPlan = {
+    ...parsed.data.budgetPlan,
+    userId: context.user.id,
+    updatedAt: new Date().toISOString(),
+  };
+
   const { data, error } = await context.supabase.rpc(
-    "import_planning_workspace_snapshot_v2",
+    "import_planning_workspace_with_budget",
     {
       workspace_snapshot: parsed.data.snapshot as unknown as Json,
+      budget_plan: budgetPlan as unknown as Json,
       target_workspace_id: parsed.data.targetWorkspaceId,
       expected_updated_at: parsed.data.expectedUpdatedAt
     }

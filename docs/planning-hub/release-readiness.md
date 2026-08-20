@@ -208,7 +208,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 36 timestamped migrations apply in
+   - confirm that the baseline plus all 37 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -217,7 +217,8 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 26 matching and ten pending identities;
+   - require the exact 36 matching historical identities and only the atomic
+     import migration as a newer local candidate;
    - confirm all four feature flags remain off.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
@@ -260,7 +261,9 @@ Use the least destructive rollback that restores safety:
   generator are ready. The harness now sends real owner, partner, outsider and
   rejected-bearer HTTP requests through the loopback Next.js routes and checks
   every successful body against the committed JSON Schema. The generated
-  37-file stack still needs its first container-runtime execution.
+  generated stack still needs its first container-runtime execution. The live
+  database now contains all 36 historical migrations; the atomic import is a
+  separate newer candidate.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Before a production code-only beta deployment, verify in Vercel that
@@ -476,7 +479,7 @@ database, catalogue or outreach behavior.
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 36 timestamped
+- The local API generator reproduces one baseline plus all 37 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.

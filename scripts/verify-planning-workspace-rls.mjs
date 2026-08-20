@@ -11,6 +11,7 @@ const migrationPaths = [
   "supabase/migrations/20260726164304_planning_workspace_profiles.sql",
   "supabase/migrations/20260726185032_planning_workspace_partner_budgets.sql",
   "supabase/migrations/20260726191406_planning_table_plan_sync.sql",
+  "supabase/migrations/20260820164604_atomic_planning_workspace_import.sql",
 ];
 
 const planningTables = [
@@ -181,6 +182,7 @@ async function assertSchemaContract(db) {
       ('public', 'accept_planning_workspace_invite'),
       ('public', 'import_planning_workspace_snapshot'),
       ('public', 'import_planning_workspace_snapshot_v2'),
+      ('public', 'import_planning_workspace_with_budget'),
       ('public', 'sync_planning_table_plan'),
       ('private', 'can_access_planning_workspace'),
       ('private', 'owns_planning_workspace'),
@@ -190,7 +192,7 @@ async function assertSchemaContract(db) {
     )
   `);
 
-  assert(functionResult.rows.length === 9, "expected nine security-sensitive functions");
+  assert(functionResult.rows.length === 10, "expected ten security-sensitive functions");
   for (const row of functionResult.rows) {
     assert(row.empty_search_path, `${row.schema_name}.${row.function_name} has a mutable search_path`);
     assert(!row.anon_execute, `anon can execute ${row.schema_name}.${row.function_name}`);
@@ -211,6 +213,7 @@ async function assertSchemaContract(db) {
     ["accept_planning_workspace_invite", true],
     ["import_planning_workspace_snapshot", false],
     ["import_planning_workspace_snapshot_v2", false],
+    ["import_planning_workspace_with_budget", false],
     ["sync_planning_table_plan", true],
   ]);
   for (const row of functionResult.rows.filter((entry) => entry.schema_name === "public")) {
