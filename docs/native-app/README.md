@@ -38,6 +38,9 @@ The native product promise is the same as the web product:
 8. [Backend change plan](backend-change-plan.md) — live schema baseline,
    code-only/API work, isolated migrations, application order, verification and
    forward-recovery boundaries.
+9. [N1 performance baseline](n1-performance-baseline.md) — reproducible local
+   before/after mobile Lighthouse, accessibility, rendering and interaction
+   evidence for the shared-package extraction.
 
 ## Evidence baseline
 
@@ -46,9 +49,10 @@ reviewed draft supplier-claim replacement in PR #69.
 
 - The public Planning Hub is a device-storage beta; cloud sync and partner
   sharing remain disabled.
-- Twenty-six declared planning-domain modules pass a source-level portability
-  boundary that rejects React, Next.js, browser globals, storage adapters,
-  Node runtime access and Supabase clients.
+- The original twenty-six declared planning-domain modules established the N0
+  boundary. The local N1 extraction now checks twenty-nine runtime modules in
+  `planning-domain` and `planning-contracts`, while web compatibility exports
+  preserve existing import paths.
 - Fifteen Draft 2020-12 JSON Schemas are current for workspace discovery,
   dashboard, budget, profile, tasks and table planning.
 - Dormant authenticated API routes already cover workspace discovery,

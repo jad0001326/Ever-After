@@ -1,0 +1,42 @@
+{
+  "name": "@everaft/planning-domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ids": "./src/ids.ts",
+    "./budget/calculations": "./src/budget/calculations.ts",
+    "./budget/categories": "./src/budget/categories.ts",
+    "./budget/factory": "./src/budget/factory.ts",
+    "./budget/listing-pricing": "./src/budget/listing-pricing.ts",
+    "./budget/pricing-validity": "./src/budget/pricing-validity.ts",
+    "./budget/starters": "./src/budget/starters.ts",
+    "./budget/types": "./src/budget/types.ts",
+    "./budget/validation": "./src/budget/validation.ts",
+    "./planning-hub/date": "./src/planning-hub/date.ts",
+    "./planning-hub/plan": "./src/planning-hub/plan.ts",
+    "./planning-hub/supplier-categories": "./src/planning-hub/supplier-categories.ts",
+    "./planning-hub/supplier-search": "./src/planning-hub/supplier-search.ts",
+    "./planning-hub/types": "./src/planning-hub/types.ts",
+    "./planning-workspace/profile": "./src/planning-workspace/profile.ts",
+    "./planning-workspace/recommendations": "./src/planning-workspace/recommendations.ts",
+    "./planning-workspace/snapshot": "./src/planning-workspace/snapshot.ts",
+    "./planning-workspace/tasks": "./src/planning-workspace/tasks.ts",
+    "./planning-workspace/types": "./src/planning-workspace/types.ts",
+    "./planning-workspace/validation": "./src/planning-workspace/validation.ts",
+    "./table-plan/guests": "./src/table-plan/guests.ts",
+    "./table-plan/planner": "./src/table-plan/planner.ts",
+    "./table-plan/types": "./src/table-plan/types.ts"
+  },
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}

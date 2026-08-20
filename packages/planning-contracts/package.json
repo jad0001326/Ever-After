@@ -1,0 +1,26 @@
+{
+  "name": "@everaft/planning-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./planning-workspace/budget-api-schema": "./src/planning-workspace/budget-api-schema.ts",
+    "./planning-workspace/profile-api-schema": "./src/planning-workspace/profile-api-schema.ts",
+    "./planning-workspace/snapshot-schema": "./src/planning-workspace/snapshot-schema.ts",
+    "./planning-workspace/table-plan-api-schema": "./src/planning-workspace/table-plan-api-schema.ts",
+    "./planning-workspace/task-api-schema": "./src/planning-workspace/task-api-schema.ts",
+    "./planning-workspace/workspace-api-schema": "./src/planning-workspace/workspace-api-schema.ts"
+  },
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@everaft/planning-domain": "0.1.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}

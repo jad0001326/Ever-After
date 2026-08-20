@@ -1,20 +1,11 @@
-export type SupplierCategorySlug =
-  | "photographer"
-  | "videographer"
-  | "celebrant"
-  | "florist"
-  | "wedding-planner"
-  | "band-musician"
-  | "dj"
-  | "caterer"
-  | "cake-maker"
-  | "styling-decor"
-  | "transport"
-  | "bridal-boutique"
-  | "hair-makeup"
-  | "stationery"
-  | "entertainment"
-  | "jeweller";
+import type {
+  PhotographerSearchParams,
+} from "@everaft/planning-domain/planning-hub/types";
+import type {
+  SupplierCategorySlug,
+} from "@everaft/planning-domain/planning-hub/supplier-categories";
+
+export type { PhotographerSearchParams, SupplierCategorySlug };
 
 export type PhotographerProfile = {
   styles: string[];
@@ -76,15 +67,6 @@ export type SupplierListing = {
   images: SupplierImage[];
   venues: SupplierVenueConnection[];
   updatedAt: string;
-};
-
-export type PhotographerSearchParams = {
-  venue?: string;
-  location?: string;
-  style?: string;
-  budget?: string;
-  sort?: "price-asc" | "price-desc" | "name" | "newest";
-  page?: string;
 };
 
 export type PhotographerVenueOption = {

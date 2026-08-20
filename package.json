@@ -2,13 +2,19 @@
   "name": "ever-after",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run && npm run test:planning-rls && npm run test:supplier-owner-rls && npm run test:data-api-grants && npm run test:supplier-outreach-migration && npm run test:production-migration-alignment",
+    "typecheck": "tsc --noEmit && npm run typecheck:packages",
+    "typecheck:packages": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run && npm run test:packages && npm run test:planning-rls && npm run test:supplier-owner-rls && npm run test:data-api-grants && npm run test:supplier-outreach-migration && npm run test:production-migration-alignment",
+    "test:packages": "npm run test --workspaces --if-present",
     "test:planning-browser": "node scripts/verify-planning-hub-browser.mjs",
     "test:planning-api": "node scripts/verify-planning-workspace-api.mjs",
     "test:planning-rls": "node scripts/verify-planning-workspace-rls.mjs",
@@ -28,6 +34,8 @@
     "pricing:stage": "node scripts/stage-pricing-options.mts"
   },
   "dependencies": {
+    "@everaft/planning-contracts": "0.1.0",
+    "@everaft/planning-domain": "0.1.0",
     "@modelcontextprotocol/sdk": "1.30.0",
     "@next/third-parties": "16.2.12",
     "@supabase/ssr": "latest",

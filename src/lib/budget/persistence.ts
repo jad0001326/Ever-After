@@ -1,5 +1,8 @@
 import { createDefaultCategories } from "./categories";
+import { createEmptyBudgetPlan } from "@everaft/planning-domain/budget/factory";
 import type { BudgetPlan } from "./types";
+
+export { createEmptyBudgetPlan } from "@everaft/planning-domain/budget/factory";
 
 export const BUDGET_STORAGE_KEY = "everaft:wedding-budget:v1";
 export function planningHubBudgetStorageKey(workspaceId?: string | null) {
@@ -7,13 +10,6 @@ export function planningHubBudgetStorageKey(workspaceId?: string | null) {
     ? `${BUDGET_STORAGE_KEY}:workspace:${workspaceId}`
     : BUDGET_STORAGE_KEY;
 }
-function randomId() { return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
-
-export function createEmptyBudgetPlan(userId: string | null = null): BudgetPlan {
-  const now = new Date().toISOString();
-  return { schemaVersion: 1, id: randomId(), userId, name: "Our wedding budget", totalBudgetPence: 0, currency: "GBP", weddingDate: null, guestCount: null, location: null, contingencyType: "none", contingencyValue: 5, createdAt: now, updatedAt: now, selectedVenueId: null, scenarioName: "Current plan", categories: createDefaultCategories(), items: [] };
-}
-
 export function restoreBudgetPlan(raw: string | null): BudgetPlan | null {
   if (!raw) return null;
   try {
