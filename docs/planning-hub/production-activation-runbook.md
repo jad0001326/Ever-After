@@ -11,7 +11,8 @@ approval to push, merge, deploy, create test users or enable a feature flag.
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
-- Production migration history must match the checked 36-entry manifest in
+- Production migration history and local source hashes must match the checked
+  36-entry manifest in
   `production-migration-history-2026-08-20.json`.
 - The dry run must report exactly
   `20260820164604_atomic_planning_workspace_import.sql` as pending. Any other

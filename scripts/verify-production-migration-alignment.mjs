@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 
 const migrationDirectory = new URL("../supabase/migrations/", import.meta.url);
@@ -16,6 +17,10 @@ function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
 }
 
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
 const localFiles = (await readdir(migrationDirectory))
   .filter((file) => /^\d{14}_.+\.sql$/.test(file))
   .sort();
@@ -27,6 +32,13 @@ assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexp
 assert(remoteFiles.length === 36, `snapshot contains ${remoteFiles.length} remote migrations instead of 36`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
+for (const [index, file] of remoteFiles.entries()) {
+  const expectedHash = snapshot.migrations[index]?.sha256;
+  assert(/^[a-f0-9]{64}$/.test(expectedHash ?? ""), `${file} has no valid recorded SHA-256`);
+  const actualHash = sha256(await readFile(new URL(file, migrationDirectory)));
+  assert(actualHash === expectedHash, `${file} differs from its recorded production source hash`);
+}
+
 const missingRemoteHistory = remoteFiles.filter((file) => !localSet.has(file));
 assert(missingRemoteHistory.length === 0, `repository is missing recorded production migrations: ${missingRemoteHistory.join(", ")}`);
 
@@ -35,6 +47,16 @@ const actualPending = localFiles.filter((file) => !remoteSet.has(file));
 assert(
   JSON.stringify(actualPending) === JSON.stringify(expectedPending),
   `pending set changed; expected ${expectedPending.join(", ")}, found ${actualPending.join(", ")}`,
+);
+const candidateFile = `${snapshot.candidate?.version}_${snapshot.candidate?.name}.sql`;
+assert(candidateFile === expectedPending[0], `release manifest names unexpected candidate ${candidateFile}`);
+assert(
+  /^[a-f0-9]{64}$/.test(snapshot.candidate?.sha256 ?? ""),
+  "release manifest candidate has no valid SHA-256",
+);
+assert(
+  sha256(await readFile(new URL(candidateFile, migrationDirectory))) === snapshot.candidate.sha256,
+  `${candidateFile} differs from its reviewed candidate hash`,
 );
 
 const latestRemoteVersion = snapshot.migrations
@@ -84,4 +106,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, one reviewed newer local migration remains pending, and the runbook contains no production migration command.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, one hash-pinned newer local migration remains pending, and the runbook contains no production migration command.`);
