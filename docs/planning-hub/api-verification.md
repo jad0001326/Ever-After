@@ -142,7 +142,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 36 timestamped migrations byte-for-byte in filename order;
+3. copies all 37 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 

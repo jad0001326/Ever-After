@@ -13,10 +13,10 @@ read-only production database preflight is recorded in
 `docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
 timestamp drift and legacy Data API grants. The repository now mirrors all 26
 recorded production migration identities locally, so no production history
-rewrite is expected; ten reviewed migrations remain pending activation.
+rewrite is expected; eleven reviewed migrations remain pending activation.
 The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
 recorded in `docs/planning-hub/production-activation-runbook.md`.
-The ten-file lock, data-rewrite and existing-row surface is separately
+The eleven-file lock, data-rewrite and existing-row surface is separately
 recorded in `docs/planning-hub/pending-migration-risk-review-2026-08-03.md`.
 
 The competitive priority adjustment in
@@ -174,6 +174,7 @@ Supabase applies unapplied files in timestamp order:
 8. `20260803143000_tighten_data_api_table_grants.sql`
 9. `20260803150000_generalize_supplier_outreach.sql`
 10. `20260803165651_supplier_image_submissions.sql`
+11. `20260820125218_atomic_supplier_claim_review.sql`
 
 The other 26 timestamped files now match production's recorded versions
 exactly. Do not replay them or repair production history. The five workspace
@@ -181,10 +182,12 @@ migrations are additive and remain dormant while
 `PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
 sending retain their separate disabled flags.
 
-The first pending migration predates production's latest recorded version, so
-the reviewed CLI dry run and approved migration command require `--include-all`.
-The alignment verifier and exact dry-run list constrain it to the ten named
-files; seed data and custom roles remain excluded.
+The first ten pending migrations predate production's latest recorded version
+and remain a dormant tranche. The claim migration is timestamped after the
+latest production version, so the reviewed claim-only dry run and approved
+command use a normal `db push` without `--include-all`. The alignment verifier
+requires exactly that one independently deployable migration; seed data and
+custom roles remain excluded.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -198,7 +201,8 @@ public tables to
    - verify the production dependency audit remains clear;
    - keep the cloud flag absent.
 2. **Code review**
-   - review draft pull request #55 and each boundary above in order;
+   - review the supplier-claim draft pull request and each boundary above in
+     order;
    - keep the pull request in draft until the intended production scope is
      agreed;
    - merge no migration automatically.
@@ -208,7 +212,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 36 timestamped migrations apply in
+   - confirm that the baseline plus all 37 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -217,16 +221,23 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 26 matching and ten pending identities;
-   - confirm all four feature flags remain off.
+   - require the exact 26 matching identities, ten older dormant migrations
+     and one independently deployable claim migration;
+   - confirm the cloud, supplier-category outreach and supplier-admin schema
+     flags remain off;
+   - preserve the separately approved Production-only public-entry and
+     outreach-sending values.
 5. **Application beta**
    - deploy the reviewed application with cloud sharing disabled;
    - smoke-test the existing public planners and beta local-device journey;
    - complete physical iPhone/Safari and Android checks.
-6. **Schema activation, separately approved**
-   - apply only the migration files proven pending by migration history;
-   - repeat owner/partner/outsider Data API checks;
-   - leave cloud sharing disabled if any assertion or advisor fails.
+6. **Claim schema activation, separately approved**
+   - apply only `20260820125218_atomic_supplier_claim_review.sql` with the
+     runbook's normal `db push` command;
+   - keep the ten older Planning Workspace and supplier-admin migrations
+     dormant until a separate broader review and approval;
+   - repeat claimant/non-admin/admin privilege and concurrency checks;
+   - leave claim-review deployment deferred if any assertion or advisor fails.
 7. **Cloud sharing activation, separately approved**
    - enable the server-only flag;
    - test one controlled owner/partner workspace;
@@ -260,7 +271,7 @@ Use the least destructive rollback that restores safety:
   generator are ready. The harness now sends real owner, partner, outsider and
   rejected-bearer HTTP requests through the loopback Next.js routes and checks
   every successful body against the committed JSON Schema. The generated
-  37-file stack still needs its first container-runtime execution.
+  38-file stack still needs its first container-runtime execution.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
 - Before a production code-only beta deployment, verify in Vercel that
@@ -287,9 +298,22 @@ account sync and partner sharing remain explicitly unavailable. This is
 server-rendered release messaging only; it adds no client bundle, persistence,
 database, catalogue or outreach behavior.
 
+## Supplier-claim release-order gate - 13 August 2026
+
+The atomic supplier-claim application and its migration are one deployable
+unit, but their production order is migration first. The application replaces
+the legacy service-role review sequence with `review_supplier_claim` and relies
+on the new insert triggers to synchronise `supplier_listings.claim_status`.
+Production does not have those database objects yet. Therefore the security
+pull request may be reviewed independently, but it must remain draft and must
+not be deployed until the eleven migrations receive explicit approval, pass
+the exact dry run and checkpoint, are applied, and pass the immediate privilege
+and native-concurrency verification. Public-beta entry messaging remains a
+separate code-only release and does not depend on this schema activation.
+
 ## Final local release-candidate evidence
 
-- 108 Vitest files and 509 tests pass.
+- 113 Vitest files and 521 tests pass.
 - Venue Passport contrast is now enforced across all six generated palettes:
   the quietest visible label clears WCAG AA at a minimum calculated ratio of
   4.93:1. Optimized headless axe reports no contrast violations; it still
@@ -476,7 +500,7 @@ database, catalogue or outreach behavior.
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 36 timestamped
+- The local API generator reproduces one baseline plus all 37 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.

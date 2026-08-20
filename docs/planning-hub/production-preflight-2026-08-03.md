@@ -28,7 +28,9 @@ migration files without changing their SQL. The captured manifest is
 `production-migration-history-2026-08-03.json`; the alignment verifier fails if
 an existing production identity is absent or the reviewed pending set changes.
 
-Ten timestamped repository migrations are genuinely pending:
+Eleven timestamped repository migrations are genuinely pending. The first ten
+are older dormant migrations; the final claim migration is timestamped after
+production's latest recorded version so it can be deployed independently:
 
 1. `20260726140200_planning_workspace_foundation.sql`
 2. `20260726162254_planning_workspace_snapshot_import.sql`
@@ -40,11 +42,12 @@ Ten timestamped repository migrations are genuinely pending:
 8. `20260803143000_tighten_data_api_table_grants.sql`
 9. `20260803150000_generalize_supplier_outreach.sql`
 10. `20260803165651_supplier_image_submissions.sql`
+11. `20260820125218_atomic_supplier_claim_review.sql`
 
 Do not run an unreviewed bulk migration command against production. First
 refresh the remote list and compare it with the captured manifest. If it is
 unchanged, a normal reviewed migration push no longer needs `migration repair`:
-the first 26 local identities match production exactly and only the ten files
+the first 26 local identities match production exactly and only the eleven files
 above should be pending. If it differs, stop; do not repair history or push.
 
 The migration-time lock, rewrite and existing-row surface is reviewed in
@@ -105,13 +108,11 @@ dropped merely because a low-traffic database currently labels them unused.
 3. Re-read remote migration history and stop if it differs from the captured
    26-entry manifest.
 4. Run `npm run test:production-migration-alignment`; require exactly 26
-   matching and ten pending migrations.
-5. Use the runbook's reviewed `--include-all` command because
-   all ten reviewed migrations now predate production's latest recorded
-   migration. Review the proposed list; it must contain only the ten files
-   recorded above, in order.
-6. Apply those ten migrations under one explicit production approval. Do not
-   include seed data.
+   matching and eleven pending migrations.
+5. Use the runbook's normal claim-only dry run without `--include-all`. It must
+   contain only `20260820125218_atomic_supplier_claim_review.sql`.
+6. Apply only that claim migration under one explicit production approval. The
+   ten older dormant migrations, seed data and custom roles remain excluded.
 7. Re-run database security and performance advisors.
 8. Exercise owner, partner, outsider and anonymous Data API tests. Stop on any
    unexpected read, write, function execution or table privilege.

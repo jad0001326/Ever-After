@@ -268,8 +268,7 @@ export async function rejectVenueClaim(formData: FormData) {
 
 export async function submitSupplierClaim(_: ClaimState, formData: FormData): Promise<ClaimState> {
   const supabase = await createClient();
-  const admin = createAdminClient();
-  if (!supabase || !admin) return { ok: false, message: "Supabase is not configured, so claims cannot be stored yet." };
+  if (!supabase) return { ok: false, message: "Supabase is not configured, so claims cannot be stored yet." };
   const { data: { user } } = await supabase.auth.getUser();
   const slug = requiredText(formData, "slug");
   const categorySlug = requiredText(formData, "categorySlug");
@@ -292,7 +291,7 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
   if (!/^\S+@\S+\.\S+$/.test(businessEmail)) return { ok: false, message: "Please use a valid business email." };
   if (!authorised || !permissionConfirmed || !termsAccepted) return { ok: false, message: "Please confirm the authorisations and display permissions before submitting." };
 
-  const { data: supplier } = await admin.from("supplier_listings").select("id, slug, is_claimed").eq("id", supplierId).eq("slug", slug).eq("category_slug", category.slug).eq("listing_status", "published").maybeSingle();
+  const { data: supplier } = await supabase.from("supplier_listings").select("id, slug, is_claimed").eq("id", supplierId).eq("slug", slug).eq("category_slug", category.slug).eq("listing_status", "published").maybeSingle();
   if (!supplier || supplier.is_claimed) return { ok: false, message: `This ${category.label.toLowerCase()} profile is unavailable or has already been claimed.` };
   const { data: existing } = await supabase.from("supplier_claims").select("id, status").eq("supplier_id", supplierId).eq("claimant_user_id", user.id).in("status", ["pending", "approved"]).maybeSingle();
   if (existing) return { ok: false, message: existing.status === "approved" ? "This claim has already been approved." : "You already have a claim under review for this profile." };
@@ -312,59 +311,43 @@ export async function submitSupplierClaim(_: ClaimState, formData: FormData): Pr
     terms_accepted: termsAccepted
   });
   if (error) return { ok: false, message: error.message };
-  await admin.from("supplier_listings").update({ claim_status: "pending" }).eq("id", supplierId).eq("claim_status", "unclaimed");
   revalidatePath(claimPath);
   revalidatePath("/admin/supplier-claims");
   return { ok: true, message: "Your claim has been submitted for review." };
 }
 
-export async function approveSupplierClaim(formData: FormData) {
-  const { user } = await requireAdmin();
-  const supabase = createAdminClient();
+async function reviewSupplierClaim(formData: FormData, decision: "approved" | "rejected") {
+  await requireAdmin();
   const claimId = requiredText(formData, "claimId");
-  if (!supabase) redirect(`/admin/supplier-claims/${claimId}?message=Configure+the+Supabase+service+role+key+first`);
+  const supabase = await createClient();
+  if (!supabase) redirect(`/admin/supplier-claims/${claimId}?message=Configure+Supabase+environment+variables+first`);
   const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase.from("supplier_claims").select("*").eq("id", claimId).single();
-  if (error || !claim) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
-  const { data: supplier } = await supabase.from("supplier_listings").select("id, name, slug, category_slug, vendor_id").eq("id", claim.supplier_id).single();
-  if (!supplier) redirect(`/admin/supplier-claims/${claimId}?message=Supplier+not+found`);
-  const { data: existingVendor } = await supabase.from("vendors").select("id").eq("contact_email", claim.business_email).maybeSingle();
-  const vendorId = existingVendor?.id ?? (await supabase.from("vendors").insert({ name: supplier.name, contact_email: claim.business_email, contact_phone: claim.business_phone }).select("id").single()).data?.id;
-  if (!vendorId) redirect(`/admin/supplier-claims/${claimId}?message=Could+not+create+vendor+access`);
-  const { error: membershipError } = await supabase.from("vendor_users").upsert({ vendor_id: vendorId, user_id: claim.claimant_user_id, role: claim.claimant_role || "owner", status: "active" });
-  if (membershipError) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(membershipError.message)}`);
-  const reviewedAt = new Date().toISOString();
-  const [{ error: supplierError }, { error: claimError }] = await Promise.all([
-    supabase.from("supplier_listings").update({ vendor_id: vendorId, is_claimed: true, claim_status: "approved", reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.supplier_id),
-    supabase.from("supplier_claims").update({ status: "approved", admin_notes: adminNotes, reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.id)
-  ]);
-  if (supplierError || claimError) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(supplierError?.message ?? claimError?.message ?? "Claim could not be approved")}`);
-  await Promise.all([
-    supabase.from("supplier_claim_audit_log").insert({ claim_id: claim.id, supplier_id: claim.supplier_id, admin_user_id: user.id, action: "approved", notes: adminNotes }),
-    supabase.from("supplier_outreach_contacts").update({ invite_status: "claimed" }).eq("supplier_id", claim.supplier_id)
-  ]);
+  if (decision === "rejected" && !adminNotes) {
+    redirect(`/admin/supplier-claims/${claimId}?message=Add+a+short+reason+before+rejecting+this+claim`);
+  }
+
+  const { data, error } = await supabase.rpc("review_supplier_claim", {
+    p_claim_id: claimId,
+    p_decision: decision,
+    p_admin_notes: adminNotes,
+  });
+  const reviewed = data?.[0];
+  if (error || !reviewed) {
+    redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "This claim could not be reviewed")}`);
+  }
+
   revalidatePath("/admin/supplier-claims");
-  revalidatePath(`/admin/supplier-claims/${claim.id}`);
-  const category = getPublicSupplierCategory(supplier.category_slug);
-  if (category) revalidatePath(publicSupplierProfilePath(category.slug, supplier.slug));
-  redirect(`/admin/supplier-claims/${claim.id}?message=Claim+approved`);
+  revalidatePath(`/admin/supplier-claims/${reviewed.reviewed_claim_id}`);
+  revalidatePath("/vendor");
+  const category = getPublicSupplierCategory(reviewed.category_slug);
+  if (category) revalidatePath(publicSupplierProfilePath(category.slug, reviewed.supplier_slug));
+  redirect(`/admin/supplier-claims/${reviewed.reviewed_claim_id}?message=Claim+${decision}`);
+}
+
+export async function approveSupplierClaim(formData: FormData) {
+  return reviewSupplierClaim(formData, "approved");
 }
 
 export async function rejectSupplierClaim(formData: FormData) {
-  const { user } = await requireAdmin();
-  const supabase = createAdminClient();
-  const claimId = requiredText(formData, "claimId");
-  if (!supabase) redirect(`/admin/supplier-claims/${claimId}?message=Configure+the+Supabase+service+role+key+first`);
-  const adminNotes = requiredText(formData, "adminNotes") || null;
-  const { data: claim, error } = await supabase.from("supplier_claims").select("*").eq("id", claimId).single();
-  if (error || !claim) redirect(`/admin/supplier-claims/${claimId}?message=${encodeURIComponent(error?.message ?? "Claim not found")}`);
-  const reviewedAt = new Date().toISOString();
-  await Promise.all([
-    supabase.from("supplier_claims").update({ status: "rejected", admin_notes: adminNotes, reviewed_at: reviewedAt, reviewed_by: user.id }).eq("id", claim.id),
-    supabase.from("supplier_listings").update({ is_claimed: false, claim_status: "rejected", vendor_id: null }).eq("id", claim.supplier_id).neq("claim_status", "approved"),
-    supabase.from("supplier_claim_audit_log").insert({ claim_id: claim.id, supplier_id: claim.supplier_id, admin_user_id: user.id, action: "rejected", notes: adminNotes })
-  ]);
-  revalidatePath("/admin/supplier-claims");
-  revalidatePath(`/admin/supplier-claims/${claim.id}`);
-  redirect(`/admin/supplier-claims/${claim.id}?message=Claim+rejected`);
+  return reviewSupplierClaim(formData, "rejected");
 }
