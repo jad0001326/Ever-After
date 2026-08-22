@@ -52,7 +52,7 @@ export function createNativeAuthRuntime(
   let startPromise: Promise<AuthSessionSnapshot> | null = null;
   let refreshBound = false;
 
-  function start() {
+  function bindRefreshAfterRestore() {
     if (!refreshBound) {
       bindAuthRefreshToAppState(client.auth, {
         get currentState() { return normalizeAppState(AppState.currentState); },
@@ -65,7 +65,17 @@ export function createNativeAuthRuntime(
       });
       refreshBound = true;
     }
-    startPromise ??= controller.start().catch(() => controller.getSnapshot());
+  }
+
+  function start() {
+    startPromise ??= controller.start()
+      .then((snapshot) => {
+        // Starting auto-refresh before Supabase has restored its persisted
+        // session makes the first timer contend with the restoration lock.
+        bindRefreshAfterRestore();
+        return snapshot;
+      })
+      .catch(() => controller.getSnapshot());
     return startPromise;
   }
 

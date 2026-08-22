@@ -54,6 +54,46 @@ describe("native auth runtime", () => {
     expect(runtime.getSnapshot().status).toBe("signed_out");
   });
 
+  it("waits for session restoration before starting foreground refresh", async () => {
+    let completeRestore: (() => void) | undefined;
+    const getSession = jest.fn(() => new Promise<{
+      data: { session: null };
+      error: null;
+    }>((resolve) => {
+      completeRestore = () => resolve({ data: { session: null }, error: null });
+    }));
+    jest.mocked(createEverAftSupabaseClient).mockReturnValue({
+      auth: {
+        getSession,
+        exchangeCodeForSession: jest.fn(),
+        signInWithPassword: jest.fn(),
+        signOut: jest.fn(),
+        onAuthStateChange: jest.fn(() => ({
+          data: { subscription: { unsubscribe: jest.fn() } },
+        })),
+        startAutoRefresh: jest.fn(),
+        stopAutoRefresh: jest.fn(),
+      },
+    } as never);
+
+    const runtime = createNativeAuthRuntime({
+      status: "configured",
+      config: {
+        url: "https://fixture-project.supabase.co",
+        publishableKey: "sb_publishable_fixture",
+      },
+    });
+    const restoring = runtime.start();
+
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(bindAuthRefreshToAppState).not.toHaveBeenCalled();
+
+    completeRestore?.();
+    await restoring;
+
+    expect(bindAuthRefreshToAppState).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps an unconfigured build offline and fails closed", async () => {
     const runtime = createNativeAuthRuntime({ status: "not_configured", config: null });
 

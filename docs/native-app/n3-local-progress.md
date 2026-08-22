@@ -59,11 +59,11 @@ callback-link declarations described below.
   `https://www.everaft.co.uk/auth/callback`, while retaining the controlled
   `myeveraft` development scheme.
 
-No Supabase credentials or environment values are present. Tests use fixtures
-only and make no hosted request. An Android emulator smoke test verified that
-the no-environment build reaches Today, reports device-only storage on You,
-shows no credential fields on the unavailable sign-in route and returns safely
-to Today.
+No Supabase credentials or environment values are committed. Automated tests
+use fixtures only and make no hosted request. An Android emulator smoke test
+verified that the no-environment build reaches Today, reports device-only
+storage on You, shows no credential fields on the unavailable sign-in route
+and returns safely to Today.
 
 ## Local Android encryption evidence — 22 August 2026
 
@@ -78,10 +78,41 @@ before `AESSealedData.fromCombined`; the adapter covers that boundary with a
 strict decoder and test vectors. This is emulator evidence only and does not
 replace the physical-device release gate.
 
+## Connected local Android auth evidence — 22 August 2026
+
+A second Android 16 emulator run used a disposable, unlinked local Supabase
+stack only. The local stack ran Auth v2.188.1 behind the local gateway and a
+fresh database created from the repository schema plus all 39 timestamped
+migrations. The disposable baseline needed the existing Phase 10 enrichment
+block moved before the manual-contact block to satisfy their dependency order;
+that mechanical repair exists only in the temporary local stack and did not
+change the repository or any hosted database.
+
+The connected run verified that:
+
+- a local-only password account can sign in through the real Supabase client
+  from Expo Go on Android;
+- the authenticated account state reaches Today while the account screen still
+  truthfully reports `On this device` until a cloud workspace is loaded;
+- the persisted AsyncStorage record contains the versioned AES-256-GCM
+  envelope markers and contains neither the account email nor a plaintext
+  `access_token` session shape;
+- force-stopping Expo Go and reopening the app restores the authenticated
+  session without re-entering credentials; and
+- delaying foreground auto-refresh binding until initial session restoration
+  completes removes the first-start Supabase process-lock contention warning.
+
+The local URL and publishable key live only in ignored
+`apps/mobile/.env.local`. No password, token, secret key or environment value
+is committed. The temporary project is not linked to production and the run
+made no hosted, production, deployment, flag, supplier-data or outreach
+change.
+
 ## Deliberately not claimed complete
 
-- No real environment values or test credentials have been supplied, so the
-  connected sign-in and hosted API journey has deliberately not run.
+- Real Android password sign-in and encrypted cold restoration are verified
+  against the disposable local stack. A separately controlled hosted test
+  environment and connected Planning API journey have not run.
 - Physical iOS and Android storage, reinstall, backup/restore and callback
   journeys remain mandatory before connected beta.
 - Universal/App Link association is only declared in the native app locally.
