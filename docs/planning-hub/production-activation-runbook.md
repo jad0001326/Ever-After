@@ -3,20 +3,21 @@
 Date: 3 August 2026; updated 20 August 2026
 
 Status: the ten reviewed migrations and the separately approved atomic-import
-migration were applied and verified on 20 August 2026. Production contains
-all 37 applied migrations; one narrow owner-bootstrap correction is pending
-after the real Auth/Data API test exposed PostgreSQL's `INSERT ... RETURNING`
-policy timing. Connected workspace persistence remains off. This document is not
+migration and owner-bootstrap correction were applied and verified on 20
+August 2026. Production contains all 38 applied migrations; one narrow
+conflict-normalization migration is pending after the real Auth/Data API test
+exposed hosted retries of the intentionally transient `40001` SQLSTATE.
+Connected workspace persistence remains off. This document is not
 approval to push, merge, deploy, create test users or enable a feature flag.
 
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
 - Production migration history and local source hashes must match the checked
-  37-entry manifest in
+  38-entry manifest in
   `production-migration-history-2026-08-20.json`.
 - The dry run must report exactly
-  `20260820184000_allow_planning_owner_bootstrap_read.sql` as pending. Any
+  `20260820184100_normalize_planning_version_conflicts.sql` as pending. Any
   other local-only or remote-only migration is a stop condition.
 - This runbook contains no production migration command. Never use
   `--include-seed`, `--include-roles`, history repair or an unreviewed push.
@@ -46,7 +47,7 @@ npm.cmd run test:production-migration-alignment
 ```
 
 The only permitted local changes during preparation must be explicitly
-reviewed. The alignment verifier must report all 37 applied migrations with
+reviewed. The alignment verifier must report all 38 applied migrations with
 matching source hashes, exactly one hash-pinned correction and no production
 migration command in this runbook.
 
@@ -67,8 +68,8 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-37-entry manifest or the dry run proposes anything other than the named
-owner-bootstrap correction. A dry run is inspection only; it is not migration
+38-entry manifest or the dry run proposes anything other than the named
+conflict-normalization migration. A dry run is inspection only; it is not migration
 approval.
 
 ## 3. Verified no-cost checkpoint
@@ -93,14 +94,17 @@ The immediate follow-up ledger was 36/36 and its completion-time dry run was up
 to date. The separately approved atomic-import migration
 `20260820164604_atomic_planning_workspace_import.sql` was then applied; its
 follow-up ledger was 37/37 and the dry run was up to date. Do not re-run or
-repair either activation. Those approvals did not authorise cloud persistence,
+repair either activation. The separately approved owner-bootstrap migration
+`20260820184000_allow_planning_owner_bootstrap_read.sql` was then applied; its
+follow-up ledger was 38/38 and its dry run was up to date. Those approvals did
+not authorise cloud persistence,
 supplier activation or outreach changes.
 
 ## 5. Completed database verification
 
 The 20 August post-apply verification established:
 
-1. all 36 local versions match the remote ledger and zero remain pending;
+1. all 38 applied local versions match the remote ledger;
 2. all 51 public tables have RLS enabled;
 3. all 13 newly activated tables exist with their expected policy counts;
 4. `anon` and `authenticated` have zero `TRUNCATE`, `TRIGGER` or `REFERENCES`
@@ -126,11 +130,13 @@ been exercised against an approved environment.
 
 Database verification and the atomic migration are green, while the cloud flag
 remains off. The real Auth/Data API smoke proved user creation, sign-in and
-profile visibility, but PostgreSQL rejected the new-workspace `RETURNING`
-clause because the read policy depended solely on an AFTER INSERT membership.
-The narrow pending policy correction recognizes the already-authoritative
-`owner_id` during that statement and retains member access. Only after that
-correction is separately approved, applied and the full smoke is green may the
+profile visibility. The owner-bootstrap correction fixed the new-workspace
+`RETURNING` boundary, and atomic creation then passed. The later stale
+table-plan probe exposed hosted retries of SQLSTATE `40001`, eventually
+returning an upstream timeout instead of an immediate version conflict. The
+pending wrappers convert only Planning Hub serialization conflicts to the
+non-transient application code `P4090`. Only after that correction is
+separately approved, applied and the full smoke is green may the
 approved release set
 `PLANNING_WORKSPACE_CLOUD_ENABLED=true` for Production. Keep generic-supplier
 flags off and the existing Production-only outreach-sending flag unchanged.

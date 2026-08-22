@@ -89,7 +89,7 @@ describe("syncPlanningTablePlan", () => {
       workspaceId: "60000000-0000-4000-8000-000000000006",
       savedAt: "2026-07-29T12:00:00.001Z",
     });
-    expect(rpc).toHaveBeenCalledWith("sync_planning_table_plan", {
+    expect(rpc).toHaveBeenCalledWith("sync_planning_table_plan_v2", {
       target_workspace_id: "60000000-0000-4000-8000-000000000006",
       table_plan: plan,
       expected_updated_at: "2026-07-29T12:00:00.000Z",
@@ -101,7 +101,7 @@ describe("syncPlanningTablePlan", () => {
       {
         rpc: vi.fn(async () => ({
           data: null,
-          error: { code: "40001", message: "changed" },
+          error: { code: "P4090", message: "changed" },
         })),
       } as never,
       "60000000-0000-4000-8000-000000000006",

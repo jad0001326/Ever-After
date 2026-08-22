@@ -244,7 +244,7 @@ export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
   };
 
   const { data, error } = await context.supabase.rpc(
-    "import_planning_workspace_with_budget",
+    "import_planning_workspace_with_budget_v2",
     {
       workspace_snapshot: parsed.data.snapshot as unknown as Json,
       budget_plan: budgetPlan as unknown as Json,
@@ -254,7 +254,7 @@ export async function importPlanningWorkspaceSnapshotAction(input: unknown) {
   );
 
   if (error) {
-    if (error.code === "40001") {
+    if (error.code === "P4090") {
       return {
         ok: false,
         message: "The cloud plan changed after this page loaded. Reload before choosing which copy to keep."
@@ -362,13 +362,13 @@ export async function syncPlanningTablePlanAction(
 
   const context = await getPlanningContext();
   if (!context.ok) return context;
-  const { data, error } = await context.supabase.rpc("sync_planning_table_plan", {
+  const { data, error } = await context.supabase.rpc("sync_planning_table_plan_v2", {
     target_workspace_id: id.data,
     table_plan: plan.data as unknown as Json,
     expected_updated_at: version,
   });
 
-  if (error?.code === "40001") {
+  if (error?.code === "P4090") {
     return {
       ok: false,
       conflict: true,

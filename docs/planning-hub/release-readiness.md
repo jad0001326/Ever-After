@@ -152,7 +152,7 @@ they do not require rewriting or pushing it.
 | 64. Rights-confirmed supplier imagery | Extend the existing private venue-photo pattern to claimed suppliers with member-bound uploads, admin review, optimized public copies and rollback-safe hero/gallery updates. | `708b9cb` | Local application, unapplied migration and embedded security proof only; no hosted bucket, object, supplier contact, publication, migration, push, deployment or paid resource. |
 | 65. Pushed-preview verification | Verify the exact `b2e8565` protected preview at 390 x 844 and 1440 x 900 across public positioning, planners, supplier gates and one connected Photography-to-Organise plan. | `697e979` | Temporary authenticated preview access and device-only planning state; no production deployment, migration, production write, supplier contact, publication or paid resource. |
 | 66. Upstream merge resolution | Integrate the latest `origin/main` supplier reminder workflow while retaining the supplier-owner dashboard and shared venue-health helper. | `3ff9769` | Merge resolution, full regression suite and refreshed green Vercel deployment only; no production deployment, migration, data write, supplier contact or paid resource. |
-| 67. Authenticated API route gate | Send real owner, partner, outsider and rejected-bearer requests through the loopback Next.js routes and validate success bodies against all 15 committed contracts. | Current release verifier work | The approved production-bound run created and deleted three temporary users, proved sign-in/profile visibility and exposed the new-workspace `INSERT ... RETURNING` policy-timing defect before activation. The fail-closed correction is locally verified and remains unapplied. |
+| 67. Authenticated API route gate | Send real owner, partner, outsider and rejected-bearer requests through the loopback Next.js routes and validate success bodies against all 15 committed contracts. | Current release verifier work | Approved production-bound runs created and cleaned up temporary users, proved sign-in/profile visibility and atomic owner bootstrap, then exposed hosted retries of intentional `40001` stale-write conflicts. The narrow `P4090` normalization is locally prepared and remains unapplied. |
 | 68. Post-merge preview smoke | Verify the exact `3ff9769` preview at 390 x 844 and 1440 x 900, including Planning Hub, both public planners, Photography, manual Videographer planning, inactive public-category denial and disabled connected APIs. | Current local evidence update | Temporary authenticated preview access and read-only runtime inspection only; no production deployment, migration, data write, supplier contact, publication or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
@@ -208,7 +208,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 38 timestamped migrations apply in
+   - confirm that the baseline plus all 39 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -217,7 +217,7 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 37 applied identities and only the owner-bootstrap
+   - require the exact 38 applied identities and only the conflict-normalization
      correction as a newer local candidate;
    - confirm all four feature flags remain off.
 5. **Application beta**
@@ -479,7 +479,7 @@ database, catalogue or outreach behavior.
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 38 timestamped
+- The local API generator reproduces one baseline plus all 39 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
@@ -532,7 +532,7 @@ runtime errors during the verification window.
 The preceding statement describes the original PR #55 release record. On 20
 August 2026, the separately approved migration activation and bounded
 production Auth/Data API test created then deleted temporary planning records;
-aggregate cleanup and the pending owner-bootstrap correction remain explicit
+aggregate cleanup and the pending conflict-normalization correction remain explicit
 activation gates. Draft pull request #55 and
 its authentication-protected preview are current through pushed commit
 `3ff9769`; this post-merge evidence and API-verifier update remain local. The

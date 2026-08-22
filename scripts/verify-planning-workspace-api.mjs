@@ -16,7 +16,8 @@ const sourceRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const contractSchemas = await loadPlanningApiContractSchemas(sourceRoot);
 const runId = `${Date.now()}-${randomBytes(4).toString("hex")}`;
 const password = `EverAft-${randomBytes(16).toString("base64url")}!9a`;
-const createdUserIds = [];
+const createdUsers = [];
+const activeClients = [];
 
 const clientOptions = {
   auth: {
@@ -69,8 +70,9 @@ async function createTestUser(role) {
   if (error || !data.user) {
     throw new Error(`Creating ${role} Auth user failed: ${describeError(error)}`);
   }
-  createdUserIds.push(data.user.id);
-  return { email, id: data.user.id };
+  const user = { email, id: data.user.id, role };
+  createdUsers.push(user);
+  return user;
 }
 
 async function waitForProfiles(sessions) {
@@ -97,6 +99,7 @@ async function signIn(user) {
   if (error || data.user?.id !== user.id || !data.session?.access_token) {
     throw new Error(`Signing in ${user.email} failed: ${describeError(error)}`);
   }
+  activeClients.push(client);
   return { client, accessToken: data.session.access_token };
 }
 
@@ -124,8 +127,34 @@ function createBudgetPlan({ id, userId, totalBudgetPence, updatedAt }) {
 
 async function cleanup() {
   const failures = [];
-  const userIds = [...createdUserIds];
-  for (const userId of [...createdUserIds].reverse()) {
+  const userIds = createdUsers.map(({ id }) => id);
+  const owner = createdUsers.find(({ role }) => role === "owner");
+
+  if (owner) {
+    try {
+      const ownerCleanupSession = await signIn(owner);
+      const workspaces = await ownerCleanupSession.client
+        .from("planning_workspaces")
+        .select("id");
+      if (workspaces.error) {
+        failures.push(`owner workspace discovery: ${describeError(workspaces.error)}`);
+      } else {
+        for (const workspace of workspaces.data) {
+          const { error } = await ownerCleanupSession.client
+            .from("planning_workspaces")
+            .delete()
+            .eq("id", workspace.id);
+          if (error) failures.push(`owner workspace ${workspace.id}: ${describeError(error)}`);
+        }
+      }
+    } catch (error) {
+      failures.push(`owner cleanup sign-in: ${describeError(error)}`);
+    }
+  }
+
+  await Promise.allSettled(activeClients.map((client) => client.auth.signOut()));
+
+  for (const userId of [...userIds].reverse()) {
     const { error } = await admin.auth.admin.deleteUser(userId);
     if (error) failures.push(`${userId}: ${describeError(error)}`);
   }
@@ -899,7 +928,7 @@ async function verifyPlanningApiBoundary() {
     updatedAt: initialBudgetVersion,
   });
   expectError(await ownerClient.rpc(
-    "import_planning_workspace_with_budget",
+    "import_planning_workspace_with_budget_v2",
     {
       budget_plan: rollbackPlan,
       expected_updated_at: null,
@@ -918,7 +947,7 @@ async function verifyPlanningApiBoundary() {
   ).length, 0);
 
   const imported = dataOrThrow(await ownerClient.rpc(
-    "import_planning_workspace_with_budget",
+    "import_planning_workspace_with_budget_v2",
     {
       budget_plan: submittedOwnerPlan,
       expected_updated_at: null,
@@ -1092,17 +1121,17 @@ async function verifyPlanningApiBoundary() {
     }],
     updatedAt: new Date().toISOString(),
   };
-  const synced = dataOrThrow(await partnerClient.rpc("sync_planning_table_plan", {
+  const synced = dataOrThrow(await partnerClient.rpc("sync_planning_table_plan_v2", {
     expected_updated_at: version,
     table_plan: tablePlan,
     target_workspace_id: workspaceId,
   }), "Partner table-plan sync");
   assert(synced?.[0]?.workspace_updated_at);
-  expectError(await partnerClient.rpc("sync_planning_table_plan", {
+  expectError(await partnerClient.rpc("sync_planning_table_plan_v2", {
     expected_updated_at: version,
     table_plan: tablePlan,
     target_workspace_id: workspaceId,
-  }), "Stale table-plan sync", "40001");
+  }), "Stale table-plan sync", "P4090");
 
   assert.equal(
     dataOrThrow(
