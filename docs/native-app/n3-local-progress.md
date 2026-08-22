@@ -1,9 +1,9 @@
 # N3 local progress
 
 Status: completed credential-free auth/API and encrypted-session foundations on
-`codex/native-app-n3`; all three checkpoints are committed locally and not
-pushed. The third checkpoint adds the environment-safe auth runtime, screens
-and native callback-link declarations described below.
+`codex/native-app-n3`. The checkpoints are pushed in draft PR #71. The third
+checkpoint adds the environment-safe auth runtime, screens and native
+callback-link declarations described below.
 
 ## Implemented fixture-only foundation
 
