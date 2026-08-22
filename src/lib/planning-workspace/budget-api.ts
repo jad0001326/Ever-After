@@ -42,7 +42,7 @@ export async function updatePlanningBudgetPlan(
   return {
     ok: true,
     budgetPlanId: persistedPlan.id,
-    savedAt: data.updated_at,
+    savedAt: persistedPlan.updatedAt,
   } as const;
 }
 

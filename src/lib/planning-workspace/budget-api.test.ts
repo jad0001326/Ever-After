@@ -6,7 +6,7 @@ describe("updatePlanningBudgetPlan", () => {
   it("updates only the linked owner row at the exact expected version", async () => {
     const expectedUpdatedAt = "2026-07-29T12:00:00.000Z";
     const query = updateQuery({
-      data: { updated_at: "2026-07-29T12:00:00.001Z" },
+      data: { updated_at: "2026-07-29T12:00:00.001+00:00" },
       error: null,
     });
     const from = vi.fn(() => query);

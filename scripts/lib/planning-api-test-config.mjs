@@ -1,5 +1,8 @@
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 const EVERAFT_PRODUCTION_SUPABASE_HOST = "fryfdniacyhpubfiqnxj.supabase.co";
+const EVERAFT_PRODUCTION_PROJECT_REF = "fryfdniacyhpubfiqnxj";
+const EVERAFT_PRODUCTION_APP_ORIGIN = "https://www.everaft.co.uk";
+const PRODUCTION_CLEANUP_CONFIRMATION = "delete-temporary-users-and-cascaded-planning-data";
 
 function required(env, name) {
   const value = env[name]?.trim();
@@ -16,13 +19,17 @@ export function resolvePlanningApiTestConfig(env = process.env) {
   const secretKey = required(env, "SUPABASE_TEST_SECRET_KEY");
   const parsedUrl = new URL(url);
   const parsedAppUrl = new URL(appUrl);
+  const production = parsedUrl.hostname === EVERAFT_PRODUCTION_SUPABASE_HOST;
+  const loopbackApp = LOOPBACK_HOSTS.has(parsedAppUrl.hostname);
+  const approvedProductionApp = production
+    && parsedAppUrl.origin === EVERAFT_PRODUCTION_APP_ORIGIN;
 
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {
     throw new Error("SUPABASE_TEST_URL must use HTTP or HTTPS.");
   }
   if (
     !["http:", "https:"].includes(parsedAppUrl.protocol)
-    || !LOOPBACK_HOSTS.has(parsedAppUrl.hostname)
+    || (!loopbackApp && !approvedProductionApp)
     || parsedAppUrl.username
     || parsedAppUrl.password
     || parsedAppUrl.pathname !== "/"
@@ -30,7 +37,7 @@ export function resolvePlanningApiTestConfig(env = process.env) {
     || parsedAppUrl.hash
   ) {
     throw new Error(
-      "PLANNING_API_TEST_APP_URL must be an origin-only loopback HTTP or HTTPS URL.",
+      `PLANNING_API_TEST_APP_URL must be an origin-only loopback URL${production ? ` or ${EVERAFT_PRODUCTION_APP_ORIGIN}` : ""}.`,
     );
   }
   if (publishableKey === secretKey) {
@@ -38,12 +45,17 @@ export function resolvePlanningApiTestConfig(env = process.env) {
   }
 
   const local = LOOPBACK_HOSTS.has(parsedUrl.hostname);
-  if (parsedUrl.hostname === EVERAFT_PRODUCTION_SUPABASE_HOST) {
-    throw new Error(
-      "Planning Hub API verification permanently refuses the EverAft production Supabase project.",
-    );
-  }
-  if (!local) {
+  if (production) {
+    if (env.PLANNING_API_TEST_ALLOW_PRODUCTION !== "true") {
+      throw new Error("Planning Hub API verification refuses EverAft production without an explicit production override.");
+    }
+    if (env.PLANNING_API_TEST_CONFIRM_PRODUCTION_PROJECT !== EVERAFT_PRODUCTION_PROJECT_REF) {
+      throw new Error("PLANNING_API_TEST_CONFIRM_PRODUCTION_PROJECT must exactly match the EverAft production project reference.");
+    }
+    if (env.PLANNING_API_TEST_CONFIRM_CLEANUP !== PRODUCTION_CLEANUP_CONFIRMATION) {
+      throw new Error("PLANNING_API_TEST_CONFIRM_CLEANUP must explicitly confirm temporary-user and cascaded-data cleanup.");
+    }
+  } else if (!local) {
     if (env.PLANNING_API_TEST_ALLOW_REMOTE !== "true") {
       throw new Error(
         "Planning Hub API verification refuses remote Supabase projects by default. Use a free local stack.",
@@ -59,8 +71,10 @@ export function resolvePlanningApiTestConfig(env = process.env) {
   return {
     appUrl: parsedAppUrl.origin,
     local,
+    production,
     publishableKey,
     secretKey,
+    targetClass: production ? "explicitly approved EverAft production" : (local ? "local loopback" : "approved disposable"),
     url: parsedUrl.origin,
   };
 }

@@ -118,13 +118,13 @@ export async function syncPlanningTablePlan(
   tablePlan: TablePlan,
   expectedWorkspaceUpdatedAt: string,
 ) {
-  const { data, error } = await supabase.rpc("sync_planning_table_plan", {
+  const { data, error } = await supabase.rpc("sync_planning_table_plan_v2", {
     target_workspace_id: workspaceId,
     table_plan: tablePlan as unknown as Json,
     expected_updated_at: expectedWorkspaceUpdatedAt,
   });
 
-  if (error?.code === "40001") {
+  if (error?.code === "P4090") {
     return { ok: false, reason: "version_conflict" } as const;
   }
   const synced = data?.[0];

@@ -67,18 +67,9 @@ export function PlanningWorkspaceCloudImport({
     setFeedback(null);
     startTransition(async () => {
       try {
-        const [{ saveBudgetPlan }, { importPlanningWorkspaceSnapshotAction }] = await Promise.all([
-          import("@/app/actions/budget"),
-          import("@/app/actions/planning-workspace"),
-        ]);
-        const budgetResult = await saveBudgetPlan(budgetPlan);
-        if (!budgetResult.ok) {
-          setFeedback(`${budgetResult.message} Reload before trying the workspace import again.`);
-          setRequiresReload(true);
-          return;
-        }
-
+        const { importPlanningWorkspaceSnapshotAction } = await import("@/app/actions/planning-workspace");
         const result = await importPlanningWorkspaceSnapshotAction({
+          budgetPlan,
           snapshot: planningWorkspaceToImportSnapshot(workspace),
           targetWorkspaceId: cloudSnapshot?.workspace.id ?? null,
           expectedUpdatedAt: cloudSnapshot?.workspace.updated_at ?? null,

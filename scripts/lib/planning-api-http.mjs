@@ -45,10 +45,22 @@ export async function loadPlanningApiContractSchemas(sourceRoot) {
       const path = join(sourceRoot, "docs", "planning-hub", "contracts", filename);
       const jsonSchema = JSON.parse(await readFile(path, "utf8"));
       assert.equal(jsonSchema.$id, contractId, `${filename} has an unexpected contract ID.`);
-      return [contractId, z.fromJSONSchema(jsonSchema)];
+      return [contractId, z.fromJSONSchema(preserveCheckedDateTimePatterns(jsonSchema))];
     },
   ));
   return new Map(entries);
+}
+
+function preserveCheckedDateTimePatterns(value) {
+  if (Array.isArray(value)) return value.map(preserveCheckedDateTimePatterns);
+  if (!value || typeof value !== "object") return value;
+  const converted = Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, preserveCheckedDateTimePatterns(child)]),
+  );
+  if (converted.format === "date-time" && typeof converted.pattern === "string") {
+    delete converted.format;
+  }
+  return converted;
 }
 
 export function validatePlanningApiContract(schemas, contractId, body, label) {

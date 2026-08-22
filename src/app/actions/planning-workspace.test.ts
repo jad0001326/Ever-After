@@ -42,6 +42,10 @@ const validSnapshot = {
   seats: [],
   rules: [],
 };
+const validBudgetPlan = {
+  ...createPlanningHubStarterPlan("owner-1"),
+  id: "budget-1",
+};
 
 describe("planning workspace server actions", () => {
   const previousCloudFlag = process.env.PLANNING_WORKSPACE_CLOUD_ENABLED;
@@ -59,6 +63,7 @@ describe("planning workspace server actions", () => {
     process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "false";
 
     const result = await importPlanningWorkspaceSnapshotAction({
+      budgetPlan: validBudgetPlan,
       snapshot: validSnapshot,
       targetWorkspaceId: null,
       expectedUpdatedAt: null,
@@ -69,6 +74,52 @@ describe("planning workspace server actions", () => {
       message: "Connected planning is still in private testing. Your current plan remains saved on this device.",
     });
     expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("sends the budget and workspace through one atomic database function", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { code: "22023" },
+    }));
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "owner-1" } }, error: null })) },
+      rpc,
+    } as never);
+
+    const result = await importPlanningWorkspaceSnapshotAction({
+      budgetPlan: { ...validBudgetPlan, userId: "untrusted-user" },
+      snapshot: validSnapshot,
+      targetWorkspaceId: null,
+      expectedUpdatedAt: null,
+    });
+
+    expect(result).toEqual({ ok: false, message: "That change could not be saved. Please try again." });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("import_planning_workspace_with_budget_v2", {
+      budget_plan: expect.objectContaining({ id: "budget-1", userId: "owner-1" }),
+      workspace_snapshot: validSnapshot,
+      target_workspace_id: null,
+      expected_updated_at: null,
+    });
+  });
+
+  it("returns a reload message for a normalized atomic import conflict", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "owner-1" } }, error: null })) },
+      rpc: vi.fn(async () => ({ data: null, error: { code: "P4090" } })),
+    } as never);
+
+    await expect(importPlanningWorkspaceSnapshotAction({
+      budgetPlan: validBudgetPlan,
+      snapshot: validSnapshot,
+      targetWorkspaceId: "60000000-0000-4000-8000-000000000006",
+      expectedUpdatedAt: "2026-07-26T20:00:00.000Z",
+    })).resolves.toEqual({
+      ok: false,
+      message: "The cloud plan changed after this page loaded. Reload before choosing which copy to keep.",
+    });
   });
 
   it("rejects a budget that is not linked to the requested workspace", async () => {
@@ -225,11 +276,33 @@ describe("planning workspace server actions", () => {
     );
 
     expect(result).toEqual({ ok: true, updatedAt: "2026-07-26T21:00:00.000Z" });
-    expect(rpc).toHaveBeenCalledWith("sync_planning_table_plan", {
+    expect(rpc).toHaveBeenCalledWith("sync_planning_table_plan_v2", {
       target_workspace_id: "60000000-0000-4000-8000-000000000006",
       table_plan: tablePlan,
       expected_updated_at: "2026-07-26T20:00:00.000Z",
     });
+  });
+
+  it("returns a conflict without replacing a stale shared table plan", async () => {
+    process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = "true";
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "partner-1" } }, error: null })) },
+      rpc: vi.fn(async () => ({ data: null, error: { code: "P4090" } })),
+    } as never);
+
+    await expect(syncPlanningTablePlanAction(
+      "60000000-0000-4000-8000-000000000006",
+      {
+        schemaVersion: 1,
+        id: "table-plan-1",
+        name: "Our tables",
+        guests: [],
+        tables: [],
+        rules: [],
+        updatedAt: "2026-07-26T20:59:00.000Z",
+      },
+      "2026-07-26T20:00:00.000Z",
+    )).resolves.toMatchObject({ ok: false, conflict: true });
   });
 });
 

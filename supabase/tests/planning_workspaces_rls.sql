@@ -423,7 +423,7 @@ begin
   );
 
   begin
-    perform public.sync_planning_table_plan(
+    perform public.sync_planning_table_plan_v2(
       '60000000-0000-4000-8000-000000000006',
       jsonb_build_object(
         'schemaVersion', 1,
@@ -438,7 +438,7 @@ begin
     );
     raise exception 'Sync failure: stale partner table plan replaced shared data';
   exception
-    when serialization_failure then null;
+    when sqlstate 'P4090' then null;
   end;
 end
 $$;
@@ -620,7 +620,7 @@ begin
 
   select result.workspace_id
   into imported_workspace_id
-  from public.import_planning_workspace_snapshot_v2(
+  from public.import_planning_workspace_with_budget(
     jsonb_build_object(
       'id', 'e0000000-0000-4000-8000-00000000000e',
       'budgetPlanId', 'planning-budget-1',
@@ -666,12 +666,33 @@ begin
       )),
       'rules', '[]'::jsonb
     ),
+    jsonb_build_object(
+      'schemaVersion', 1,
+      'id', 'planning-budget-1',
+      'userId', '50000000-0000-4000-8000-000000000005',
+      'name', 'Atomically imported budget',
+      'scenarioName', 'Current plan',
+      'currency', 'GBP',
+      'totalBudgetPence', 3000000,
+      'categories', '[]'::jsonb,
+      'items', '[]'::jsonb,
+      'updatedAt', '2026-08-20T16:46:04.000Z'
+    ),
     '60000000-0000-4000-8000-000000000006',
     previous_updated_at
   ) result;
 
   if imported_workspace_id <> '60000000-0000-4000-8000-000000000006' then
     raise exception 'Import failure: snapshot returned the wrong workspace';
+  end if;
+
+  if (
+    select plan_json->>'userId'
+    from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+  ) <> '30000000-0000-4000-8000-000000000003' then
+    raise exception 'Atomic import failure: budget owner identity was not normalized';
   end if;
 
   if (
@@ -712,7 +733,7 @@ begin
   end if;
 
   begin
-    perform public.import_planning_workspace_snapshot_v2(
+    perform public.import_planning_workspace_with_budget_v2(
       jsonb_build_object(
         'id', 'e0000000-0000-4000-8000-00000000000e',
         'budgetPlanId', 'planning-budget-1',
@@ -735,12 +756,24 @@ begin
         'seats', '[]'::jsonb,
         'rules', '[]'::jsonb
       ),
+      jsonb_build_object(
+        'schemaVersion', 1,
+        'id', 'planning-budget-1',
+        'userId', '50000000-0000-4000-8000-000000000005',
+        'name', 'Stale overwrite budget',
+        'scenarioName', 'Current plan',
+        'currency', 'GBP',
+        'totalBudgetPence', 3000000,
+        'categories', '[]'::jsonb,
+        'items', '[]'::jsonb,
+        'updatedAt', '2026-08-20T16:46:04.000Z'
+      ),
       imported_workspace_id,
       previous_updated_at
     );
     raise exception 'Import failure: stale snapshot overwrote newer cloud data';
   exception
-    when serialization_failure then null;
+    when sqlstate 'P4090' then null;
   end;
 
   begin
@@ -762,6 +795,46 @@ begin
   exception
     when check_violation then null;
   end;
+end
+$$;
+
+do $$
+begin
+  begin
+    perform public.import_planning_workspace_with_budget(
+      jsonb_build_object(
+        'id', 'd0000000-0000-4000-8000-00000000000d',
+        'budgetPlanId', 'atomic-rollback-budget',
+        'name', 'Invalid workspace after budget write'
+      ),
+      jsonb_build_object(
+        'schemaVersion', 1,
+        'id', 'atomic-rollback-budget',
+        'userId', '50000000-0000-4000-8000-000000000005',
+        'name', 'Atomic rollback budget',
+        'scenarioName', 'Wedding plan',
+        'currency', 'GBP',
+        'totalBudgetPence', 2500000,
+        'categories', '[]'::jsonb,
+        'items', '[]'::jsonb,
+        'updatedAt', '2026-08-20T16:46:04.000Z'
+      ),
+      null,
+      null
+    );
+    raise exception 'Atomic import failure: invalid workspace unexpectedly succeeded';
+  exception
+    when invalid_parameter_value then null;
+  end;
+
+  if exists (
+    select 1
+    from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'atomic-rollback-budget'
+  ) then
+    raise exception 'Atomic import failure: budget write survived workspace failure';
+  end if;
 end
 $$;
 
@@ -827,6 +900,18 @@ begin
       null
     );
     raise exception 'Grant failure: anonymous role called snapshot import';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.import_planning_workspace_with_budget(
+      '{}'::jsonb,
+      '{}'::jsonb,
+      null,
+      null
+    );
+    raise exception 'Grant failure: anonymous role called atomic planning import';
   exception
     when insufficient_privilege then null;
   end;
