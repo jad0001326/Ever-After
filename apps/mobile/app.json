@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "My EverAft",
+    "slug": "myeveraft",
+    "version": "0.1.0",
+    "orientation": "default",
+    "scheme": "myeveraft",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uk.co.everaft.mobile"
+    },
+    "android": {
+      "package": "uk.co.everaft.mobile"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

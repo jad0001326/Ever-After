@@ -1,4 +1,6 @@
 .next
+.expo/
+apps/mobile/.expo/
 node_modules
 __pycache__/
 .env
