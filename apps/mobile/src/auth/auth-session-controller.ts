@@ -1,4 +1,5 @@
 import { parseAuthCallback } from "./auth-callback";
+import type { IntendedDestinationStore } from "./intended-destination";
 
 export type AuthSession = Readonly<{
   access_token: string;
@@ -20,6 +21,10 @@ export type AuthClientBoundary = Readonly<{
     error: Error | null;
   }>;
   exchangeCodeForSession(code: string): Promise<{
+    data: { session: AuthSession | null };
+    error: Error | null;
+  }>;
+  signInWithPassword(credentials: { email: string; password: string }): Promise<{
     data: { session: AuthSession | null };
     error: Error | null;
   }>;
@@ -48,6 +53,9 @@ export class AuthSessionError extends Error {
   readonly failure:
     | "invalid_callback"
     | "exchange_failed"
+    | "invalid_credentials"
+    | "sign_in_failed"
+    | "auth_unavailable"
     | "restore_failed"
     | "sign_out_failed";
 
@@ -63,6 +71,7 @@ export function createAuthSessionController(
   options: Readonly<{
     now?: () => number;
     clearLocalSecrets?: () => Promise<void>;
+    intendedDestinationStore?: IntendedDestinationStore;
   }> = {},
 ) {
   const now = options.now ?? Date.now;
@@ -144,7 +153,22 @@ export function createAuthSessionController(
       throw new AuthSessionError("exchange_failed");
     }
     applySession(data.session);
-    return callback.nextPath;
+    const remembered = options.intendedDestinationStore?.consume() ?? null;
+    return callback.nextPath ?? remembered;
+  }
+
+  async function signInWithPassword(email: string, password: string) {
+    const credentials = validateCredentials(email, password);
+    if (!credentials) throw new AuthSessionError("invalid_credentials");
+
+    const { data, error } = await auth.signInWithPassword(credentials);
+    if (error || !data.session) {
+      accessToken = null;
+      publish({ status: "signed_out", accountId: null, reason: null });
+      throw new AuthSessionError("sign_in_failed");
+    }
+    applySession(data.session);
+    return options.intendedDestinationStore?.consume() ?? null;
   }
 
   async function signOut(scope: "local" | "global") {
@@ -168,6 +192,10 @@ export function createAuthSessionController(
     start,
     stop,
     completeCallback,
+    signInWithPassword,
+    rememberIntendedDestination: (path: string) => (
+      options.intendedDestinationStore?.remember(path) ?? false
+    ),
     signOutFromDevice: () => signOut("local"),
     signOutEverywhere: () => signOut("global"),
     getSnapshot: () => snapshot,
@@ -177,6 +205,17 @@ export function createAuthSessionController(
       return () => listeners.delete(listener);
     },
   });
+}
+
+function validateCredentials(email: string, password: string) {
+  const normalizedEmail = email.trim();
+  if (
+    normalizedEmail.length > 254
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+    || password.length < 1
+    || password.length > 1024
+  ) return null;
+  return { email: normalizedEmail, password };
 }
 
 function isUsableSession(session: AuthSession, nowMs: number) {

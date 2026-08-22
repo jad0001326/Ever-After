@@ -1,5 +1,8 @@
 import { createMemorySessionStorage } from "./session-storage";
-import { createEverAftSupabaseClient } from "./supabase-client";
+import {
+  createEverAftSupabaseAuthOptions,
+  createEverAftSupabaseClient,
+} from "./supabase-client";
 
 describe("Supabase mobile client boundary", () => {
   it("creates a fixture-only client without making a network request", () => {
@@ -13,13 +16,24 @@ describe("Supabase mobile client boundary", () => {
     expect(client.auth).toBeDefined();
   });
 
-  it.each(["sb_secret_fixture", "service_role_fixture"])(
-    "rejects a secret key prefix: %s",
+  it("pins the native session boundary to PKCE and explicit refresh behavior", () => {
+    const options = createEverAftSupabaseAuthOptions(createMemorySessionStorage());
+    expect(options).toMatchObject({
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+      flowType: "pkce",
+    });
+    expect(typeof options.lock).toBe("function");
+  });
+
+  it.each(["sb_secret_fixture", "service_role_fixture", "legacy-anon-jwt"])(
+    "rejects anything other than a publishable key: %s",
     (publishableKey) => {
       expect(() => createEverAftSupabaseClient(
         { url: "https://fixture-project.supabase.co", publishableKey },
         createMemorySessionStorage(),
-      )).toThrow(/Secret Supabase keys/);
+      )).toThrow(/publishable key/);
     },
   );
 });

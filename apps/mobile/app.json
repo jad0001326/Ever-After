@@ -20,10 +20,30 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "uk.co.everaft.mobile"
+      "bundleIdentifier": "uk.co.everaft.mobile",
+      "associatedDomains": [
+        "applinks:www.everaft.co.uk"
+      ]
     },
     "android": {
-      "package": "uk.co.everaft.mobile"
+      "package": "uk.co.everaft.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.everaft.co.uk",
+              "pathPrefix": "/auth/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro"

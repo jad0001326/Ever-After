@@ -14,13 +14,18 @@ export function createEverAftSupabaseClient(
 ) {
   validatePublicClientConfig(config);
   return createClient(config.url, config.publishableKey, {
-    auth: {
-      storage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-      lock: processLock,
-    },
+    auth: createEverAftSupabaseAuthOptions(storage),
+  });
+}
+
+export function createEverAftSupabaseAuthOptions(storage: SupabaseSessionStorage) {
+  return Object.freeze({
+    storage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    flowType: "pkce" as const,
+    lock: processLock,
   });
 }
 
@@ -33,7 +38,7 @@ function validatePublicClientConfig(config: EverAftSupabaseConfig) {
   if (!config.publishableKey.trim()) {
     throw new Error("A Supabase publishable key is required.");
   }
-  if (/^(sb_secret_|service_role)/i.test(config.publishableKey.trim())) {
-    throw new Error("Secret Supabase keys must never be used in the mobile client.");
+  if (!config.publishableKey.trim().startsWith("sb_publishable_")) {
+    throw new Error("Only a Supabase publishable key may be used in the mobile client.");
   }
 }

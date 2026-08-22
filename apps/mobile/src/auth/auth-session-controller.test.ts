@@ -4,6 +4,7 @@ import {
   type AuthClientBoundary,
   type AuthSession,
 } from "./auth-session-controller";
+import { createIntendedDestinationStore } from "./intended-destination";
 
 const activeSession = (token = "access-one", accountId = "account-a"): AuthSession => ({
   access_token: token,
@@ -23,6 +24,10 @@ function createAuthFixture(initial: AuthSession | null = null) {
     async exchangeCodeForSession(code) {
       calls.push(["exchange", code]);
       return { data: { session: activeSession("callback-token") }, error: null };
+    },
+    async signInWithPassword(credentials) {
+      calls.push(["signIn", credentials.email, credentials.password]);
+      return { data: { session: activeSession("password-token") }, error: null };
     },
     signOut(options) {
       calls.push(["signOut", options.scope]);
@@ -54,6 +59,7 @@ function createDeferredRestoreFixture() {
       finishRestore = (session) => resolve({ data: { session }, error: null });
     }),
     exchangeCodeForSession: jest.fn(),
+    signInWithPassword: jest.fn(),
     signOut: jest.fn(),
     onAuthStateChange(next) {
       listener = next;
@@ -143,6 +149,49 @@ describe("createAuthSessionController", () => {
     )).resolves.toBe("/plan/tasks/task-1");
     expect(fixture.calls).toContainEqual(["exchange", "valid-code"]);
     await expect(controller.getAccessToken()).resolves.toBe("callback-token");
+  });
+
+  it("consumes a superseded remembered destination when the callback supplies one", async () => {
+    const fixture = createAuthFixture();
+    const intendedDestinationStore = createIntendedDestinationStore();
+    const controller = createAuthSessionController(fixture.auth, { intendedDestinationStore });
+    controller.rememberIntendedDestination("/plan/tasks/old-task");
+
+    await expect(controller.completeCallback(
+      "myeveraft://auth/callback?code=valid-code&next=%2Fplan%2Ftasks%2Fnew-task",
+    )).resolves.toBe("/plan/tasks/new-task");
+    await expect(controller.signInWithPassword("couple@example.com", "fixture-password"))
+      .resolves.toBeNull();
+  });
+
+  it("normalizes password sign-in and restores a one-use intended destination", async () => {
+    const fixture = createAuthFixture();
+    const intendedDestinationStore = createIntendedDestinationStore({ now: () => 1_000 });
+    const controller = createAuthSessionController(fixture.auth, {
+      now: () => 1_000_000,
+      intendedDestinationStore,
+    });
+    expect(controller.rememberIntendedDestination("/plan/tasks/task-1")).toBe(true);
+
+    await expect(controller.signInWithPassword(" Couple@Example.com ", "not-a-real-password"))
+      .resolves.toBe("/plan/tasks/task-1");
+    expect(fixture.calls).toContainEqual([
+      "signIn",
+      "Couple@Example.com",
+      "not-a-real-password",
+    ]);
+    expect(controller.getSnapshot().status).toBe("authenticated");
+    await expect(controller.signInWithPassword("couple@example.com", "not-a-real-password"))
+      .resolves.toBeNull();
+  });
+
+  it("rejects malformed credentials before calling Supabase Auth", async () => {
+    const fixture = createAuthFixture();
+    const controller = createAuthSessionController(fixture.auth);
+
+    await expect(controller.signInWithPassword("not-an-email", "password"))
+      .rejects.toEqual(expect.objectContaining({ failure: "invalid_credentials" }));
+    expect(fixture.calls.some((call) => Array.isArray(call) && call[0] === "signIn")).toBe(false);
   });
 
   it("never exchanges a hostile callback", async () => {

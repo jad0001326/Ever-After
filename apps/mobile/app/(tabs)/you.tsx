@@ -1,5 +1,16 @@
-import { PlaceholderScreen } from "../../src/ui/PlaceholderScreen";
+import { useRouter } from "expo-router";
+
+import { useNativeAuth } from "../../src/auth/NativeAuthProvider";
+import { YouScreen as YouAccountScreen } from "../../src/features/account/YouScreen";
 
 export default function YouScreen() {
-  return <PlaceholderScreen title="You" body="Wedding basics and account controls will live here." />;
+  const auth = useNativeAuth();
+  const router = useRouter();
+  return (
+    <YouAccountScreen
+      availability={auth.availability}
+      onSignIn={() => router.push("/auth/sign-in")}
+      sessionStatus={auth.snapshot.status}
+    />
+  );
 }

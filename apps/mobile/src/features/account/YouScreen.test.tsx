@@ -1,0 +1,36 @@
+import { fireEvent, render } from "@testing-library/react-native";
+
+import { YouScreen } from "./YouScreen";
+
+describe("YouScreen", () => {
+  it("labels an unconfigured plan as device-only without a cloud claim", async () => {
+    const view = await render(
+      <YouScreen
+        availability="not_configured"
+        onSignIn={jest.fn()}
+        sessionStatus="unavailable"
+      />,
+    );
+    expect(view.getByLabelText("Plan storage: On this device")).toBeOnTheScreen();
+    expect(view.getByText(/does not claim cloud backup or partner sharing/)).toBeOnTheScreen();
+    expect(view.queryByRole("button", { name: "Sign in to My EverAft" })).not.toBeOnTheScreen();
+  });
+
+  it("makes configured sign-in reachable without claiming a workspace", async () => {
+    const onSignIn = jest.fn();
+    const view = await render(
+      <YouScreen availability="configured" onSignIn={onSignIn} sessionStatus="signed_out" />,
+    );
+    await fireEvent.press(view.getByRole("button", { name: "Sign in to My EverAft" }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("distinguishes account authentication from successful workspace loading", async () => {
+    const view = await render(
+      <YouScreen availability="configured" onSignIn={jest.fn()} sessionStatus="authenticated" />,
+    );
+    expect(view.getByLabelText("Plan storage: On this device")).toBeOnTheScreen();
+    expect(view.getByText(/account is signed in/)).toBeOnTheScreen();
+    expect(view.getByText(/plan remains device-only/)).toBeOnTheScreen();
+  });
+});

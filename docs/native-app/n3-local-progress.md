@@ -1,8 +1,9 @@
 # N3 local progress
 
 Status: completed credential-free auth/API and encrypted-session foundations on
-`codex/native-app-n3`; committed locally in separate checkpoints and not
-pushed.
+`codex/native-app-n3`; all three checkpoints are committed locally and not
+pushed. The third checkpoint adds the environment-safe auth runtime, screens
+and native callback-link declarations described below.
 
 ## Implemented fixture-only foundation
 
@@ -40,8 +41,29 @@ pushed.
   cleanup reports a failure; and
 - Android backup configuration through the Expo SecureStore config plugin.
 
+## Environment-safe auth runtime and screens
+
+- a fail-closed native environment boundary that accepts only the public
+  Supabase URL and publishable key and never starts a hosted client for absent,
+  partial or unsafe configuration;
+- one app-wide auth runtime with a single session-restore path and foreground
+  refresh listener;
+- an accessible credential sign-in screen that preserves password bytes,
+  clears the password after every attempt and never exposes provider errors;
+- strict one-attempt PKCE callback handling with safe one-use return paths and
+  removal of the callback URL from native linking state;
+- a startup privacy cover while a configured session is being restored;
+- a truthful device-only account screen that keeps account authentication
+  separate from successful cloud-workspace loading; and
+- native-side iOS Universal Link and Android App Link declarations for
+  `https://www.everaft.co.uk/auth/callback`, while retaining the controlled
+  `myeveraft` development scheme.
+
 No Supabase credentials or environment values are present. Tests use fixtures
-only and make no hosted request.
+only and make no hosted request. An Android emulator smoke test verified that
+the no-environment build reaches Today, reports device-only storage on You,
+shows no credential fields on the unavailable sign-in route and returns safely
+to Today.
 
 ## Local Android encryption evidence — 22 August 2026
 
@@ -58,8 +80,14 @@ replace the physical-device release gate.
 
 ## Deliberately not claimed complete
 
-- The encrypted production adapter is implemented and verified on an Android
-  emulator, but is not yet wired into sign-in/callback screens or supplied with
-  real environment values.
+- No real environment values or test credentials have been supplied, so the
+  connected sign-in and hosted API journey has deliberately not run.
 - Physical iOS and Android storage, reinstall, backup/restore and callback
   journeys remain mandatory before connected beta.
+- Universal/App Link association is only declared in the native app locally.
+  The website AASA and `assetlinks.json` files, Apple team identity, Android
+  signing fingerprint and Supabase redirect allow-list have not been created or
+  changed and remain controlled release gates.
+- Authentication alone never claims cloud backup, partner sharing or a loaded
+  Planning workspace. Authenticated workspace loading remains a later verified
+  slice.
