@@ -11,7 +11,7 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = ["20260820184100_normalize_planning_version_conflicts.sql"];
+const expectedPending = [];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -29,7 +29,7 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 38, `snapshot contains ${remoteFiles.length} remote migrations instead of 38`);
+assert(remoteFiles.length === 39, `snapshot contains ${remoteFiles.length} remote migrations instead of 39`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
 for (const [index, file] of remoteFiles.entries()) {
@@ -48,16 +48,7 @@ assert(
   JSON.stringify(actualPending) === JSON.stringify(expectedPending),
   `pending set changed; expected ${expectedPending.join(", ")}, found ${actualPending.join(", ")}`,
 );
-const candidateFile = `${snapshot.candidate?.version}_${snapshot.candidate?.name}.sql`;
-assert(candidateFile === expectedPending[0], `release manifest names unexpected candidate ${candidateFile}`);
-assert(
-  /^[a-f0-9]{64}$/.test(snapshot.candidate?.sha256 ?? ""),
-  "release manifest candidate has no valid SHA-256",
-);
-assert(
-  sha256(await readFile(new URL(candidateFile, migrationDirectory))) === snapshot.candidate.sha256,
-  `${candidateFile} differs from its reviewed candidate hash`,
-);
+assert(snapshot.candidate === undefined, "release manifest still declares a pending candidate");
 const latestRemoteVersion = snapshot.migrations
   .map(({ version }) => version)
   .sort()
@@ -80,16 +71,12 @@ assert(
   "activation runbook db push commands must not include seed data or custom roles",
 );
 assert(
-  activationRunbook.includes("all 38 applied migrations"),
-  "activation runbook does not state the one-candidate alignment contract",
+  activationRunbook.includes("all 39 applied migrations"),
+  "activation runbook does not state the complete production alignment contract",
 );
 assert(
-  activationRunbook.includes("20260820184100_normalize_planning_version_conflicts.sql"),
-  "activation runbook does not name the pending conflict-normalization migration",
-);
-assert(
-  !activationRunbook.includes("zero pending migrations"),
-  "activation runbook incorrectly claims that no local migration is pending",
+  activationRunbook.includes("zero pending migrations"),
+  "activation runbook does not state that production has zero pending migrations",
 );
 
 const legacyCopies = [
@@ -105,4 +92,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, one hash-pinned conflict-normalization migration remains pending, and the runbook contains no production migration command.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, zero migrations remain pending, and the runbook contains no production migration command.`);

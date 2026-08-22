@@ -467,7 +467,11 @@ async function verifyPlanningApplicationBoundary({
     .single(), "Stored budget verification");
   assert.equal(storedBudget.user_id, owner.id);
   assert.equal(storedBudget.total_budget_pence, 2_600_000);
-  assert.equal(storedBudget.updated_at, partnerBudgetSaved.savedAt);
+  assert.equal(
+    Date.parse(storedBudget.updated_at),
+    Date.parse(partnerBudgetSaved.savedAt),
+    "Stored budget version and API response do not identify the same instant.",
+  );
 
   const tablePlanPath = apiPath(workspaceId, "/table-plan");
   const ownerTablePlan = await apiSuccess({
@@ -483,9 +487,15 @@ async function verifyPlanningApplicationBoundary({
     token: partnerSession.accessToken,
   });
   assert.deepEqual(partnerTablePlan, ownerTablePlan);
+  const changedTableId = randomUUID();
   const changedTablePlan = {
     ...ownerTablePlan.tablePlan,
-    name: "Partner verified table plan",
+    tables: [...ownerTablePlan.tablePlan.tables, {
+      id: changedTableId,
+      name: "Partner verified table",
+      capacity: 8,
+      locked: false,
+    }],
     updatedAt: ownerTablePlan.workspaceUpdatedAt,
   };
   const tablePlanRequest = {
@@ -528,7 +538,12 @@ async function verifyPlanningApplicationBoundary({
     path: tablePlanPath,
     token: ownerSession.accessToken,
   });
-  assert.equal(updatedTablePlan.tablePlan.name, "Partner verified table plan");
+  assert.deepEqual(updatedTablePlan.tablePlan.tables.find(({ id }) => id === changedTableId), {
+    id: changedTableId,
+    name: "Partner verified table",
+    capacity: 8,
+    locked: false,
+  });
 
   const impossibleGuestId = randomUUID();
   try {

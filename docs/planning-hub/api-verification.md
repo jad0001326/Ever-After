@@ -130,6 +130,20 @@ atomic import and rollback paths, then deletes the users and verifies their
 absence through the Auth Admin API. The release ledger separately verifies
 that profiles, budgets, workspaces and child records were cascaded away.
 
+For an explicitly approved production run from an authenticated and linked
+release workstation, use the fail-closed wrapper. It obtains the existing
+project keys internally, starts the reviewed production build on loopback with
+connected planning enabled only for that process, supplies every production
+lock to the verifier and always stops the local server. It does not print or
+persist keys:
+
+```powershell
+node scripts/run-production-planning-api-smoke.mjs --confirm 20260820184100_normalize_planning_version_conflicts.sql
+```
+
+This command is an execution safeguard, not standing approval. Record and
+compare the independent aggregate ledger before and after every approved run.
+
 ## Local-stack precondition
 
 The target must already contain the EverAft baseline schema and all Planning
@@ -215,3 +229,12 @@ evidence must additionally compare aggregate data counts before and after.
 Production execution remains a controlled release action: use only the exact
 approval locks above, verify cleanup, and compare the before/after production
 counts recorded in the activation release evidence.
+
+The approved 22 August 2026 production run used the reviewed local candidate
+with connected planning enabled only in that process. It passed atomic
+import/rollback, Auth sessions, checked route contracts, owner/partner access,
+outsider isolation, invitation binding and stale-write conflicts. The harness
+verified deletion of all three temporary Auth users. Independent read-only SQL
+counts matched before and after: 6 profiles, 3 budget plans and zero rows in
+every connected Planning Workspace table. The production feature flag remained
+off throughout.

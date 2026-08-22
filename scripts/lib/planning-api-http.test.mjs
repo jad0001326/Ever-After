@@ -23,6 +23,28 @@ describe("Planning API checked HTTP verifier", () => {
     )).toThrow(/does not match/);
   });
 
+  it("preserves checked datetime offsets when converting JSON Schemas", async () => {
+    const schemas = await loadPlanningApiContractSchemas(sourceRoot);
+    expect(() => validatePlanningApiContract(
+      schemas,
+      planningApiContracts.workspaceCollection,
+      {
+        schemaVersion: 1,
+        workspaces: [{
+          schemaVersion: 1,
+          id: "60000000-0000-4000-8000-000000000006",
+          name: "Production timestamp fixture",
+          budgetPlanId: "budget-1",
+          role: "owner",
+          createdAt: "2026-08-22T08:19:01.123456+00:00",
+          updatedAt: "2026-08-22T09:19:01+01:00",
+        }],
+        page: { limit: 25, offset: 0, hasMore: false },
+      },
+      "Workspace collection with PostgreSQL timestamps",
+    )).not.toThrow();
+  });
+
   it("checks status, security headers and the success contract", async () => {
     const schemas = await loadPlanningApiContractSchemas(sourceRoot);
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
