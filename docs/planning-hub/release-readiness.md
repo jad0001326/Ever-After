@@ -1,23 +1,18 @@
 # My EverAft Planning Hub release readiness
 
-Date: 3 August 2026; updated 13 August 2026
+Date: 3 August 2026; updated 22 August 2026
 
-Status: locally complete as a connected, local-first beta. Draft pull request
-#55 and its authentication-protected Vercel preview are current through pushed
-commit `3ff9769`. The full protected-preview browser evidence is included in
-the pull request through `697e979`; the post-merge preview has now passed its
-final temporary-access smoke. A production code-only beta would be an unlisted,
-`noindex` direct-link route, not an authenticated or password-protected route.
-Production release and connected partner sharing remain gated. The approved
-read-only production database preflight is recorded in
-`docs/planning-hub/production-preflight-2026-08-03.md`; it found migration
-timestamp drift and legacy Data API grants. The repository now mirrors all 26
-recorded production migration identities locally, so no production history
-rewrite is expected; eleven reviewed migrations remain pending activation.
-The exact approval, dry-run, no-cost checkpoint, stop and rollback sequence is
-recorded in `docs/planning-hub/production-activation-runbook.md`.
-The eleven-file lock, data-rewrite and existing-row surface is separately
-recorded in `docs/planning-hub/pending-migration-risk-review-2026-08-03.md`.
+Status: the connected, local-first beta is an activation candidate in draft
+pull request #70. Production now has all 39 reviewed migrations applied, their
+source hashes match the repository and the migration dry run reports zero
+pending changes. The 22 August controlled production Auth/Data API test passed
+the owner, partner, outsider, anonymous, rollback and stale-write cases; all
+three temporary users were deleted and independent before/after counts matched
+exactly. Connected persistence remains off in Production. The remaining release
+boundary is to review and merge PR #70, deploy it with the cloud flag still off,
+verify that deployment, and only then separately approve the Production-only
+flag activation. The exact evidence, stop and rollback sequence is recorded in
+`docs/planning-hub/production-activation-runbook.md`.
 
 The competitive priority adjustment in
 `docs/planning-hub/competitive-priority-update.md` now favours activation
@@ -70,7 +65,7 @@ a production deployment, migrate or enable cloud persistence.
 | Public supplier profiles and claiming | Category-neutral collection, profile and claim routes are locally prepared behind the existing `live` gate. Photography retains canonical legacy URLs. Claims validate category, published identity and ownership; pending/rejected hero imagery is excluded and representative imagery is labelled. Active approved claim members can submit bounded profile proposals and private rights-confirmed image uploads. Only admin review can publish an optimized image or change publication, ownership, category or featuring. Other categories remain inaccessible because they have no current coverage and their flags remain off. | Foundation, owner update and image-review loops proven locally |
 | Bookings and payments | Booking overview, deposits, instalments, paid totals, due dates, overdue states, date-readiness and upcoming priorities are connected to plan items. Long plans reveal every booking in six-item batches and every payment in five-item batches. | Proven locally |
 | Tasks, guests and tables | The Organise stage reuses the seating engine and adds complete task lifecycle management, scheduling, RSVP/dietary readiness and table-plan continuity. | Proven locally |
-| Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL. The feature flag remains off pending Auth/Data API verification. | Prepared and gated |
+| Secure partner sharing | Hashed single-use email-bound invites, owner/partner roles, narrow server actions, conflict tokens and RLS pass in PostgreSQL and the controlled production Auth/Data API test. The feature flag remains off pending the reviewed code deployment and a separate Production-only activation. | Production security proven; deployment gated |
 | Native-ready business logic | Twenty-six declared budget, recommendation, workspace-discovery, dashboard/update-contract, supplier, profile, task, guest, seating and validation modules pass an executable boundary that forbids React, Next.js, browser storage, Node runtime and Supabase adapters. Recommendation decisions use stable platform-neutral targets; only the web adapter produces URLs. Strict JSON-safe facades, fifteen checked Draft 2020-12 schemas and dormant authenticated adapters expose workspace/dashboard/profile/task/full-table-plan reads plus conflict-safe profile, task, budget and atomic table-plan writes to future clients. | Complete current resource foundations proven locally |
 | Public planner safety | Public Budget and Table Planners remain at their existing routes; the beta is separate, unlinked and no-index. Existing planner regression tests and the optimized build pass. | Proven locally |
 | Mobile performance | Fresh full-milestone Venue-route runs score 99/98/99 performance, 100 accessibility and 100 best practices, with 2.227-2.395 s LCP and CLS 0. | Target met in lab |
@@ -152,7 +147,7 @@ they do not require rewriting or pushing it.
 | 64. Rights-confirmed supplier imagery | Extend the existing private venue-photo pattern to claimed suppliers with member-bound uploads, admin review, optimized public copies and rollback-safe hero/gallery updates. | `708b9cb` | Local application, unapplied migration and embedded security proof only; no hosted bucket, object, supplier contact, publication, migration, push, deployment or paid resource. |
 | 65. Pushed-preview verification | Verify the exact `b2e8565` protected preview at 390 x 844 and 1440 x 900 across public positioning, planners, supplier gates and one connected Photography-to-Organise plan. | `697e979` | Temporary authenticated preview access and device-only planning state; no production deployment, migration, production write, supplier contact, publication or paid resource. |
 | 66. Upstream merge resolution | Integrate the latest `origin/main` supplier reminder workflow while retaining the supplier-owner dashboard and shared venue-health helper. | `3ff9769` | Merge resolution, full regression suite and refreshed green Vercel deployment only; no production deployment, migration, data write, supplier contact or paid resource. |
-| 67. Authenticated API route gate | Send real owner, partner, outsider and rejected-bearer requests through the loopback Next.js routes and validate success bodies against all 15 committed contracts. | Current local verifier work | Fail-closed local tooling and documentation only; it permanently refuses the production Supabase project and still requires its first disposable full-stack run. |
+| 67. Authenticated API route gate | Send real owner, partner, outsider and rejected-bearer requests through the loopback Next.js routes and validate success bodies against all 15 committed contracts. | Current release verifier work | Approved production-bound runs created and cleaned up temporary users, proved sign-in/profile visibility and atomic owner bootstrap, then exposed hosted retries of intentional `40001` stale-write conflicts. The narrow `P4090` normalization is locally prepared and remains unapplied. |
 | 68. Post-merge preview smoke | Verify the exact `3ff9769` preview at 390 x 844 and 1440 x 900, including Planning Hub, both public planners, Photography, manual Videographer planning, inactive public-category denial and disabled connected APIs. | Current local evidence update | Temporary authenticated preview access and read-only runtime inspection only; no production deployment, migration, data write, supplier contact, publication or paid resource. |
 
 The existing `173874f` merge brings `origin/main` commit `225e25b` into the
@@ -161,33 +156,19 @@ series between reviews 1 and 2. It does not add a separate Planning Hub change.
 ## Database order
 
 The application must not infer remote migration state from the presence of a
-table. Before approval, compare the remote migration history with these files.
-Supabase applies unapplied files in timestamp order:
+table. Production contains 39 applied migration identities whose local source
+hashes match `production-migration-history-2026-08-20.json`. Do not replay or
+repair those entries.
 
-1. `20260726140200_planning_workspace_foundation.sql`
-2. `20260726162254_planning_workspace_snapshot_import.sql`
-3. `20260726164304_planning_workspace_profiles.sql`
-4. `20260726185032_planning_workspace_partner_budgets.sql`
-5. `20260726191406_planning_table_plan_sync.sql`
-6. `20260803122711_supplier_owner_update_requests.sql`
-7. `20260803130045_supplier_catalogue_staging.sql`
-8. `20260803143000_tighten_data_api_table_grants.sql`
-9. `20260803150000_generalize_supplier_outreach.sql`
-10. `20260803165651_supplier_image_submissions.sql`
-11. `20260820125218_atomic_supplier_claim_review.sql`
+The refreshed supplier-claim candidate contains exactly one pending file:
 
-The other 26 timestamped files now match production's recorded versions
-exactly. Do not replay them or repair production history. The five workspace
-migrations are additive and remain dormant while
-`PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
-sending retain their separate disabled flags.
+1. `20260822141612_atomic_supplier_claim_review.sql`
 
-The first ten pending migrations predate production's latest recorded version
-and remain a dormant tranche. The claim migration is timestamped after the
-latest production version, so the reviewed claim-only dry run and approved
-command use a normal `db push` without `--include-all`. The alignment verifier
-requires exactly that one independently deployable migration; seed data and
-custom roles remain excluded.
+The Supabase CLI generated that identity after production's latest recorded
+version. A normal dry run must therefore list exactly that file without
+`--include-all`; any additional local-only or remote-only identity is a stop
+condition. Seed data, custom roles, flags, supplier records and outreach remain
+outside the release.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -199,10 +180,9 @@ public tables to
 1. **Local release candidate**
    - finish tests, typecheck, lint, optimized build, 390 px keyboard/axe checks;
    - verify the production dependency audit remains clear;
-   - keep the cloud flag absent.
+   - preserve every existing environment-scoped flag value.
 2. **Code review**
-   - review the supplier-claim draft pull request and each boundary above in
-     order;
+   - review draft supplier-claim pull request #69 and each boundary above;
    - keep the pull request in draft until the intended production scope is
      agreed;
    - merge no migration automatically.
@@ -212,7 +192,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 37 timestamped migrations apply in
+   - confirm that the baseline plus all 39 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -221,27 +201,18 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 26 matching identities, ten older dormant migrations
-     and one independently deployable claim migration;
-   - confirm the cloud, supplier-category outreach and supplier-admin schema
-     flags remain off;
-   - preserve the separately approved Production-only public-entry and
-     outreach-sending values.
-5. **Application beta**
-   - deploy the reviewed application with cloud sharing disabled;
-   - smoke-test the existing public planners and beta local-device journey;
-   - complete physical iPhone/Safari and Android checks.
-6. **Claim schema activation, separately approved**
-   - apply only `20260820125218_atomic_supplier_claim_review.sql` with the
-     runbook's normal `db push` command;
-   - keep the ten older Planning Workspace and supplier-admin migrations
-     dormant until a separate broader review and approval;
-   - repeat claimant/non-admin/admin privilege and concurrency checks;
-   - leave claim-review deployment deferred if any assertion or advisor fails.
-7. **Cloud sharing activation, separately approved**
-   - enable the server-only flag;
-   - test one controlled owner/partner workspace;
-   - monitor Auth, Data API and application errors before wider invitation use.
+   - require the exact 39 applied identities, matching source hashes and only
+     the one pending supplier-claim migration;
+   - preserve connected-planning, generic-supplier and outreach flags exactly.
+5. **Supplier-claim schema activation, separately approved**
+   - apply only the exact normal-push dry-run result;
+   - rerun the 40-entry ledger, advisors, claim-review verifier and native
+     two-session concurrency gate;
+   - do not change supplier rows or claim flags during the schema release.
+6. **Application release, separately approved**
+   - deploy the reviewed claim application only after the migration is green;
+   - smoke-test claim submission and admin review without contacting suppliers;
+   - monitor Auth, Data API and application errors before wider use.
 
 ## Rollback
 
@@ -263,30 +234,24 @@ Use the least destructive rollback that restores safety:
 
 ## Evidence still required
 
-- Supabase Auth and Data API execution cannot run on the current machine:
-  Docker, Podman and `psql` are absent. The Supabase CLI can run through
-  `npx`, but its local full stack still requires a container runtime.
-  `wsl.exe` is present, but no WSL distribution or subsystem is installed.
-- The guarded `npm run test:planning-api` harness and disposable baseline
-  generator are ready. The harness now sends real owner, partner, outsider and
-  rejected-bearer HTTP requests through the loopback Next.js routes and checks
-  every successful body against the committed JSON Schema. The generated
-  38-file stack still needs its first container-runtime execution.
+- The guarded production Auth/Data API test is complete. A disposable local
+  stack remains useful for repeatable development, but it is no longer an
+  activation blocker because the approved production run exercised the real
+  Auth, Data API, RLS and checked application routes and verified exact cleanup.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Before a production code-only beta deployment, verify in Vercel that
-  `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
-  `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED` are
-  absent or not exactly `true` in the Production environment. Preserve the
+- Before deploying PR #70, verify in Vercel that
+  `PLANNING_WORKSPACE_CLOUD_ENABLED`, `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and
+  `SUPPLIER_ADMIN_SCHEMA_ENABLED` remain absent or not exactly `true` in the
+  Production environment. Preserve the existing public-entry setting and the
   approved Production-only `OUTREACH_SENDING_ENABLED=true` value so current
   venue and photographer outreach continues; do not add that sending flag to
   Preview or treat it as permission for generic supplier-category outreach.
   Preview and Production environment scopes can differ, so check both before
   activation.
-- Pull request #55 was squash-merged as `334cdf9` on 13 August 2026; its
-  production deployment and bounded post-merge smoke are green. Migration,
-  public-entry activation and production writes still require their own
-  explicit approval.
+- Pull request #70 remains a draft activation candidate. Its merge, Production
+  deployment and connected-planning flag activation remain explicit approval
+  boundaries.
 
 ## Public-beta device-storage disclosure - 13 August 2026
 
@@ -298,22 +263,9 @@ account sync and partner sharing remain explicitly unavailable. This is
 server-rendered release messaging only; it adds no client bundle, persistence,
 database, catalogue or outreach behavior.
 
-## Supplier-claim release-order gate - 13 August 2026
-
-The atomic supplier-claim application and its migration are one deployable
-unit, but their production order is migration first. The application replaces
-the legacy service-role review sequence with `review_supplier_claim` and relies
-on the new insert triggers to synchronise `supplier_listings.claim_status`.
-Production does not have those database objects yet. Therefore the security
-pull request may be reviewed independently, but it must remain draft and must
-not be deployed until the eleven migrations receive explicit approval, pass
-the exact dry run and checkpoint, are applied, and pass the immediate privilege
-and native-concurrency verification. Public-beta entry messaging remains a
-separate code-only release and does not depend on this schema activation.
-
 ## Final local release-candidate evidence
 
-- 113 Vitest files and 521 tests pass.
+- 108 Vitest files and 509 tests pass.
 - Venue Passport contrast is now enforced across all six generated palettes:
   the quietest visible label clears WCAG AA at a minimum calculated ratio of
   4.93:1. Optimized headless axe reports no contrast violations; it still
@@ -500,7 +452,7 @@ separate code-only release and does not depend on this schema activation.
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 37 timestamped
+- The local API generator reproduces one baseline plus all 39 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
@@ -550,8 +502,11 @@ redirected to Vercel login. A temporary Vercel share URL expiring on 5 August
 in the repository or shared with another party. Vercel reported no application
 runtime errors during the verification window.
 
-No paid resource, cloud branch, migration, production write or production
-deployment was used to create this release record. Draft pull request #55 and
-its authentication-protected preview are current through pushed commit
-`3ff9769`; this post-merge evidence and API-verifier update remain local. The
-production domain was not changed.
+The preceding historical evidence includes the original PR #55 release record.
+On 22 August 2026, the separately approved conflict-normalization migration
+completed production alignment at 39/39. The controlled production Auth/Data
+API test then passed and deleted all three temporary Auth users; independent
+ledger checks remained exactly 6 profiles, 3 budget plans and zero rows in all
+connected Planning Workspace tables. Draft PR #70 contains the application
+activation candidate. Connected persistence remains off and no code from that
+draft has been deployed by this release step.

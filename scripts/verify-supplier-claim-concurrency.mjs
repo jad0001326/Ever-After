@@ -243,7 +243,7 @@ try {
     new URL("../supabase/migrations/20260813074826_lock_down_profile_role_updates.sql", import.meta.url), "utf8",
   );
   const claimMigration = await readFile(
-    new URL("../supabase/migrations/20260820125218_atomic_supplier_claim_review.sql", import.meta.url), "utf8",
+    new URL("../supabase/migrations/20260822141612_atomic_supplier_claim_review.sql", import.meta.url), "utf8",
   );
   await admin.query(profileMigration);
   await admin.query(claimMigration);

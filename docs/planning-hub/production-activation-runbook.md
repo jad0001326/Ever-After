@@ -1,26 +1,37 @@
 # Planning Hub production activation runbook
 
-Date: 3 August 2026; updated 20 August 2026
+Date: 3 August 2026; updated 22 August 2026
 
-Status: prepared locally. This is not approval to push, merge, deploy, change
-migration history, apply SQL, create test users or enable a feature flag.
+Status: all 39 reviewed migrations, including atomic import, owner bootstrap
+and conflict normalization, are applied and verified. The 22 August controlled
+production Auth/Data API test passed its owner/partner/outsider/anonymous,
+rollback and stale-write assertions; all three temporary Auth users were
+deleted and the post-test planning ledger exactly matched its baseline.
+The supplier-claim safety candidate adds exactly one unapplied migration,
+`20260822141612_atomic_supplier_claim_review.sql`. This document is not
+approval to apply it, merge or deploy application code, create production test
+users, change supplier data, alter flags or contact suppliers.
 
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
-- Production migration history must still match the checked 26-entry manifest.
+- Production migration history and local source hashes must match the checked
+  39-entry manifest in
+  `production-migration-history-2026-08-20.json`.
 - The normal dry run must list exactly
-  `20260820125218_atomic_supplier_claim_review.sql` and no other migration.
-- Do not use `--include-all`: the ten older reviewed Planning Workspace and
-  supplier-admin migrations remain dormant and outside this claim-only release.
-  Never use `--include-seed` or `--include-roles`.
+  `20260822141612_atomic_supplier_claim_review.sql` after the 39 applied
+  migrations. Any additional local-only or remote-only migration is a stop
+  condition.
+- Never use `--include-all`, `--include-seed`, `--include-roles`, history repair
+  or an unreviewed push. The candidate is newer than production's latest
+  recorded version and requires no backfill command.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
-- Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
+- Preserve the current environment-scoped values of
+  `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
   `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED`
-  off. Preserve the approved Production-only
-  `PLANNING_HUB_PUBLIC_ENTRY_ENABLED=true` value and keep that flag absent or
-  not exactly `true` in Preview. Preserve the currently approved Production value of
+  exactly; this claim release authorises no flag change. Preserve the
+  Production value of
   `OUTREACH_SENDING_ENABLED=true` so the existing venue and photographer
   outreach workflow remains operational; do not add it to Preview or broaden
   it to generic supplier categories.
@@ -40,9 +51,10 @@ npm.cmd run build
 npm.cmd run test:production-migration-alignment
 ```
 
-The status output must be empty. The alignment verifier must report 26 exact
-production identities, ten older dormant migrations and one independently
-deployable claim migration.
+The only permitted local changes during preparation must be explicitly
+reviewed. The alignment verifier must report all 39 applied migrations with
+matching source hashes plus exactly one independently deployable supplier-claim
+migration.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
 time, use a reviewed stable CLI version and record it in the release log. CLI
@@ -61,64 +73,81 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-26-entry manifest or the dry run contains anything except the single claim
-migration. A dry run is inspection only; it is not migration approval.
+39-entry manifest or the dry run proposes anything except
+`20260822141612_atomic_supplier_claim_review.sql`. A dry run is inspection
+only; it is not migration approval.
 
-## 3. Create the no-cost checkpoint
+## 3. Verified no-cost checkpoint
 
-Before any approved push, confirm the project's existing hosted backup status.
-Also create encrypted, access-controlled local schema and public-data dumps.
-Do not place them inside the repository, OneDrive or a shared folder, and do
-not commit them.
+The pre-migration checkpoint was created on 20 August 2026 after the Free-plan
+project reported no hosted backup. It is encrypted with AES-256-GCM, its key is
+protected by Windows DPAPI for the current user, and a full decrypt-and-hash
+restore test passed. It is stored outside the repository and OneDrive at:
 
-```powershell
-$everaftCheckpoint = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ("everaft-prod-checkpoint-" + (Get-Date -Format "yyyyMMdd-HHmmss")))
-npx.cmd --yes supabase@2.101.0 db dump --linked --file (Join-Path $everaftCheckpoint.FullName "schema.sql")
-npx.cmd --yes supabase@2.101.0 db dump --linked --data-only --use-copy --file (Join-Path $everaftCheckpoint.FullName "public-data.sql")
-Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $everaftCheckpoint.FullName "schema.sql"), (Join-Path $everaftCheckpoint.FullName "public-data.sql")
-```
+`%LOCALAPPDATA%\EverAft Recovery Checkpoints\pre-planning-migrations-20260820-173126`
 
-The release log records only the checkpoint location, creation time and hashes,
-never dump contents or credentials. If either dump fails, stop. Retain or
-securely remove the checkpoint according to the agreed retention decision
-after the release window.
+The directory contains the encrypted payload, DPAPI-protected key, manifest and
+verified decryption script. Plaintext export and restore-test copies were
+permanently removed. Never move the DPAPI key without the encrypted payload or
+assume it can be decrypted from another Windows profile.
 
-## 4. Explicit production approval point
+## 4. Completed schema activation boundary
 
-Present the commit SHA, CLI version, project identity, unchanged 26-entry
-history, exact one-file dry run, checkpoint confirmation, passing local gates
-and rollback boundary. Ask for approval to apply the named claim migration.
+The user explicitly approved the checkpoint and exact ten-file apply. CLI
+2.101.0 applied those files in ascending timestamp order and returned success.
+The immediate follow-up ledger was 36/36 and its completion-time dry run was up
+to date. The separately approved atomic-import migration
+`20260820164604_atomic_planning_workspace_import.sql` was then applied; its
+follow-up ledger was 37/37 and the dry run was up to date. Do not re-run or
+repair either activation. The separately approved owner-bootstrap migration
+`20260820184000_allow_planning_owner_bootstrap_read.sql` was then applied; its
+follow-up ledger was 38/38 and its dry run was up to date. The separately
+approved conflict-normalization migration
+`20260820184100_normalize_planning_version_conflicts.sql` was applied on 22
+August; its follow-up ledger was 39/39 and the dry run reported that production
+was up to date. Those approvals did not authorise cloud persistence,
+supplier activation or outreach changes.
 
-Only that approval authorises:
+## 5. Supplier-claim safety candidate
+
+`20260822141612_atomic_supplier_claim_review.sql` is reviewed but unapplied. It
+atomically validates claimant identity and supplier eligibility, serializes
+competing reviews with supplier-first locks, creates the vendor membership,
+synchronizes outreach state and writes an audit record. It also removes direct
+browser-role review/audit mutations and prevents profile-role escalation.
+
+The application change must not deploy before this migration exists. After the
+read-only dry run, applying it requires a separate explicit approval naming
+this exact file. The only permitted command under that later approval is:
 
 ```powershell
 npx.cmd --yes supabase@2.101.0 db push --linked
 ```
 
-It does not authorise seed data, history repair, deployment, cloud persistence,
-supplier activation or outreach sending.
+Immediately rerun the migration ledger, exact dry run, advisors,
+`test:supplier-claim-review` and the native two-session
+`test:supplier-claim-concurrency` gate. Do not enable supplier flags, mutate a
+supplier listing or send outreach as part of the migration release.
 
-## 5. Immediate database verification
+## 6. Completed database verification
 
-After an approved push:
+The 20 August post-apply verification established:
 
-1. Re-run `migration list --linked`; it must show 27 remote versions, the ten
-   reviewed older migrations as local-only, and no unexpected identity.
-2. Re-run the Supabase security and performance advisors and retain the delta.
-3. Confirm the claim functions and triggers exist with their exact narrow
-   grants, while direct review-column, outreach-state and audit-log writes are
-   denied to browser roles.
-4. Confirm `authenticated` has no table- or column-level `UPDATE` privilege on
-   `public.profiles`, especially `role`.
-5. Before enabling supplier claims, run `npm.cmd run test:supplier-claim-review`
-   and confirm the required `Supplier claim native concurrency` GitHub check is
-   green. The latter uses independent native PostgreSQL sessions to review
-   competing claims and race a late submission against approval. Confirm
-   supplier-first locking serializes every action without a deadlock and leaves
-   consistent claim, supplier, vendor membership, outreach and audit outcomes.
-6. Stop on any mismatch. Keep the three dormant schema/cloud/category flags
-   off, while preserving the separately approved Production-only public-entry
-   and outreach-sending values.
+1. all 39 applied local versions match the remote ledger;
+2. all 51 public tables have RLS enabled;
+3. all 13 newly activated tables exist with their expected policy counts;
+4. `anon` and `authenticated` have zero `TRUNCATE`, `TRIGGER` or `REFERENCES`
+   privileges on public tables;
+5. the 39 outreach campaigns and 1,060 recipients were unchanged;
+6. the private submission and public supplier-image buckets exist with the
+   expected limits, MIME types and six object policies;
+7. `authenticated` has no table- or column-level `UPDATE` privilege on
+   `public.profiles`, and no self-update policy exists;
+8. the two advisor warnings for authenticated `SECURITY DEFINER` planning RPCs
+   are intentional: both have an empty `search_path`, authenticated-only ACLs
+   and explicit identity/ownership validation covered by the RLS verifier;
+9. the remaining leaked-password warning and performance notices were not
+   changed because they are outside this no-cost schema activation.
 
 The embedded owner/partner/outsider and supplier-owner tests prove the SQL
 contract locally. A real Auth/Data API test creates temporary users and rows,
@@ -126,50 +155,47 @@ so production execution requires a separate explicit test-data approval and
 must verify cleanup. Cloud sharing cannot be enabled until that boundary has
 been exercised against an approved environment.
 
-## 6. Application deployment sequence
+## 7. Connected-cloud activation sequence
 
-With database verification green, deploy the application while the three
-dormant Planning Workspace and generic-supplier flags remain off, preserving
-the approved Production-only public entry and outreach-sending values. Verify:
+Database verification, atomic import, owner bootstrap and non-transient
+conflict mapping are green. PR #70 was merged and its connected Planning
+Workspace activation was separately approved after a controlled production
+smoke proved user creation, sign-in, checked route contracts, owner/partner
+access, outsider isolation, invitation binding, atomic import/rollback and
+prompt stale-write conflicts. Cleanup deleted all three temporary Auth users;
+profiles remained 6, budgets remained 3 and all connected planning tables
+returned to zero rows. Preserve the currently configured Production/Preview
+scopes exactly during the supplier-claim release. Keep generic-supplier flags
+and the existing Production-only outreach-sending scope unchanged. Verify:
 
 - the public home, venue catalogue, Budget Planner and Table Planner;
-- signed-out Planning Hub local-device creation, venue selection, Photography
-  handoff, budget update, Organise continuity and manual supplier entry;
-- admin venue and Photography outreach drafting still loads, without creating
-  or sending a campaign;
-- generic supplier outreach is absent;
-- `/planning-hub` remains intentionally `noindex` while its public entry is
-  visible;
+- signed-out users retain the local-device journey and cannot call connected
+  APIs;
+- one controlled signed-in owner can explicitly review and create a cloud copy;
+- owner reload restores the same budget, profile, tasks, guests and table plan;
+- partner invitation remains disabled until a controlled owner/partner smoke is
+  separately approved or safely available;
+- `/planning-hub` remains `noindex` until public-launch approval;
 - no new warning, error or fatal runtime logs appear during the smoke window.
 
-Enabling `PLANNING_WORKSPACE_CLOUD_ENABLED=true` is a later approval after the
-real Auth/Data API boundary passes. Generic supplier drafting and generic
-supplier email sending remain separate approvals and separate switches.
-
-### Supplier-claim deployment dependency
-
-Do not deploy the application commit that calls `review_supplier_claim` before
-the one-migration claim activation and immediate verification above are complete.
-That application intentionally relies on the new submission triggers and
-review RPC: deploying it against today's schema would stop synchronising a new
-claim to the supplier's pending state and would make admin approval/rejection
-fail because the RPC does not yet exist. The safe order is database checkpoint,
-approved migration push, privilege/concurrency verification, then application
-deployment. If migration approval is deferred, keep the supplier-claim pull
-request in draft and deploy public-beta messaging independently.
+The public-entry switch is already Production-only and must remain unchanged.
+Generic supplier drafting and email sending remain separate approvals and
+separate switches.
 
 ## Rollback and stop rules
 
 Application rollback means redeploying the prior application commit and
-preserving the approved flag values. The migration is additive and should
-remain in place while a defect is investigated. Do not drop tables or rewrite
-migration history. Do not reverse the grant hardening unless an exact
-role/table/privilege regression is proven and separately approved.
+keeping the flags off. The migrations are additive and should remain in place
+while a defect is investigated. Do not drop tables or rewrite migration
+history. Do not reverse the grant hardening unless an exact role/table/privilege
+regression is proven and separately approved.
 
-The ten older Planning Workspace and supplier-admin migrations remain a
-separate dormant tranche. Applying them still requires a fresh exact dry run,
-checkpoint, review of the broader `--include-all` scope and a separate explicit
-production approval; this claim-only runbook does not authorise them.
+For the atomic-import candidate, keep the cloud flag off while applying and
+verifying the function. Deploy application code that calls it only after the
+function exists. If either stage fails, keep the flag off and redeploy the
+previous application commit; the unused additive function may remain until a
+separately reviewed forward correction. Never remove the function while any
+deployed application can call it.
 
 Official references:
 

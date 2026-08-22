@@ -108,10 +108,9 @@ application's normal Supabase variables:
 Loopback hosts (`127.0.0.1`, `localhost` and `::1`) are accepted by default.
 Every remote URL is refused before a client is created.
 
-The application URL is stricter: it must be an origin-only loopback URL. The
-verifier never sends test bearer tokens to a deployed application. The known
-EverAft production Supabase hostname is permanently refused even when the
-remote-disposable override variables are present.
+The application URL must be an origin-only loopback URL by default. For an
+explicitly approved EverAft production smoke, the only permitted deployed
+origin is `https://www.everaft.co.uk`.
 
 A remote disposable project can only be selected after separate approval by
 setting both:
@@ -119,14 +118,36 @@ setting both:
 - `PLANNING_API_TEST_ALLOW_REMOTE=true`
 - `PLANNING_API_TEST_CONFIRM_REMOTE_HOST` to the URL's exact host
 
-That override is an additional guard, not approval. Never point it at the
-EverAft production project. The verifier creates temporary Auth users and
-planning records before deleting the users and their cascaded data.
+That override is an additional guard, not approval. The EverAft production
+project requires its own three exact locks after a separate test-data approval:
+
+- `PLANNING_API_TEST_ALLOW_PRODUCTION=true`
+- `PLANNING_API_TEST_CONFIRM_PRODUCTION_PROJECT=fryfdniacyhpubfiqnxj`
+- `PLANNING_API_TEST_CONFIRM_CLEANUP=delete-temporary-users-and-cascaded-planning-data`
+
+The verifier creates temporary Auth users and planning records, exercises the
+atomic import and rollback paths, then deletes the users and verifies their
+absence through the Auth Admin API. The release ledger separately verifies
+that profiles, budgets, workspaces and child records were cascaded away.
+
+For an explicitly approved production run from an authenticated and linked
+release workstation, use the fail-closed wrapper. It obtains the existing
+project keys internally, starts the reviewed production build on loopback with
+connected planning enabled only for that process, supplies every production
+lock to the verifier and always stops the local server. It does not print or
+persist keys:
+
+```powershell
+node scripts/run-production-planning-api-smoke.mjs --confirm 20260820184100_normalize_planning_version_conflicts.sql
+```
+
+This command is an execution safeguard, not standing approval. Record and
+compare the independent aggregate ledger before and after every approved run.
 
 ## Local-stack precondition
 
-The target must already contain the EverAft baseline schema and the eight
-Planning Hub migrations verified by `npm run test:planning-rls`.
+The target must already contain the EverAft baseline schema and all Planning
+Hub migrations verified by `npm run test:planning-rls`.
 
 The repository's migration folder contains incremental changes rather than the
 original application baseline. `supabase/schema.sql` contains that baseline.
@@ -142,7 +163,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 37 timestamped migrations byte-for-byte in filename order;
+3. copies all 39 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 
@@ -160,7 +181,7 @@ supabase init --workdir .
 supabase start --workdir .
 ```
 
-After all 37 generated migrations apply, start the EverAft application from a
+After all 40 generated migrations apply, start the EverAft application from a
 second terminal with the cloud gate enabled only in that process:
 
 ```powershell
@@ -187,23 +208,33 @@ response against the checked Draft 2020-12 contract, verifies the contract and
 private/no-store security headers, and covers owner, partner, outsider,
 rejected-bearer and version-conflict behavior across workspace discovery,
 dashboard, budget, table-plan, profile and task routes. It prints only the
-target class (`local loopback` or `approved disposable`) and assertion
-progress. It never prints keys, passwords, access tokens or invitation tokens.
+target class (`local loopback`, `approved disposable` or explicitly approved
+EverAft production) and assertion progress. It never prints keys, passwords,
+access tokens or invitation tokens.
 
 The generator and checksum verification pass on this machine, including the
-hardened workspace-foundation migration. The stack itself has not run because
-no container runtime or Supabase CLI is installed; the Windows WSL executable
-is present, but the subsystem and a Linux distribution are not installed. Its
-first successful run must also confirm that Auth's `handle_new_user` trigger
-creates `public.profiles`.
+hardened workspace-foundation and atomic-import migrations. A real target run
+must also confirm that Auth's `handle_new_user` trigger creates
+`public.profiles`.
 
 ## Cleanup
 
 All generated emails include a unique `everaft-planning-<role>-<run>` marker.
-Cleanup deletes created Auth users in reverse order, relying on the baseline
-foreign-key cascade to remove profiles, budgets, workspaces and child records.
-Cleanup failure is treated as test failure and reports only affected user IDs.
+Cleanup deletes created Auth users in reverse order, verifies their absence
+through the Auth Admin API and relies on the baseline foreign-key cascade to
+remove profiles, budgets, workspaces and child records. Cleanup failure is
+treated as test failure and reports only affected user IDs. Production release
+evidence must additionally compare aggregate data counts before and after.
 
-No API verification has run against EverAft production, and no paid resource,
-cloud branch, migration, deployment or production write was used to prepare
-this harness.
+Production execution remains a controlled release action: use only the exact
+approval locks above, verify cleanup, and compare the before/after production
+counts recorded in the activation release evidence.
+
+The approved 22 August 2026 production run used the reviewed local candidate
+with connected planning enabled only in that process. It passed atomic
+import/rollback, Auth sessions, checked route contracts, owner/partner access,
+outsider isolation, invitation binding and stale-write conflicts. The harness
+verified deletion of all three temporary Auth users. Independent read-only SQL
+counts matched before and after: 6 profiles, 3 budget plans and zero rows in
+every connected Planning Workspace table. The production feature flag remained
+off throughout.

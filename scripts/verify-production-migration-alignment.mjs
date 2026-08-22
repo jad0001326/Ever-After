@@ -1,8 +1,9 @@
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 
 const migrationDirectory = new URL("../supabase/migrations/", import.meta.url);
 const snapshot = JSON.parse(await readFile(
-  new URL("../docs/planning-hub/production-migration-history-2026-08-03.json", import.meta.url),
+  new URL("../docs/planning-hub/production-migration-history-2026-08-20.json", import.meta.url),
   "utf8",
 ));
 const activationRunbook = await readFile(
@@ -10,23 +11,15 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedOlderDormantPending = [
-  "20260726140200_planning_workspace_foundation.sql",
-  "20260726162254_planning_workspace_snapshot_import.sql",
-  "20260726164304_planning_workspace_profiles.sql",
-  "20260726185032_planning_workspace_partner_budgets.sql",
-  "20260726191406_planning_table_plan_sync.sql",
-  "20260803122711_supplier_owner_update_requests.sql",
-  "20260803130045_supplier_catalogue_staging.sql",
-  "20260803143000_tighten_data_api_table_grants.sql",
-  "20260803150000_generalize_supplier_outreach.sql",
-  "20260803165651_supplier_image_submissions.sql",
-];
-const expectedClaimOnlyPending = "20260820125218_atomic_supplier_claim_review.sql";
-const expectedPending = [...expectedOlderDormantPending, expectedClaimOnlyPending];
+const expectedClaimOnlyPending = "20260822141612_atomic_supplier_claim_review.sql";
+const expectedPending = [expectedClaimOnlyPending];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 const localFiles = (await readdir(migrationDirectory))
@@ -37,8 +30,15 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 26, `snapshot contains ${remoteFiles.length} remote migrations instead of 26`);
+assert(remoteFiles.length === 39, `snapshot contains ${remoteFiles.length} remote migrations instead of 39`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
+
+for (const [index, file] of remoteFiles.entries()) {
+  const expectedHash = snapshot.migrations[index]?.sha256;
+  assert(/^[a-f0-9]{64}$/.test(expectedHash ?? ""), `${file} has no valid recorded SHA-256`);
+  const actualHash = sha256(await readFile(new URL(file, migrationDirectory)));
+  assert(actualHash === expectedHash, `${file} differs from its recorded production source hash`);
+}
 
 const missingRemoteHistory = remoteFiles.filter((file) => !localSet.has(file));
 assert(missingRemoteHistory.length === 0, `repository is missing recorded production migrations: ${missingRemoteHistory.join(", ")}`);
@@ -49,7 +49,7 @@ assert(
   JSON.stringify(actualPending) === JSON.stringify(expectedPending),
   `pending set changed; expected ${expectedPending.join(", ")}, found ${actualPending.join(", ")}`,
 );
-
+assert(snapshot.candidate === undefined, "release manifest still declares a pending candidate");
 const latestRemoteVersion = snapshot.migrations
   .map(({ version }) => version)
   .sort()
@@ -57,10 +57,7 @@ const latestRemoteVersion = snapshot.migrations
 const backfilledPending = actualPending.filter(
   (file) => file.slice(0, 14) < latestRemoteVersion,
 );
-assert(
-  JSON.stringify(backfilledPending) === JSON.stringify(expectedOlderDormantPending),
-  `reviewed older pending set changed; found ${backfilledPending.join(", ")}`,
-);
+assert(backfilledPending.length === 0, `older pending migrations reappeared: ${backfilledPending.join(", ")}`);
 const independentlyDeployablePending = actualPending.filter(
   (file) => file.slice(0, 14) > latestRemoteVersion,
 );
@@ -72,18 +69,24 @@ assert(
 const dbPushCommands = activationRunbook
   .split(/\r?\n/)
   .filter((line) => line.startsWith("npx.cmd") && line.includes(" db push "));
-assert(dbPushCommands.length === 2, `activation runbook contains ${dbPushCommands.length} db push commands instead of 2`);
 assert(
-  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --dry-run$/m.test(activationRunbook),
-  "activation runbook dry run is not the narrow claim-only command",
-);
-assert(
-  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked$/m.test(activationRunbook),
-  "activation runbook production command is not the narrow claim-only command",
+  JSON.stringify(dbPushCommands) === JSON.stringify([
+    "npx.cmd --yes supabase@2.101.0 db push --linked --dry-run",
+    "npx.cmd --yes supabase@2.101.0 db push --linked",
+  ]),
+  `activation runbook has an unexpected migration command set: ${dbPushCommands.join(", ")}`,
 );
 assert(
   dbPushCommands.every((line) => !line.includes("--include-all") && !line.includes("--include-seed") && !line.includes("--include-roles")),
-  "claim-only db push commands must not include older migrations, seed data or custom roles",
+  "claim-only db push commands must not include backfilled migrations, seed data or custom roles",
+);
+assert(
+  activationRunbook.includes("all 39 applied migrations"),
+  "activation runbook does not state the complete production alignment contract",
+);
+assert(
+  activationRunbook.includes("one independently deployable supplier-claim"),
+  "activation runbook does not state the single independently deployable claim candidate",
 );
 
 const legacyCopies = [
@@ -99,4 +102,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions match exactly, ${backfilledPending.length} reviewed older migrations remain dormant, and ${independentlyDeployablePending.length} claim migration is independently deployable.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, with one independently deployable supplier-claim migration and no backfilled files.`);

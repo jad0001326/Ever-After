@@ -16,7 +16,8 @@ const sourceRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const contractSchemas = await loadPlanningApiContractSchemas(sourceRoot);
 const runId = `${Date.now()}-${randomBytes(4).toString("hex")}`;
 const password = `EverAft-${randomBytes(16).toString("base64url")}!9a`;
-const createdUserIds = [];
+const createdUsers = [];
+const activeClients = [];
 
 const clientOptions = {
   auth: {
@@ -69,14 +70,19 @@ async function createTestUser(role) {
   if (error || !data.user) {
     throw new Error(`Creating ${role} Auth user failed: ${describeError(error)}`);
   }
-  createdUserIds.push(data.user.id);
-  return { email, id: data.user.id };
+  const user = { email, id: data.user.id, role };
+  createdUsers.push(user);
+  return user;
 }
 
-async function waitForProfiles(userIds) {
+async function waitForProfiles(sessions) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const result = await admin.from("profiles").select("id").in("id", userIds);
-    if (!result.error && result.data?.length === userIds.length) return;
+    const results = await Promise.all(sessions.map(({ client, id }) => (
+      client.from("profiles").select("id").eq("id", id).maybeSingle()
+    )));
+    if (results.every((result, index) => (
+      !result.error && result.data?.id === sessions[index].id
+    ))) return;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(
@@ -93,6 +99,7 @@ async function signIn(user) {
   if (error || data.user?.id !== user.id || !data.session?.access_token) {
     throw new Error(`Signing in ${user.email} failed: ${describeError(error)}`);
   }
+  activeClients.push(client);
   return { client, accessToken: data.session.access_token };
 }
 
@@ -120,13 +127,50 @@ function createBudgetPlan({ id, userId, totalBudgetPence, updatedAt }) {
 
 async function cleanup() {
   const failures = [];
-  for (const userId of [...createdUserIds].reverse()) {
+  const userIds = createdUsers.map(({ id }) => id);
+  const owner = createdUsers.find(({ role }) => role === "owner");
+
+  if (owner) {
+    try {
+      const ownerCleanupSession = await signIn(owner);
+      const workspaces = await ownerCleanupSession.client
+        .from("planning_workspaces")
+        .select("id");
+      if (workspaces.error) {
+        failures.push(`owner workspace discovery: ${describeError(workspaces.error)}`);
+      } else {
+        for (const workspace of workspaces.data) {
+          const { error } = await ownerCleanupSession.client
+            .from("planning_workspaces")
+            .delete()
+            .eq("id", workspace.id);
+          if (error) failures.push(`owner workspace ${workspace.id}: ${describeError(error)}`);
+        }
+      }
+    } catch (error) {
+      failures.push(`owner cleanup sign-in: ${describeError(error)}`);
+    }
+  }
+
+  await Promise.allSettled(activeClients.map((client) => client.auth.signOut()));
+
+  for (const userId of [...userIds].reverse()) {
     const { error } = await admin.auth.admin.deleteUser(userId);
     if (error) failures.push(`${userId}: ${describeError(error)}`);
   }
   if (failures.length) {
     throw new Error(`Test-user cleanup failed:\n${failures.join("\n")}`);
   }
+  for (const userId of userIds) {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    if (data?.user) {
+      failures.push(`${userId}: Auth user still exists after cleanup`);
+    }
+  }
+  if (failures.length) {
+    throw new Error(`Test-user cleanup verification failed:\n${failures.join("\n")}`);
+  }
+  if (userIds.length) console.log(`Temporary test-user deletion verified for ${userIds.length} Auth users; cascade counts require the release ledger check.`);
 }
 
 function apiPath(workspaceId, suffix = "") {
@@ -423,7 +467,11 @@ async function verifyPlanningApplicationBoundary({
     .single(), "Stored budget verification");
   assert.equal(storedBudget.user_id, owner.id);
   assert.equal(storedBudget.total_budget_pence, 2_600_000);
-  assert.equal(storedBudget.updated_at, partnerBudgetSaved.savedAt);
+  assert.equal(
+    Date.parse(storedBudget.updated_at),
+    Date.parse(partnerBudgetSaved.savedAt),
+    "Stored budget version and API response do not identify the same instant.",
+  );
 
   const tablePlanPath = apiPath(workspaceId, "/table-plan");
   const ownerTablePlan = await apiSuccess({
@@ -439,9 +487,15 @@ async function verifyPlanningApplicationBoundary({
     token: partnerSession.accessToken,
   });
   assert.deepEqual(partnerTablePlan, ownerTablePlan);
+  const changedTableId = randomUUID();
   const changedTablePlan = {
     ...ownerTablePlan.tablePlan,
-    name: "Partner verified table plan",
+    tables: [...ownerTablePlan.tablePlan.tables, {
+      id: changedTableId,
+      name: "Partner verified table",
+      capacity: 8,
+      locked: false,
+    }],
     updatedAt: ownerTablePlan.workspaceUpdatedAt,
   };
   const tablePlanRequest = {
@@ -484,7 +538,12 @@ async function verifyPlanningApplicationBoundary({
     path: tablePlanPath,
     token: ownerSession.accessToken,
   });
-  assert.equal(updatedTablePlan.tablePlan.name, "Partner verified table plan");
+  assert.deepEqual(updatedTablePlan.tablePlan.tables.find(({ id }) => id === changedTableId), {
+    id: changedTableId,
+    name: "Partner verified table",
+    capacity: 8,
+    locked: false,
+  });
 
   const impossibleGuestId = randomUUID();
   try {
@@ -786,11 +845,15 @@ async function verifyPlanningApiBoundary() {
   const owner = await createTestUser("owner");
   const partner = await createTestUser("partner");
   const outsider = await createTestUser("outsider");
-  await waitForProfiles([owner.id, partner.id, outsider.id]);
 
   const ownerSession = await signIn(owner);
   const partnerSession = await signIn(partner);
   const outsiderSession = await signIn(outsider);
+  await waitForProfiles([
+    { client: ownerSession.client, id: owner.id },
+    { client: partnerSession.client, id: partner.id },
+    { client: outsiderSession.client, id: outsider.id },
+  ]);
   const ownerClient = ownerSession.client;
   const partnerClient = partnerSession.client;
   const outsiderClient = outsiderSession.client;
@@ -798,9 +861,9 @@ async function verifyPlanningApiBoundary() {
   const budgetPlanId = `api-smoke-${runId}`.slice(0, 100);
   const privateBudgetPlanId = `api-private-${runId}`.slice(0, 100);
   const initialBudgetVersion = new Date().toISOString();
-  const ownerPlan = createBudgetPlan({
+  const submittedOwnerPlan = createBudgetPlan({
     id: budgetPlanId,
-    userId: owner.id,
+    userId: outsider.id,
     totalBudgetPence: 2_500_000,
     updatedAt: initialBudgetVersion,
   });
@@ -810,18 +873,7 @@ async function verifyPlanningApiBoundary() {
     totalBudgetPence: 1_500_000,
     updatedAt: initialBudgetVersion,
   });
-  dataOrThrow(await ownerClient.from("budget_plans").insert([
-    {
-      currency: "GBP",
-      id: budgetPlanId,
-      name: "Planning API smoke budget",
-      plan_json: ownerPlan,
-      scenario_name: "Current plan",
-      total_budget_pence: 2_500_000,
-      updated_at: initialBudgetVersion,
-      user_id: owner.id,
-    },
-    {
+  dataOrThrow(await ownerClient.from("budget_plans").insert({
       currency: "GBP",
       id: privateBudgetPlanId,
       name: "Planning API private owner budget",
@@ -830,8 +882,7 @@ async function verifyPlanningApiBoundary() {
       total_budget_pence: 1_500_000,
       updated_at: initialBudgetVersion,
       user_id: owner.id,
-    },
-  ]).select("id"), "Owner budget creation");
+  }).select("id"), "Private owner budget creation");
 
   const workspaceId = randomUUID();
   const importedTaskId = randomUUID();
@@ -884,15 +935,50 @@ async function verifyPlanningApiBoundary() {
     }],
   };
 
-  const imported = dataOrThrow(await ownerClient.rpc(
-    "import_planning_workspace_snapshot_v2",
+  const rollbackBudgetPlanId = `api-rollback-${runId}`.slice(0, 100);
+  const rollbackPlan = createBudgetPlan({
+    id: rollbackBudgetPlanId,
+    userId: outsider.id,
+    totalBudgetPence: 1_700_000,
+    updatedAt: initialBudgetVersion,
+  });
+  expectError(await ownerClient.rpc(
+    "import_planning_workspace_with_budget_v2",
     {
+      budget_plan: rollbackPlan,
+      expected_updated_at: null,
+      target_workspace_id: null,
+      workspace_snapshot: {
+        ...snapshot,
+        budgetPlanId: rollbackBudgetPlanId,
+        id: randomUUID(),
+        tasks: "invalid",
+      },
+    },
+  ), "Atomic import rollback");
+  assert.equal(dataOrThrow(
+    await ownerClient.from("budget_plans").select("id").eq("id", rollbackBudgetPlanId),
+    "Atomic rollback budget verification",
+  ).length, 0);
+
+  const imported = dataOrThrow(await ownerClient.rpc(
+    "import_planning_workspace_with_budget_v2",
+    {
+      budget_plan: submittedOwnerPlan,
       expected_updated_at: null,
       target_workspace_id: null,
       workspace_snapshot: snapshot,
     },
   ), "Owner snapshot import");
   assert.equal(imported?.[0]?.workspace_id, workspaceId);
+
+  const storedImportedBudget = dataOrThrow(
+    await ownerClient.from("budget_plans").select("plan_json, user_id").eq("id", budgetPlanId).single(),
+    "Atomic imported budget verification",
+  );
+  assert.equal(storedImportedBudget.user_id, owner.id);
+  assert.equal(storedImportedBudget.plan_json.userId, owner.id);
+  const ownerPlan = { ...submittedOwnerPlan, userId: owner.id };
 
   const ownerMembers = dataOrThrow(
     await ownerClient.from("planning_workspace_members")
@@ -1050,17 +1136,17 @@ async function verifyPlanningApiBoundary() {
     }],
     updatedAt: new Date().toISOString(),
   };
-  const synced = dataOrThrow(await partnerClient.rpc("sync_planning_table_plan", {
+  const synced = dataOrThrow(await partnerClient.rpc("sync_planning_table_plan_v2", {
     expected_updated_at: version,
     table_plan: tablePlan,
     target_workspace_id: workspaceId,
   }), "Partner table-plan sync");
   assert(synced?.[0]?.workspace_updated_at);
-  expectError(await partnerClient.rpc("sync_planning_table_plan", {
+  expectError(await partnerClient.rpc("sync_planning_table_plan_v2", {
     expected_updated_at: version,
     table_plan: tablePlan,
     target_workspace_id: workspaceId,
-  }), "Stale table-plan sync", "40001");
+  }), "Stale table-plan sync", "P4090");
 
   assert.equal(
     dataOrThrow(
@@ -1092,10 +1178,10 @@ async function verifyPlanningApiBoundary() {
 
 let verificationError = null;
 try {
-  console.log(`Planning workspace API verification starting against ${config.local ? "local loopback" : "approved disposable"} Supabase and a loopback Next.js server.`);
+  console.log(`Planning workspace API verification starting against ${config.targetClass} Supabase and ${config.appUrl}.`);
   await verifyPlanningApiBoundary();
   console.log(
-    "Planning workspace API verification passed: Auth sessions, Data API grants/RLS, invitation binding, checked Next.js route contracts, owner/partner access, outsider isolation and stale-write conflicts.",
+    "Planning workspace API verification passed: atomic import/rollback, Auth sessions, Data API grants/RLS, invitation binding, checked Next.js route contracts, owner/partner access, outsider isolation and stale-write conflicts.",
   );
 } catch (error) {
   verificationError = error;

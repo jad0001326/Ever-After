@@ -1,54 +1,37 @@
 # Production database preflight
 
-Date: 3 August 2026; updated 13 August 2026
+Date: 3 August 2026; updated 22 August 2026
 
-Status: profile-role security hotfix applied and verified on 13 August. No other
-migration, production row change, branch, paid resource or feature activation
-was created.
+Status: all 39 recorded production migrations and source hashes are aligned.
+The supplier-claim candidate adds one later, unapplied migration. This refresh
+does not apply it, change production rows, flags, outreach or paid resources.
 
 ## Confirmed production state
 
 - Supabase project `Ever-After` (`fryfdniacyhpubfiqnxj`) is healthy in
   `eu-west-1` on PostgreSQL 17.6.
-- All 38 current `public` tables have row level security enabled.
-- Production contains `budget_plans` and the photography supplier foundation.
-  It does not contain the five Planning Workspace tables/migrations, supplier
-  owner update requests or supplier catalogue staging introduced by this
-  release candidate.
-- The supplier baseline remains 16 categories, 31 supplier listings and no
-  approved supplier images. This audit did not import or publish anything.
+- Production's checked ledger contains 39 applied migrations through
+  `20260820184100_normalize_planning_version_conflicts`.
+- The controlled Planning Workspace security test passed and cleaned up all
+  temporary users and rows. This supplier-claim refresh does not repeat it.
+- Supplier counts, publication state, claim state and imagery were not changed
+  or inferred during this merge refresh.
 
 ## Migration-history gate
 
-Remote history contains 26 entries after the approved profile-role hotfix. The
-repository now uses those exact 26 production versions:
-fourteen logically matching files were renamed to production's recorded
-timestamps, and the three legacy pricing phases were copied into timestamped
-migration files without changing their SQL. The captured manifest is
-`production-migration-history-2026-08-03.json`; the alignment verifier fails if
-an existing production identity is absent or the reviewed pending set changes.
+Remote history contains 39 entries whose identities and local source hashes
+match `production-migration-history-2026-08-20.json`. The alignment verifier
+fails if any applied identity is absent, altered or accompanied by an
+unexpected local migration.
 
-Eleven timestamped repository migrations are genuinely pending. The first ten
-are older dormant migrations; the final claim migration is timestamped after
-production's latest recorded version so it can be deployed independently:
+The refreshed branch contains exactly one pending migration:
 
-1. `20260726140200_planning_workspace_foundation.sql`
-2. `20260726162254_planning_workspace_snapshot_import.sql`
-3. `20260726164304_planning_workspace_profiles.sql`
-4. `20260726185032_planning_workspace_partner_budgets.sql`
-5. `20260726191406_planning_table_plan_sync.sql`
-6. `20260803122711_supplier_owner_update_requests.sql`
-7. `20260803130045_supplier_catalogue_staging.sql`
-8. `20260803143000_tighten_data_api_table_grants.sql`
-9. `20260803150000_generalize_supplier_outreach.sql`
-10. `20260803165651_supplier_image_submissions.sql`
-11. `20260820125218_atomic_supplier_claim_review.sql`
+1. `20260822141612_atomic_supplier_claim_review.sql`
 
-Do not run an unreviewed bulk migration command against production. First
-refresh the remote list and compare it with the captured manifest. If it is
-unchanged, a normal reviewed migration push no longer needs `migration repair`:
-the first 26 local identities match production exactly and only the eleven files
-above should be pending. If it differs, stop; do not repair history or push.
+The Supabase CLI generated it after production's latest recorded version, so a
+normal reviewed dry run must list only that file. `--include-all`, migration
+history repair, seed data and custom roles are prohibited. Any different list
+is a stop condition.
 
 The migration-time lock, rewrite and existing-row surface is reviewed in
 `pending-migration-risk-review-2026-08-03.md`. Read-only live counts and
@@ -102,24 +85,23 @@ dropped merely because a low-traffic database currently labels them unused.
 
 ## Exact no-cost activation sequence
 
-1. Review and merge the application pull request while leaving
-   `PLANNING_WORKSPACE_CLOUD_ENABLED` absent.
-2. Confirm a recoverable production database checkpoint.
-3. Re-read remote migration history and stop if it differs from the captured
-   26-entry manifest.
-4. Run `npm run test:production-migration-alignment`; require exactly 26
-   matching and eleven pending migrations.
-5. Use the runbook's normal claim-only dry run without `--include-all`. It must
-   contain only `20260820125218_atomic_supplier_claim_review.sql`.
-6. Apply only that claim migration under one explicit production approval. The
-   ten older dormant migrations, seed data and custom roles remain excluded.
-7. Re-run database security and performance advisors.
-8. Exercise owner, partner, outsider and anonymous Data API tests. Stop on any
-   unexpected read, write, function execution or table privilege.
-9. Deploy the beta with cloud sharing still disabled and smoke-test the public
-   planners plus the local-device Planning Hub journey.
-10. Enable cloud sharing only under a separate approval after the preceding
-    checks pass.
+Historical note: the earlier Planning Workspace activation is complete and
+must not be repeated. For the claim candidate:
+
+1. Review draft PR #69 while preserving all environment-scoped flag values.
+2. Confirm the existing recoverable production checkpoint remains available.
+3. Re-read remote history and stop unless all 39 applied identities match the
+   captured manifest and source hashes.
+4. Run `npm run test:production-migration-alignment`; require exactly 39
+   applied migrations plus the one pending claim migration.
+5. Run the normal dry run without `--include-all`; require only
+   `20260822141612_atomic_supplier_claim_review.sql`.
+6. Apply only that migration under a later explicit production approval.
+7. Rerun the ledger, dry run, advisors, claim-review verifier and native
+   two-session concurrency gate.
+8. Deploy the application only after the migration is green and under a
+   separate deployment approval.
+9. Keep supplier data, category flags and outreach unchanged throughout.
 
 `migration repair` is no longer part of the expected activation path. Supabase
 documents that it changes only the remote migration-history table, not the

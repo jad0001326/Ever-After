@@ -222,7 +222,7 @@ try {
   `);
 
   const migration = await readFile(
-    new URL("../supabase/migrations/20260820125218_atomic_supplier_claim_review.sql", import.meta.url),
+    new URL("../supabase/migrations/20260822141612_atomic_supplier_claim_review.sql", import.meta.url),
     "utf8",
   );
   const normalizedMigration = migration.replaceAll("\r\n", "\n");
