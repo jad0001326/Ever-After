@@ -60,7 +60,10 @@ export class AuthSessionError extends Error {
 
 export function createAuthSessionController(
   auth: AuthClientBoundary,
-  options: Readonly<{ now?: () => number }> = {},
+  options: Readonly<{
+    now?: () => number;
+    clearLocalSecrets?: () => Promise<void>;
+  }> = {},
 ) {
   const now = options.now ?? Date.now;
   let accessToken: string | null = null;
@@ -149,8 +152,16 @@ export function createAuthSessionController(
     // cannot continue with a cached bearer token after the user signs out.
     accessToken = null;
     publish({ status: "signed_out", accountId: null, reason: null });
+    let cleanupFailed = false;
+    if (options.clearLocalSecrets) {
+      try {
+        await options.clearLocalSecrets();
+      } catch {
+        cleanupFailed = true;
+      }
+    }
     const { error } = await auth.signOut({ scope });
-    if (error) throw new AuthSessionError("sign_out_failed");
+    if (cleanupFailed || error) throw new AuthSessionError("sign_out_failed");
   }
 
   return Object.freeze({

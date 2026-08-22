@@ -181,4 +181,38 @@ describe("createAuthSessionController", () => {
     await expect(pending).rejects.toBeInstanceOf(AuthSessionError);
     await expect(controller.getAccessToken()).resolves.toBeNull();
   });
+
+  it("deletes local encryption material before remote sign-out settles", async () => {
+    const fixture = createAuthFixture(activeSession());
+    const clearLocalSecrets = jest.fn(async () => undefined);
+    const controller = createAuthSessionController(fixture.auth, {
+      now: () => 1_000_000,
+      clearLocalSecrets,
+    });
+    await controller.start();
+
+    const pending = controller.signOutFromDevice();
+    await Promise.resolve();
+    expect(clearLocalSecrets).toHaveBeenCalledTimes(1);
+    await expect(controller.getAccessToken()).resolves.toBeNull();
+    fixture.finishSignOut();
+    await pending;
+  });
+
+  it("still requests remote revocation when local secret deletion fails", async () => {
+    const fixture = createAuthFixture(activeSession());
+    const controller = createAuthSessionController(fixture.auth, {
+      now: () => 1_000_000,
+      clearLocalSecrets: async () => { throw new Error("storage unavailable"); },
+    });
+    await controller.start();
+
+    const pending = controller.signOutEverywhere();
+    await Promise.resolve();
+    expect(fixture.calls).toContainEqual(["signOut", "global"]);
+    fixture.finishSignOut();
+    await expect(pending).rejects.toEqual(
+      expect.objectContaining({ failure: "sign_out_failed" }),
+    );
+  });
 });
