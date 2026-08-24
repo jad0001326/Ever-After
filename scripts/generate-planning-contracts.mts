@@ -4,17 +4,17 @@ import { isGeneratedFileCurrent } from "./lib/generated-file-text.mjs";
 import {
   planningBudgetUpdateRequestJsonSchema,
   planningBudgetUpdateSuccessJsonSchema,
-} from "../src/lib/planning-workspace/budget-api-schema.ts";
-import { planningDashboardSnapshotJsonSchema } from "../src/lib/planning-workspace/snapshot-schema.ts";
+} from "@everaft/planning-contracts/planning-workspace/budget-api-schema";
+import { planningDashboardSnapshotJsonSchema } from "@everaft/planning-contracts/planning-workspace/snapshot-schema";
 import {
   planningProfileResourceJsonSchema,
   planningProfileUpdateRequestJsonSchema,
-} from "../src/lib/planning-workspace/profile-api-schema.ts";
+} from "@everaft/planning-contracts/planning-workspace/profile-api-schema";
 import {
   planningTablePlanResourceJsonSchema,
   planningTablePlanUpdateRequestJsonSchema,
   planningTablePlanUpdateSuccessJsonSchema,
-} from "../src/lib/planning-workspace/table-plan-api-schema.ts";
+} from "@everaft/planning-contracts/planning-workspace/table-plan-api-schema";
 import {
   planningTaskCollectionJsonSchema,
   planningTaskCreateRequestJsonSchema,
@@ -22,10 +22,10 @@ import {
   planningTaskDeleteSuccessJsonSchema,
   planningTaskResourceJsonSchema,
   planningTaskUpdateRequestJsonSchema,
-} from "../src/lib/planning-workspace/task-api-schema.ts";
+} from "@everaft/planning-contracts/planning-workspace/task-api-schema";
 import {
   planningWorkspaceCollectionJsonSchema,
-} from "../src/lib/planning-workspace/workspace-api-schema.ts";
+} from "@everaft/planning-contracts/planning-workspace/workspace-api-schema";
 
 const contracts = [
   {

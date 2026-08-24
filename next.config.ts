@@ -22,6 +22,10 @@ const supabaseImagePattern = (() => {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["read-excel-file"],
+  transpilePackages: [
+    "@everaft/planning-contracts",
+    "@everaft/planning-domain",
+  ],
   async headers() {
     const invitationHeaders = [
       { key: "Referrer-Policy", value: "no-referrer" },

@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "My EverAft",
+    "slug": "myeveraft",
+    "version": "0.1.0",
+    "orientation": "default",
+    "scheme": "myeveraft",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uk.co.everaft.mobile",
+      "associatedDomains": [
+        "applinks:www.everaft.co.uk"
+      ]
+    },
+    "android": {
+      "package": "uk.co.everaft.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.everaft.co.uk",
+              "pathPrefix": "/auth/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

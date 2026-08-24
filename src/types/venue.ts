@@ -88,11 +88,6 @@ export type Venue = {
   isFeatured: boolean;
 };
 
-export type VenueSearchParams = {
-  location?: string;
-  guests?: string;
-  budget?: string;
-  type?: string;
-  sort?: "price-asc" | "price-desc" | "capacity-desc";
-  page?: string;
-};
+export type {
+  VenueSearchParams,
+} from "@everaft/planning-domain/planning-hub/types";
