@@ -11,7 +11,8 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = [];
+const expectedClaimOnlyPending = "20260822141612_atomic_supplier_claim_review.sql";
+const expectedPending = [expectedClaimOnlyPending];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -57,26 +58,35 @@ const backfilledPending = actualPending.filter(
   (file) => file.slice(0, 14) < latestRemoteVersion,
 );
 assert(backfilledPending.length === 0, `older pending migrations reappeared: ${backfilledPending.join(", ")}`);
+const independentlyDeployablePending = actualPending.filter(
+  (file) => file.slice(0, 14) > latestRemoteVersion,
+);
+assert(
+  JSON.stringify(independentlyDeployablePending) === JSON.stringify([expectedClaimOnlyPending]),
+  `claim-only pending set changed; found ${independentlyDeployablePending.join(", ")}`,
+);
 
 const dbPushCommands = activationRunbook
   .split(/\r?\n/)
   .filter((line) => line.startsWith("npx.cmd") && line.includes(" db push "));
-assert(dbPushCommands.length === 1, `activation runbook contains ${dbPushCommands.length} db push commands instead of one read-only dry run`);
 assert(
-  /^npx\.cmd --yes supabase@2\.101\.0 db push --linked --dry-run$/m.test(activationRunbook),
-  "activation runbook does not retain the read-only migration dry run",
+  JSON.stringify(dbPushCommands) === JSON.stringify([
+    "npx.cmd --yes supabase@2.101.0 db push --linked --dry-run",
+    "npx.cmd --yes supabase@2.101.0 db push --linked",
+  ]),
+  `activation runbook has an unexpected migration command set: ${dbPushCommands.join(", ")}`,
 );
 assert(
-  dbPushCommands.every((line) => !line.includes("--include-seed") && !line.includes("--include-roles")),
-  "activation runbook db push commands must not include seed data or custom roles",
+  dbPushCommands.every((line) => !line.includes("--include-all") && !line.includes("--include-seed") && !line.includes("--include-roles")),
+  "claim-only db push commands must not include backfilled migrations, seed data or custom roles",
 );
 assert(
   activationRunbook.includes("all 39 applied migrations"),
   "activation runbook does not state the complete production alignment contract",
 );
 assert(
-  activationRunbook.includes("zero pending migrations"),
-  "activation runbook does not state that production has zero pending migrations",
+  activationRunbook.includes("one independently deployable supplier-claim"),
+  "activation runbook does not state the single independently deployable claim candidate",
 );
 
 const legacyCopies = [
@@ -92,4 +102,4 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   assert(legacySql === migrationSql, `${migrationPath} no longer matches its production-era legacy source`);
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, zero migrations remain pending, and the runbook contains no production migration command.`);
+console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and source hashes match exactly, with one independently deployable supplier-claim migration and no backfilled files.`);

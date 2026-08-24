@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run && npm run test:planning-rls && npm run test:supplier-owner-rls && npm run test:data-api-grants && npm run test:supplier-outreach-migration && npm run test:production-migration-alignment",
+    "test": "vitest run && npm run test:planning-rls && npm run test:supplier-owner-rls && npm run test:supplier-claim-review && npm run test:data-api-grants && npm run test:supplier-outreach-migration && npm run test:production-migration-alignment",
     "test:planning-browser": "node scripts/verify-planning-hub-browser.mjs",
     "test:planning-api": "node scripts/verify-planning-workspace-api.mjs",
     "test:planning-rls": "node scripts/verify-planning-workspace-rls.mjs",
     "test:supplier-owner-rls": "node scripts/verify-supplier-owner-rls.mjs",
+    "test:supplier-claim-review": "node scripts/verify-supplier-claim-review.mjs",
+    "test:supplier-claim-concurrency": "node scripts/verify-supplier-claim-concurrency.mjs",
     "test:data-api-grants": "node scripts/verify-data-api-table-grants.mjs",
     "test:supplier-outreach-migration": "node scripts/verify-supplier-outreach-migration.mjs",
     "test:production-migration-alignment": "node scripts/verify-production-migration-alignment.mjs",
@@ -55,13 +57,26 @@
     "axe-core": "4.11.4",
     "eslint": "latest",
     "eslint-config-next": "16.2.12",
+    "pg": "8.23.0",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vitest": "latest",
     "jsdom": "latest"
   },
   "overrides": {
+    "fast-uri": "3.1.5",
+    "hono": "4.12.34",
+    "ip-address": "10.3.1",
+    "js-yaml": "4.3.1",
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.18"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion": "5.0.9"
+    },
+    "nanoid": "3.3.18",
     "postcss": "8.5.24",
-    "sharp": "0.35.3"
+    "sharp": "0.35.3",
+    "undici": "7.29.0"
   }
 }

@@ -7,8 +7,10 @@ and conflict normalization, are applied and verified. The 22 August controlled
 production Auth/Data API test passed its owner/partner/outsider/anonymous,
 rollback and stale-write assertions; all three temporary Auth users were
 deleted and the post-test planning ledger exactly matched its baseline.
-Connected workspace persistence remains off. This document is not
-approval to push, merge, deploy, create test users or enable a feature flag.
+The supplier-claim safety candidate adds exactly one unapplied migration,
+`20260822141612_atomic_supplier_claim_review.sql`. This document is not
+approval to apply it, merge or deploy application code, create production test
+users, change supplier data, alter flags or contact suppliers.
 
 ## Release invariants
 
@@ -16,17 +18,20 @@ approval to push, merge, deploy, create test users or enable a feature flag.
 - Production migration history and local source hashes must match the checked
   39-entry manifest in
   `production-migration-history-2026-08-20.json`.
-- The dry run must report `Remote database is up to date`; production has zero
-  pending migrations. Any local-only or remote-only migration is a stop
+- The normal dry run must list exactly
+  `20260822141612_atomic_supplier_claim_review.sql` after the 39 applied
+  migrations. Any additional local-only or remote-only migration is a stop
   condition.
-- This runbook contains no production migration command. Never use
-  `--include-seed`, `--include-roles`, history repair or an unreviewed push.
+- Never use `--include-all`, `--include-seed`, `--include-roles`, history repair
+  or an unreviewed push. The candidate is newer than production's latest
+  recorded version and requires no backfill command.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
-- Keep `PLANNING_WORKSPACE_CLOUD_ENABLED`,
+- Preserve the current environment-scoped values of
+  `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
   `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED`
-  off until their separate approvals. Preserve the already approved
-  Production-only public-entry state and the Production value of
+  exactly; this claim release authorises no flag change. Preserve the
+  Production value of
   `OUTREACH_SENDING_ENABLED=true` so the existing venue and photographer
   outreach workflow remains operational; do not add it to Preview or broaden
   it to generic supplier categories.
@@ -48,8 +53,8 @@ npm.cmd run test:production-migration-alignment
 
 The only permitted local changes during preparation must be explicitly
 reviewed. The alignment verifier must report all 39 applied migrations with
-matching source hashes, zero pending migrations and no production migration
-command in this runbook.
+matching source hashes plus exactly one independently deployable supplier-claim
+migration.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
 time, use a reviewed stable CLI version and record it in the release log. CLI
@@ -68,8 +73,9 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-39-entry manifest or the dry run proposes any migration. A dry run is
-inspection only; it is not migration approval.
+39-entry manifest or the dry run proposes anything except
+`20260822141612_atomic_supplier_claim_review.sql`. A dry run is inspection
+only; it is not migration approval.
 
 ## 3. Verified no-cost checkpoint
 
@@ -102,7 +108,28 @@ August; its follow-up ledger was 39/39 and the dry run reported that production
 was up to date. Those approvals did not authorise cloud persistence,
 supplier activation or outreach changes.
 
-## 5. Completed database verification
+## 5. Supplier-claim safety candidate
+
+`20260822141612_atomic_supplier_claim_review.sql` is reviewed but unapplied. It
+atomically validates claimant identity and supplier eligibility, serializes
+competing reviews with supplier-first locks, creates the vendor membership,
+synchronizes outreach state and writes an audit record. It also removes direct
+browser-role review/audit mutations and prevents profile-role escalation.
+
+The application change must not deploy before this migration exists. After the
+read-only dry run, applying it requires a separate explicit approval naming
+this exact file. The only permitted command under that later approval is:
+
+```powershell
+npx.cmd --yes supabase@2.101.0 db push --linked
+```
+
+Immediately rerun the migration ledger, exact dry run, advisors,
+`test:supplier-claim-review` and the native two-session
+`test:supplier-claim-concurrency` gate. Do not enable supplier flags, mutate a
+supplier listing or send outreach as part of the migration release.
+
+## 6. Completed database verification
 
 The 20 August post-apply verification established:
 
@@ -128,20 +155,18 @@ so production execution requires a separate explicit test-data approval and
 must verify cleanup. Cloud sharing cannot be enabled until that boundary has
 been exercised against an approved environment.
 
-## 6. Connected-cloud activation sequence
+## 7. Connected-cloud activation sequence
 
 Database verification, atomic import, owner bootstrap and non-transient
-conflict mapping are green, while the cloud flag remains off. The controlled
-production smoke proved user creation, sign-in, checked route contracts,
-owner/partner access, outsider isolation, invitation binding, atomic
-import/rollback and prompt stale-write conflicts. Cleanup deleted all three
-temporary Auth users; profiles remained 6, budgets remained 3 and all connected
-planning tables returned to zero rows. After PR #70 is merged and the matching
-application is deployed and verified with cloud persistence still off, the
-approved release may set
-`PLANNING_WORKSPACE_CLOUD_ENABLED=true` for Production. Keep generic-supplier
-flags off and the existing Production-only outreach-sending flag unchanged.
-Then verify:
+conflict mapping are green. PR #70 was merged and its connected Planning
+Workspace activation was separately approved after a controlled production
+smoke proved user creation, sign-in, checked route contracts, owner/partner
+access, outsider isolation, invitation binding, atomic import/rollback and
+prompt stale-write conflicts. Cleanup deleted all three temporary Auth users;
+profiles remained 6, budgets remained 3 and all connected planning tables
+returned to zero rows. Preserve the currently configured Production/Preview
+scopes exactly during the supplier-claim release. Keep generic-supplier flags
+and the existing Production-only outreach-sending scope unchanged. Verify:
 
 - the public home, venue catalogue, Budget Planner and Table Planner;
 - signed-out users retain the local-device journey and cannot call connected
