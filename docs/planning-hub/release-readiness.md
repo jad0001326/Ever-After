@@ -156,30 +156,19 @@ series between reviews 1 and 2. It does not add a separate Planning Hub change.
 ## Database order
 
 The application must not infer remote migration state from the presence of a
-table. Before approval, compare the remote migration history with these files.
-Supabase applies unapplied files in timestamp order:
+table. Production contains 39 applied migration identities whose local source
+hashes match `production-migration-history-2026-08-20.json`. Do not replay or
+repair those entries.
 
-1. `20260726140200_planning_workspace_foundation.sql`
-2. `20260726162254_planning_workspace_snapshot_import.sql`
-3. `20260726164304_planning_workspace_profiles.sql`
-4. `20260726185032_planning_workspace_partner_budgets.sql`
-5. `20260726191406_planning_table_plan_sync.sql`
-6. `20260803122711_supplier_owner_update_requests.sql`
-7. `20260803130045_supplier_catalogue_staging.sql`
-8. `20260803143000_tighten_data_api_table_grants.sql`
-9. `20260803150000_generalize_supplier_outreach.sql`
-10. `20260803165651_supplier_image_submissions.sql`
+The refreshed supplier-claim candidate contains exactly one pending file:
 
-The other 26 timestamped files now match production's recorded versions
-exactly. Do not replay them or repair production history. The five workspace
-migrations are additive and remain dormant while
-`PLANNING_WORKSPACE_CLOUD_ENABLED` is absent; generic supplier drafting and
-sending retain their separate disabled flags.
+1. `20260822141612_atomic_supplier_claim_review.sql`
 
-The first pending migration predates production's latest recorded version, so
-the reviewed CLI dry run and approved migration command require `--include-all`.
-The alignment verifier and exact dry-run list constrain it to the ten named
-files; seed data and custom roles remain excluded.
+The Supabase CLI generated that identity after production's latest recorded
+version. A normal dry run must therefore list exactly that file without
+`--include-all`; any additional local-only or remote-only identity is a stop
+condition. Seed data, custom roles, flags, supplier records and outreach remain
+outside the release.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -191,9 +180,9 @@ public tables to
 1. **Local release candidate**
    - finish tests, typecheck, lint, optimized build, 390 px keyboard/axe checks;
    - verify the production dependency audit remains clear;
-   - keep the cloud flag absent.
+   - preserve every existing environment-scoped flag value.
 2. **Code review**
-   - review draft pull request #55 and each boundary above in order;
+   - review draft supplier-claim pull request #69 and each boundary above;
    - keep the pull request in draft until the intended production scope is
      agreed;
    - merge no migration automatically.
@@ -212,21 +201,18 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 39 applied identities, matching source hashes and zero
-     pending migrations;
-   - confirm connected planning and generic-supplier flags remain off.
-5. **Application beta**
-   - deploy the reviewed application with cloud sharing disabled;
-   - smoke-test the existing public planners and beta local-device journey;
-   - complete physical iPhone/Safari and Android checks.
-6. **Schema activation, complete**
-   - all 39 reviewed migrations are applied with an up-to-date dry run;
-   - the controlled owner/partner/outsider Data API test passed;
-   - cleanup restored the exact production ledger baseline.
-7. **Cloud sharing activation, separately approved**
-   - enable the server-only flag;
-   - test one controlled owner/partner workspace;
-   - monitor Auth, Data API and application errors before wider invitation use.
+   - require the exact 39 applied identities, matching source hashes and only
+     the one pending supplier-claim migration;
+   - preserve connected-planning, generic-supplier and outreach flags exactly.
+5. **Supplier-claim schema activation, separately approved**
+   - apply only the exact normal-push dry-run result;
+   - rerun the 40-entry ledger, advisors, claim-review verifier and native
+     two-session concurrency gate;
+   - do not change supplier rows or claim flags during the schema release.
+6. **Application release, separately approved**
+   - deploy the reviewed claim application only after the migration is green;
+   - smoke-test claim submission and admin review without contacting suppliers;
+   - monitor Auth, Data API and application errors before wider use.
 
 ## Rollback
 

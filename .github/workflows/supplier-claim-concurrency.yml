@@ -1,0 +1,44 @@
+name: Supplier claim native concurrency
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/supplier-claim-concurrency.yml"
+      - "package.json"
+      - "scripts/verify-supplier-claim-concurrency.mjs"
+      - "scripts/verify-supplier-claim-review.mjs"
+      - "supabase/migrations/20260820125218_atomic_supplier_claim_review.sql"
+      - "supabase/migrations/20260813074826_lock_down_profile_role_updates.sql"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPPLIER_CLAIM_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/everaft_claim_test
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: everaft_claim_test
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d everaft_claim_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:supplier-claim-review
+      - run: npm run test:supplier-claim-concurrency
