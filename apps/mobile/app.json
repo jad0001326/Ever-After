@@ -13,7 +13,8 @@
         {
           "configureAndroidBackup": true
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
@@ -26,6 +27,7 @@
       ]
     },
     "android": {
+      "allowBackup": false,
       "package": "uk.co.everaft.mobile",
       "intentFilters": [
         {
