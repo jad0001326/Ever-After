@@ -4,13 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { type AppColors, radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
-import { createSeededTodayModel } from "./seeded-today";
+import type { DevicePlanData } from "../../planning/device-plan-model";
+import { createTodayModel } from "./seeded-today";
 
-const model = createSeededTodayModel();
-
-export function TodayScreen({ onExploreVenues }: { onExploreVenues: () => void }) {
+export function TodayScreen({ data, onExploreVenues, saving }: { data: DevicePlanData; onExploreVenues: () => void; saving: boolean }) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const model = useMemo(() => createTodayModel(data), [data]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -21,9 +21,9 @@ export function TodayScreen({ onExploreVenues }: { onExploreVenues: () => void }
       >
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.brand}>{model.workspaceName}</Text>
-          <View accessible accessibilityLabel={`Storage status: ${model.storageLabel}`} style={styles.status}>
+          <View accessible accessibilityLabel={`Storage status: ${saving ? "Saving" : model.storageLabel}`} style={styles.status}>
             <Text accessibilityElementsHidden style={styles.statusMark}>✓</Text>
-            <Text style={styles.statusText}>{model.storageLabel}</Text>
+            <Text style={styles.statusText}>{saving ? "Saving" : model.storageLabel}</Text>
           </View>
         </View>
 

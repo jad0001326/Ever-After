@@ -5,13 +5,16 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NativeAuthProvider, useNativeAuth } from "../src/auth/NativeAuthProvider";
 import { useAppTheme } from "../src/design/use-app-theme";
 import { SessionRestoringScreen } from "../src/features/auth/SessionRestoringScreen";
+import { DevicePlanProvider } from "../src/planning/DevicePlanProvider";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <NativeAuthProvider>
-        <AuthAwareRootNavigator />
-      </NativeAuthProvider>
+      <DevicePlanProvider>
+        <NativeAuthProvider>
+          <AuthAwareRootNavigator />
+        </NativeAuthProvider>
+      </DevicePlanProvider>
     </SafeAreaProvider>
   );
 }
@@ -30,6 +33,7 @@ function AuthAwareRootNavigator() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="auth" />
+        <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </>

@@ -1,9 +1,6 @@
 import { formatMoney } from "@everaft/planning-domain/budget/calculations";
-import { createWeddingProfile } from "@everaft/planning-domain/planning-workspace/profile";
 import { createPlanningDashboardSnapshot } from "@everaft/planning-domain/planning-workspace/snapshot";
-import type { PlanningWorkspace } from "@everaft/planning-domain/planning-workspace/types";
-import { createPlanningHubStarterPlan } from "@everaft/planning-domain/planning-hub/plan";
-import { createEmptyTablePlan } from "@everaft/planning-domain/table-plan/planner";
+import type { DevicePlanData } from "../../planning/device-plan-model";
 
 export type TodayModel = {
   workspaceName: string;
@@ -14,23 +11,8 @@ export type TodayModel = {
   comingUp: string;
 };
 
-export function createSeededTodayModel(): TodayModel {
-  const plan = createPlanningHubStarterPlan(null);
-  const timestamp = "2026-08-20T09:00:00.000Z";
-  const workspace: PlanningWorkspace = {
-    schemaVersion: 1,
-    id: "local-n2-workspace",
-    cloudWorkspaceId: null,
-    ownerId: null,
-    budgetPlanId: plan.id,
-    name: "My EverAft",
-    profile: createWeddingProfile(plan),
-    tasks: [],
-    tablePlan: createEmptyTablePlan(),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  const snapshot = createPlanningDashboardSnapshot(plan, workspace, new Date(timestamp));
+export function createTodayModel(data: DevicePlanData, referenceDate = new Date()): TodayModel {
+  const snapshot = createPlanningDashboardSnapshot(data.budgetPlan, data.workspace, referenceDate);
 
   return {
     workspaceName: snapshot.workspace.name,
