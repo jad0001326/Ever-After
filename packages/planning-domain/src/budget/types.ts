@@ -89,7 +89,7 @@ export type PlannerListing = {
   type: string;
   categoryId: string;
   location: string;
-  imageUrl: string;
+  imageUrl: string | null;
   listingUrl: string;
   priceFromPence: number | null;
   priceToPence: number | null;

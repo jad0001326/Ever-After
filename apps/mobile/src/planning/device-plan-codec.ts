@@ -4,6 +4,7 @@ import {
   weddingProfileSchema,
 } from "@everaft/planning-domain/planning-workspace/validation";
 import { z } from "zod";
+import { catalogueVenueSchema } from "@everaft/planning-contracts/catalogue/venue-api-schema";
 
 import type { DevicePlanData } from "./device-plan-model";
 
@@ -35,15 +36,33 @@ const workspaceSchema = z.strictObject({
   updatedAt: z.iso.datetime({ offset: true }),
 });
 
-const devicePlanSchema = z.strictObject({
+const commonDevicePlanSchema = {
   format: z.literal("everaft-device-plan"),
-  formatVersion: z.literal(1),
   localPreferences: z.strictObject({
     weddingSeason: z.string().trim().min(1).max(80).nullable(),
   }),
   budgetPlan: budgetPlanSchema,
   workspace: workspaceSchema,
-}).superRefine((data, context) => {
+};
+
+const devicePlanV2Schema = z.strictObject({
+  ...commonDevicePlanSchema,
+  formatVersion: z.literal(2),
+  discovery: z.strictObject({
+    comparedVenues: z.array(catalogueVenueSchema).max(3),
+    savedVenueIds: z.array(z.string().uuid()).max(100),
+  }),
+}).superRefine(validateDevicePlanReferences);
+
+const devicePlanV1Schema = z.strictObject({
+  ...commonDevicePlanSchema,
+  formatVersion: z.literal(1),
+}).superRefine(validateDevicePlanReferences);
+
+function validateDevicePlanReferences(
+  data: z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+  context: z.RefinementCtx,
+) {
   if (data.workspace.budgetPlanId !== data.budgetPlan.id) {
     context.addIssue({
       code: "custom",
@@ -58,13 +77,13 @@ const devicePlanSchema = z.strictObject({
       path: ["workspace", "cloudWorkspaceId"],
     });
   }
-});
+}
 
 const recoveryFixtureSchema = z.strictObject({
   fixture: z.literal("everaft-device-plan-recovery"),
   fixtureVersion: z.literal(1),
   exportedAt: z.iso.datetime({ offset: true }),
-  data: devicePlanSchema,
+  data: z.union([devicePlanV2Schema, devicePlanV1Schema]),
 });
 
 export class DevicePlanCorruptError extends Error {
@@ -75,14 +94,14 @@ export class DevicePlanCorruptError extends Error {
 }
 
 export function encodeDevicePlan(data: DevicePlanData) {
-  const validated = devicePlanSchema.parse(data);
+  const validated = devicePlanV2Schema.parse(data);
   return encodeWithinLimit(validated);
 }
 
 export function decodeDevicePlan(encoded: string): DevicePlanData {
   assertWithinLimit(encoded);
   try {
-    return devicePlanSchema.parse(JSON.parse(encoded)) as DevicePlanData;
+    return migrateDevicePlan(JSON.parse(encoded));
   } catch (error) {
     if (error instanceof DevicePlanCorruptError) throw error;
     throw new DevicePlanCorruptError();
@@ -94,18 +113,34 @@ export function encodeRecoveryFixture(data: DevicePlanData, exportedAt = new Dat
     fixture: "everaft-device-plan-recovery",
     fixtureVersion: 1,
     exportedAt: exportedAt.toISOString(),
-    data: devicePlanSchema.parse(data),
+    data: devicePlanV2Schema.parse(data),
   });
 }
 
 export function decodeRecoveryFixture(encoded: string): DevicePlanData {
   assertWithinLimit(encoded);
   try {
-    return recoveryFixtureSchema.parse(JSON.parse(encoded)).data as DevicePlanData;
+    return migrateParsedDevicePlan(recoveryFixtureSchema.parse(JSON.parse(encoded)).data);
   } catch (error) {
     if (error instanceof DevicePlanCorruptError) throw error;
     throw new DevicePlanCorruptError("The recovery fixture is invalid or unsupported.");
   }
+}
+
+function migrateDevicePlan(value: unknown): DevicePlanData {
+  const parsed = z.union([devicePlanV2Schema, devicePlanV1Schema]).parse(value);
+  return migrateParsedDevicePlan(parsed);
+}
+
+function migrateParsedDevicePlan(
+  parsed: z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+): DevicePlanData {
+  if (parsed.formatVersion === 2) return parsed as DevicePlanData;
+  return {
+    ...parsed,
+    formatVersion: 2,
+    discovery: { comparedVenues: [], savedVenueIds: [] },
+  } as DevicePlanData;
 }
 
 function encodeWithinLimit(value: unknown) {
