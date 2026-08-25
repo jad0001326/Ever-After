@@ -1,36 +1,35 @@
 # Planning Hub production activation runbook
 
-Date: 3 August 2026; updated 22 August 2026
+Date: 3 August 2026; updated 25 August 2026
 
-Status: all 39 reviewed migrations, including atomic import, owner bootstrap
-and conflict normalization, are applied and verified. The 22 August controlled
+Status: all 40 reviewed migrations, including atomic import, owner bootstrap,
+conflict normalization and atomic supplier-claim review, are applied. A 25
+August read-only Supabase CLI ledger refresh confirmed exact 40/40 alignment
+and zero pending migrations. The 22 August controlled
 production Auth/Data API test passed its owner/partner/outsider/anonymous,
 rollback and stale-write assertions; all three temporary Auth users were
 deleted and the post-test planning ledger exactly matched its baseline.
-The supplier-claim safety candidate adds exactly one unapplied migration,
-`20260822141612_atomic_supplier_claim_review.sql`. This document is not
-approval to apply it, merge or deploy application code, create production test
-users, change supplier data, alter flags or contact suppliers.
+This read-only refresh did not repeat a production supplier-claim mutation or
+create test users. This document is not approval to reapply a migration, merge
+or deploy application code, create production test users, change supplier
+data, alter flags or contact suppliers.
 
 ## Release invariants
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
-- Production migration history and local source hashes must match the checked
-  39-entry manifest in
-  `production-migration-history-2026-08-20.json`.
-- The normal dry run must list exactly
-  `20260822141612_atomic_supplier_claim_review.sql` after the 39 applied
-  migrations. Any additional local-only or remote-only migration is a stop
-  condition.
+- Production migration history and line-ending-canonical local source hashes
+  must match the checked 40-entry manifest in
+  `production-migration-history-2026-08-25.json`.
+- The normal dry run must report that the remote database is up to date. Any
+  local-only or remote-only migration is a stop condition.
 - Never use `--include-all`, `--include-seed`, `--include-roles`, history repair
-  or an unreviewed push. The candidate is newer than production's latest
-  recorded version and requires no backfill command.
+  or an unreviewed push.
 - Never run `db reset --linked`, `migration repair`, `db pull` or direct
   Dashboard SQL as part of this release.
 - Preserve the current environment-scoped values of
   `PLANNING_WORKSPACE_CLOUD_ENABLED`, `PLANNING_HUB_PUBLIC_ENTRY_ENABLED`,
   `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and `SUPPLIER_ADMIN_SCHEMA_ENABLED`
-  exactly; this claim release authorises no flag change. Preserve the
+  exactly; this ledger refresh authorises no flag change. Preserve the
   Production value of
   `OUTREACH_SENDING_ENABLED=true` so the existing venue and photographer
   outreach workflow remains operational; do not add it to Preview or broaden
@@ -52,9 +51,10 @@ npm.cmd run test:production-migration-alignment
 ```
 
 The only permitted local changes during preparation must be explicitly
-reviewed. The alignment verifier must report all 39 applied migrations with
-matching source hashes plus exactly one independently deployable supplier-claim
-migration.
+reviewed. The alignment verifier must report all 40 applied migrations with
+matching line-ending-canonical source hashes and zero pending migrations.
+Canonicalization treats CRLF and LF as equivalent but preserves every other
+SQL byte and final-newline state.
 
 The workstation does not currently have the Supabase CLI on `PATH`. At release
 time, use a reviewed stable CLI version and record it in the release log. CLI
@@ -73,9 +73,8 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-39-entry manifest or the dry run proposes anything except
-`20260822141612_atomic_supplier_claim_review.sql`. A dry run is inspection
-only; it is not migration approval.
+40-entry manifest or the dry run proposes any migration. A dry run is
+inspection only; it is not migration approval.
 
 ## 3. Verified no-cost checkpoint
 
@@ -85,11 +84,6 @@ protected by Windows DPAPI for the current user, and a full decrypt-and-hash
 restore test passed. It is stored outside the repository and OneDrive at:
 
 `%LOCALAPPDATA%\EverAft Recovery Checkpoints\pre-planning-migrations-20260820-173126`
-
-The directory contains the encrypted payload, DPAPI-protected key, manifest and
-verified decryption script. Plaintext export and restore-test copies were
-permanently removed. Never move the DPAPI key without the encrypted payload or
-assume it can be decrypted from another Windows profile.
 
 ## 4. Completed schema activation boundary
 
@@ -108,32 +102,26 @@ August; its follow-up ledger was 39/39 and the dry run reported that production
 was up to date. Those approvals did not authorise cloud persistence,
 supplier activation or outreach changes.
 
-## 5. Supplier-claim safety candidate
+## 5. Completed supplier-claim safety migration
 
-`20260822141612_atomic_supplier_claim_review.sql` is reviewed but unapplied. It
+`20260822141612_atomic_supplier_claim_review.sql` is applied. It
 atomically validates claimant identity and supplier eligibility, serializes
 competing reviews with supplier-first locks, creates the vendor membership,
 synchronizes outreach state and writes an audit record. It also removes direct
 browser-role review/audit mutations and prevents profile-role escalation.
 
-The application change must not deploy before this migration exists. After the
-read-only dry run, applying it requires a separate explicit approval naming
-this exact file. The only permitted command under that later approval is:
-
-```powershell
-npx.cmd --yes supabase@2.101.0 db push --linked
-```
-
-Immediately rerun the migration ledger, exact dry run, advisors,
-`test:supplier-claim-review` and the native two-session
-`test:supplier-claim-concurrency` gate. Do not enable supplier flags, mutate a
-supplier listing or send outreach as part of the migration release.
+The 25 August read-only ledger proves the migration identity is present after
+the 39 earlier versions. Do not replay, repair or reapply it. The embedded
+`test:supplier-claim-review` and native two-session
+`test:supplier-claim-concurrency` gates remain required for application
+changes. A new production mutation test, supplier flag change, supplier-data
+change or outreach action remains a separate explicit approval.
 
 ## 6. Completed database verification
 
 The 20 August post-apply verification established:
 
-1. all 39 applied local versions match the remote ledger;
+1. all 40 applied local versions match the remote ledger;
 2. all 51 public tables have RLS enabled;
 3. all 13 newly activated tables exist with their expected policy counts;
 4. `anon` and `authenticated` have zero `TRUNCATE`, `TRIGGER` or `REFERENCES`
@@ -165,7 +153,7 @@ access, outsider isolation, invitation binding, atomic import/rollback and
 prompt stale-write conflicts. Cleanup deleted all three temporary Auth users;
 profiles remained 6, budgets remained 3 and all connected planning tables
 returned to zero rows. Preserve the currently configured Production/Preview
-scopes exactly during the supplier-claim release. Keep generic-supplier flags
+scopes exactly during future supplier releases. Keep generic-supplier flags
 and the existing Production-only outreach-sending scope unchanged. Verify:
 
 - the public home, venue catalogue, Budget Planner and Table Planner;

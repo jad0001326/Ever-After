@@ -1,17 +1,17 @@
 # My EverAft Planning Hub release readiness
 
-Date: 3 August 2026; updated 22 August 2026
+Date: 3 August 2026; updated 25 August 2026
 
-Status: the connected, local-first beta is an activation candidate in draft
-pull request #70. Production now has all 39 reviewed migrations applied, their
-source hashes match the repository and the migration dry run reports zero
-pending changes. The 22 August controlled production Auth/Data API test passed
+Status: Planning Hub pull request #70 and supplier-claim pull request #69 are
+merged. Production now has all 40 reviewed migrations applied, their
+line-ending-canonical source hashes match the repository and a 25 August
+read-only ledger refresh reports zero pending migrations. The 22 August
+controlled production Auth/Data API test passed
 the owner, partner, outsider, anonymous, rollback and stale-write cases; all
 three temporary users were deleted and independent before/after counts matched
-exactly. Connected persistence remains off in Production. The remaining release
-boundary is to review and merge PR #70, deploy it with the cloud flag still off,
-verify that deployment, and only then separately approve the Production-only
-flag activation. The exact evidence, stop and rollback sequence is recorded in
+exactly. Connected persistence was subsequently approved for Production; this
+read-only migration refresh did not inspect or change current Vercel flag
+values. The exact evidence, stop and rollback sequence is recorded in
 `docs/planning-hub/production-activation-runbook.md`.
 
 The competitive priority adjustment in
@@ -156,19 +156,15 @@ series between reviews 1 and 2. It does not add a separate Planning Hub change.
 ## Database order
 
 The application must not infer remote migration state from the presence of a
-table. Production contains 39 applied migration identities whose local source
-hashes match `production-migration-history-2026-08-20.json`. Do not replay or
+table. Production contains 40 applied migration identities whose
+line-ending-canonical local source hashes match
+`production-migration-history-2026-08-25.json`. Do not replay or
 repair those entries.
 
-The refreshed supplier-claim candidate contains exactly one pending file:
-
-1. `20260822141612_atomic_supplier_claim_review.sql`
-
-The Supabase CLI generated that identity after production's latest recorded
-version. A normal dry run must therefore list exactly that file without
-`--include-all`; any additional local-only or remote-only identity is a stop
-condition. Seed data, custom roles, flags, supplier records and outreach remain
-outside the release.
+The supplier-claim migration is the fortieth applied identity. A normal dry run
+must report that the database is up to date without `--include-all`; any
+local-only or remote-only identity is a stop condition. Seed data, custom
+roles, flags, supplier records and outreach remain outside the release.
 
 Every exposed planning table has explicit authenticated grants as well as RLS.
 This is required independently of its policies because Supabase is moving new
@@ -182,9 +178,8 @@ public tables to
    - verify the production dependency audit remains clear;
    - preserve every existing environment-scoped flag value.
 2. **Code review**
-   - review draft supplier-claim pull request #69 and each boundary above;
-   - keep the pull request in draft until the intended production scope is
-     agreed;
+   - PRs #69 and #70 are merged; review each new application boundary in its
+     own pull request;
    - merge no migration automatically.
 3. **Free Supabase boundary verification**
    - run `npm run planning-api:prepare-local` to generate the reproducible
@@ -192,7 +187,7 @@ public tables to
      `docs/planning-hub/api-verification.md`;
    - use a local full stack once a container runtime is available, or an
      explicitly approved no-cost disposable environment;
-   - confirm that the baseline plus all 39 timestamped migrations apply in
+   - confirm that the baseline plus all 40 timestamped migrations apply in
      order;
    - create owner, partner, outsider and unmatched invitee Auth users;
    - run reads and mutations through `supabase-js` and the REST boundary;
@@ -201,16 +196,16 @@ public tables to
 4. **Production preflight, only after approval**
    - follow `production-activation-runbook.md` through its read-only CLI dry
      run and no-cost checkpoint;
-   - require the exact 39 applied identities, matching source hashes and only
-     the one pending supplier-claim migration;
+   - require the exact 40 applied identities, matching line-ending-canonical
+     source hashes and zero pending migrations;
    - preserve connected-planning, generic-supplier and outreach flags exactly.
-5. **Supplier-claim schema activation, separately approved**
-   - apply only the exact normal-push dry-run result;
-   - rerun the 40-entry ledger, advisors, claim-review verifier and native
-     two-session concurrency gate;
-   - do not change supplier rows or claim flags during the schema release.
-6. **Application release, separately approved**
-   - deploy the reviewed claim application only after the migration is green;
+5. **Supplier-claim schema state**
+   - the migration is applied; do not replay, repair or reapply it;
+   - keep the 40-entry ledger, claim-review verifier and native two-session
+     concurrency gate green;
+   - do not change supplier rows or claim flags during a ledger refresh.
+6. **Future application release, separately approved**
+   - deploy only reviewed application changes against the green schema;
    - smoke-test claim submission and admin review without contacting suppliers;
    - monitor Auth, Data API and application errors before wider use.
 
@@ -240,7 +235,7 @@ Use the least destructive rollback that restores safety:
   Auth, Data API, RLS and checked application routes and verified exact cleanup.
 - Physical iPhone/Safari and Android touch behavior needs real devices.
 - Field INP requires an approved release and real traffic.
-- Before deploying PR #70, verify in Vercel that
+- Before any future deployment, verify in Vercel that
   `PLANNING_WORKSPACE_CLOUD_ENABLED`, `SUPPLIER_CATEGORY_OUTREACH_ENABLED` and
   `SUPPLIER_ADMIN_SCHEMA_ENABLED` remain absent or not exactly `true` in the
   Production environment. Preserve the existing public-entry setting and the
@@ -249,9 +244,8 @@ Use the least destructive rollback that restores safety:
   Preview or treat it as permission for generic supplier-category outreach.
   Preview and Production environment scopes can differ, so check both before
   activation.
-- Pull request #70 remains a draft activation candidate. Its merge, Production
-  deployment and connected-planning flag activation remain explicit approval
-  boundaries.
+- Pull request #70 is merged. Future Production deployments and flag changes
+  remain explicit approval boundaries.
 
 ## Public-beta device-storage disclosure - 13 August 2026
 
@@ -452,7 +446,7 @@ database, catalogue or outreach behavior.
 - That journey then confirms removal, proves focus lands on the stable current
   venue heading, and opens a live catalogue venue. Removing and adding it again
   restores one active retained item with no duplicate record.
-- The local API generator reproduces one baseline plus all 39 timestamped
+- The local API generator reproduces one baseline plus all 40 timestamped
   migrations byte-for-byte, verifies every checksum and refuses overwrite.
 - The real read-only venue catalogue returns eight lightweight results at
   390 x 844 with no horizontal overflow or browser errors.
@@ -507,6 +501,8 @@ On 22 August 2026, the separately approved conflict-normalization migration
 completed production alignment at 39/39. The controlled production Auth/Data
 API test then passed and deleted all three temporary Auth users; independent
 ledger checks remained exactly 6 profiles, 3 budget plans and zero rows in all
-connected Planning Workspace tables. Draft PR #70 contains the application
-activation candidate. Connected persistence remains off and no code from that
-draft has been deployed by this release step.
+connected Planning Workspace tables. PR #70 was subsequently merged and its
+Production connected-planning activation was separately approved. PR #69 was
+also merged, and the 25 August read-only ledger now records its atomic
+supplier-claim migration as the fortieth applied identity with zero pending
+migrations. This refresh changed no flag, row or deployed code.
