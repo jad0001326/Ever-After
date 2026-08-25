@@ -27,11 +27,12 @@ export type PlanningHubVenue = {
   region: string;
   summary: string;
   capacityMax: number;
-  imageUrl: string;
+  imageUrl: string | null;
   priceFromPence: number | null;
   pricingLabel: string | null;
   pricingUnit: string | null;
   hasApprovedPhoto: boolean;
+  imageStatus?: "approved" | "representative" | "absent";
 };
 
 export type PlanningHubVenueDetail = PlanningHubVenue & {

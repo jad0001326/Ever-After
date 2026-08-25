@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from "../../src/ui/PlaceholderScreen";
+import { VenueDiscoveryScreen } from "../../src/features/venues/VenueDiscoveryScreen";
 
 export default function DiscoverScreen() {
-  return <PlaceholderScreen title="Discover" body="Venue and supplier discovery arrives in the next native slice." />;
+  return <VenueDiscoveryScreen />;
 }

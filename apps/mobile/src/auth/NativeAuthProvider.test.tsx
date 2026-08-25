@@ -27,6 +27,7 @@ describe("NativeAuthProvider", () => {
       start,
       getSnapshot: () => snapshot,
       subscribe(next) { listener = next; return () => { listener = null; }; },
+      getAccessToken: jest.fn(async () => "access-token"),
       signInWithPassword: jest.fn(),
       completeCallback: jest.fn(),
       rememberIntendedDestination: jest.fn(),

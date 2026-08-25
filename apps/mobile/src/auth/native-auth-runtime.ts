@@ -21,6 +21,7 @@ export type NativeAuthRuntime = Readonly<{
   start(): Promise<AuthSessionSnapshot>;
   getSnapshot(): AuthSessionSnapshot;
   subscribe(listener: (next: AuthSessionSnapshot) => void): () => void;
+  getAccessToken(): Promise<string | null>;
   signInWithPassword(email: string, password: string): Promise<string | null>;
   completeCallback(rawUrl: string): Promise<string | null>;
   rememberIntendedDestination(path: string): boolean;
@@ -84,6 +85,7 @@ export function createNativeAuthRuntime(
     start,
     getSnapshot: controller.getSnapshot,
     subscribe: controller.subscribe,
+    getAccessToken: controller.getAccessToken,
     signInWithPassword: controller.signInWithPassword,
     completeCallback: controller.completeCallback,
     rememberIntendedDestination: controller.rememberIntendedDestination,
@@ -108,6 +110,7 @@ function createUnavailableRuntime(
     start: async () => snapshot,
     getSnapshot: () => snapshot,
     subscribe: () => () => undefined,
+    getAccessToken: async () => null,
     signInWithPassword: unavailable,
     completeCallback: unavailable,
     rememberIntendedDestination: () => false,

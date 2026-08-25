@@ -30,7 +30,7 @@ export function PlanningHubVenueCard({
   return (
     <article className="group overflow-hidden rounded-3xl border border-[#d9d0c3] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/5">
       <div className="relative aspect-[4/3] overflow-hidden bg-[#eee8dd]">
-        {venue.hasApprovedPhoto ? (
+        {venue.hasApprovedPhoto && venue.imageUrl ? (
           <Image
             alt={`${venue.name} wedding venue in ${venue.town}`}
             className="object-cover transition duration-500 group-hover:scale-[1.02]"

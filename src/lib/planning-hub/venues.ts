@@ -75,6 +75,7 @@ export async function searchPlanningHubVenues(params: PlanningHubSearchParams): 
   const { data, count, error } = await query
     .order("is_featured", { ascending: false })
     .order("name", { ascending: true })
+    .order("id", { ascending: true })
     .range(from, to);
 
   if (error || !data) {
@@ -107,6 +108,7 @@ export async function getPlanningHubVenueDetail(venueId: string): Promise<Planni
     .eq("id", venueId)
     .eq("status", "published")
     .in("listing_status", ["published", "claimed"])
+    .not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`)
     .maybeSingle();
   if (!venue) return null;
 
@@ -180,7 +182,8 @@ async function fetchPublishedPriceOptions(supabase: SupabaseServerClient, venueI
 
 function planningHubVenueFromRow(row: VenueRow, options: VenuePriceOption[]): PlanningHubVenue {
   const price = selectBudgetPriceOption(options);
-  const hasApprovedPhoto = row.image_permission_status === "approved" && !row.image_is_representative;
+  const imageStatus = getPlanningHubVenueImageStatus(row);
+  const hasApprovedPhoto = imageStatus === "approved";
   return {
     id: row.id,
     slug: row.slug,
@@ -194,8 +197,19 @@ function planningHubVenueFromRow(row: VenueRow, options: VenuePriceOption[]): Pl
     priceFromPence: price?.amountFromPence ?? null,
     pricingLabel: price?.label ?? null,
     pricingUnit: price?.pricingUnit ?? null,
-    hasApprovedPhoto
+    hasApprovedPhoto,
+    imageStatus,
   };
+}
+
+export function getPlanningHubVenueImageStatus(
+  row: Pick<VenueRow, "hero_image" | "image_permission_status" | "image_is_representative">,
+) {
+  if (!row.hero_image) return "absent" as const;
+  if (row.image_permission_status === "approved" && !row.image_is_representative) {
+    return "approved" as const;
+  }
+  return "representative" as const;
 }
 
 function groupPrices(rows: PriceRow[]) {

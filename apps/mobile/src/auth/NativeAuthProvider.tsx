@@ -16,6 +16,7 @@ import {
 export type NativeAuthContextValue = Readonly<{
   availability: NativeAuthRuntime["availability"];
   snapshot: AuthSessionSnapshot;
+  getAccessToken(): Promise<string | null>;
   signInWithPassword(email: string, password: string): Promise<string | null>;
   completeCallback(rawUrl: string): Promise<string | null>;
   rememberIntendedDestination(path: string): boolean;
@@ -43,6 +44,7 @@ export function NativeAuthProvider({
   const value = useMemo<NativeAuthContextValue>(() => ({
     availability: activeRuntime.availability,
     snapshot,
+    getAccessToken: activeRuntime.getAccessToken,
     signInWithPassword: activeRuntime.signInWithPassword,
     completeCallback: activeRuntime.completeCallback,
     rememberIntendedDestination: activeRuntime.rememberIntendedDestination,
