@@ -14,6 +14,7 @@ const migrationPaths = [
   "supabase/migrations/20260820164604_atomic_planning_workspace_import.sql",
   "supabase/migrations/20260820184000_allow_planning_owner_bootstrap_read.sql",
   "supabase/migrations/20260820184100_normalize_planning_version_conflicts.sql",
+  "supabase/migrations/20260826144100_n6_transactional_workspace_setup.sql",
 ];
 
 const planningTables = [
@@ -203,6 +204,7 @@ async function assertSchemaContract(db) {
       ('public', 'import_planning_workspace_with_budget_v2'),
       ('public', 'sync_planning_table_plan'),
       ('public', 'sync_planning_table_plan_v2'),
+      ('public', 'update_planning_workspace_setup_v1'),
       ('private', 'can_access_planning_workspace'),
       ('private', 'owns_planning_workspace'),
       ('private', 'current_verified_planning_email'),
@@ -211,7 +213,7 @@ async function assertSchemaContract(db) {
     )
   `);
 
-  assert(functionResult.rows.length === 12, "expected twelve security-sensitive functions");
+  assert(functionResult.rows.length === 13, "expected thirteen security-sensitive functions");
   for (const row of functionResult.rows) {
     assert(row.empty_search_path, `${row.schema_name}.${row.function_name} has a mutable search_path`);
     assert(!row.anon_execute, `anon can execute ${row.schema_name}.${row.function_name}`);
@@ -236,6 +238,7 @@ async function assertSchemaContract(db) {
     ["import_planning_workspace_with_budget_v2", false],
     ["sync_planning_table_plan", true],
     ["sync_planning_table_plan_v2", false],
+    ["update_planning_workspace_setup_v1", false],
   ]);
   for (const row of functionResult.rows.filter((entry) => entry.schema_name === "public")) {
     assert(
@@ -272,7 +275,7 @@ try {
   );
 
   console.log(
-    "Planning workspace RLS verification passed: migrations, schema contract, owner/partner/outsider isolation, invitation security, imports, sync conflicts and anonymous denial.",
+    "Planning workspace RLS verification passed: migrations, schema contract, owner/partner/outsider isolation, atomic setup and imports, invitation security, sync conflicts and anonymous denial.",
   );
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);

@@ -14,7 +14,9 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = [];
+const expectedPending = [
+  "20260826144100_n6_transactional_workspace_setup.sql",
+];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -92,4 +94,6 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
   );
 }
 
-console.log(`Production migration alignment passed: ${remoteFiles.length} recorded production versions and canonical source hashes match, with zero pending migrations.`);
+console.log(
+  `Production migration alignment passed: ${remoteFiles.length} recorded production versions and canonical source hashes match, with ${expectedPending.length} reviewed pending migration${expectedPending.length === 1 ? "" : "s"}.`,
+);

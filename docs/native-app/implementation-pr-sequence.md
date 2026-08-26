@@ -1,9 +1,9 @@
 # Native app implementation PR sequence
 
-Date: 20 August 2026
+Date: 26 August 2026
 
-Status: proposed sequence only. No branch in this sequence is approved for
-commit, push, deployment, migration or external distribution by this document.
+Status: N0–N5 are merged. N6 is in local development only. This document does
+not authorise a push, deployment, migration or external distribution.
 
 ## Sequencing principles
 
@@ -188,33 +188,13 @@ non-production environment.
 
 Dependency: N3–N5.
 
-Hard gate: the current ten-migration dormant tranche includes five Planning
-Workspace migrations and unrelated older migrations. Connected production
-sync cannot proceed until the required workspace schema has an isolated,
-reviewed application path. No `--include-all` shortcut is implied.
-
-N6 implements the allowlisted temporary release-workdir mechanism in
-[Backend change plan](backend-change-plan.md). Its dry run must contain the
-exact live history plus only newly reissued N6 migrations; any supplier,
-outreach, staging, image-submission or other pending migration is a hard fail.
-Migration repair, seed and custom-role flags are not release shortcuts.
-
-The reissued workspace sequence must include the transactional setup function;
-activating the existing five files unchanged would preserve the partial-write
-bug and is therefore insufficient for connected beta.
-
-The five workspace files currently in that tranche are:
-
-- `20260726140200_planning_workspace_foundation.sql`;
-- `20260726162254_planning_workspace_snapshot_import.sql`;
-- `20260726164304_planning_workspace_profiles.sql`;
-- `20260726185032_planning_workspace_partner_budgets.sql`; and
-- `20260726191406_planning_table_plan_sync.sql`.
-
-Their filenames document the present dependency chain; they are not an
-application instruction. Before any remote proposal, re-read the live migration
-ledger, determine whether these should be reissued as one independently
-deployable reviewed sequence, and run the full RLS/Auth/Data API harness.
+Hard gate: production and the repository now match at 40/40, including the
+reviewed Planning Workspace and conflict-normalization sequence. N6 must not
+reissue any of that live SQL. Its only schema candidate is the later additive
+transactional-setup function. A fresh read-only ledger check and linked dry run
+must show exactly the 40 applied versions plus that one candidate; any second
+pending file is a hard fail. Migration repair, include-all, seed and custom-role
+flags are not release shortcuts.
 
 External approval: any Supabase environment, migration application, flag change
 or production connection.

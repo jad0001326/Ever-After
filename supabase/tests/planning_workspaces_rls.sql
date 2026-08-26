@@ -270,6 +270,10 @@ end
 $$;
 
 do $$
+declare
+  partner_workspace_at timestamptz;
+  partner_budget_at timestamptz;
+  partner_profile_at timestamptz;
 begin
   update public.planning_tasks
   set status = 'done'
@@ -301,6 +305,42 @@ begin
 
   if not found then
     raise exception 'RLS failure: partner cannot update the linked budget plan';
+  end if;
+
+  select workspace.updated_at, budget.updated_at, profile.updated_at
+  into partner_workspace_at, partner_budget_at, partner_profile_at
+  from public.planning_workspaces workspace
+  join public.budget_plans budget
+    on budget.user_id = workspace.owner_id
+   and budget.id = workspace.budget_plan_id
+  join public.planning_workspace_profiles profile
+    on profile.workspace_id = workspace.id
+  where workspace.id = '60000000-0000-4000-8000-000000000006';
+
+  perform public.update_planning_workspace_setup_v1(
+    '60000000-0000-4000-8000-000000000006',
+    2600000,
+    '2027-09-18',
+    96,
+    'Fife',
+    'few_weeks',
+    true,
+    array['venue', 'photography'],
+    array['Country house'],
+    array['Documentary'],
+    'Shared setup updated by the partner.',
+    partner_workspace_at,
+    partner_budget_at,
+    partner_profile_at
+  );
+
+  if (
+    select total_budget_pence
+    from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+  ) <> 2600000 then
+    raise exception 'Setup failure: partner could not update the linked setup atomically';
   end if;
 
   begin
@@ -487,6 +527,28 @@ begin
     raise exception 'RLS failure: outsider updated the linked budget plan';
   end if;
 
+  begin
+    perform public.update_planning_workspace_setup_v1(
+      '60000000-0000-4000-8000-000000000006',
+      1,
+      null,
+      null,
+      null,
+      'not_set',
+      false,
+      array[]::text[],
+      array[]::text[],
+      array[]::text[],
+      null,
+      '2026-01-01T00:00:00Z',
+      '2026-01-01T00:00:00Z',
+      null
+    );
+    raise exception 'RLS failure: outsider updated connected wedding setup';
+  exception
+    when no_data_found then null;
+  end;
+
   delete from public.planning_tasks
   where id = '72000000-0000-4000-8000-000000000007';
   if found then
@@ -612,6 +674,12 @@ do $$
 declare
   previous_updated_at timestamptz;
   imported_workspace_id uuid;
+  setup_expected_workspace_at timestamptz;
+  setup_expected_budget_at timestamptz;
+  setup_expected_profile_at timestamptz;
+  setup_workspace_at timestamptz;
+  setup_budget_at timestamptz;
+  setup_profile_at timestamptz;
 begin
   select updated_at
   into previous_updated_at
@@ -730,6 +798,112 @@ begin
       and vision = 'A warm autumn celebration.'
   ) <> 1 then
     raise exception 'Import failure: wedding profile was not replaced atomically';
+  end if;
+
+  select workspace.updated_at, budget.updated_at, profile.updated_at
+  into setup_expected_workspace_at, setup_expected_budget_at, setup_expected_profile_at
+  from public.planning_workspaces workspace
+  join public.budget_plans budget
+    on budget.user_id = workspace.owner_id
+   and budget.id = workspace.budget_plan_id
+  join public.planning_workspace_profiles profile
+    on profile.workspace_id = workspace.id
+  where workspace.id = imported_workspace_id;
+
+  select
+    updated.workspace_updated_at,
+    updated.budget_updated_at,
+    updated.profile_updated_at
+  into setup_workspace_at, setup_budget_at, setup_profile_at
+  from public.update_planning_workspace_setup_v1(
+    imported_workspace_id,
+    3250000,
+    '2027-10-02',
+    92,
+    '  Perthshire  ',
+    'fixed',
+    false,
+    array['venue', 'guest_experience'],
+    array['  Castle  '],
+    array['Documentary'],
+    '  A relaxed autumn weekend.  ',
+    setup_expected_workspace_at,
+    setup_expected_budget_at,
+    setup_expected_profile_at
+  ) updated;
+
+  if setup_workspace_at is null
+    or setup_budget_at is null
+    or setup_profile_at is null
+    or setup_workspace_at = setup_expected_workspace_at
+    or setup_budget_at = setup_expected_budget_at
+    or setup_profile_at = setup_expected_profile_at
+  then
+    raise exception 'Setup failure: canonical versions were not advanced';
+  end if;
+
+  if (
+    select count(*)
+    from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+      and total_budget_pence = 3250000
+      and plan_json->>'totalBudgetPence' = '3250000'
+      and plan_json->>'weddingDate' = '2027-10-02'
+      and plan_json->>'guestCount' = '92'
+      and plan_json->>'location' = 'Perthshire'
+      and updated_at = setup_budget_at
+  ) <> 1 then
+    raise exception 'Setup failure: budget columns and compatibility mirrors diverged';
+  end if;
+
+  if (
+    select count(*)
+    from public.planning_workspace_profiles
+    where workspace_id = imported_workspace_id
+      and wedding_date = '2027-10-02'
+      and guest_count = 92
+      and location = 'Perthshire'
+      and date_flexibility = 'fixed'
+      and not location_flexible
+      and priorities = array['venue', 'guest_experience']
+      and venue_styles = array['Castle']
+      and photography_styles = array['Documentary']
+      and vision = 'A relaxed autumn weekend.'
+      and updated_at = setup_profile_at
+  ) <> 1 then
+    raise exception 'Setup failure: the complete profile was not updated atomically';
+  end if;
+
+  begin
+    perform public.update_planning_workspace_setup_v1(
+      imported_workspace_id,
+      100,
+      null,
+      null,
+      null,
+      'not_set',
+      false,
+      array[]::text[],
+      array[]::text[],
+      array[]::text[],
+      null,
+      setup_expected_workspace_at,
+      setup_expected_budget_at,
+      setup_expected_profile_at
+    );
+    raise exception 'Setup failure: stale versions overwrote newer connected data';
+  exception
+    when sqlstate 'P4090' then null;
+  end;
+
+  if (
+    select total_budget_pence
+    from public.budget_plans
+    where user_id = '30000000-0000-4000-8000-000000000003'
+      and id = 'planning-budget-1'
+  ) <> 3250000 then
+    raise exception 'Setup failure: a rejected stale request changed the budget';
   end if;
 
   begin
