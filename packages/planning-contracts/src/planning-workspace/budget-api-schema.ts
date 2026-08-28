@@ -27,11 +27,27 @@ export const planningBudgetUpdateSuccessSchema = z.strictObject({
   description: "Version returned after a Planning Hub budget update succeeds.",
 });
 
+export const planningBudgetResourceSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  workspaceId: z.string().uuid(),
+  plan: budgetPlanSchema.strict(),
+  versions: z.strictObject({
+    workspaceUpdatedAt: z.string().datetime({ offset: true }),
+    budgetUpdatedAt: z.string().datetime({ offset: true }),
+  }),
+}).meta({
+  title: "EverAft Planning Budget Resource v1",
+  description: "A complete connected budget and its conflict versions.",
+});
+
 export type PlanningBudgetUpdateRequest = z.infer<
   typeof planningBudgetUpdateRequestSchema
 >;
 export type PlanningBudgetUpdateSuccess = z.infer<
   typeof planningBudgetUpdateSuccessSchema
+>;
+export type PlanningBudgetResource = z.infer<
+  typeof planningBudgetResourceSchema
 >;
 
 export const planningBudgetUpdateRequestJsonSchema = jsonSchema(
@@ -41,6 +57,10 @@ export const planningBudgetUpdateRequestJsonSchema = jsonSchema(
 export const planningBudgetUpdateSuccessJsonSchema = jsonSchema(
   planningBudgetUpdateSuccessSchema,
   "urn:everaft:planning-budget-update-success:v1",
+);
+export const planningBudgetResourceJsonSchema = jsonSchema(
+  planningBudgetResourceSchema,
+  "urn:everaft:planning-budget-resource:v1",
 );
 
 function jsonSchema(schema: z.ZodType, id: string) {

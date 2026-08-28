@@ -11,10 +11,18 @@ export function YouScreen({
   availability,
   sessionStatus,
   onSignIn,
+  storageLabel = "On this device",
+  connectionMessage,
+  onConnect,
+  onRefresh,
 }: Readonly<{
   availability: NativeAuthAvailability;
   sessionStatus: AuthSessionStatus;
   onSignIn(): void;
+  storageLabel?: string;
+  connectionMessage?: string;
+  onConnect?(): void;
+  onRefresh?(): void;
 }>) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -30,17 +38,27 @@ export function YouScreen({
         </View>
         <View
           accessible
-          accessibilityLabel="Plan storage: On this device"
+          accessibilityLabel={`Plan storage: ${storageLabel}`}
           style={styles.card}
         >
           <Text style={styles.eyebrow}>PLAN STORAGE</Text>
-          <Text style={styles.cardTitle}>On this device</Text>
+          <Text style={styles.cardTitle}>{storageLabel}</Text>
           <Text style={styles.body}>
-            {authenticated
+            {connectionMessage ?? (authenticated
               ? "Your My EverAft account is signed in. This plan remains device-only until a cloud workspace is loaded successfully."
-              : "This prototype does not claim cloud backup or partner sharing."}
+              : "This prototype does not claim cloud backup or partner sharing.")}
           </Text>
         </View>
+        {onConnect ? (
+          <Pressable accessibilityRole="button" onPress={onConnect} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+            <Text style={styles.buttonText}>Connect this plan</Text>
+          </Pressable>
+        ) : null}
+        {onRefresh ? (
+          <Pressable accessibilityRole="button" onPress={onRefresh} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
+            <Text style={styles.secondaryButtonText}>Refresh connected plan</Text>
+          </Pressable>
+        ) : null}
         {canSignIn ? (
           <Pressable
             accessibilityHint="Opens secure My EverAft sign-in"
@@ -73,6 +91,8 @@ function createStyles(colors: AppColors) {
     cardTitle: { ...typography.display, color: colors.primary, fontSize: 30, lineHeight: 36 },
     button: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.sm, justifyContent: "center", minHeight: 52, paddingHorizontal: spacing.lg },
     buttonText: { color: colors.onPrimary, fontSize: 17, fontWeight: "700" },
+    secondaryButton: { alignItems: "center", borderColor: colors.primary, borderRadius: radius.sm, borderWidth: 1, justifyContent: "center", minHeight: 52, paddingHorizontal: spacing.lg },
+    secondaryButtonText: { color: colors.primary, fontSize: 17, fontWeight: "700" },
     note: { ...typography.body, color: colors.textMuted },
     pressed: { opacity: 0.78 },
   });

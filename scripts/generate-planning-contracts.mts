@@ -2,9 +2,15 @@ import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { isGeneratedFileCurrent } from "./lib/generated-file-text.mjs";
 import {
+  planningBudgetResourceJsonSchema,
   planningBudgetUpdateRequestJsonSchema,
   planningBudgetUpdateSuccessJsonSchema,
 } from "@everaft/planning-contracts/planning-workspace/budget-api-schema";
+import {
+  planningConnectedPlanResourceJsonSchema,
+  planningSetupUpdateRequestJsonSchema,
+  planningWorkspaceImportRequestJsonSchema,
+} from "@everaft/planning-contracts/planning-workspace/connection-api-schema";
 import { planningDashboardSnapshotJsonSchema } from "@everaft/planning-contracts/planning-workspace/snapshot-schema";
 import {
   planningProfileResourceJsonSchema,
@@ -37,12 +43,28 @@ const contracts = [
     schema: planningDashboardSnapshotJsonSchema,
   },
   {
+    file: "planning-budget-resource.v1.schema.json",
+    schema: planningBudgetResourceJsonSchema,
+  },
+  {
     file: "planning-budget-update-request.v1.schema.json",
     schema: planningBudgetUpdateRequestJsonSchema,
   },
   {
     file: "planning-budget-update-success.v1.schema.json",
     schema: planningBudgetUpdateSuccessJsonSchema,
+  },
+  {
+    file: "planning-connected-plan-resource.v1.schema.json",
+    schema: planningConnectedPlanResourceJsonSchema,
+  },
+  {
+    file: "planning-workspace-import-request.v1.schema.json",
+    schema: planningWorkspaceImportRequestJsonSchema,
+  },
+  {
+    file: "planning-setup-update-request.v1.schema.json",
+    schema: planningSetupUpdateRequestJsonSchema,
   },
   {
     file: "planning-table-plan-resource.v1.schema.json",

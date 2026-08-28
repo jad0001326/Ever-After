@@ -4,6 +4,19 @@ import {
 import {
   planningDashboardSnapshotSchema,
 } from "@everaft/planning-contracts/planning-workspace/snapshot-schema";
+import {
+  planningBudgetResourceSchema,
+  planningBudgetUpdateSuccessSchema,
+  type PlanningBudgetUpdateRequest,
+} from "@everaft/planning-contracts/planning-workspace/budget-api-schema";
+import {
+  planningConnectedPlanResourceSchema,
+  type PlanningSetupUpdateRequest,
+  type PlanningWorkspaceImportRequest,
+} from "@everaft/planning-contracts/planning-workspace/connection-api-schema";
+import {
+  planningProfileResourceSchema,
+} from "@everaft/planning-contracts/planning-workspace/profile-api-schema";
 import type { z } from "zod";
 
 export type AccessTokenProvider = () => Promise<string | null>;
@@ -13,6 +26,10 @@ export type PlanningApiFailure =
   | "connected_planning_disabled"
   | "offline"
   | "planning_api_unavailable"
+  | "workspace_unavailable"
+  | "version_conflict"
+  | "payload_too_large"
+  | "invalid_request"
   | "response_contract_invalid"
   | "request_failed";
 
@@ -48,6 +65,16 @@ export type PlanningWorkspaceCollection = z.infer<
 export type PlanningDashboardSnapshot = z.infer<
   typeof planningDashboardSnapshotSchema
 >;
+export type PlanningBudgetResource = z.infer<typeof planningBudgetResourceSchema>;
+export type PlanningProfileResource = z.infer<typeof planningProfileResourceSchema>;
+export type PlanningConnectedPlanResource = z.infer<
+  typeof planningConnectedPlanResourceSchema
+>;
+export type PlanningWorkspaceHydration = Readonly<{
+  dashboard: PlanningDashboardSnapshot;
+  budget: PlanningBudgetResource;
+  profile: PlanningProfileResource;
+}>;
 
 export function createPlanningApiClient(options: PlanningApiClientOptions) {
   const baseUrl = validateBaseUrl(options.baseUrl);
@@ -57,6 +84,7 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
     operation: string,
     path: string,
     schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
+    init?: Readonly<{ method: "POST" | "PATCH"; body: unknown }>,
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) {
@@ -66,10 +94,13 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
     let response: Response;
     try {
       response = await fetcher(new URL(path, baseUrl), {
+        method: init?.method ?? "GET",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
+          ...(init ? { "Content-Type": "application/json" } : {}),
         },
+        ...(init ? { body: JSON.stringify(init.body) } : {}),
       });
     } catch {
       return fail(operation, "offline");
@@ -121,6 +152,65 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
         planningDashboardSnapshotSchema,
       );
     },
+    getBudget(workspaceId: string) {
+      return request(
+        "planning.budget.get",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/budget`,
+        planningBudgetResourceSchema,
+      );
+    },
+    getProfile(workspaceId: string) {
+      return request(
+        "planning.profile.get",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/profile`,
+        planningProfileResourceSchema,
+      );
+    },
+    updateBudget(workspaceId: string, body: PlanningBudgetUpdateRequest) {
+      return request(
+        "planning.budget.update",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/budget`,
+        planningBudgetUpdateSuccessSchema,
+        { method: "PATCH", body },
+      );
+    },
+    importWorkspace(body: PlanningWorkspaceImportRequest) {
+      return request(
+        "planning.workspace.import",
+        "/api/planning/v1/workspaces/import",
+        planningConnectedPlanResourceSchema,
+        { method: "POST", body },
+      );
+    },
+    updateSetup(workspaceId: string, body: PlanningSetupUpdateRequest) {
+      return request(
+        "planning.setup.update",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/setup`,
+        planningConnectedPlanResourceSchema,
+        { method: "PATCH", body },
+      );
+    },
+    async hydrateWorkspace(workspaceId: string) {
+      const encoded = encodeURIComponent(workspaceId);
+      const [dashboard, budget, profile] = await Promise.all([
+        request(
+          "planning.dashboard.get",
+          `/api/planning/v1/workspaces/${encoded}/dashboard`,
+          planningDashboardSnapshotSchema,
+        ),
+        request(
+          "planning.budget.get",
+          `/api/planning/v1/workspaces/${encoded}/budget`,
+          planningBudgetResourceSchema,
+        ),
+        request(
+          "planning.profile.get",
+          `/api/planning/v1/workspaces/${encoded}/profile`,
+          planningProfileResourceSchema,
+        ),
+      ]);
+      return { dashboard, budget, profile } satisfies PlanningWorkspaceHydration;
+    },
   });
 }
 
@@ -149,5 +239,9 @@ function mapFailure(status: number, serverCode: string | null): PlanningApiFailu
     return "connected_planning_disabled";
   }
   if (status === 503) return "planning_api_unavailable";
+  if (status === 404) return "workspace_unavailable";
+  if (status === 409) return "version_conflict";
+  if (status === 413) return "payload_too_large";
+  if (status === 400) return "invalid_request";
   return "request_failed";
 }

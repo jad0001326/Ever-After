@@ -6,6 +6,7 @@
   "exports": {
     "./catalogue/venue-api-schema": "./src/catalogue/venue-api-schema.ts",
     "./planning-workspace/budget-api-schema": "./src/planning-workspace/budget-api-schema.ts",
+    "./planning-workspace/connection-api-schema": "./src/planning-workspace/connection-api-schema.ts",
     "./planning-workspace/profile-api-schema": "./src/planning-workspace/profile-api-schema.ts",
     "./planning-workspace/snapshot-schema": "./src/planning-workspace/snapshot-schema.ts",
     "./planning-workspace/table-plan-api-schema": "./src/planning-workspace/table-plan-api-schema.ts",

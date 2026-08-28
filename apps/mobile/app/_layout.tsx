@@ -6,13 +6,16 @@ import { NativeAuthProvider, useNativeAuth } from "../src/auth/NativeAuthProvide
 import { useAppTheme } from "../src/design/use-app-theme";
 import { SessionRestoringScreen } from "../src/features/auth/SessionRestoringScreen";
 import { DevicePlanProvider } from "../src/planning/DevicePlanProvider";
+import { ConnectedPlanningProvider } from "../src/planning/ConnectedPlanningProvider";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <DevicePlanProvider>
         <NativeAuthProvider>
-          <AuthAwareRootNavigator />
+          <ConnectedPlanningProvider>
+            <AuthAwareRootNavigator />
+          </ConnectedPlanningProvider>
         </NativeAuthProvider>
       </DevicePlanProvider>
     </SafeAreaProvider>
