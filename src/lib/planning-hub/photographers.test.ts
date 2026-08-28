@@ -44,6 +44,7 @@ const supplier = {
   summary: "Natural wedding photography.",
   heroImageUrl: "/photo.jpg",
   hasApprovedPhoto: true,
+  visualStatus: "representative" as const,
   startingPricePence: 150_000,
   typicalPricePence: 190_000,
   pricingSummary: "Full-day coverage",
@@ -72,6 +73,7 @@ describe("Planning Hub photographer specialization", () => {
       total: 1,
       page: 1,
       totalPages: 1,
+      venueContext: "stale",
     });
     mocks.getSupplierDetail.mockResolvedValue({
       ...supplier,
@@ -103,7 +105,9 @@ describe("Planning Hub photographer specialization", () => {
       name: "Photographer One",
       styles: ["Documentary"],
       startingPricePence: 150_000,
+      visualStatus: "representative",
     });
+    expect(result.venueContext).toBe("stale");
   });
 
   it("combines shared supplier detail with photography-only fields", async () => {
@@ -131,5 +135,28 @@ describe("Planning Hub photographer specialization", () => {
     expect(result.error).toBe("Photography styles could not be filtered.");
     expect(result.error).not.toContain("photographer_profiles_internal");
     expect(mocks.searchSuppliers).not.toHaveBeenCalled();
+  });
+
+  it("does not silently drop profile data when profile hydration fails", async () => {
+    mocks.inIds.mockResolvedValueOnce({
+      data: null,
+      error: { message: "relation photographer_profiles_internal does not exist" },
+    });
+
+    const result = await searchPlanningHubPhotographers({ location: "Perthshire" });
+
+    expect(result.error).toBe("Photography profiles could not be loaded.");
+    expect(result.photographers).toEqual([]);
+    expect(result.error).not.toContain("photographer_profiles_internal");
+  });
+
+  it("treats a detail profile failure as catalogue unavailability", async () => {
+    mocks.maybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "permission denied for photographer_profiles" },
+    });
+
+    await expect(getPlanningHubPhotographerDetail(supplier.id))
+      .rejects.toThrow("Photography catalogue is unavailable.");
   });
 });

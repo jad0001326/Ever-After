@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./catalogue/supplier-api-schema": "./src/catalogue/supplier-api-schema.ts",
     "./catalogue/venue-api-schema": "./src/catalogue/venue-api-schema.ts",
     "./planning-workspace/budget-api-schema": "./src/planning-workspace/budget-api-schema.ts",
     "./planning-workspace/connection-api-schema": "./src/planning-workspace/connection-api-schema.ts",

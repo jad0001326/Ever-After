@@ -6,7 +6,7 @@ export type TodayModel = {
   workspaceName: string;
   storageLabel: string;
   greeting: string;
-  recommendation: { eyebrow: string; title: string; reason: string; actionLabel: string };
+  recommendation: { eyebrow: string; title: string; reason: string; actionLabel: string; destination: "venues" | "photography" | "plan" };
   budget: { total: string; remaining: string; committed: string; paid: string };
   comingUp: string;
 };
@@ -23,6 +23,7 @@ export function createTodayModel(data: DevicePlanData, referenceDate = new Date(
       title: snapshot.recommendation.stage === "venue" ? "Choose a venue" : snapshot.recommendation.title,
       reason: snapshot.recommendation.reason,
       actionLabel: snapshot.recommendation.stage === "venue" ? "Explore venues" : "Open next step",
+      destination: snapshot.recommendation.stage === "venue" ? "venues" : snapshot.recommendation.stage === "photography" ? "photography" : "plan",
     },
     budget: {
       total: formatMoney(snapshot.budget.totalBudgetPence),

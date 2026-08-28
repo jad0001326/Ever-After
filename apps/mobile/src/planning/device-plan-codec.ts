@@ -5,6 +5,7 @@ import {
 } from "@everaft/planning-domain/planning-workspace/validation";
 import { z } from "zod";
 import { catalogueVenueSchema } from "@everaft/planning-contracts/catalogue/venue-api-schema";
+import { catalogueSupplierSchema } from "@everaft/planning-contracts/catalogue/supplier-api-schema";
 
 import type { DevicePlanData } from "./device-plan-model";
 
@@ -45,6 +46,17 @@ const commonDevicePlanSchema = {
   workspace: workspaceSchema,
 };
 
+const devicePlanV3Schema = z.strictObject({
+  ...commonDevicePlanSchema,
+  formatVersion: z.literal(3),
+  discovery: z.strictObject({
+    comparedVenues: z.array(catalogueVenueSchema).max(3),
+    savedVenueIds: z.array(z.string().uuid()).max(100),
+    comparedSuppliers: z.array(catalogueSupplierSchema).max(3),
+    savedSupplierIds: z.array(z.string().uuid()).max(100),
+  }),
+}).superRefine(validateDevicePlanReferences);
+
 const devicePlanV2Schema = z.strictObject({
   ...commonDevicePlanSchema,
   formatVersion: z.literal(2),
@@ -60,7 +72,7 @@ const devicePlanV1Schema = z.strictObject({
 }).superRefine(validateDevicePlanReferences);
 
 function validateDevicePlanReferences(
-  data: z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+  data: z.infer<typeof devicePlanV3Schema> | z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
   context: z.RefinementCtx,
 ) {
   if (data.workspace.budgetPlanId !== data.budgetPlan.id) {
@@ -83,7 +95,7 @@ const recoveryFixtureSchema = z.strictObject({
   fixture: z.literal("everaft-device-plan-recovery"),
   fixtureVersion: z.literal(1),
   exportedAt: z.iso.datetime({ offset: true }),
-  data: z.union([devicePlanV2Schema, devicePlanV1Schema]),
+  data: z.union([devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]),
 });
 
 export class DevicePlanCorruptError extends Error {
@@ -94,7 +106,7 @@ export class DevicePlanCorruptError extends Error {
 }
 
 export function encodeDevicePlan(data: DevicePlanData) {
-  const validated = devicePlanV2Schema.parse(data);
+  const validated = devicePlanV3Schema.parse(data);
   return encodeWithinLimit(validated);
 }
 
@@ -113,7 +125,7 @@ export function encodeRecoveryFixture(data: DevicePlanData, exportedAt = new Dat
     fixture: "everaft-device-plan-recovery",
     fixtureVersion: 1,
     exportedAt: exportedAt.toISOString(),
-    data: devicePlanV2Schema.parse(data),
+    data: devicePlanV3Schema.parse(data),
   });
 }
 
@@ -128,18 +140,23 @@ export function decodeRecoveryFixture(encoded: string): DevicePlanData {
 }
 
 function migrateDevicePlan(value: unknown): DevicePlanData {
-  const parsed = z.union([devicePlanV2Schema, devicePlanV1Schema]).parse(value);
+  const parsed = z.union([devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]).parse(value);
   return migrateParsedDevicePlan(parsed);
 }
 
 function migrateParsedDevicePlan(
-  parsed: z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+  parsed: z.infer<typeof devicePlanV3Schema> | z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
 ): DevicePlanData {
-  if (parsed.formatVersion === 2) return parsed as DevicePlanData;
+  if (parsed.formatVersion === 3) return parsed as DevicePlanData;
+  if (parsed.formatVersion === 2) return {
+    ...parsed,
+    formatVersion: 3,
+    discovery: { ...parsed.discovery, comparedSuppliers: [], savedSupplierIds: [] },
+  } as DevicePlanData;
   return {
     ...parsed,
-    formatVersion: 2,
-    discovery: { comparedVenues: [], savedVenueIds: [] },
+    formatVersion: 3,
+    discovery: { comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] },
   } as DevicePlanData;
 }
 
