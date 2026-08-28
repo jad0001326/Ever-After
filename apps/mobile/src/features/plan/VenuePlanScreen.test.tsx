@@ -26,6 +26,8 @@ describe("VenuePlanScreen", () => {
 
     expect(view.getByRole("header", { name: "Village Hall" })).toBeOnTheScreen();
     expect(view.getByText("Estimated shortlist · Added manually")).toBeOnTheScreen();
+    expect(view.getByText("No payment recorded")).toBeOnTheScreen();
+    expect(view.getByText("Availability not checked")).toBeOnTheScreen();
     expect(view.getByLabelText(/Budget remaining £17,500/)).toBeOnTheScreen();
     expect(view.queryByText("CHOSEN")).not.toBeOnTheScreen();
   });

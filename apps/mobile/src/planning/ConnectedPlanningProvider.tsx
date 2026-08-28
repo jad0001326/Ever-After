@@ -18,17 +18,32 @@ import { useNativeAuth } from "../auth/NativeAuthProvider";
 import { resolveCatalogueRuntimeConfiguration } from "../catalogue/catalogue-runtime";
 import { createDevicePlanImportRequest } from "./connected-plan-model";
 import { useDevicePlan } from "./DevicePlanProvider";
+import type { DevicePlanData } from "./device-plan-model";
 
 export type ConnectedPlanningState =
   | Readonly<{ status: "device_only"; reason: "signed_out" | "not_configured" | "no_workspace" }>
   | Readonly<{ status: "checking" }>
-  | Readonly<{ status: "connected"; accountId: string; workspaceId: string; role: "owner" | "partner"; hydration: PlanningWorkspaceHydration }>
+  | Readonly<{
+    status: "connected";
+    accountId: string;
+    workspaceId: string;
+    role: "owner" | "partner";
+    syncStatus: "idle" | "saving";
+    hydration: PlanningWorkspaceHydration;
+  }>
   | Readonly<{ status: "error"; failure: "offline" | "unavailable" | "conflict" }>;
+
+export type ConnectedBudgetSaveResult = Readonly<{
+  outcome: "connected" | "device_only" | "needs_attention";
+  failure?: "offline" | "unavailable" | "conflict";
+}>;
 
 type ConnectedPlanningValue = Readonly<{
   state: ConnectedPlanningState;
+  data: DevicePlanData | null;
   connect(): Promise<void>;
   refresh(): Promise<void>;
+  saveBudget(data: DevicePlanData): Promise<ConnectedBudgetSaveResult>;
 }>;
 
 const ConnectedPlanningContext = createContext<ConnectedPlanningValue | null>(null);
@@ -50,6 +65,18 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
       getAccessToken: auth.getAccessToken,
     })
     : null, [auth.getAccessToken, configuration.baseUrl, configuration.status]);
+  const budgetPlanId = devicePlan.state.status === "ready"
+    ? devicePlan.state.record.data.budgetPlan.id
+    : null;
+  const exposedState = useMemo<ConnectedPlanningState>(() => (
+    state.status === "connected"
+      && (
+        auth.snapshot.status !== "authenticated"
+        || auth.snapshot.accountId !== state.accountId
+      )
+      ? { status: "device_only", reason: "signed_out" }
+      : state
+  ), [auth.snapshot.accountId, auth.snapshot.status, state]);
 
   const load = useCallback(async () => {
     const currentRevision = ++revision.current;
@@ -62,8 +89,7 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
       setState({ status: "device_only", reason: "not_configured" });
       return;
     }
-    if (devicePlan.state.status !== "ready") return;
-    const budgetPlanId = devicePlan.state.record.data.budgetPlan.id;
+    if (!budgetPlanId) return;
     setState({ status: "checking" });
     try {
       const collection = await client.listWorkspaces();
@@ -82,13 +108,14 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
         accountId,
         workspaceId: workspace.id,
         role: workspace.role,
+        syncStatus: "idle",
         hydration,
       });
     } catch (error) {
       if (currentRevision !== revision.current) return;
       setState({ status: "error", failure: mapConnectionFailure(error) });
     }
-  }, [auth.snapshot.accountId, auth.snapshot.status, client, devicePlan.state]);
+  }, [auth.snapshot.accountId, auth.snapshot.status, budgetPlanId, client]);
 
   useEffect(() => {
     const task = setTimeout(() => { void load(); }, 0);
@@ -111,6 +138,7 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
         accountId,
         workspaceId: resource.workspace.id,
         role: resource.workspace.role,
+        syncStatus: "idle",
         hydration,
       });
     } catch (error) {
@@ -119,11 +147,98 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
     }
   }, [auth.snapshot.accountId, client, devicePlan.state]);
 
+  const saveBudget = useCallback(async (
+    data: DevicePlanData,
+  ): Promise<ConnectedBudgetSaveResult> => {
+    const startingRevision = revision.current;
+    const connection = exposedState.status === "connected" ? exposedState : null;
+    const local = devicePlan.state.status === "ready"
+      ? devicePlan.state.record.data
+      : data;
+    const deviceSafeData: DevicePlanData = {
+      ...data,
+      budgetPlan: {
+        ...data.budgetPlan,
+        userId: local.budgetPlan.userId,
+        createdAt: local.budgetPlan.createdAt,
+      },
+      workspace: {
+        ...data.workspace,
+        id: local.workspace.id,
+        cloudWorkspaceId: local.workspace.cloudWorkspaceId,
+        ownerId: local.workspace.ownerId,
+        createdAt: local.workspace.createdAt,
+      },
+    };
+    const record = await devicePlan.save(deviceSafeData);
+    if (!connection || !client || startingRevision !== revision.current) {
+      return { outcome: "device_only" };
+    }
+
+    const currentRevision = ++revision.current;
+    const expectedBudgetUpdatedAt = connection.hydration.budget.versions.budgetUpdatedAt;
+    const requestPlan = {
+      ...record.data.budgetPlan,
+      userId: connection.hydration.budget.plan.userId,
+      createdAt: connection.hydration.budget.plan.createdAt,
+      updatedAt: expectedBudgetUpdatedAt,
+    };
+    setState((current) => current.status === "connected"
+      && current.accountId === connection.accountId
+      && current.workspaceId === connection.workspaceId
+      ? {
+        ...current,
+        syncStatus: "saving",
+        hydration: {
+          ...current.hydration,
+          budget: { ...current.hydration.budget, plan: requestPlan },
+        },
+      }
+      : current);
+
+    try {
+      await client.updateBudget(connection.workspaceId, {
+        schemaVersion: 1,
+        expectedBudgetUpdatedAt,
+        plan: requestPlan,
+      });
+      const hydration = await client.hydrateWorkspace(connection.workspaceId);
+      if (currentRevision !== revision.current) return { outcome: "device_only" };
+      setState({ ...connection, syncStatus: "idle", hydration });
+      return { outcome: "connected" };
+    } catch (error) {
+      const failure = mapConnectionFailure(error);
+      if (currentRevision === revision.current) {
+        setState({ status: "error", failure });
+      }
+      return { outcome: "needs_attention", failure };
+    }
+  }, [client, devicePlan, exposedState]);
+
+  const data = useMemo<DevicePlanData | null>(() => {
+    if (devicePlan.state.status !== "ready") return null;
+    const local = devicePlan.state.record.data;
+    if (exposedState.status !== "connected") return local;
+    return {
+      ...local,
+      budgetPlan: exposedState.hydration.budget.plan,
+      workspace: {
+        ...local.workspace,
+        cloudWorkspaceId: exposedState.workspaceId,
+        budgetPlanId: exposedState.hydration.budget.plan.id,
+        name: exposedState.hydration.dashboard.workspace.name,
+        profile: exposedState.hydration.profile.profile ?? local.workspace.profile,
+      },
+    };
+  }, [devicePlan.state, exposedState]);
+
   const value = useMemo<ConnectedPlanningValue>(() => ({
-    state,
+    state: exposedState,
+    data,
     connect,
     refresh: load,
-  }), [connect, load, state]);
+    saveBudget,
+  }), [connect, data, exposedState, load, saveBudget]);
   return (
     <ConnectedPlanningContext.Provider value={value}>
       {children}

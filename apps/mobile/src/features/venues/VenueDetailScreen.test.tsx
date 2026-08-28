@@ -2,7 +2,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { createDevicePlan } from "../../planning/device-plan-model";
 import { VenueDetailScreen } from "./VenueDetailScreen";
 
-const mockSave = jest.fn(async (data) => ({ data, revision: 2, savedAt: "2026-08-25T12:00:00.000Z" }));
+const mockSaveBudget = jest.fn(async (_data: unknown) => ({ outcome: "device_only" as const }));
 const mockBack = jest.fn();
 const mockGetVenue = jest.fn();
 
@@ -23,11 +23,8 @@ jest.mock("../../auth/NativeAuthProvider", () => ({
 jest.mock("../../catalogue/catalogue-runtime", () => ({
   createNativeCatalogueClient: () => ({ getVenue: (...args: unknown[]) => mockGetVenue(...args) }),
 }));
-jest.mock("../../planning/DevicePlanProvider", () => ({
-  useDevicePlan: () => ({
-    state: { status: "ready", record: { data: mockPlan, revision: 1, savedAt: "2026-08-25T11:00:00.000Z" }, saving: false },
-    save: mockSave,
-  }),
+jest.mock("../../planning/ConnectedPlanningProvider", () => ({
+  useConnectedPlanning: () => ({ data: mockPlan, saveBudget: mockSaveBudget }),
 }));
 
 const mockPlan = createDevicePlan({
@@ -76,8 +73,9 @@ describe("VenueDetailScreen", () => {
     expect(view.getByRole("radio", { name: /Quoted/ }).props.accessibilityState).toEqual({ checked: true });
     await fireEvent.press(view.getByRole("button", { name: "Choose as my venue" }));
 
-    await waitFor(() => expect(mockSave).toHaveBeenCalled());
-    expect(mockSave.mock.calls[0][0].budgetPlan).toMatchObject({
+    await waitFor(() => expect(mockSaveBudget).toHaveBeenCalled());
+    const saved = mockSaveBudget.mock.calls[0][0] as typeof mockPlan;
+    expect(saved.budgetPlan).toMatchObject({
       selectedVenueId: mockVenue.id,
       items: [expect.objectContaining({ bookingStatus: "quoted", confirmedCostPence: 500_000 })],
     });

@@ -13,19 +13,9 @@ export default function TodayRoute() {
   if (state.status === "loading") return <DevicePlanLoadingScreen />;
   if (state.status !== "ready") return <Redirect href="/(onboarding)" />;
 
-  const data = connected.state.status === "connected"
-    ? {
-      ...state.record.data,
-      budgetPlan: connected.state.hydration.budget.plan,
-      workspace: {
-        ...state.record.data.workspace,
-        name: connected.state.hydration.dashboard.workspace.name,
-        profile: connected.state.hydration.profile.profile ?? state.record.data.workspace.profile,
-      },
-    }
-    : state.record.data;
+  const data = connected.data ?? state.record.data;
   const storageLabel = connected.state.status === "connected"
-    ? "Connected to My EverAft"
+    ? connected.state.syncStatus === "saving" ? "Saving to My EverAft" : "Connected to My EverAft"
     : connected.state.status === "checking" ? "Checking connection" : "On this device";
   return <TodayScreen data={data} onExploreVenues={() => router.push("/discover")} saving={state.saving} storageLabel={storageLabel} />;
 }

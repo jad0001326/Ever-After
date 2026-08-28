@@ -18,7 +18,7 @@ import { useNativeAuth } from "../../auth/NativeAuthProvider";
 import { createNativeCatalogueClient } from "../../catalogue/catalogue-runtime";
 import { radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
-import { useDevicePlan } from "../../planning/DevicePlanProvider";
+import { useConnectedPlanning } from "../../planning/ConnectedPlanningProvider";
 import { selectVenue, shortlistVenue, venuePlanningCost } from "./venue-plan-actions";
 
 const statuses: { value: PlanningHubVenueStatus; label: string; explanation: string }[] = [
@@ -31,7 +31,7 @@ export function VenueDetailScreen() {
   const { venueId } = useLocalSearchParams<{ venueId?: string }>();
   const router = useRouter();
   const auth = useNativeAuth();
-  const devicePlan = useDevicePlan();
+  const connected = useConnectedPlanning();
   const { colors } = useAppTheme();
   const client = useMemo(() => createNativeCatalogueClient(auth.getAccessToken), [auth.getAccessToken]);
   const [detail, setDetail] = useState<CatalogueVenueDetail | null>(null);
@@ -39,7 +39,7 @@ export function VenueDetailScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<PlanningHubVenueStatus>("shortlisted");
   const [cost, setCost] = useState("");
-  const ready = devicePlan.state.status === "ready" ? devicePlan.state.record.data : null;
+  const ready = connected.data;
 
   useEffect(() => {
     let active = true;
@@ -69,10 +69,16 @@ export function VenueDetailScreen() {
       ? selectVenue(ready, detail, costPence, status)
       : shortlistVenue(ready, detail, costPence, status);
     try {
-      await devicePlan.save(next);
-      setMessage(selected
-        ? `${detail.name} is now your chosen venue on this device.`
-        : `${detail.name} is on your shortlist.`);
+      const result = await connected.saveBudget(next);
+      setMessage(result.outcome === "connected"
+        ? selected
+          ? `${detail.name} is now your chosen venue in My EverAft.`
+          : `${detail.name} is on your connected shortlist.`
+        : result.outcome === "needs_attention"
+          ? `${detail.name} is saved on this device; My EverAft sync needs attention.`
+          : selected
+            ? `${detail.name} is now your chosen venue on this device.`
+            : `${detail.name} is on your shortlist.`);
     } catch {
       setMessage("Your plan changed before this update completed. Please try again.");
     }

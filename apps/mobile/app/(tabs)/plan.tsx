@@ -10,8 +10,5 @@ export default function PlanScreen() {
   const connected = useConnectedPlanning();
   if (state.status === "loading") return <DevicePlanLoadingScreen />;
   if (state.status !== "ready") return <Redirect href="/(onboarding)" />;
-  const data = connected.state.status === "connected"
-    ? { ...state.record.data, budgetPlan: connected.state.hydration.budget.plan }
-    : state.record.data;
-  return <VenuePlanScreen data={data} onDiscover={() => router.push("/discover")} />;
+  return <VenuePlanScreen data={connected.data ?? state.record.data} onDiscover={() => router.push("/discover")} />;
 }

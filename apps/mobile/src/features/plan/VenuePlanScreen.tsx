@@ -1,4 +1,7 @@
-import { calculatePlanningHubPlan } from "@everaft/planning-domain/planning-hub/plan";
+import {
+  calculatePlanningHubPlan,
+  getPlanningHubItemAvailability,
+} from "@everaft/planning-domain/planning-hub/plan";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,14 +31,18 @@ export function VenuePlanScreen({ data, onDiscover }: { data: DevicePlanData; on
           const selected = data.budgetPlan.selectedVenueId !== null
             && (data.budgetPlan.selectedVenueId === venue.id || data.budgetPlan.selectedVenueId === venue.listingId);
           const cost = venue.confirmedCostPence ?? venue.estimatedCostPence;
+          const availability = availabilityLabel(venue, data.budgetPlan.weddingDate);
+          const payment = paymentLabel(venue, cost);
           return (
-            <View accessibilityLabel={`${venue.itemName}, ${selected ? "chosen venue" : venue.bookingStatus}, ${cost === null ? "cost not set" : money(cost)}`} key={venue.id} style={[styles.card, { backgroundColor: colors.canvasRaised, borderColor: selected ? colors.accent : colors.border }]}>
+            <View accessibilityLabel={`${venue.itemName}, ${selected ? "chosen venue" : venue.bookingStatus}, ${cost === null ? "cost not set" : money(cost)}, ${payment}, ${availability}`} key={venue.id} style={[styles.card, { backgroundColor: colors.canvasRaised, borderColor: selected ? colors.accent : colors.border }]}>
               <View style={styles.cardHeader}>
                 <Text accessibilityRole="header" style={[styles.cardTitle, { color: colors.primary }]}>{venue.itemName}</Text>
                 {selected ? <Text style={[styles.badge, { backgroundColor: colors.successSurface, color: colors.primary }]}>CHOSEN</Text> : null}
               </View>
               <Text style={{ color: colors.textMuted }}>{statusLabel(venue.bookingStatus)} · {venue.source === "manual" ? "Added manually" : "EverAft catalogue"}</Text>
               <Text style={[styles.cost, { color: colors.text }]}>{cost === null ? "Cost not set" : money(cost)}</Text>
+              <Text style={{ color: colors.text }}>{payment}</Text>
+              <Text style={{ color: colors.textMuted }}>{availability}</Text>
             </View>
           );
         }) : (
@@ -61,6 +68,36 @@ function statusLabel(status: string) {
   if (status === "booked") return "Booked";
   if (status === "quoted") return "Quoted";
   return "Estimated shortlist";
+}
+
+function paymentLabel(
+  item: DevicePlanData["budgetPlan"]["items"][number],
+  cost: number | null,
+) {
+  const paid = Math.max(item.totalPaidPence, item.depositPaidPence, 0);
+  const paidLabel = paid > 0
+    ? cost !== null && paid >= cost ? "Paid in full" : `${money(paid)} paid`
+    : "No payment recorded";
+  if (!item.dueDate) return paidLabel;
+  const due = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${item.dueDate}T00:00:00.000Z`));
+  return `${paidLabel} · next due ${due}`;
+}
+
+function availabilityLabel(
+  item: DevicePlanData["budgetPlan"]["items"][number],
+  weddingDate: string | null,
+) {
+  const availability = getPlanningHubItemAvailability(item, weddingDate);
+  if (availability.stale) return "Availability needs rechecking for your date";
+  if (availability.status === "available") return "Available for your date";
+  if (availability.status === "unavailable") return "Unavailable for your date";
+  if (availability.status === "enquiry_sent") return "Availability enquiry sent";
+  return "Availability not checked";
 }
 
 const styles = StyleSheet.create({

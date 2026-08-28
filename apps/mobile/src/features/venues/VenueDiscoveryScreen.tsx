@@ -18,6 +18,7 @@ import { useNativeAuth } from "../../auth/NativeAuthProvider";
 import { createNativeCatalogueClient } from "../../catalogue/catalogue-runtime";
 import { radius, spacing, typography, type AppColors } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
+import { useConnectedPlanning } from "../../planning/ConnectedPlanningProvider";
 import { useDevicePlan } from "../../planning/DevicePlanProvider";
 import {
   addManualVenue,
@@ -30,12 +31,13 @@ export function VenueDiscoveryScreen() {
   const router = useRouter();
   const auth = useNativeAuth();
   const devicePlan = useDevicePlan();
+  const connected = useConnectedPlanning();
   const { colors } = useAppTheme();
   const client = useMemo(
     () => createNativeCatalogueClient(auth.getAccessToken),
     [auth.getAccessToken],
   );
-  const ready = devicePlan.state.status === "ready" ? devicePlan.state.record.data : null;
+  const ready = connected.data;
   const [location, setLocation] = useState(ready?.workspace.profile.location ?? "");
   const [search, setSearch] = useState("");
   const [venueType, setVenueType] = useState("");
@@ -182,14 +184,18 @@ export function VenueDiscoveryScreen() {
     if (!ready) return;
     const pounds = Number(manualCost.replace(/[^0-9.]/g, ""));
     try {
-      await devicePlan.save(addManualVenue(
+      const result = await connected.saveBudget(addManualVenue(
         ready,
         manualName,
         Number.isFinite(pounds) ? Math.round(pounds * 100) : 0,
       ));
       setManualName("");
       setManualCost("");
-      setMessage("Manual venue added to your shortlist on this device.");
+      setMessage(result.outcome === "connected"
+        ? "Manual venue added to your connected shortlist."
+        : result.outcome === "needs_attention"
+          ? "Manual venue saved on this device; My EverAft sync needs attention."
+          : "Manual venue added to your shortlist on this device.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Enter a venue name.");
     }
