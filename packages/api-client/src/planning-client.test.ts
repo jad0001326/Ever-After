@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createPlanningHubStarterPlan } from "@everaft/planning-domain/planning-hub/plan";
 import { PlanningApiError, createPlanningApiClient } from "./planning-client";
 
 const workspaceCollection = {
@@ -32,10 +33,50 @@ describe("createPlanningApiClient", () => {
     expect(new Headers(init?.headers).get("authorization")).toBe("Bearer fixture-token");
   });
 
+  it("sends typed writes without exposing their token or body in diagnostics", async () => {
+    const diagnostics: unknown[] = [];
+    const success = {
+      schemaVersion: 1,
+      budgetPlanId: "plan-1",
+      savedAt: "2026-08-22T10:00:00.001Z",
+    };
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => Response.json(success));
+    const client = createPlanningApiClient({
+      baseUrl: "https://example.test",
+      getAccessToken: async () => "private-token",
+      fetch: fetcher,
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+    });
+    const body = {
+      schemaVersion: 1 as const,
+      expectedBudgetUpdatedAt: "2026-08-22T10:00:00.000Z",
+      plan: {
+        ...createPlanningHubStarterPlan("user-1"),
+        id: "plan-1",
+        updatedAt: "2026-08-22T10:00:00.000Z",
+      },
+    };
+
+    await expect(client.updateBudget("workspace-1", body)).resolves.toEqual(success);
+    const [, init] = fetcher.mock.calls[0];
+    expect(init?.method).toBe("PATCH");
+    expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
+    expect(init?.body).toBe(JSON.stringify(body));
+    expect(JSON.stringify(diagnostics)).not.toContain("private-token");
+    expect(JSON.stringify(diagnostics)).not.toContain("plan-1");
+  });
+
   it.each([
     [401, "authentication_required", "authentication_required"],
     [503, "connected_planning_disabled", "connected_planning_disabled"],
     [503, "planning_api_unavailable", "planning_api_unavailable"],
+    [404, "workspace_unavailable", "workspace_unavailable"],
+    [409, "version_conflict", "version_conflict"],
+    [413, "payload_too_large", "payload_too_large"],
+    [400, "invalid_request", "invalid_request"],
   ] as const)("maps %s %s without exposing the token", async (status, code, expected) => {
     const diagnostics: unknown[] = [];
     const client = createPlanningApiClient({

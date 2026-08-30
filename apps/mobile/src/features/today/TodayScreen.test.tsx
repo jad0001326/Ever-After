@@ -26,4 +26,24 @@ describe("TodayScreen", () => {
     fireEvent.press(view.getByRole("button", { name: "Explore venues" }));
     expect(onExploreVenues).toHaveBeenCalledTimes(1);
   });
+
+  it("announces a successfully hydrated connected workspace", async () => {
+    const data = createDevicePlan({
+      weddingDate: null,
+      weddingSeason: null,
+      location: null,
+      guestCount: 80,
+      totalBudgetPence: 2_000_000,
+      priorities: [],
+    });
+    const view = await render(
+      <TodayScreen
+        data={data}
+        onExploreVenues={jest.fn()}
+        saving={false}
+        storageLabel="Connected to My EverAft"
+      />,
+    );
+    expect(view.getByLabelText("Storage status: Connected to My EverAft")).toBeOnTheScreen();
+  });
 });

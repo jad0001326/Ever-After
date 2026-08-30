@@ -4,6 +4,7 @@ import { VenueDiscoveryScreen } from "./VenueDiscoveryScreen";
 
 const mockPush = jest.fn();
 const mockSave = jest.fn(async (data) => ({ data, revision: 2, savedAt: "2026-08-25T12:00:00.000Z" }));
+const mockSaveBudget = jest.fn(async (_data: unknown) => ({ outcome: "device_only" as const }));
 const mockSearchVenues = jest.fn();
 let resolveDelayedSearch: ((value: {
   schemaVersion: number;
@@ -60,6 +61,9 @@ jest.mock("../../planning/DevicePlanProvider", () => ({
     save: mockSave,
   }),
 }));
+jest.mock("../../planning/ConnectedPlanningProvider", () => ({
+  useConnectedPlanning: () => ({ data: mockPlan, saveBudget: mockSaveBudget }),
+}));
 
 const mockPlan = createDevicePlan({
   weddingDate: null,
@@ -113,8 +117,9 @@ describe("VenueDiscoveryScreen", () => {
     await fireEvent.changeText(view.getByLabelText("Manual venue name"), "Village Hall");
     await fireEvent.changeText(view.getByLabelText("Manual venue estimate in pounds"), "2500");
     await fireEvent.press(view.getByRole("button", { name: "Add manual venue" }));
-    await waitFor(() => expect(mockSave).toHaveBeenCalled());
-    expect(mockSave.mock.calls.at(-1)?.[0].budgetPlan.items[0]).toMatchObject({
+    await waitFor(() => expect(mockSaveBudget).toHaveBeenCalled());
+    const saved = mockSaveBudget.mock.calls.at(-1)?.[0] as typeof mockPlan;
+    expect(saved.budgetPlan.items[0]).toMatchObject({
       itemName: "Village Hall",
       source: "manual",
     });

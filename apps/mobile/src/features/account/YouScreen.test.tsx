@@ -33,4 +33,25 @@ describe("YouScreen", () => {
     expect(view.getByText(/account is signed in/)).toBeOnTheScreen();
     expect(view.getByText(/plan remains device-only/)).toBeOnTheScreen();
   });
+
+  it("offers an explicit connection write and a separate safe refresh", async () => {
+    const onConnect = jest.fn();
+    const onRefresh = jest.fn();
+    const view = await render(
+      <YouScreen
+        availability="configured"
+        connectionMessage="The matching workspace is ready."
+        onConnect={onConnect}
+        onRefresh={onRefresh}
+        onSignIn={jest.fn()}
+        sessionStatus="authenticated"
+        storageLabel="Connected to My EverAft"
+      />,
+    );
+    await fireEvent.press(view.getByRole("button", { name: "Connect this plan" }));
+    await fireEvent.press(view.getByRole("button", { name: "Refresh connected plan" }));
+    expect(onConnect).toHaveBeenCalledTimes(1);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(view.getByLabelText("Plan storage: Connected to My EverAft")).toBeOnTheScreen();
+  });
 });

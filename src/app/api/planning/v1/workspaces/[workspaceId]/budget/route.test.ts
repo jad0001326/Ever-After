@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
 import { authenticatePlanningApiRequest } from "@/lib/planning-workspace/api-auth";
-import { planningBudgetUpdateSuccessSchema } from "@/lib/planning-workspace/budget-api-schema";
+import {
+  planningBudgetResourceSchema,
+  planningBudgetUpdateSuccessSchema,
+} from "@/lib/planning-workspace/budget-api-schema";
 import { updatePlanningBudgetPlan } from "@/lib/planning-workspace/budget-api";
 import { loadPlanningWorkspaceContext } from "@/lib/planning-workspace/server-snapshot";
-import { PATCH } from "./route";
+import { GET, PATCH } from "./route";
 
 vi.mock("@/lib/planning-workspace/api-auth", () => ({
   authenticatePlanningApiRequest: vi.fn(),
@@ -29,6 +32,41 @@ describe("Planning Budget API", () => {
     } else {
       process.env.PLANNING_WORKSPACE_CLOUD_ENABLED = previousCloudFlag;
     }
+  });
+
+  it("returns the complete connected budget with conflict versions", async () => {
+    enableAuthenticatedRequest();
+    vi.mocked(loadPlanningWorkspaceContext).mockResolvedValue({
+      ok: true,
+      budgetPlan: currentPlan(),
+      snapshot: {
+        workspace: { updated_at: updatedAt },
+      },
+      isOwner: true,
+    } as never);
+
+    const response = await GET(readRequest(), routeContext());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("x-everaft-contract")).toBe(
+      "urn:everaft:planning-budget-resource:v1",
+    );
+    expect(planningBudgetResourceSchema.parse(body)).toEqual(body);
+  });
+
+  it("does not disclose an inaccessible budget on read", async () => {
+    enableAuthenticatedRequest();
+    vi.mocked(loadPlanningWorkspaceContext).mockResolvedValue({
+      ok: false,
+      message: "unavailable",
+    });
+
+    const response = await GET(readRequest(), routeContext());
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "workspace_unavailable" });
   });
 
   it("rejects unsupported content before loading a workspace", async () => {
@@ -243,6 +281,13 @@ function request(body: unknown, contentType = "application/json") {
       },
       body: typeof body === "string" ? body : JSON.stringify(body),
     },
+  );
+}
+
+function readRequest() {
+  return new Request(
+    `https://www.everaft.co.uk/api/planning/v1/workspaces/${workspaceId}/budget`,
+    { headers: { Authorization: "Bearer test-access-token" } },
   );
 }
 

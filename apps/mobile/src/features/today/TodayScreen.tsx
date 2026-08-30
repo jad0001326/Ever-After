@@ -7,7 +7,7 @@ import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 import { createTodayModel } from "./seeded-today";
 
-export function TodayScreen({ data, onExploreVenues, saving }: { data: DevicePlanData; onExploreVenues: () => void; saving: boolean }) {
+export function TodayScreen({ data, onExploreVenues, saving, storageLabel = "On this device" }: { data: DevicePlanData; onExploreVenues: () => void; saving: boolean; storageLabel?: string }) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const model = useMemo(() => createTodayModel(data), [data]);
@@ -21,9 +21,9 @@ export function TodayScreen({ data, onExploreVenues, saving }: { data: DevicePla
       >
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.brand}>{model.workspaceName}</Text>
-          <View accessible accessibilityLabel={`Storage status: ${saving ? "Saving" : model.storageLabel}`} style={styles.status}>
+          <View accessible accessibilityLabel={`Storage status: ${saving ? "Saving" : storageLabel}`} style={styles.status}>
             <Text accessibilityElementsHidden style={styles.statusMark}>✓</Text>
-            <Text style={styles.statusText}>{saving ? "Saving" : model.storageLabel}</Text>
+            <Text style={styles.statusText}>{saving ? "Saving" : storageLabel}</Text>
           </View>
         </View>
 

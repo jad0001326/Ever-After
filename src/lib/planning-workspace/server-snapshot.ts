@@ -112,12 +112,12 @@ export async function loadPlanningWorkspaceContext(
 
   const { data, error } = await supabase
     .from("budget_plans")
-    .select("plan_json")
+    .select("plan_json, updated_at")
     .eq("user_id", snapshot.workspace.owner_id)
     .eq("id", snapshot.workspace.budget_plan_id)
     .maybeSingle();
   const budgetPlan = budgetPlanSchema.safeParse(data?.plan_json);
-  if (error || !budgetPlan.success) {
+  if (error || !data || !budgetPlan.success) {
     return {
       ok: false,
       message: "The connected wedding budget is unavailable.",
@@ -129,6 +129,7 @@ export async function loadPlanningWorkspaceContext(
     budgetPlan: {
       ...budgetPlan.data,
       userId: snapshot.workspace.owner_id,
+      updatedAt: data.updated_at,
     },
     isOwner: snapshot.workspace.owner_id === userId,
     snapshot,
