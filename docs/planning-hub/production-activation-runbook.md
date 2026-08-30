@@ -1,11 +1,12 @@
 # Planning Hub production activation runbook
 
-Date: 3 August 2026; updated 25 August 2026
+Date: 3 August 2026; updated 30 August 2026
 
-Status: all 40 reviewed migrations, including atomic import, owner bootstrap,
-conflict normalization and atomic supplier-claim review, are applied. A 25
-August read-only Supabase CLI ledger refresh confirmed exact 40/40 alignment
-and zero pending migrations. The 22 August controlled
+Status: all 41 reviewed migrations, including atomic import, owner bootstrap,
+conflict normalization, atomic supplier-claim review and the N6 transactional
+workspace setup function, are applied. A 30 August Supabase CLI ledger refresh
+confirmed exact 41/41 alignment and zero pending migrations. The N6 function's
+live security metadata and rolled-back role checks also passed. The 22 August controlled
 production Auth/Data API test passed its owner/partner/outsider/anonymous,
 rollback and stale-write assertions; all three temporary Auth users were
 deleted and the post-test planning ledger exactly matched its baseline.
@@ -18,8 +19,8 @@ data, alter flags or contact suppliers.
 
 - Project identity must be `Ever-After` / `fryfdniacyhpubfiqnxj`.
 - Production migration history and line-ending-canonical local source hashes
-  must match the checked 40-entry manifest in
-  `production-migration-history-2026-08-25.json`.
+  must match the checked 41-entry manifest in
+  `production-migration-history-2026-08-30.json`.
 - The normal dry run must report that the remote database is up to date. Any
   local-only or remote-only migration is a stop condition.
 - Never use `--include-all`, `--include-seed`, `--include-roles`, history repair
@@ -51,7 +52,7 @@ npm.cmd run test:production-migration-alignment
 ```
 
 The only permitted local changes during preparation must be explicitly
-reviewed. The alignment verifier must report all 40 applied migrations with
+reviewed. The alignment verifier must report all 41 applied migrations with
 matching line-ending-canonical source hashes and zero pending migrations.
 Canonicalization treats CRLF and LF as equivalent but preserves every other
 SQL byte and final-newline state.
@@ -73,7 +74,7 @@ npx.cmd --yes supabase@2.101.0 db push --linked --dry-run
 ```
 
 Save the outputs in the release record. Stop if the history is not the exact
-40-entry manifest or the dry run proposes any migration. A dry run is
+41-entry manifest or the dry run proposes any migration. A dry run is
 inspection only; it is not migration approval.
 
 ## 3. Verified no-cost checkpoint
@@ -119,9 +120,9 @@ change or outreach action remains a separate explicit approval.
 
 ## 6. Completed database verification
 
-The 20 August post-apply verification established:
+The 20 August schema checks and 30 August N6 post-apply verification established:
 
-1. all 40 applied local versions match the remote ledger;
+1. all 41 applied local versions match the remote ledger;
 2. all 51 public tables have RLS enabled;
 3. all 13 newly activated tables exist with their expected policy counts;
 4. `anon` and `authenticated` have zero `TRUNCATE`, `TRIGGER` or `REFERENCES`

@@ -163,7 +163,7 @@ The generator:
 
 1. checks that the baseline has not begun overlapping later table migrations;
 2. copies `schema.sql` byte-for-byte as the first test migration;
-3. copies all 40 timestamped migrations byte-for-byte in filename order;
+3. copies all 41 timestamped migrations byte-for-byte in filename order;
 4. records a SHA-256 checksum for every source and target; and
 5. refuses to replace an existing output directory.
 
@@ -181,7 +181,7 @@ supabase init --workdir .
 supabase start --workdir .
 ```
 
-After all 40 generated migrations apply, start the EverAft application from a
+After all 41 generated migrations apply, start the EverAft application from a
 second terminal with the cloud gate enabled only in that process:
 
 ```powershell

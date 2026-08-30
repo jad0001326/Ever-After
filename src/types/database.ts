@@ -1486,6 +1486,29 @@ export type Database = {
           workspace_updated_at: string;
         }>;
       };
+      update_planning_workspace_setup_v1: {
+        Args: {
+          target_workspace_id: string;
+          setup_total_budget_pence: number;
+          setup_wedding_date: string | null;
+          setup_guest_count: number | null;
+          setup_location: string | null;
+          setup_date_flexibility: string;
+          setup_location_flexible: boolean;
+          setup_priorities: string[];
+          setup_venue_styles: string[];
+          setup_photography_styles: string[];
+          setup_vision: string | null;
+          expected_workspace_updated_at: string;
+          expected_budget_updated_at: string;
+          expected_profile_updated_at: string | null;
+        };
+        Returns: Array<{
+          workspace_updated_at: string;
+          budget_updated_at: string;
+          profile_updated_at: string;
+        }>;
+      };
     };
     Enums: {
       venue_status: "draft" | "published";
