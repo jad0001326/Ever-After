@@ -6,6 +6,10 @@ import {
   type catalogueFavouriteKindSchema,
 } from "@everaft/planning-contracts/catalogue/venue-api-schema";
 import type { z } from "zod";
+import {
+  catalogueSupplierCollectionSchema,
+  catalogueSupplierDetailSchema,
+} from "@everaft/planning-contracts/catalogue/supplier-api-schema";
 import type { AccessTokenProvider } from "./planning-client";
 
 export type CatalogueFailure =
@@ -34,6 +38,9 @@ export type CatalogueVenue = CatalogueVenueCollection["venues"][number];
 export type CatalogueVenueDetail = z.infer<typeof catalogueVenueDetailSchema>;
 export type CatalogueFavouriteCollection = z.infer<typeof catalogueFavouriteCollectionSchema>;
 export type CatalogueFavouriteKind = z.infer<typeof catalogueFavouriteKindSchema>;
+export type CatalogueSupplierCollection = z.infer<typeof catalogueSupplierCollectionSchema>;
+export type CatalogueSupplier = CatalogueSupplierCollection["suppliers"][number];
+export type CatalogueSupplierDetail = z.infer<typeof catalogueSupplierDetailSchema>;
 
 export type VenueSearch = Readonly<{
   search?: string;
@@ -41,6 +48,17 @@ export type VenueSearch = Readonly<{
   guests?: number;
   budgetPounds?: number;
   type?: string;
+  page?: number;
+}>;
+
+export type SupplierSearch = Readonly<{
+  search?: string;
+  location?: string;
+  style?: string;
+  venueId?: string;
+  venueName?: string;
+  budgetPounds?: number;
+  weddingDate?: string;
   page?: number;
 }>;
 
@@ -97,6 +115,29 @@ export function createCatalogueApiClient(options: Readonly<{
   }
 
   return Object.freeze({
+    searchSuppliers(category: "photographer", filters: SupplierSearch = {}) {
+      const query = new URLSearchParams();
+      setText(query, "search", filters.search, 100);
+      setText(query, "location", filters.location, 120);
+      setText(query, "style", filters.style, 80);
+      setText(query, "venue", filters.venueId, 100);
+      setText(query, "venueName", filters.venueName, 120);
+      setText(query, "weddingDate", filters.weddingDate, 10);
+      setInteger(query, "budget", filters.budgetPounds, 10_000_000);
+      setInteger(query, "page", filters.page ?? 1, 1000);
+      return request(
+        "catalogue.suppliers.search",
+        `/api/catalogue/v1/suppliers/${category}?${query}`,
+        catalogueSupplierCollectionSchema,
+      );
+    },
+    getSupplier(category: "photographer", supplierId: string) {
+      return request(
+        "catalogue.suppliers.detail",
+        `/api/catalogue/v1/suppliers/${category}/${encodeURIComponent(supplierId)}`,
+        catalogueSupplierDetailSchema,
+      );
+    },
     searchVenues(filters: VenueSearch = {}) {
       const query = new URLSearchParams();
       setText(query, "search", filters.search, 100);

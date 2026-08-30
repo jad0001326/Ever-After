@@ -16,6 +16,7 @@ describe("seeded Today model", () => {
     expect(model.recommendation).toMatchObject({
       title: "Choose a venue",
       actionLabel: "Explore venues",
+      destination: "venues",
     });
     expect(model.budget).toEqual({
       total: "£20,000",

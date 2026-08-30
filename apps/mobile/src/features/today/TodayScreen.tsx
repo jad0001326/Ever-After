@@ -7,7 +7,7 @@ import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 import { createTodayModel } from "./seeded-today";
 
-export function TodayScreen({ data, onExploreVenues, saving, storageLabel = "On this device" }: { data: DevicePlanData; onExploreVenues: () => void; saving: boolean; storageLabel?: string }) {
+export function TodayScreen({ data, onOpenRecommendation, saving, storageLabel = "On this device" }: { data: DevicePlanData; onOpenRecommendation: (destination: "venues" | "photography" | "plan") => void; saving: boolean; storageLabel?: string }) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const model = useMemo(() => createTodayModel(data), [data]);
@@ -34,9 +34,9 @@ export function TodayScreen({ data, onExploreVenues, saving, storageLabel = "On 
           <Text accessibilityRole="header" style={styles.actionTitle}>{model.recommendation.title}</Text>
           <Text style={styles.reason}>{model.recommendation.reason}</Text>
           <Pressable
-            accessibilityHint="Opens venue discovery"
+            accessibilityHint={model.recommendation.destination === "photography" ? "Opens photographer discovery" : model.recommendation.destination === "plan" ? "Opens your plan" : "Opens venue discovery"}
             accessibilityRole="button"
-            onPress={onExploreVenues}
+            onPress={() => onOpenRecommendation(model.recommendation.destination)}
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           >
             <Text style={styles.buttonText}>{model.recommendation.actionLabel}</Text>

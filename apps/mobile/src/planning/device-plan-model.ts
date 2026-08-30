@@ -7,15 +7,17 @@ import {
 import type { PlanningWorkspace } from "@everaft/planning-domain/planning-workspace/types";
 import { createEmptyTablePlan } from "@everaft/planning-domain/table-plan/planner";
 import type { BudgetPlan } from "@everaft/planning-domain/budget/types";
-import type { CatalogueVenue } from "@everaft/api-client";
+import type { CatalogueSupplier, CatalogueVenue } from "@everaft/api-client";
 
 export type DevicePlanData = Readonly<{
   format: "everaft-device-plan";
-  formatVersion: 2;
+  formatVersion: 3;
   localPreferences: Readonly<{ weddingSeason: string | null }>;
   discovery: Readonly<{
     comparedVenues: CatalogueVenue[];
     savedVenueIds: string[];
+    comparedSuppliers: CatalogueSupplier[];
+    savedSupplierIds: string[];
   }>;
   budgetPlan: BudgetPlan;
   workspace: PlanningWorkspace;
@@ -66,9 +68,9 @@ export function createDevicePlan(
 
   return {
     format: "everaft-device-plan",
-    formatVersion: 2,
+    formatVersion: 3,
     localPreferences: { weddingSeason: setup.weddingSeason },
-    discovery: { comparedVenues: [], savedVenueIds: [] },
+    discovery: { comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] },
     budgetPlan,
     workspace,
   };

@@ -39,6 +39,9 @@ export async function searchPlanningHubPhotographers(
   if (result.error) return photographerSearchError(result.page, result.error);
 
   const profiles = await fetchProfileMap(supabase, result.suppliers.map((supplier) => supplier.id));
+  if (!profiles) {
+    return photographerSearchError(result.page, "Photography profiles could not be loaded.");
+  }
   return {
     photographers: result.suppliers.map((supplier) => (
       photographerFromSupplier(supplier, profiles.get(supplier.id) ?? null)
@@ -46,6 +49,7 @@ export async function searchPlanningHubPhotographers(
     total: result.total,
     page: result.page,
     totalPages: result.totalPages,
+    venueContext: result.venueContext,
   };
 }
 
@@ -53,9 +57,9 @@ export async function getPlanningHubPhotographerDetail(
   photographerId: string,
 ): Promise<PlanningHubPhotographerDetail | null> {
   const supabase = await createClient();
-  if (!supabase) return null;
+  if (!supabase) throw new Error("Photography catalogue is unavailable.");
 
-  const [supplier, { data: profile }] = await Promise.all([
+  const [supplier, profileResult] = await Promise.all([
     getPlanningHubSupplierDetail("photographer", photographerId, supabase),
     supabase
       .from("photographer_profiles")
@@ -63,8 +67,10 @@ export async function getPlanningHubPhotographerDetail(
       .eq("supplier_id", photographerId)
       .maybeSingle(),
   ]);
+  if (profileResult.error) throw new Error("Photography catalogue is unavailable.");
   if (!supplier) return null;
 
+  const profile = profileResult.data;
   const profileRow = profile as PhotographerRow | null;
   return {
     ...photographerFromSupplier(supplier, profileRow),
@@ -94,6 +100,7 @@ function photographerFromSupplier(
     styles: profile?.styles ?? [],
     heroImageUrl: supplier.heroImageUrl,
     hasApprovedPhoto: supplier.hasApprovedPhoto,
+    visualStatus: supplier.visualStatus,
     startingPricePence: supplier.startingPricePence,
     typicalPricePence: supplier.typicalPricePence,
     pricingSummary: supplier.pricingSummary,
@@ -109,10 +116,11 @@ async function fetchProfileMap(
 ) {
   const result = new Map<string, PhotographerRow>();
   if (supplierIds.length === 0) return result;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("photographer_profiles")
     .select("*")
     .in("supplier_id", supplierIds);
+  if (error) return null;
   for (const row of (data ?? []) as PhotographerRow[]) result.set(row.supplier_id, row);
   return result;
 }

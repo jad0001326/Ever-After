@@ -17,5 +17,5 @@ export default function TodayRoute() {
   const storageLabel = connected.state.status === "connected"
     ? connected.state.syncStatus === "saving" ? "Saving to My EverAft" : "Connected to My EverAft"
     : connected.state.status === "checking" ? "Checking connection" : "On this device";
-  return <TodayScreen data={data} onExploreVenues={() => router.push("/discover")} saving={state.saving} storageLabel={storageLabel} />;
+  return <TodayScreen data={data} onOpenRecommendation={(destination) => router.push(destination === "photography" ? "/suppliers/photography" : destination === "plan" ? "/plan" : "/discover")} saving={state.saving} storageLabel={storageLabel} />;
 }

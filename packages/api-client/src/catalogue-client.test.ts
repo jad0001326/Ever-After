@@ -7,7 +7,28 @@ const venueCollection = {
   page: { number: 1, size: 8, total: 0, totalPages: 1 },
 };
 
+const supplierCollection = {
+  schemaVersion: 1,
+  category: { slug: "photographer", label: "Photographer", plural: "Photographers", budgetCategoryId: "photography" },
+  suppliers: [],
+  context: { venue: "not_provided", venueName: null, location: "Fife", budgetPence: 500_000, weddingDate: null, availabilityStatus: "not_checked" },
+  page: { number: 1, size: 8, total: 0, totalPages: 1 },
+};
+
 describe("createCatalogueApiClient", () => {
+  it("sends bounded public supplier context without a bearer token", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => Response.json(supplierCollection));
+    const getAccessToken = vi.fn(async () => "private-token");
+    const client = createCatalogueApiClient({ baseUrl: "https://www.everaft.co.uk", getAccessToken, fetch: fetcher });
+    await client.searchSuppliers("photographer", { location: " Fife ", budgetPounds: 5000, weddingDate: "2027-08-14" });
+    const [input, init] = fetcher.mock.calls[0];
+    expect(Object.fromEntries(new URL(String(input)).searchParams)).toEqual({ location: "Fife", weddingDate: "2027-08-14", budget: "5000", page: "1" });
+    expect(new Headers(init?.headers).has("authorization")).toBe(false);
+    expect(getAccessToken).not.toHaveBeenCalled();
+  });
   it("keeps public search anonymous and sends only bounded catalogue filters", async () => {
     const fetcher = vi.fn(async (
       _input: RequestInfo | URL,

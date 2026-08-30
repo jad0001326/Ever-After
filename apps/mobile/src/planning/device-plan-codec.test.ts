@@ -7,8 +7,8 @@ describe("device plan payload migration", () => {
     const { discovery: _discovery, ...legacy } = current;
     const decoded = decodeDevicePlan(JSON.stringify({ ...legacy, formatVersion: 1 }));
 
-    expect(decoded.formatVersion).toBe(2);
-    expect(decoded.discovery).toEqual({ comparedVenues: [], savedVenueIds: [] });
+    expect(decoded.formatVersion).toBe(3);
+    expect(decoded.discovery).toEqual({ comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] });
   });
 
   it("restores compared and saved venue decisions after an app restart", () => {
@@ -27,9 +27,10 @@ describe("device plan payload migration", () => {
       pricingLabel: "From",
       pricingUnit: "total",
     };
+    const plan = createPlan();
     const data = {
-      ...createPlan(),
-      discovery: { comparedVenues: [venue], savedVenueIds: [venue.id] },
+      ...plan,
+      discovery: { ...plan.discovery, comparedVenues: [venue], savedVenueIds: [venue.id] },
     };
     const reopened = decodeDevicePlan(encodeDevicePlan(data));
 

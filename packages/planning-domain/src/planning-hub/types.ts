@@ -106,6 +106,7 @@ export type PlanningHubPhotographerResults = {
   page: number;
   totalPages: number;
   error?: string;
+  venueContext?: "not_provided" | "matched" | "stale";
 };
 
 export type PlanningHubSupplier = {
@@ -158,6 +159,7 @@ export type PlanningHubSupplierResults = {
   page: number;
   totalPages: number;
   error?: string;
+  venueContext?: "not_provided" | "matched" | "stale";
 };
 
 export type PlanningHubSupplierCategory = {

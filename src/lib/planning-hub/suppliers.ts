@@ -3,7 +3,7 @@ import type { Database } from "@/types/database";
 import type { SupplierCategorySlug } from "@/types/supplier";
 import { safePostgrestSearch } from "./search";
 import {
-  getPlanningHubSupplierCategory,
+  getLivePlanningHubSupplierCategory,
   normalisePlanningHubSupplierSearchParams,
   PLANNING_HUB_SUPPLIER_PAGE_SIZE,
 } from "./supplier-search";
@@ -37,7 +37,7 @@ export async function searchPlanningHubSuppliers(
   } = {},
 ): Promise<PlanningHubSupplierResults> {
   const filters = normalisePlanningHubSupplierSearchParams(params);
-  const category = getPlanningHubSupplierCategory(categorySlug);
+  const category = getLivePlanningHubSupplierCategory(categorySlug);
   if (!category) return supplierSearchError(filters.page, "This supplier category is unavailable.");
   const supabase = options.client ?? await createClient();
   if (!supabase) return supplierSearchError(filters.page, "Supplier search is unavailable.");
@@ -59,7 +59,12 @@ export async function searchPlanningHubSuppliers(
       return supplierSearchError(filters.page, "Venue-based supplier matching is temporarily unavailable.");
     }
 
-    if (venue) {
+    if (!venue) {
+      return {
+        suppliers: [], total: 0, page: filters.page, totalPages: 1,
+        venueContext: "stale",
+      };
+    } else {
       const baseCoverageQuery = () => supabase
         .from("supplier_listings")
         .select("id")
@@ -123,16 +128,17 @@ export async function searchPlanningHubSuppliers(
   }
 
   if (filters.sort === "price-desc") {
-    query = query.order("starting_price_pence", { ascending: false, nullsFirst: false });
+    query = query.order("starting_price_pence", { ascending: false, nullsFirst: false }).order("id", { ascending: true });
   } else if (filters.sort === "name") {
-    query = query.order("name", { ascending: true });
+    query = query.order("name", { ascending: true }).order("id", { ascending: true });
   } else if (filters.sort === "newest") {
-    query = query.order("updated_at", { ascending: false });
+    query = query.order("updated_at", { ascending: false }).order("id", { ascending: true });
   } else {
     query = query
       .order("is_featured", { ascending: false })
       .order("starting_price_pence", { ascending: true, nullsFirst: false })
-      .order("name", { ascending: true });
+      .order("name", { ascending: true })
+      .order("id", { ascending: true });
   }
 
   const { data, count, error } = await query.range(from, to);
@@ -150,6 +156,7 @@ export async function searchPlanningHubSuppliers(
     total,
     page: filters.page,
     totalPages: Math.max(Math.ceil(total / PLANNING_HUB_SUPPLIER_PAGE_SIZE), 1),
+    venueContext: filters.venue ? "matched" : "not_provided",
   };
 }
 
@@ -158,11 +165,11 @@ export async function getPlanningHubSupplierDetail(
   supplierId: string,
   client?: PlanningHubSupabaseClient,
 ): Promise<PlanningHubSupplierDetail | null> {
-  if (!getPlanningHubSupplierCategory(categorySlug)) return null;
+  if (!getLivePlanningHubSupplierCategory(categorySlug)) return null;
   const supabase = client ?? await createClient();
-  if (!supabase) return null;
+  if (!supabase) throw new Error("Supplier catalogue is unavailable.");
 
-  const [{ data: supplier }, { data: images }] = await Promise.all([
+  const [supplierResult, imageResult] = await Promise.all([
     supabase
       .from("supplier_listings")
       .select(`${SUPPLIER_CARD_COLUMNS}, description, services, official_website_url, enquiry_url, image_credit`)
@@ -178,6 +185,11 @@ export async function getPlanningHubSupplierDetail(
       .order("sort_order", { ascending: true })
       .limit(12),
   ]);
+  if (supplierResult.error || imageResult.error) {
+    throw new Error("Supplier catalogue is unavailable.");
+  }
+  const supplier = supplierResult.data;
+  const images = imageResult.data;
   if (!supplier) return null;
 
   const row = supplier as SupplierRow;
