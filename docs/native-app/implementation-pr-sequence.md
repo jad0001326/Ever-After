@@ -188,13 +188,12 @@ non-production environment.
 
 Dependency: N3–N5.
 
-Hard gate: production and the repository now match at 40/40, including the
+Hard gate: production and the repository now match at 41/41, including the
 reviewed Planning Workspace and conflict-normalization sequence. N6 must not
-reissue any of that live SQL. Its only schema candidate is the later additive
-transactional-setup function. A fresh read-only ledger check and linked dry run
-must show exactly the 40 applied versions plus that one candidate; any second
-pending file is a hard fail. Migration repair, include-all, seed and custom-role
-flags are not release shortcuts.
+reissue any of that live SQL. The later additive transactional-setup function
+was applied under exact approval and its live grants and rollback-only security
+checks passed. Any pending file is now a hard fail. Migration repair,
+include-all, seed and custom-role flags are not release shortcuts.
 
 External approval: any Supabase environment, migration application, flag change
 or production connection.

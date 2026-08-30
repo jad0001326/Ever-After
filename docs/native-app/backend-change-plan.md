@@ -2,24 +2,23 @@
 
 Date: 26 August 2026
 
-Status: local planning artifact. This document does not authorise SQL creation,
-a Supabase branch/project, a migration dry run against a linked project, a
-remote migration, production test data, a flag change or a deployment.
+Status: N6 database boundary applied and verified under explicit approval. This
+document does not authorise replaying SQL, production test data, a flag change,
+an application deployment, outreach or a paid service.
 
 ## Verified live baseline
 
-A read-only production-ledger inspection and the merged alignment correction
-confirmed 40 applied migrations through
-`20260822141612_atomic_supplier_claim_review`. The applied set now includes the
+A production-ledger inspection and the approved N6 application confirmed 41
+applied migrations through
+`20260826144100_n6_transactional_workspace_setup`. The applied set now includes the
 Planning Workspace foundation, profiles, member-linked budgets, atomic import,
 owner bootstrap read and normalized conflict handling. The repository's
-recorded source hashes match all 40 applied versions with no historical gap.
+recorded source hashes match all 41 applied versions with no historical gap.
 
-The N6 migration branch adds exactly one later local candidate:
+The N6 migration adds exactly one later function:
 `20260826144100_n6_transactional_workspace_setup.sql`. It does not recreate,
-replace or reapply the live workspace schema. Until separately approved and
-applied, production remains at 40 applied migrations and the candidate remains
-local-only.
+replace or reapply the earlier live workspace schema. Production now contains
+that reviewed function and has no pending repository migration.
 
 ## Principle: add only a real client blocker
 
@@ -123,15 +122,16 @@ called a job.
 
 ## Allowlisted migration release path
 
-The repository now matches all 40 production migrations, so the old temporary
-release-workdir workaround is no longer needed. Before any remote proposal:
+The repository now matches all 41 production migrations, so the old temporary
+release-workdir workaround is no longer needed. The completed N6 gate required:
 
-1. fetch the live migration list read-only and require exact 40/40 equality;
+1. fetch the live migration list and require exact 40/40 pre-apply equality;
 2. verify the canonical source hash of every applied file;
 3. require the only local pending file to be the named N6 setup candidate;
 4. run the pinned CLI's current `db push --help` and a linked dry run;
 5. require the dry run to list that one candidate exactly once; and
-6. capture advisors, lock review and recovery evidence without applying SQL.
+6. obtain exact approval, apply only that file, then require 41/41 equality and
+   controlled rolled-back security checks.
 
 Hard prohibitions:
 
@@ -192,8 +192,8 @@ Schema applied does not mean feature activated.
 | Order | Change | State after step | Approval |
 | --- | --- | --- | --- |
 | 1 | N0–N5 shared/mobile/catalogue code | Device-first journey; no planning schema | Each commit/push/preview separately |
-| 2 | N6 transactional-setup migration PR and local 40+1 evidence | One additive function reviewed, nothing remote | Commit/push only if approved |
-| 3 | Approved N6 function application | Setup RPC present; no client distributed | Exact remote migration approval |
+| 2 | N6 transactional-setup migration PR and 41/41 evidence | One additive function reviewed and applied; no client distributed | Completed under exact migration approval |
+| 3 | Approved N6 function verification | Setup RPC grants and rollback-only role checks pass | Completed under exact remote verification approval |
 | 4 | N6 API/client code | Connected native slice deployable; app still undistributed | Merge/deploy approval |
 | 5 | Narrow connected native beta | Approved test accounts can sync | Test-environment/distribution approval |
 | 6 | N7–N9 product slices | Photography/tasks/payments/guests/tables | Normal code approvals; no implied schema |

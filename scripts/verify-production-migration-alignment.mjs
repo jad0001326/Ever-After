@@ -6,7 +6,7 @@ import {
 
 const migrationDirectory = new URL("../supabase/migrations/", import.meta.url);
 const snapshot = JSON.parse(await readFile(
-  new URL("../docs/planning-hub/production-migration-history-2026-08-25.json", import.meta.url),
+  new URL("../docs/planning-hub/production-migration-history-2026-08-30.json", import.meta.url),
   "utf8",
 ));
 const activationRunbook = await readFile(
@@ -14,9 +14,7 @@ const activationRunbook = await readFile(
   "utf8",
 );
 
-const expectedPending = [
-  "20260826144100_n6_transactional_workspace_setup.sql",
-];
+const expectedPending = [];
 
 function assert(condition, message) {
   if (!condition) throw new Error(`Production migration alignment failed: ${message}`);
@@ -30,7 +28,7 @@ assert(localSet.size === localFiles.length, "duplicate local migration filenames
 
 const remoteFiles = snapshot.migrations.map(({ version, name }) => `${version}_${name}.sql`);
 assert(snapshot.projectId === "fryfdniacyhpubfiqnxj", "snapshot targets an unexpected Supabase project");
-assert(remoteFiles.length === 40, `snapshot contains ${remoteFiles.length} remote migrations instead of 40`);
+assert(remoteFiles.length === 41, `snapshot contains ${remoteFiles.length} remote migrations instead of 41`);
 assert(new Set(remoteFiles).size === remoteFiles.length, "snapshot contains duplicate migration identities");
 
 for (const [index, file] of remoteFiles.entries()) {
@@ -70,7 +68,7 @@ assert(
   "alignment inspection must remain dry-run-only and exclude backfilled migrations, seed data and custom roles",
 );
 assert(
-  activationRunbook.includes("all 40 applied migrations"),
+  activationRunbook.includes("all 41 applied migrations"),
   "activation runbook does not state the complete production alignment contract",
 );
 assert(
@@ -95,5 +93,5 @@ for (const [legacyPath, migrationPath] of legacyCopies) {
 }
 
 console.log(
-  `Production migration alignment passed: ${remoteFiles.length} recorded production versions and canonical source hashes match, with ${expectedPending.length} reviewed pending migration${expectedPending.length === 1 ? "" : "s"}.`,
+  `Production migration alignment passed: ${remoteFiles.length} recorded production versions and canonical source hashes match, with zero pending migrations.`,
 );

@@ -1,7 +1,7 @@
 {
   "projectId": "fryfdniacyhpubfiqnxj",
-  "capturedAt": "2026-08-25",
-  "mode": "post-supplier-claim-read-only-verification",
+  "capturedAt": "2026-08-30",
+  "mode": "post-n6-transactional-setup-verification",
   "migrations": [
     { "version": "20260713151556", "name": "phase11_pricing_recovery", "sha256": "8a00a7f1a70beeb2b20c559813ec09bc9528a21c8654e399dbf9d6af01330943" },
     { "version": "20260713152210", "name": "phase12_pricing_policy_cleanup", "sha256": "a345f806475e5519911aab5faffaa4d26221e108ca03388095d08bbe96b1f48b" },
@@ -42,6 +42,7 @@
     { "version": "20260820164604", "name": "atomic_planning_workspace_import", "sha256": "0d439bbab490e072d6c6e851fd2770006ac6911523afabfe4c1185d90bb05744" },
     { "version": "20260820184000", "name": "allow_planning_owner_bootstrap_read", "sha256": "fc479c2c8251e03869878139eb4ad80927984b65d02883a2dc8beee4f0057a1c" },
     { "version": "20260820184100", "name": "normalize_planning_version_conflicts", "sha256": "a350071c096680984eec73ed8b2efcfc51fbd7c238d49bf0509d5e373a776267" },
-    { "version": "20260822141612", "name": "atomic_supplier_claim_review", "sha256": "07464c7232aca17a8383cac8840895a023d7dc86903390f9b86bfdabe9dca07d" }
+    { "version": "20260822141612", "name": "atomic_supplier_claim_review", "sha256": "07464c7232aca17a8383cac8840895a023d7dc86903390f9b86bfdabe9dca07d" },
+    { "version": "20260826144100", "name": "n6_transactional_workspace_setup", "sha256": "03feab7705108c9f6856c678f9533ddbae498b3fd6977199610e11d649245d50" }
   ]
 }
