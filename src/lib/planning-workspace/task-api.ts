@@ -78,10 +78,17 @@ export async function createPlanningTask(
     .select(taskColumns)
     .single();
   if (error?.code === "23505") {
+    if (task.id) {
+      const existing = await loadPlanningTask(supabase, workspaceId, task.id);
+      if (!existing.ok) return existing;
+      if (existing.task && taskContentMatches(existing.task, task)) {
+        return { ok: true, task: existing.task, replayed: true } as const;
+      }
+    }
     return { ok: false, reason: "version_conflict" } as const;
   }
   if (error || !data) return { ok: false, reason: "unavailable" } as const;
-  return { ok: true, task: taskFromRow(data) } as const;
+  return { ok: true, task: taskFromRow(data), replayed: false } as const;
 }
 
 export async function updatePlanningTask(
@@ -132,6 +139,18 @@ function taskToColumns(task: PlanningTaskChanges) {
     ...(task.dueDate !== undefined ? { due_date: task.dueDate } : {}),
     ...(task.sortOrder !== undefined ? { sort_order: task.sortOrder } : {}),
   };
+}
+
+function taskContentMatches(
+  existing: PlanningTask,
+  requested: PlanningTaskCreate,
+) {
+  return existing.title === requested.title
+    && existing.notes === requested.notes
+    && existing.category === requested.category
+    && existing.status === requested.status
+    && existing.dueDate === requested.dueDate
+    && existing.sortOrder === requested.sortOrder;
 }
 
 function taskFromRow(row: PlanningTaskRow) {

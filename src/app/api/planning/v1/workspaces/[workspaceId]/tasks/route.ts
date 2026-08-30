@@ -154,7 +154,7 @@ export async function POST(
 
   const task = planningTaskResourceSchema.parse(created.task);
   return Response.json(task, {
-    status: 201,
+    status: created.replayed ? 200 : 201,
     headers: planningApiResponseHeaders(resourceContractId),
   });
 }

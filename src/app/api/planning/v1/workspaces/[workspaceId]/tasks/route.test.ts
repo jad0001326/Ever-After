@@ -118,6 +118,7 @@ describe("Planning Task collection API", () => {
     vi.mocked(createPlanningTask).mockResolvedValue({
       ok: true,
       task: taskResource(),
+      replayed: false,
     });
 
     const response = await POST(postRequest(validCreate()), routeContext());
@@ -133,6 +134,19 @@ describe("Planning Task collection API", () => {
       workspaceId,
       { id: taskResource().id, ...taskContent() },
     );
+  });
+
+  it("returns 200 for an identical stable-ID replay", async () => {
+    vi.mocked(createPlanningTask).mockResolvedValue({
+      ok: true,
+      task: taskResource(),
+      replayed: true,
+    });
+
+    const response = await POST(postRequest(validCreate()), routeContext());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(taskResource());
   });
 
   it("maps stable-ID collisions and Data API failures separately", async () => {

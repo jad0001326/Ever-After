@@ -10,7 +10,7 @@ import { radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 
-export function VenuePlanScreen({ data, onDiscover }: { data: DevicePlanData; onDiscover(): void }) {
+export function VenuePlanScreen({ data, onDiscover, onTasks }: { data: DevicePlanData; onDiscover(): void; onTasks(): void }) {
   const { colors } = useAppTheme();
   const summary = useMemo(() => calculatePlanningHubPlan(data.budgetPlan), [data.budgetPlan]);
   const venues = data.budgetPlan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
@@ -54,6 +54,9 @@ export function VenuePlanScreen({ data, onDiscover }: { data: DevicePlanData; on
 
         <Pressable accessibilityRole="button" onPress={onDiscover} style={[styles.button, { backgroundColor: colors.primary }]}>
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Explore venues</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onTasks} style={[styles.secondaryButton, { borderColor: colors.primary }]}>
+          <Text style={[styles.buttonText, { color: colors.primary }]}>Manage tasks</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -116,4 +119,5 @@ const styles = StyleSheet.create({
   empty: { gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
   button: { minHeight: 52, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },
   buttonText: { fontSize: 16, fontWeight: "700" },
+  secondaryButton: { minHeight: 52, borderRadius: radius.pill, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },
 });

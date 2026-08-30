@@ -17,6 +17,14 @@ import {
 import {
   planningProfileResourceSchema,
 } from "@everaft/planning-contracts/planning-workspace/profile-api-schema";
+import {
+  planningTaskCollectionSchema,
+  planningTaskCreateRequestSchema,
+  planningTaskDeleteRequestSchema,
+  planningTaskDeleteSuccessSchema,
+  planningTaskResourceSchema,
+  planningTaskUpdateRequestSchema,
+} from "@everaft/planning-contracts/planning-workspace/task-api-schema";
 import type { z } from "zod";
 
 export type AccessTokenProvider = () => Promise<string | null>;
@@ -27,6 +35,7 @@ export type PlanningApiFailure =
   | "offline"
   | "planning_api_unavailable"
   | "workspace_unavailable"
+  | "task_unavailable"
   | "version_conflict"
   | "payload_too_large"
   | "invalid_request"
@@ -70,10 +79,17 @@ export type PlanningProfileResource = z.infer<typeof planningProfileResourceSche
 export type PlanningConnectedPlanResource = z.infer<
   typeof planningConnectedPlanResourceSchema
 >;
+export type PlanningTaskResource = z.infer<typeof planningTaskResourceSchema>;
+export type PlanningTaskCollection = z.infer<typeof planningTaskCollectionSchema>;
+export type PlanningTaskCreateRequest = z.infer<typeof planningTaskCreateRequestSchema>;
+export type PlanningTaskUpdateRequest = z.infer<typeof planningTaskUpdateRequestSchema>;
+export type PlanningTaskDeleteRequest = z.infer<typeof planningTaskDeleteRequestSchema>;
+export type PlanningTaskDeleteSuccess = z.infer<typeof planningTaskDeleteSuccessSchema>;
 export type PlanningWorkspaceHydration = Readonly<{
   dashboard: PlanningDashboardSnapshot;
   budget: PlanningBudgetResource;
   profile: PlanningProfileResource;
+  tasks: PlanningTaskCollection;
 }>;
 
 export function createPlanningApiClient(options: PlanningApiClientOptions) {
@@ -84,7 +100,7 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
     operation: string,
     path: string,
     schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
-    init?: Readonly<{ method: "POST" | "PATCH"; body: unknown }>,
+    init?: Readonly<{ method: "POST" | "PATCH" | "DELETE"; body: unknown }>,
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) {
@@ -190,9 +206,51 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
         { method: "PATCH", body },
       );
     },
+    listTasks(workspaceId: string, limit = 100, offset = 0) {
+      const query = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+      });
+      return request(
+        "planning.tasks.list",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/tasks?${query}`,
+        planningTaskCollectionSchema,
+      );
+    },
+    getTask(workspaceId: string, taskId: string) {
+      return request(
+        "planning.tasks.get",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/tasks/${encodeURIComponent(taskId)}`,
+        planningTaskResourceSchema,
+      );
+    },
+    createTask(workspaceId: string, body: PlanningTaskCreateRequest) {
+      return request(
+        "planning.tasks.create",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/tasks`,
+        planningTaskResourceSchema,
+        { method: "POST", body },
+      );
+    },
+    updateTask(workspaceId: string, taskId: string, body: PlanningTaskUpdateRequest) {
+      return request(
+        "planning.tasks.update",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/tasks/${encodeURIComponent(taskId)}`,
+        planningTaskResourceSchema,
+        { method: "PATCH", body },
+      );
+    },
+    deleteTask(workspaceId: string, taskId: string, body: PlanningTaskDeleteRequest) {
+      return request(
+        "planning.tasks.delete",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/tasks/${encodeURIComponent(taskId)}`,
+        planningTaskDeleteSuccessSchema,
+        { method: "DELETE", body },
+      );
+    },
     async hydrateWorkspace(workspaceId: string) {
       const encoded = encodeURIComponent(workspaceId);
-      const [dashboard, budget, profile] = await Promise.all([
+      const [dashboard, budget, profile, tasks] = await Promise.all([
         request(
           "planning.dashboard.get",
           `/api/planning/v1/workspaces/${encoded}/dashboard`,
@@ -208,8 +266,13 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
           `/api/planning/v1/workspaces/${encoded}/profile`,
           planningProfileResourceSchema,
         ),
+        request(
+          "planning.tasks.list",
+          `/api/planning/v1/workspaces/${encoded}/tasks?limit=100&offset=0`,
+          planningTaskCollectionSchema,
+        ),
       ]);
-      return { dashboard, budget, profile } satisfies PlanningWorkspaceHydration;
+      return { dashboard, budget, profile, tasks } satisfies PlanningWorkspaceHydration;
     },
   });
 }
@@ -239,6 +302,7 @@ function mapFailure(status: number, serverCode: string | null): PlanningApiFailu
     return "connected_planning_disabled";
   }
   if (status === 503) return "planning_api_unavailable";
+  if (status === 404 && serverCode === "task_unavailable") return "task_unavailable";
   if (status === 404) return "workspace_unavailable";
   if (status === 409) return "version_conflict";
   if (status === 413) return "payload_too_large";

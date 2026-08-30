@@ -10,7 +10,7 @@ import {
   planningTaskResourceSchema,
 } from "@/lib/planning-workspace/task-api-schema";
 import { loadPlanningWorkspaceVersion } from "@/lib/planning-workspace/server-snapshot";
-import { DELETE, PATCH } from "./route";
+import { DELETE, GET, PATCH } from "./route";
 
 vi.mock("@/lib/planning-workspace/api-auth", () => ({
   authenticatePlanningApiRequest: vi.fn(),
@@ -63,6 +63,35 @@ describe("Planning Task item API", () => {
     expect(await response.json()).toEqual({ error: "invalid_task_id" });
     expect(loadPlanningWorkspaceVersion).not.toHaveBeenCalled();
     expect(loadPlanningTask).not.toHaveBeenCalled();
+  });
+
+  it("returns one strict task with no-store headers", async () => {
+    const supabase = enableAuthenticatedRequest();
+    const response = await GET(getRequest(), routeContext());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("x-everaft-contract")).toBe(
+      "urn:everaft:planning-task-resource:v1",
+    );
+    expect(planningTaskResourceSchema.parse(body)).toEqual(body);
+    expect(loadPlanningTask).toHaveBeenCalledWith(supabase, workspaceId, taskId);
+  });
+
+  it("keeps item reads RLS-safe and Data API failures generic", async () => {
+    vi.mocked(loadPlanningTask).mockResolvedValueOnce({ ok: true, task: null });
+    const missing = await GET(getRequest(), routeContext());
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "task_unavailable" });
+
+    vi.mocked(loadPlanningTask).mockResolvedValueOnce({
+      ok: false,
+      reason: "unavailable",
+    });
+    const unavailable = await GET(getRequest(), routeContext());
+    expect(unavailable.status).toBe(503);
+    expect(await unavailable.json()).toEqual({ error: "planning_api_unavailable" });
   });
 
   it("keeps workspace and task denial contracts distinct without cross-workspace lookup", async () => {
@@ -255,6 +284,13 @@ function enableAuthenticatedRequest() {
 
 function patchRequest(body: unknown) {
   return request("PATCH", body);
+}
+
+function getRequest() {
+  return new Request(
+    `https://www.everaft.co.uk/api/planning/v1/workspaces/${workspaceId}/tasks/${taskId}`,
+    { headers: { Authorization: "Bearer test-access-token" } },
+  );
 }
 
 function deleteRequest() {
