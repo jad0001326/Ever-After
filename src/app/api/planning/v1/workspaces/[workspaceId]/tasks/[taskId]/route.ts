@@ -28,6 +28,20 @@ type RouteContext = {
   params: Promise<{ workspaceId: string; taskId: string }>;
 };
 
+export async function GET(request: Request, context: RouteContext) {
+  const resolved = await resolveTaskIdentity(
+    request,
+    context,
+    resourceContractId,
+  );
+  if (!resolved.ok) return resolved.response;
+
+  const task = planningTaskResourceSchema.parse(resolved.task);
+  return Response.json(task, {
+    headers: planningApiResponseHeaders(resourceContractId),
+  });
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const resolved = await resolveTaskRequest(
     request,
@@ -131,6 +145,33 @@ async function resolveTaskRequest<TSchema extends z.ZodType>(
   contractId: string,
   schema: TSchema,
 ) {
+  const identity = await resolveTaskIdentity(request, context, contractId);
+  if (!identity.ok) return identity;
+  const body = await readPlanningApiJson(request, contractId);
+  if (!body.ok) return body;
+  const parsed = schema.safeParse(body.data);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      response: planningApiErrorResponse(
+        contractId,
+        400,
+        "invalid_request",
+      ),
+    } as const;
+  }
+
+  return {
+    ...identity,
+    body: parsed.data as z.output<TSchema>,
+  } as const;
+}
+
+async function resolveTaskIdentity(
+  request: Request,
+  context: RouteContext,
+  contractId: string,
+) {
   const { workspaceId: rawWorkspaceId, taskId: rawTaskId } =
     await context.params;
   const api = await resolvePlanningApiRequest(
@@ -148,19 +189,6 @@ async function resolveTaskRequest<TSchema extends z.ZodType>(
         contractId,
         400,
         "invalid_task_id",
-      ),
-    } as const;
-  }
-  const body = await readPlanningApiJson(request, contractId);
-  if (!body.ok) return body;
-  const parsed = schema.safeParse(body.data);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      response: planningApiErrorResponse(
-        contractId,
-        400,
-        "invalid_request",
       ),
     } as const;
   }
@@ -217,6 +245,5 @@ async function resolveTaskRequest<TSchema extends z.ZodType>(
     workspaceId: api.workspaceId,
     taskId: taskId.data,
     task: task.task,
-    body: parsed.data as z.output<TSchema>,
   } as const;
 }

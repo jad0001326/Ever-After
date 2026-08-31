@@ -39,6 +39,7 @@ function AuthAwareRootNavigator() {
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="venue/[venueId]" />
+        <Stack.Screen name="tasks" />
       </Stack>
     </>
   );

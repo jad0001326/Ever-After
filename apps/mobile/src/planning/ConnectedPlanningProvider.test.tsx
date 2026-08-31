@@ -53,7 +53,10 @@ describe("ConnectedPlanningProvider", () => {
     await waitFor(() => expect(view.result.current.state).toMatchObject({ status: "connected", accountId, workspaceId }));
 
     jest.mocked(useNativeAuth).mockReturnValue({ ...authenticatedAuth(), snapshot: { status: "signed_out", accountId: null, reason: null } } as never);
-    await act(async () => { view.rerender(undefined); });
+    await act(async () => {
+      view.rerender(undefined);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    });
     await waitFor(() => expect(view.result.current.state).toEqual({ status: "device_only", reason: "signed_out" }));
   });
 
@@ -172,9 +175,76 @@ describe("ConnectedPlanningProvider", () => {
     expect(view.result.current.state).toMatchObject({ status: "connected", syncStatus: "idle" });
     expect(view.result.current.data?.budgetPlan).toMatchObject(canonicalPlan);
   });
+
+  it("saves a stable task locally and recovers an ambiguous connected create by ID", async () => {
+    let requestedTask: ReturnType<typeof taskResource> | null = null;
+    let requestedTaskId = "";
+    const createTask = jest.fn(async (_workspaceId, body) => {
+      requestedTask = {
+        schemaVersion: 1,
+        workspaceId,
+        ...body.task,
+        createdAt: "2026-08-30T11:00:00.000Z",
+        updatedAt: "2026-08-30T11:00:00.000Z",
+      };
+      requestedTaskId = body.task.id;
+      throw new PlanningApiError("offline");
+    });
+    const getTask = jest.fn(async () => requestedTask!);
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      createTask,
+      getTask,
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.createTask>> | undefined;
+    await act(async () => { result = await view.result.current.createTask({ title: "Book transport" }); });
+
+    expect(result).toEqual({ outcome: "connected" });
+    expect(saveDevicePlan).toHaveBeenCalledWith(expect.objectContaining({
+      workspace: expect.objectContaining({
+        tasks: [expect.objectContaining({ title: "Book transport" })],
+      }),
+    }));
+    expect(getTask).toHaveBeenCalledWith(workspaceId, requestedTaskId);
+    expect(view.result.current.data?.workspace.tasks[0]).toMatchObject({ title: "Book transport" });
+  });
+
+  it("recovers ambiguous updates and deletes from the canonical item read", async () => {
+    const existing = taskResource();
+    const updated = { ...existing, status: "done" as const, updatedAt: "2026-08-30T12:00:00.000Z" };
+    const getTask = jest.fn()
+      .mockResolvedValueOnce(updated)
+      .mockRejectedValueOnce(new PlanningApiError("task_unavailable", 404));
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan, [existing])),
+      updateTask: jest.fn(async () => { throw new PlanningApiError("offline"); }),
+      deleteTask: jest.fn(async () => { throw new PlanningApiError("offline"); }),
+      getTask,
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.data?.workspace.tasks).toHaveLength(1));
+
+    let updateResult: Awaited<ReturnType<typeof view.result.current.updateTask>> | undefined;
+    await act(async () => { updateResult = await view.result.current.updateTask(existing.id, { status: "done" }); });
+    expect(updateResult).toEqual({ outcome: "connected" });
+    expect(view.result.current.data?.workspace.tasks[0].status).toBe("done");
+
+    let deleteResult: Awaited<ReturnType<typeof view.result.current.deleteTask>> | undefined;
+    await act(async () => { deleteResult = await view.result.current.deleteTask(existing.id); });
+    expect(deleteResult).toEqual({ outcome: "connected" });
+    expect(view.result.current.data?.workspace.tasks).toEqual([]);
+  });
 });
 
-function connectedHydration(plan: typeof data.budgetPlan) {
+function connectedHydration(
+  plan: typeof data.budgetPlan,
+  tasks: ReturnType<typeof taskResource>[] = [],
+) {
   return {
     dashboard: {
       workspace: { id: workspaceId, name: "My EverAft", budgetPlanId: plan.id },
@@ -187,6 +257,28 @@ function connectedHydration(plan: typeof data.budgetPlan) {
       },
     },
     profile: { profile: data.workspace.profile },
+    tasks: {
+      schemaVersion: 1,
+      workspaceId,
+      tasks,
+      page: { limit: 100, offset: 0, hasMore: false },
+    },
+  };
+}
+
+function taskResource() {
+  return {
+    schemaVersion: 1 as const,
+    id: "80000000-0000-4000-8000-000000000008",
+    workspaceId,
+    title: "Confirm guest numbers",
+    notes: null,
+    category: "guests" as const,
+    status: "todo" as const,
+    dueDate: "2027-07-01",
+    sortOrder: 0,
+    createdAt: "2026-08-30T10:00:00.000Z",
+    updatedAt: "2026-08-30T10:00:00.000Z",
   };
 }
 

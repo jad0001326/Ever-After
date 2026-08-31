@@ -59,7 +59,7 @@ describe("Planning Task API persistence", () => {
       { id: taskId, ...taskContent() },
     );
 
-    expect(result).toEqual({ ok: true, task: taskResource() });
+    expect(result).toEqual({ ok: true, task: taskResource(), replayed: false });
     expect(query.insert).toHaveBeenCalledWith({
       id: taskId,
       workspace_id: workspaceId,
@@ -73,16 +73,38 @@ describe("Planning Task API persistence", () => {
     expect(query.insert.mock.calls[0][0]).not.toHaveProperty("updated_at");
   });
 
-  it("maps a stable-ID create collision to a conflict", async () => {
-    const query = insertQuery({
+  it("returns the existing task for an identical stable-ID replay", async () => {
+    const insert = insertQuery({
       data: null,
       error: { code: "23505", message: "duplicate" },
     });
+    const load = terminalQuery({ data: taskRow(), error: null });
+    const supabase = {
+      from: vi.fn()
+        .mockReturnValueOnce(insert)
+        .mockReturnValueOnce(load),
+    };
 
     await expect(createPlanningTask(
-      { from: vi.fn(() => query) } as never,
+      supabase as never,
       workspaceId,
-      taskContent(),
+      { id: taskId, ...taskContent() },
+    )).resolves.toEqual({ ok: true, task: taskResource(), replayed: true });
+    expect(load.eq).toHaveBeenCalledWith("workspace_id", workspaceId);
+    expect(load.eq).toHaveBeenCalledWith("id", taskId);
+  });
+
+  it("keeps a stable-ID collision with different content as a conflict", async () => {
+    const insert = insertQuery({
+      data: null,
+      error: { code: "23505", message: "duplicate" },
+    });
+    const load = terminalQuery({ data: taskRow({ title: "Different task" }), error: null });
+
+    await expect(createPlanningTask(
+      { from: vi.fn().mockReturnValueOnce(insert).mockReturnValueOnce(load) } as never,
+      workspaceId,
+      { id: taskId, ...taskContent() },
     )).resolves.toEqual({ ok: false, reason: "version_conflict" });
   });
 
