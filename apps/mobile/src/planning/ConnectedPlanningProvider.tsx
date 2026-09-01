@@ -23,6 +23,7 @@ import { resolveCatalogueRuntimeConfiguration } from "../catalogue/catalogue-run
 import { createDevicePlanImportRequest } from "./connected-plan-model";
 import { useDevicePlan } from "./DevicePlanProvider";
 import type { DevicePlanData } from "./device-plan-model";
+import { budgetPlanContentMatches } from "./payment-reliability";
 import {
   createDeviceTask,
   removeDeviceTask,
@@ -228,6 +229,22 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
       return { outcome: "connected" };
     } catch (error) {
       const failure = mapConnectionFailure(error);
+      if (failure !== "conflict") {
+        try {
+          const canonical = await client.getBudget(connection.workspaceId);
+          if (budgetPlanContentMatches(canonical.plan, requestPlan)) {
+            if (currentRevision !== revision.current) return { outcome: "device_only" };
+            setState({
+              ...connection,
+              syncStatus: "idle",
+              hydration: { ...connection.hydration, budget: canonical },
+            });
+            return { outcome: "connected" };
+          }
+        } catch {
+          // Keep the device save and surface the original failure when recovery is inconclusive.
+        }
+      }
       if (currentRevision === revision.current) {
         setState({ status: "error", failure });
       }

@@ -5,7 +5,7 @@ import { createDevicePlan } from "../../planning/device-plan-model";
 
 describe("TodayScreen", () => {
   it("renders an honest local status, useful recommendation and accessible action", async () => {
-    const onOpenRecommendation = jest.fn();
+    const onOpenDestination = jest.fn();
     const data = createDevicePlan({
       weddingDate: null,
       weddingSeason: null,
@@ -14,7 +14,7 @@ describe("TodayScreen", () => {
       totalBudgetPence: 2_000_000,
       priorities: [],
     });
-    const view = await render(<TodayScreen data={data} onOpenRecommendation={onOpenRecommendation} saving={false} />);
+    const view = await render(<TodayScreen data={data} onOpenDestination={onOpenDestination} saving={false} />);
 
     expect(view.getByLabelText("Storage status: On this device")).toBeOnTheScreen();
     expect(view.getByRole("header", { name: "Choose a venue" })).toBeOnTheScreen();
@@ -24,8 +24,9 @@ describe("TodayScreen", () => {
     );
     expect(view.getByLabelText("Remaining: £20,000")).toBeOnTheScreen();
     fireEvent.press(view.getByRole("button", { name: "Explore venues" }));
-    expect(onOpenRecommendation).toHaveBeenCalledTimes(1);
-    expect(onOpenRecommendation).toHaveBeenCalledWith("venues");
+    expect(onOpenDestination).toHaveBeenCalledTimes(1);
+    expect(onOpenDestination).toHaveBeenCalledWith({ kind: "venues" });
+    expect(view.getByText("No payment or task deadlines yet.")).toBeOnTheScreen();
   });
 
   it("announces a successfully hydrated connected workspace", async () => {
@@ -40,7 +41,7 @@ describe("TodayScreen", () => {
     const view = await render(
       <TodayScreen
         data={data}
-        onOpenRecommendation={jest.fn()}
+        onOpenDestination={jest.fn()}
         saving={false}
         storageLabel="Connected to My EverAft"
       />,

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPlanningHubStarterPlan } from "@/lib/planning-hub/plan";
+import {
+  addManualPlanningHubVenue,
+  createPlanningHubStarterPlan,
+} from "@/lib/planning-hub/plan";
 import { authenticatePlanningApiRequest } from "@/lib/planning-workspace/api-auth";
 import {
   planningBudgetResourceSchema,
@@ -182,6 +185,115 @@ describe("Planning Budget API", () => {
     expect(updatePlanningBudgetPlan).not.toHaveBeenCalled();
   });
 
+  it("rejects a changed payment schedule whose rows contradict its aggregates", async () => {
+    enableAuthenticatedRequest();
+    const current = {
+      ...addManualPlanningHubVenue(
+        currentPlan(),
+        "Test venue",
+        100_000,
+        "booked",
+      ),
+      updatedAt,
+    };
+    const item = current.items[0];
+    vi.mocked(loadPlanningWorkspaceContext).mockResolvedValue({
+      ok: true,
+      budgetPlan: current,
+      snapshot: {
+        workspace: { owner_id: "owner-1" },
+      },
+      isOwner: true,
+    } as never);
+    const response = await PATCH(request({
+      schemaVersion: 1,
+      expectedBudgetUpdatedAt: updatedAt,
+      plan: {
+        ...current,
+        items: current.items.map((candidate) => candidate.id === item.id ? {
+          ...candidate,
+          installments: [{
+            id: "deposit-1",
+            kind: "deposit",
+            label: "Deposit",
+            amountPence: 100_000,
+            paidPence: 50_000,
+            dueDate: "2027-02-01",
+            paidAt: null,
+          }],
+          depositPaidPence: 0,
+          totalPaidPence: 0,
+          dueDate: null,
+          paymentStatus: "not_started",
+        } : candidate),
+      },
+    }), routeContext());
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+    expect(updatePlanningBudgetPlan).not.toHaveBeenCalled();
+  });
+
+  it("allows cancellation while retaining a valid payment history", async () => {
+    const supabase = enableAuthenticatedRequest();
+    const current = currentPlan();
+    const scheduled = {
+      ...current,
+      items: current.items.map((item) => ({
+        ...item,
+        installments: [{
+          id: "deposit-1",
+          kind: "deposit" as const,
+          label: "Deposit",
+          amountPence: 25_000,
+          paidPence: 10_000,
+          dueDate: "2027-02-01",
+          paidAt: null,
+        }],
+        depositPaidPence: 10_000,
+        totalPaidPence: 10_000,
+        dueDate: "2027-02-01",
+        paymentStatus: "deposit_paid" as const,
+        costStatus: "deposit_paid" as const,
+      })),
+    };
+    const cancelled = {
+      ...scheduled,
+      items: scheduled.items.map((item) => ({
+        ...item,
+        bookingStatus: "cancelled" as const,
+        costStatus: "cancelled" as const,
+      })),
+    };
+    vi.mocked(loadPlanningWorkspaceContext).mockResolvedValue({
+      ok: true,
+      budgetPlan: scheduled,
+      snapshot: {
+        workspace: { owner_id: "owner-1" },
+      },
+      isOwner: true,
+    } as never);
+    vi.mocked(updatePlanningBudgetPlan).mockResolvedValue({
+      ok: true,
+      budgetPlanId: "budget-1",
+      savedAt: "2026-07-29T12:00:00.001Z",
+    });
+
+    const response = await PATCH(request({
+      schemaVersion: 1,
+      expectedBudgetUpdatedAt: updatedAt,
+      plan: cancelled,
+    }), routeContext());
+
+    expect(response.status).toBe(200);
+    expect(updatePlanningBudgetPlan).toHaveBeenCalledWith(
+      supabase,
+      "owner-1",
+      cancelled,
+      updatedAt,
+    );
+  });
+
   it("conditionally writes the owner-linked plan and returns its new version", async () => {
     const supabase = enableAuthenticatedRequest();
     const plan = currentPlan();
@@ -254,11 +366,22 @@ function enableAuthenticatedRequest() {
 }
 
 function currentPlan() {
+  const plan = addManualPlanningHubVenue(
+    createPlanningHubStarterPlan("partner-1"),
+    "Test venue",
+    100_000,
+    "booked",
+  );
   return {
-    ...createPlanningHubStarterPlan("partner-1"),
+    ...plan,
     id: "budget-1",
     updatedAt,
     totalBudgetPence: 3_000_000,
+    items: plan.items.map((item) => ({
+      ...item,
+      id: "venue-1",
+      updatedAt,
+    })),
   };
 }
 

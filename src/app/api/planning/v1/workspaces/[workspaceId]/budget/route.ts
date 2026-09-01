@@ -11,6 +11,10 @@ import {
 } from "@/lib/planning-workspace/budget-api-schema";
 import { updatePlanningBudgetPlan } from "@/lib/planning-workspace/budget-api";
 import { loadPlanningWorkspaceContext } from "@/lib/planning-workspace/server-snapshot";
+import {
+  getPaymentScheduleValidationFingerprint,
+  validatePersistedPaymentSchedule,
+} from "@everaft/planning-domain/budget/payment-schedule";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -111,6 +115,24 @@ export async function PATCH(
     || expectedBudgetUpdatedAt !== loaded.budgetPlan.updatedAt
   ) {
     return planningApiErrorResponse(budgetUpdateContractId, 409, "version_conflict");
+  }
+
+  const currentItems = new Map(
+    loaded.budgetPlan.items.map((item) => [item.id, item]),
+  );
+  const hasInvalidPaymentChange = plan.items.some((item) => {
+    const current = currentItems.get(item.id);
+    if (
+      current
+      && getPaymentScheduleValidationFingerprint(current)
+        === getPaymentScheduleValidationFingerprint(item)
+    ) {
+      return false;
+    }
+    return validatePersistedPaymentSchedule(item).length > 0;
+  });
+  if (hasInvalidPaymentChange) {
+    return planningApiErrorResponse(budgetUpdateContractId, 400, "invalid_request");
   }
 
   const update = await updatePlanningBudgetPlan(

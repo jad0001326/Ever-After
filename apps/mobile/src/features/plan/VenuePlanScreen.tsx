@@ -10,7 +10,7 @@ import { radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 
-export function VenuePlanScreen({ data, onDiscover, onTasks }: { data: DevicePlanData; onDiscover(): void; onTasks(): void }) {
+export function VenuePlanScreen({ data, onDiscover, onPayments, onTasks }: { data: DevicePlanData; onDiscover(): void; onPayments(): void; onTasks(): void }) {
   const { colors } = useAppTheme();
   const summary = useMemo(() => calculatePlanningHubPlan(data.budgetPlan), [data.budgetPlan]);
   const venues = data.budgetPlan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
@@ -57,6 +57,9 @@ export function VenuePlanScreen({ data, onDiscover, onTasks }: { data: DevicePla
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onTasks} style={[styles.secondaryButton, { borderColor: colors.primary }]}>
           <Text style={[styles.buttonText, { color: colors.primary }]}>Manage tasks</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onPayments} style={[styles.secondaryButton, { borderColor: colors.primary }]}>
+          <Text style={[styles.buttonText, { color: colors.primary }]}>Manage payments</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
