@@ -146,7 +146,7 @@ describe("ConnectedPlanningProvider", () => {
     expect(view.result.current.state).toEqual({ status: "error", failure: "conflict" });
   });
 
-  it("recovers an ambiguous write through a fresh canonical hydration", async () => {
+  it("recovers an ambiguous budget write through the canonical item read", async () => {
     const next = updateDevicePlan(data, (current) => ({
       ...current,
       budgetPlan: { ...current.budgetPlan, totalBudgetPence: 2_750_000 },
@@ -155,12 +155,12 @@ describe("ConnectedPlanningProvider", () => {
       ...next.budgetPlan,
       updatedAt: "2026-08-25T12:30:00.000Z",
     };
-    const hydrateWorkspace = jest.fn()
-      .mockResolvedValueOnce(connectedHydration(data.budgetPlan))
-      .mockResolvedValueOnce(connectedHydration(canonicalPlan));
+    const hydrateWorkspace = jest.fn(async () => connectedHydration(data.budgetPlan));
+    const getBudget = jest.fn(async () => connectedHydration(canonicalPlan).budget);
     jest.mocked(createPlanningApiClient).mockReturnValue({
       listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
       hydrateWorkspace,
+      getBudget,
       updateBudget: jest.fn(async () => {
         throw new PlanningApiError("offline");
       }),
@@ -168,12 +168,38 @@ describe("ConnectedPlanningProvider", () => {
     const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
     await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
 
-    await act(async () => { await view.result.current.saveBudget(next); });
-    expect(view.result.current.state).toEqual({ status: "error", failure: "offline" });
-
-    await act(async () => { await view.result.current.refresh(); });
+    let result: Awaited<ReturnType<typeof view.result.current.saveBudget>> | undefined;
+    await act(async () => { result = await view.result.current.saveBudget(next); });
+    expect(result).toEqual({ outcome: "connected" });
+    expect(getBudget).toHaveBeenCalledWith(workspaceId);
     expect(view.result.current.state).toMatchObject({ status: "connected", syncStatus: "idle" });
     expect(view.result.current.data?.budgetPlan).toMatchObject(canonicalPlan);
+  });
+
+  it("does not claim recovery when the canonical budget differs from the intended write", async () => {
+    const next = updateDevicePlan(data, (current) => ({
+      ...current,
+      budgetPlan: { ...current.budgetPlan, totalBudgetPence: 2_750_000 },
+    }), new Date("2026-08-25T11:00:00.000Z"));
+    const canonicalPlan = {
+      ...data.budgetPlan,
+      totalBudgetPence: 3_000_000,
+      updatedAt: "2026-08-25T12:30:00.000Z",
+    };
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      getBudget: jest.fn(async () => connectedHydration(canonicalPlan).budget),
+      updateBudget: jest.fn(async () => { throw new PlanningApiError("offline"); }),
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.saveBudget>> | undefined;
+    await act(async () => { result = await view.result.current.saveBudget(next); });
+
+    expect(result).toEqual({ outcome: "needs_attention", failure: "offline" });
+    expect(view.result.current.state).toEqual({ status: "error", failure: "offline" });
   });
 
   it("saves a stable task locally and recovers an ambiguous connected create by ID", async () => {

@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@everaft/planning-domain/budget/payment-schedule": [
+        "./packages/planning-domain/src/budget/payment-schedule.ts"
       ]
     }
   },

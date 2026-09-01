@@ -5,9 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { type AppColors, radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
-import { createTodayModel } from "./seeded-today";
+import { createTodayModel, type TodayDestination } from "./seeded-today";
 
-export function TodayScreen({ data, onOpenRecommendation, saving, storageLabel = "On this device" }: { data: DevicePlanData; onOpenRecommendation: (destination: "venues" | "photography" | "plan") => void; saving: boolean; storageLabel?: string }) {
+export function TodayScreen({ data, onOpenDestination, saving, storageLabel = "On this device" }: { data: DevicePlanData; onOpenDestination: (destination: TodayDestination) => void; saving: boolean; storageLabel?: string }) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const model = useMemo(() => createTodayModel(data), [data]);
@@ -34,9 +34,9 @@ export function TodayScreen({ data, onOpenRecommendation, saving, storageLabel =
           <Text accessibilityRole="header" style={styles.actionTitle}>{model.recommendation.title}</Text>
           <Text style={styles.reason}>{model.recommendation.reason}</Text>
           <Pressable
-            accessibilityHint={model.recommendation.destination === "photography" ? "Opens photographer discovery" : model.recommendation.destination === "plan" ? "Opens your plan" : "Opens venue discovery"}
+            accessibilityHint={destinationHint(model.recommendation.destination)}
             accessibilityRole="button"
-            onPress={() => onOpenRecommendation(model.recommendation.destination)}
+            onPress={() => onOpenDestination(model.recommendation.destination)}
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           >
             <Text style={styles.buttonText}>{model.recommendation.actionLabel}</Text>
@@ -55,11 +55,34 @@ export function TodayScreen({ data, onOpenRecommendation, saving, storageLabel =
 
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>Coming up</Text>
-          <Text style={styles.comingUp}>{model.comingUp}</Text>
+          {model.comingUp.length === 0 ? (
+            <Text style={styles.comingUp}>No payment or task deadlines yet.</Text>
+          ) : model.comingUp.map((deadline) => (
+            <View accessible={false} key={`${deadline.kind}-${deadline.title}`} style={styles.deadlineCard}>
+              <Text accessibilityRole="header" style={styles.deadlineTitle}>{deadline.title}</Text>
+              <Text style={styles.comingUp}>{deadline.detail}</Text>
+              <Pressable
+                accessibilityLabel={`${deadline.actionLabel}: ${deadline.title}`}
+                accessibilityRole="button"
+                onPress={() => onOpenDestination(deadline.destination)}
+                style={({ pressed }) => [styles.deadlineButton, pressed && styles.buttonPressed]}
+              >
+                <Text style={styles.deadlineButtonText}>{deadline.actionLabel}</Text>
+              </Pressable>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function destinationHint(destination: TodayDestination) {
+  if (destination.kind === "photography") return "Opens photographer discovery";
+  if (destination.kind === "venues") return "Opens venue discovery";
+  if (destination.kind === "payments") return "Opens the relevant payment schedule";
+  if (destination.kind === "tasks") return "Opens your task list";
+  return "Opens your plan";
 }
 
 type TodayStyles = ReturnType<typeof createStyles>;
@@ -97,5 +120,9 @@ function createStyles(colors: AppColors) {
   budgetAmount: { color: colors.primary, fontSize: 23, fontVariant: ["tabular-nums"], fontWeight: "600" },
   budgetLabel: { color: colors.textMuted, fontSize: 14 },
   comingUp: { ...typography.body, color: colors.textMuted },
+  deadlineCard: { backgroundColor: colors.canvasRaised, borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
+  deadlineTitle: { color: colors.primary, fontSize: 17, fontWeight: "700" },
+  deadlineButton: { alignItems: "center", alignSelf: "flex-start", borderColor: colors.primary, borderRadius: radius.pill, borderWidth: 1, justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.md },
+  deadlineButtonText: { color: colors.primary, fontSize: 15, fontWeight: "700" },
   });
 }

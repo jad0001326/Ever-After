@@ -14,6 +14,7 @@ export default function PlanScreen() {
     <VenuePlanScreen
       data={connected.data ?? state.record.data}
       onDiscover={() => router.push("/discover")}
+      onPayments={() => router.push("/payments")}
       onTasks={() => router.push("/tasks")}
     />
   );
