@@ -52,6 +52,20 @@ describe("Planning Table Plan API contracts", () => {
         }],
       },
     }).success).toBe(false);
+    expect(planningTablePlanUpdateRequestSchema.safeParse({
+      schemaVersion: 1,
+      expectedWorkspaceUpdatedAt: "2026-07-29T12:00:00.000Z",
+      tablePlan: {
+        ...tablePlan(),
+        guests: [{
+          id: "80000000-0000-4000-8000-000000000008",
+          name: "Ailsa",
+          rsvpStatus: "declined",
+          tableId: "90000000-0000-4000-8000-000000000009",
+          seatIndex: 0,
+        }],
+      },
+    }).success).toBe(false);
   });
 
   it("accepts a strict read resource with the PATCH workspace version", () => {

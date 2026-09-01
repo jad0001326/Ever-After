@@ -10,6 +10,8 @@ export type TodayDestination =
   | Readonly<{ kind: "venues" }>
   | Readonly<{ kind: "photography" }>
   | Readonly<{ kind: "plan" }>
+  | Readonly<{ kind: "guests" }>
+  | Readonly<{ kind: "tables" }>
   | Readonly<{ kind: "payments"; itemId: string }>
   | Readonly<{ kind: "tasks" }>;
 
@@ -79,6 +81,8 @@ function destinationForRecommendation(
     return { kind: "payments", itemId: recommendation.target.itemId };
   }
   if (recommendation.stage === "tasks") return { kind: "tasks" };
+  if (recommendation.stage === "guests") return { kind: "guests" };
+  if (recommendation.stage === "tables") return { kind: "tables" };
   if (recommendation.target.kind === "venue-search") return { kind: "venues" };
   if (recommendation.target.kind === "photography-search") return { kind: "photography" };
   return { kind: "plan" };
@@ -89,6 +93,8 @@ function recommendationActionLabel(destination: TodayDestination) {
   if (destination.kind === "photography") return "Explore photography";
   if (destination.kind === "payments") return "Review payment";
   if (destination.kind === "tasks") return "Review tasks";
+  if (destination.kind === "guests") return "Review guests";
+  if (destination.kind === "tables") return "Review tables";
   return "Open your plan";
 }
 

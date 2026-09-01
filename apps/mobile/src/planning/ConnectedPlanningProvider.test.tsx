@@ -43,7 +43,17 @@ describe("ConnectedPlanningProvider", () => {
   });
 
   it("hydrates only the matching plan and clears it immediately when the account signs out", async () => {
-    const hydration = connectedHydration(data.budgetPlan);
+    const cloudTablePlan = {
+      ...data.workspace.tablePlan,
+      name: "Connected guest plan",
+      guests: [{
+        id: "81000000-0000-4000-8000-000000000008",
+        name: "Ailsa",
+        tableId: null,
+        seatIndex: null,
+      }],
+    };
+    const hydration = connectedHydration(data.budgetPlan, [], cloudTablePlan);
     jest.mocked(createPlanningApiClient).mockReturnValue({
       listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
       hydrateWorkspace: jest.fn(async () => hydration),
@@ -51,6 +61,7 @@ describe("ConnectedPlanningProvider", () => {
     const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
 
     await waitFor(() => expect(view.result.current.state).toMatchObject({ status: "connected", accountId, workspaceId }));
+    expect(view.result.current.data?.workspace.tablePlan).toEqual(cloudTablePlan);
 
     jest.mocked(useNativeAuth).mockReturnValue({ ...authenticatedAuth(), snapshot: { status: "signed_out", accountId: null, reason: null } } as never);
     await act(async () => {
@@ -202,6 +213,142 @@ describe("ConnectedPlanningProvider", () => {
     expect(view.result.current.state).toEqual({ status: "error", failure: "offline" });
   });
 
+  it("saves a table-plan draft on the device before a connected write", async () => {
+    const base = data.workspace.tablePlan;
+    const intended = {
+      ...base,
+      guests: [{
+        id: "81000000-0000-4000-8000-000000000008",
+        name: "Ailsa",
+        tableId: null,
+        seatIndex: null,
+      }],
+      updatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    const updateTablePlan = jest.fn(async () => ({
+      schemaVersion: 1,
+      workspaceId,
+      savedAt: "2026-09-01T10:00:01.000Z",
+    }));
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      updateTablePlan,
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.saveTablePlan>> | undefined;
+    await act(async () => { result = await view.result.current.saveTablePlan(intended); });
+
+    expect(saveDevicePlan).toHaveBeenCalledWith(expect.objectContaining({
+      workspace: expect.objectContaining({ tablePlan: intended }),
+    }));
+    expect(updateTablePlan).toHaveBeenCalledWith(workspaceId, {
+      schemaVersion: 1,
+      expectedWorkspaceUpdatedAt: data.workspace.updatedAt,
+      tablePlan: intended,
+    });
+    expect(result).toEqual({ outcome: "connected" });
+    expect(view.result.current.data?.workspace.tablePlan.guests).toEqual(intended.guests);
+  });
+
+  it("retries once when only an unrelated workspace timestamp changed", async () => {
+    const base = data.workspace.tablePlan;
+    const intended = {
+      ...base,
+      guests: [{
+        id: "81000000-0000-4000-8000-000000000008",
+        name: "Ailsa",
+        tableId: null,
+        seatIndex: null,
+      }],
+      updatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    const updateTablePlan = jest.fn()
+      .mockRejectedValueOnce(new PlanningApiError("version_conflict", 409))
+      .mockResolvedValueOnce({ schemaVersion: 1, workspaceId, savedAt: "2026-09-01T10:00:02.000Z" });
+    const getTablePlan = jest.fn(async () => tablePlanResource(
+      base,
+      "2026-09-01T10:00:01.000Z",
+    ));
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      updateTablePlan,
+      getTablePlan,
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.saveTablePlan>> | undefined;
+    await act(async () => { result = await view.result.current.saveTablePlan(intended); });
+
+    expect(result).toEqual({ outcome: "connected" });
+    expect(updateTablePlan).toHaveBeenNthCalledWith(1, workspaceId, expect.objectContaining({
+      expectedWorkspaceUpdatedAt: data.workspace.updatedAt,
+    }));
+    expect(updateTablePlan).toHaveBeenNthCalledWith(2, workspaceId, expect.objectContaining({
+      expectedWorkspaceUpdatedAt: "2026-09-01T10:00:01.000Z",
+    }));
+  });
+
+  it("recovers a lost table-plan response only when canonical content matches", async () => {
+    const intended = {
+      ...data.workspace.tablePlan,
+      name: "Connected guest plan",
+      updatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    const getTablePlan = jest.fn(async () => tablePlanResource(
+      { ...intended, updatedAt: "2026-09-01T10:00:01.000Z" },
+      "2026-09-01T10:00:01.000Z",
+    ));
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      updateTablePlan: jest.fn(async () => { throw new PlanningApiError("offline"); }),
+      getTablePlan,
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.saveTablePlan>> | undefined;
+    await act(async () => { result = await view.result.current.saveTablePlan(intended); });
+
+    expect(result).toEqual({ outcome: "connected" });
+    expect(getTablePlan).toHaveBeenCalledWith(workspaceId);
+  });
+
+  it("preserves the device draft and reports a genuine table-plan divergence", async () => {
+    const intended = {
+      ...data.workspace.tablePlan,
+      name: "My local edit",
+      updatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    const divergent = {
+      ...data.workspace.tablePlan,
+      name: "Partner edit",
+      updatedAt: "2026-09-01T10:00:01.000Z",
+    };
+    jest.mocked(createPlanningApiClient).mockReturnValue({
+      listWorkspaces: jest.fn(async () => ({ workspaces: [{ id: workspaceId, budgetPlanId: data.budgetPlan.id, role: "owner" }] })),
+      hydrateWorkspace: jest.fn(async () => connectedHydration(data.budgetPlan)),
+      updateTablePlan: jest.fn(async () => { throw new PlanningApiError("version_conflict", 409); }),
+      getTablePlan: jest.fn(async () => tablePlanResource(divergent, divergent.updatedAt)),
+    } as never);
+    const view = await renderHook(() => useConnectedPlanning(), { wrapper: ConnectedPlanningProvider });
+    await waitFor(() => expect(view.result.current.state.status).toBe("connected"));
+
+    let result: Awaited<ReturnType<typeof view.result.current.saveTablePlan>> | undefined;
+    await act(async () => { result = await view.result.current.saveTablePlan(intended); });
+
+    expect(saveDevicePlan).toHaveBeenCalledWith(expect.objectContaining({
+      workspace: expect.objectContaining({ tablePlan: intended }),
+    }));
+    expect(result).toEqual({ outcome: "needs_attention", failure: "conflict" });
+    expect(view.result.current.state).toEqual({ status: "error", failure: "conflict" });
+  });
+
   it("saves a stable task locally and recovers an ambiguous connected create by ID", async () => {
     let requestedTask: ReturnType<typeof taskResource> | null = null;
     let requestedTaskId = "";
@@ -270,6 +417,8 @@ describe("ConnectedPlanningProvider", () => {
 function connectedHydration(
   plan: typeof data.budgetPlan,
   tasks: ReturnType<typeof taskResource>[] = [],
+  tablePlan = data.workspace.tablePlan,
+  workspaceUpdatedAt = data.workspace.updatedAt,
 ) {
   return {
     dashboard: {
@@ -289,6 +438,19 @@ function connectedHydration(
       tasks,
       page: { limit: 100, offset: 0, hasMore: false },
     },
+    tablePlan: tablePlanResource(tablePlan, workspaceUpdatedAt),
+  };
+}
+
+function tablePlanResource(
+  tablePlan: typeof data.workspace.tablePlan,
+  workspaceUpdatedAt: string,
+) {
+  return {
+    schemaVersion: 1 as const,
+    workspaceId,
+    workspaceUpdatedAt,
+    tablePlan,
   };
 }
 

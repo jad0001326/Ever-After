@@ -22,7 +22,7 @@ describe("VenuePlanScreen", () => {
       weddingSeason: "Summer 2027",
     });
     const data = addManualVenue(base, "Village Hall", 250_000);
-    const view = await render(<VenuePlanScreen data={data} onDiscover={jest.fn()} onPayments={jest.fn()} onTasks={jest.fn()} />);
+    const view = await render(<VenuePlanScreen data={data} onDiscover={jest.fn()} onGuests={jest.fn()} onPayments={jest.fn()} onTables={jest.fn()} onTasks={jest.fn()} />);
 
     expect(view.getByRole("header", { name: "Village Hall" })).toBeOnTheScreen();
     expect(view.getByText("Estimated shortlist · Added manually")).toBeOnTheScreen();
@@ -32,5 +32,7 @@ describe("VenuePlanScreen", () => {
     expect(view.queryByText("CHOSEN")).not.toBeOnTheScreen();
     expect(view.getByRole("button", { name: "Manage tasks" })).toBeOnTheScreen();
     expect(view.getByRole("button", { name: "Manage payments" })).toBeOnTheScreen();
+    expect(view.getByRole("button", { name: "Review guests" })).toBeOnTheScreen();
+    expect(view.getByRole("button", { name: "Review tables" })).toBeOnTheScreen();
   });
 });

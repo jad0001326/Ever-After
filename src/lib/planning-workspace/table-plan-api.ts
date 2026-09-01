@@ -44,6 +44,7 @@ export async function loadPlanningTablePlan(
       .from("planning_seating_rules")
       .select("id, person_a_id, person_b_id, rule_type")
       .eq("workspace_id", workspaceId)
+      .order("id")
       .limit(TABLE_PLAN_LIMITS.rules + 1),
   ]);
   if (workspace.error) {
@@ -83,7 +84,9 @@ export async function loadPlanningTablePlan(
         id: workspace.data.id,
         name: workspace.data.name,
         guests: (guests.data ?? []).map((guest) => {
-          const seat = seatsByGuest.get(guest.id);
+          const seat = guest.rsvp_status === "declined"
+            ? undefined
+            : seatsByGuest.get(guest.id);
           return {
             id: guest.id,
             name: guest.name,

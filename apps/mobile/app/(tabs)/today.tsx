@@ -23,6 +23,8 @@ export default function TodayRoute() {
     else if (destination.kind === "venues") router.push("/discover");
     else if (destination.kind === "payments") router.push(`/payments?itemId=${encodeURIComponent(destination.itemId)}`);
     else if (destination.kind === "tasks") router.push("/tasks");
+    else if (destination.kind === "guests") router.push("/guests");
+    else if (destination.kind === "tables") router.push("/tables");
     else router.push("/plan");
   }
 

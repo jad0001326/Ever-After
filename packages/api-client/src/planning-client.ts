@@ -25,6 +25,11 @@ import {
   planningTaskResourceSchema,
   planningTaskUpdateRequestSchema,
 } from "@everaft/planning-contracts/planning-workspace/task-api-schema";
+import {
+  planningTablePlanResourceSchema,
+  planningTablePlanUpdateRequestSchema,
+  planningTablePlanUpdateSuccessSchema,
+} from "@everaft/planning-contracts/planning-workspace/table-plan-api-schema";
 import type { z } from "zod";
 
 export type AccessTokenProvider = () => Promise<string | null>;
@@ -85,11 +90,19 @@ export type PlanningTaskCreateRequest = z.infer<typeof planningTaskCreateRequest
 export type PlanningTaskUpdateRequest = z.infer<typeof planningTaskUpdateRequestSchema>;
 export type PlanningTaskDeleteRequest = z.infer<typeof planningTaskDeleteRequestSchema>;
 export type PlanningTaskDeleteSuccess = z.infer<typeof planningTaskDeleteSuccessSchema>;
+export type PlanningTablePlanResource = z.infer<typeof planningTablePlanResourceSchema>;
+export type PlanningTablePlanUpdateSuccess = z.infer<
+  typeof planningTablePlanUpdateSuccessSchema
+>;
+export type PlanningTablePlanUpdateRequest = z.infer<
+  typeof planningTablePlanUpdateRequestSchema
+>;
 export type PlanningWorkspaceHydration = Readonly<{
   dashboard: PlanningDashboardSnapshot;
   budget: PlanningBudgetResource;
   profile: PlanningProfileResource;
   tasks: PlanningTaskCollection;
+  tablePlan: PlanningTablePlanResource;
 }>;
 
 export function createPlanningApiClient(options: PlanningApiClientOptions) {
@@ -248,9 +261,24 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
         { method: "DELETE", body },
       );
     },
+    getTablePlan(workspaceId: string) {
+      return request(
+        "planning.table_plan.get",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/table-plan`,
+        planningTablePlanResourceSchema,
+      );
+    },
+    updateTablePlan(workspaceId: string, body: PlanningTablePlanUpdateRequest) {
+      return request(
+        "planning.table_plan.update",
+        `/api/planning/v1/workspaces/${encodeURIComponent(workspaceId)}/table-plan`,
+        planningTablePlanUpdateSuccessSchema,
+        { method: "PATCH", body },
+      );
+    },
     async hydrateWorkspace(workspaceId: string) {
       const encoded = encodeURIComponent(workspaceId);
-      const [dashboard, budget, profile, tasks] = await Promise.all([
+      const [dashboard, budget, profile, tasks, tablePlan] = await Promise.all([
         request(
           "planning.dashboard.get",
           `/api/planning/v1/workspaces/${encoded}/dashboard`,
@@ -271,8 +299,19 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
           `/api/planning/v1/workspaces/${encoded}/tasks?limit=100&offset=0`,
           planningTaskCollectionSchema,
         ),
+        request(
+          "planning.table_plan.get",
+          `/api/planning/v1/workspaces/${encoded}/table-plan`,
+          planningTablePlanResourceSchema,
+        ),
       ]);
-      return { dashboard, budget, profile, tasks } satisfies PlanningWorkspaceHydration;
+      return {
+        dashboard,
+        budget,
+        profile,
+        tasks,
+        tablePlan,
+      } satisfies PlanningWorkspaceHydration;
     },
   });
 }

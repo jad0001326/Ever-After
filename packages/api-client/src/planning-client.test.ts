@@ -168,6 +168,124 @@ describe("createPlanningApiClient", () => {
     ]);
   });
 
+  it("supports strict table-plan reads and conflict-safe writes", async () => {
+    const resource = tablePlanResource();
+    const success = {
+      schemaVersion: 1 as const,
+      workspaceId: resource.workspaceId,
+      savedAt: "2026-08-22T10:00:00.001Z",
+    };
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => Response.json(fetcher.mock.calls.length === 1 ? resource : success));
+    const client = createPlanningApiClient({
+      baseUrl: "https://example.test",
+      getAccessToken: async () => "fixture-token",
+      fetch: fetcher,
+    });
+
+    await expect(client.getTablePlan(resource.workspaceId)).resolves.toEqual(resource);
+    await expect(client.updateTablePlan(resource.workspaceId, {
+      schemaVersion: 1,
+      expectedWorkspaceUpdatedAt: resource.workspaceUpdatedAt,
+      tablePlan: resource.tablePlan,
+    })).resolves.toEqual(success);
+
+    expect(String(fetcher.mock.calls[0][0])).toContain("/table-plan");
+    expect(fetcher.mock.calls[1][1]?.method).toBe("PATCH");
+    expect(fetcher.mock.calls[1][1]?.body).toBe(JSON.stringify({
+      schemaVersion: 1,
+      expectedWorkspaceUpdatedAt: resource.workspaceUpdatedAt,
+      tablePlan: resource.tablePlan,
+    }));
+  });
+
+  it("hydrates the table plan with the other connected workspace resources", async () => {
+    const resource = tablePlanResource();
+    const responses = [
+      Response.json({
+        schemaVersion: 1,
+        generatedAt: resource.workspaceUpdatedAt,
+        workspace: {
+          id: resource.workspaceId,
+          name: "Our wedding",
+          budgetPlanId: "plan-1",
+        },
+        versions: {
+          workspaceUpdatedAt: resource.workspaceUpdatedAt,
+          budgetUpdatedAt: resource.workspaceUpdatedAt,
+        },
+        wedding: {
+          date: null,
+          guestCount: 80,
+          location: null,
+          currency: "GBP",
+          profileCompletionPercentage: 10,
+        },
+        budget: {
+          totalBudgetPence: 2_000_000,
+          spendableBudgetPence: 2_000_000,
+          plannedPence: 0,
+          committedPence: 0,
+          paidPence: 0,
+          remainingPence: 2_000_000,
+          outstandingCommittedPence: 0,
+          uncommittedPlannedPence: 0,
+          percentUsed: 0,
+          missingPriceCount: 0,
+          activeItemCount: 0,
+          health: "healthy",
+        },
+        payments: {
+          overdueCount: 0,
+          dueSoonCount: 0,
+          upcomingCount: 0,
+          next: null,
+        },
+        tasks: {
+          openCount: 0,
+          overdueCount: 0,
+          dueTodayCount: 0,
+          dueSoonCount: 0,
+          nextTaskId: null,
+        },
+        guests: { totalCount: 0, acceptedCount: 0, pendingCount: 0, declinedCount: 0, dietaryCount: 0, seatingGuestCount: 0, assignedCount: 0, unassignedCount: 0, targetGap: 80 },
+        recommendation: { stage: "venue", title: "Choose the venue direction", target: { kind: "venue-search" }, reason: "Choose a venue." },
+      }),
+      Response.json({
+        schemaVersion: 1,
+        workspaceId: resource.workspaceId,
+        plan: createPlanningHubStarterPlan("user-1"),
+        versions: {
+          workspaceUpdatedAt: resource.workspaceUpdatedAt,
+          budgetUpdatedAt: resource.workspaceUpdatedAt,
+        },
+      }),
+      Response.json({
+        schemaVersion: 1,
+        workspaceId: resource.workspaceId,
+        profile: null,
+      }),
+      Response.json({
+        schemaVersion: 1,
+        workspaceId: resource.workspaceId,
+        tasks: [],
+        page: { limit: 100, offset: 0, hasMore: false },
+      }),
+      Response.json(resource),
+    ];
+    const client = createPlanningApiClient({
+      baseUrl: "https://example.test",
+      getAccessToken: async () => "fixture-token",
+      fetch: async () => responses.shift()!,
+    });
+
+    await expect(client.hydrateWorkspace(resource.workspaceId)).resolves.toMatchObject({
+      tablePlan: resource,
+    });
+  });
+
   it("rejects cleartext non-local API origins", () => {
     expect(() => createPlanningApiClient({
       baseUrl: "http://example.test",
@@ -201,5 +319,27 @@ function taskContent(task: ReturnType<typeof taskResource>) {
     status: task.status,
     dueDate: task.dueDate,
     sortOrder: task.sortOrder,
+  };
+}
+
+function tablePlanResource() {
+  return {
+    schemaVersion: 1 as const,
+    workspaceId: "60000000-0000-4000-8000-000000000006",
+    workspaceUpdatedAt: "2026-08-22T10:00:00.000Z",
+    tablePlan: {
+      schemaVersion: 1 as const,
+      id: "60000000-0000-4000-8000-000000000006",
+      name: "Our wedding",
+      guests: [],
+      tables: [{
+        id: "90000000-0000-4000-8000-000000000009",
+        name: "Top table",
+        capacity: 8,
+        locked: false,
+      }],
+      rules: [],
+      updatedAt: "2026-08-22T10:00:00.000Z",
+    },
   };
 }

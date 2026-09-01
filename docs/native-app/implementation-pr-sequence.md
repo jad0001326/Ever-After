@@ -259,6 +259,14 @@ conflict and sensitive-log scans.
 
 Dependency: N6 plus successful P0 device use.
 
+Current N9A status on 1 September 2026: the typed table-plan API client,
+connected hydration, device-first conflict recovery, privacy-safe Guests and
+Tables summaries, exact Today routing and retained web handoff are implemented
+and locally verified on an isolated branch stacked on draft PR #79. Native
+guest editing, table/seating editing, two-device evidence and physical-device
+accessibility remain N9B/N9C work. See
+[`n9a-guests-tables-foundation-evidence.md`](n9a-guests-tables-foundation-evidence.md).
+
 ### N10 — Partner invitation and membership
 
 Scope:

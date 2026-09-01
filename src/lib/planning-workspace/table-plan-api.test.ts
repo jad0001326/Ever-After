@@ -29,6 +29,45 @@ describe("syncPlanningTablePlan", () => {
       "sort_order",
     );
     expect(queries.planning_guests.order).toHaveBeenNthCalledWith(2, "name");
+    expect(queries.planning_seating_rules.order).toHaveBeenCalledWith("id");
+  });
+
+  it("keeps a legacy declined guest readable while omitting their stale seat", async () => {
+    const queries = tablePlanQueries();
+    queries.planning_guests.limit.mockResolvedValue({
+      data: [{
+        id: "80000000-0000-4000-8000-000000000008",
+        name: "Ailsa",
+        email: null,
+        rsvp_status: "declined",
+        dietary_notes: null,
+        sort_order: 0,
+      }],
+      error: null,
+    });
+
+    const result = await loadPlanningTablePlan(
+      {
+        from: vi.fn((table: string) => (
+          queries[table as keyof typeof queries]
+        )),
+      } as never,
+      "60000000-0000-4000-8000-000000000006",
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      resource: {
+        tablePlan: {
+          guests: [{
+            id: "80000000-0000-4000-8000-000000000008",
+            rsvpStatus: "declined",
+            tableId: null,
+            seatIndex: null,
+          }],
+        },
+      },
+    });
   });
 
   it("distinguishes an inaccessible workspace, query failure and oversized state", async () => {

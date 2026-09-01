@@ -82,6 +82,8 @@ function destinationHint(destination: TodayDestination) {
   if (destination.kind === "venues") return "Opens venue discovery";
   if (destination.kind === "payments") return "Opens the relevant payment schedule";
   if (destination.kind === "tasks") return "Opens your task list";
+  if (destination.kind === "guests") return "Opens your guest summary";
+  if (destination.kind === "tables") return "Opens your table summary";
   return "Opens your plan";
 }
 

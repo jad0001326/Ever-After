@@ -23,7 +23,9 @@ export function createDevicePlanImportRequest(
       })),
       tables: tablePlan.tables,
       seats: tablePlan.guests.flatMap((guest) => (
-        guest.tableId !== null && guest.seatIndex !== null
+        guest.rsvpStatus !== "declined"
+          && guest.tableId !== null
+          && guest.seatIndex !== null
           ? [{ guestId: guest.id, tableId: guest.tableId, seatIndex: guest.seatIndex }]
           : []
       )),

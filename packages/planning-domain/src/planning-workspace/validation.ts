@@ -274,11 +274,21 @@ export const planningWorkspaceImportSnapshotSchema = z.object({
   ensureUnique(snapshot.rules.map((rule) => rule.id), "rules", "seating rule");
 
   const guests = new Set(snapshot.guests.map((guest) => guest.id));
+  const declinedGuests = new Set(snapshot.guests
+    .filter((guest) => guest.rsvpStatus === "declined")
+    .map((guest) => guest.id));
   const tables = new Map(snapshot.tables.map((table) => [table.id, table]));
   const seatedGuests = new Set<string>();
   const occupiedSeats = new Set<string>();
 
   snapshot.seats.forEach((seat, index) => {
+    if (declinedGuests.has(seat.guestId)) {
+      context.addIssue({
+        code: "custom",
+        message: "A declined guest cannot retain a table seat.",
+        path: ["seats", index, "guestId"],
+      });
+    }
     if (!guests.has(seat.guestId)) {
       context.addIssue({ code: "custom", message: "A seat references an unknown guest.", path: ["seats", index, "guestId"] });
     }
