@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readSheet } from "read-excel-file/node";
 import { requireAdmin } from "@/lib/auth";
-import { parseCsv, parseSupplierCandidateRows, type SupplierImportIssue } from "@/lib/supplier-catalogue-import";
+import { formatSupplierImportReadiness, getSupplierImportReadiness, parseCsv, parseSupplierCandidateRows, type SupplierImportIssue } from "@/lib/supplier-catalogue-import";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -15,6 +15,8 @@ export type SupplierCatalogueImportState = {
   mode: Mode;
   rowsRead: number;
   validRows: number;
+  acceptanceReadyRows: number;
+  manualReviewRows: number;
   stagedRows: number;
   duplicateHints: number;
   batchId: string | null;
@@ -29,7 +31,7 @@ export async function stageSupplierCatalogueFile(_: SupplierCatalogueImportState
   const file = formData.get("file");
   const sourceLabel = formData.get("sourceLabel")?.toString().trim() ?? "";
   const researchDate = formData.get("researchDate")?.toString().trim() ?? "";
-  const empty = (message: string): SupplierCatalogueImportResult => ({ ok: false, message, mode, rowsRead: 0, validRows: 0, stagedRows: 0, duplicateHints: 0, batchId: null, errors: [], warnings: [] });
+  const empty = (message: string): SupplierCatalogueImportResult => ({ ok: false, message, mode, rowsRead: 0, validRows: 0, acceptanceReadyRows: 0, manualReviewRows: 0, stagedRows: 0, duplicateHints: 0, batchId: null, errors: [], warnings: [] });
   if (!(file instanceof File) || file.size === 0) return empty("Choose a CSV or Excel supplier catalogue file.");
   if (file.size > 5 * 1024 * 1024) return empty("Supplier catalogue files must be 5 MB or smaller.");
   if (sourceLabel.length < 3 || sourceLabel.length > 240) return empty("Add a short source label for this research batch.");
@@ -39,11 +41,15 @@ export async function stageSupplierCatalogueFile(_: SupplierCatalogueImportState
   try { rows = await readRows(file); } catch (error) { return empty(error instanceof Error ? error.message : "The supplier file could not be read."); }
   const parsed = parseSupplierCandidateRows(rows, researchDate);
   if (!parsed.candidates.length) return { ...empty("No valid supplier rows are ready."), rowsRead: Math.max(0, rows.length - 1), errors: parsed.errors, warnings: parsed.warnings };
-  if (parsed.candidates.length > 500) return { ...empty("A batch can contain at most 500 valid supplier rows."), rowsRead: Math.max(0, rows.length - 1), validRows: parsed.candidates.length, errors: parsed.errors, warnings: parsed.warnings };
-
   const candidates = parsed.candidates;
-  const resultBase = { mode, rowsRead: Math.max(0, rows.length - 1), validRows: candidates.length, stagedRows: 0, duplicateHints: 0, batchId: null, errors: parsed.errors, warnings: parsed.warnings };
-  if (mode === "validate") return { ok: parsed.errors.length === 0, message: `${candidates.length} valid row${candidates.length === 1 ? "" : "s"} ready to stage. Existing catalogue duplicates are checked during atomic staging.`, ...resultBase };
+  const readiness = getSupplierImportReadiness(candidates);
+  if (candidates.length > 500) return { ...empty("A batch can contain at most 500 valid supplier rows."), rowsRead: Math.max(0, rows.length - 1), ...readiness, errors: parsed.errors, warnings: parsed.warnings };
+
+  const resultBase = { mode, rowsRead: Math.max(0, rows.length - 1), ...readiness, stagedRows: 0, duplicateHints: 0, batchId: null, errors: parsed.errors, warnings: parsed.warnings };
+  if (mode === "validate") {
+    const acceptanceSummary = formatSupplierImportReadiness(readiness);
+    return { ok: parsed.errors.length === 0, message: `${candidates.length} structurally valid row${candidates.length === 1 ? "" : "s"} ready to stage. ${acceptanceSummary} Existing catalogue duplicates are checked during atomic staging.`, ...resultBase };
+  }
 
   const { data, error } = await supabase.rpc("stage_supplier_catalogue_batch", {
     p_file_name: file.name.slice(0, 240),

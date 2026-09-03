@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
+import { formatSupplierImportReadiness, getSupplierImportReadiness, parseCsv, parseSupplierCandidateRows } from "@/lib/supplier-catalogue-import";
 
 const headers = ["Business name", "Category", "Base town", "Region", "Service areas", "Summary", "Description", "Services", "Official website URL", "Source URL", "Source type", "Research date", "Pricing unit", "Pricing summary", "Hero image URL", "Image permission status", "Image permission evidence URL", "Image credit", "Review notes"];
 const valid = ["Films Co", "videographer", "Glasgow", "Greater Glasgow", "Glasgow|Ayrshire", "Story-led wedding films across Scotland.", "A documentary wedding film team covering celebrations throughout Scotland.", "Full-day films|Highlight films", "https://films.example/", "https://films.example/about", "official_website", "2026-08-01", "quote", "Contact the supplier for a tailored quote.", "", "", "", ""];
@@ -145,5 +145,46 @@ describe("supplier catalogue import", () => {
     expect(result.candidates.find((candidate) => candidate.slug === "west-coast-weddings")?.starting_price_pence)
       .toBe(155_000);
     expect(result.candidates.filter((candidate) => candidate.pricing_unit === "quote")).toHaveLength(2);
+  });
+
+  it("validates the complete videographer research set without cross-file duplicates", () => {
+    const files = [
+      "videographer-primary-source-sample-2026-08-03.csv",
+      "videographer-regional-gap-sample-2026-08-03.csv",
+      "videographer-tayside-islands-sample-2026-08-03.csv",
+    ];
+    const results = files.map((file) => parseSupplierCandidateRows(
+      parseCsv(readFileSync(join(process.cwd(), "docs/planning-hub/research", file), "utf8")),
+      "2026-08-13",
+      "2026-08-17",
+    ));
+    const candidates = results.flatMap((result) => result.candidates);
+    const errors = results.flatMap((result) => result.errors);
+    const warnings = results.flatMap((result) => result.warnings);
+
+    expect(errors).toEqual([]);
+    expect(candidates).toHaveLength(14);
+    expect(new Set(candidates.map((candidate) => candidate.slug))).toHaveProperty("size", 14);
+    expect(candidates.filter((candidate) => candidate.starting_price_pence != null)).toHaveLength(10);
+    expect(candidates.filter((candidate) => candidate.pricing_unit === "quote")).toHaveLength(4);
+    expect(candidates.every((candidate) => (
+      candidate.category_slug === "videographer"
+      && candidate.source_type === "official_website"
+      && candidate.hero_image_url == null
+      && candidate.image_permission_status === "not_provided"
+    ))).toBe(true);
+    expect(warnings).toEqual([expect.objectContaining({
+      business: "Struie Wedding Films",
+      message: "Manual review notes must be resolved and recorded before acceptance.",
+    })]);
+    const readiness = getSupplierImportReadiness(candidates);
+    expect(readiness).toEqual({
+      acceptanceReadyRows: 13,
+      manualReviewRows: 1,
+      validRows: 14,
+    });
+    expect(formatSupplierImportReadiness(readiness)).toBe(
+      "13 have no manual-review note; 1 requires a recorded resolution before acceptance.",
+    );
   });
 });
