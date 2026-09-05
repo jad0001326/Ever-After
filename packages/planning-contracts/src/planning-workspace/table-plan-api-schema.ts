@@ -15,6 +15,17 @@ export const planningTablePlanUpdateRequestSchema = z.strictObject({
   schemaVersion: z.literal(1),
   expectedWorkspaceUpdatedAt: z.string().datetime({ offset: true }),
   tablePlan: planningTablePlanSyncSchema.strict(),
+}).superRefine((request, context) => {
+  request.tablePlan.guests.forEach((guest, index) => {
+    if (guest.rsvpStatus === "declined"
+      && (guest.tableId !== null || guest.seatIndex !== null)) {
+      context.addIssue({
+        code: "custom",
+        message: "A declined guest cannot retain a table seat.",
+        path: ["tablePlan", "guests", index],
+      });
+    }
+  });
 }).meta({
   title: "EverAft Planning Table Plan Update Request v1",
   description: "Conflict-safe guest, table, seat and seating-rule update from a web, iOS or Android client.",

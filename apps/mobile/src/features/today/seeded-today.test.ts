@@ -1,5 +1,9 @@
 import { createPaymentInstallment } from "@everaft/planning-domain/budget/payment-schedule";
-import { updatePlanningHubItemInstallments } from "@everaft/planning-domain/planning-hub/plan";
+import {
+  addManualPlanningHubPhotographer,
+  addManualPlanningHubSupplier,
+  updatePlanningHubItemInstallments,
+} from "@everaft/planning-domain/planning-hub/plan";
 import { addManualVenue } from "../venues/venue-plan-actions";
 import { createDevicePlan } from "../../planning/device-plan-model";
 import { createTodayModel } from "./seeded-today";
@@ -83,5 +87,55 @@ describe("seeded Today model", () => {
         destination: { kind: "tasks" },
       }),
     ]);
+  });
+
+  it("routes guest and table recommendations to their exact native summaries", () => {
+    const venuePlan = addManualVenue(createDevicePlan({
+      weddingDate: null,
+      weddingSeason: null,
+      location: "Fife",
+      guestCount: 80,
+      totalBudgetPence: 2_000_000,
+      priorities: [],
+    }), "Village Hall", 400_000);
+    const budgetPlan = addManualPlanningHubSupplier(
+      addManualPlanningHubPhotographer(
+        venuePlan.budgetPlan,
+        "Example Photography",
+        150_000,
+        "shortlisted",
+      ),
+      "florist",
+      "Example Florist",
+      80_000,
+      "shortlisted",
+    );
+    const guestModel = createTodayModel({ ...venuePlan, budgetPlan });
+    expect(guestModel.recommendation).toMatchObject({
+      destination: { kind: "guests" },
+      actionLabel: "Review guests",
+    });
+
+    const tableModel = createTodayModel({
+      ...venuePlan,
+      budgetPlan,
+      workspace: {
+        ...venuePlan.workspace,
+        tablePlan: {
+          ...venuePlan.workspace.tablePlan,
+          guests: [{
+            id: "81000000-0000-4000-8000-000000000008",
+            name: "Ailsa",
+            rsvpStatus: "accepted",
+            tableId: null,
+            seatIndex: null,
+          }],
+        },
+      },
+    });
+    expect(tableModel.recommendation).toMatchObject({
+      destination: { kind: "tables" },
+      actionLabel: "Review tables",
+    });
   });
 });

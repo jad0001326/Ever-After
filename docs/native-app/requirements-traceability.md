@@ -1,6 +1,6 @@
 # Native app requirements traceability
 
-Date: 20 August 2026
+Date: 1 September 2026 (original planning matrix: 20 August 2026)
 
 This matrix audits the native plan against the active EverAft goal. It is an
 acceptance map, not evidence that the app has been built. `Plan complete` means
@@ -33,7 +33,7 @@ passes in the relevant PR or release environment.
 | Discover photographers using venue, location and remaining budget while not inventing availability | Discover > Photography | N7 | Live-category enforcement, stale-venue response, budget/location context and unchecked-date state | Existing supplier foundation; implementation pending |
 | Preserve manual entry where catalogue coverage is thin | Venue/photography empty results; Budget add item | N5 and N7 | Manual entry creates one valid planning item and survives offline reopen | Existing domain foundation; implementation pending |
 | Manage tasks | Plan > Tasks; Today | N8 | Stable-ID retry, collision, lost-response and idempotent CRUD tests | N8A merged in PR #78 with device/connected CRUD and recovery tests; distributed-device gate pending |
-| Manage guests and table arrangements | Plan > Guests/Tables, with web handoff until parity | N9 | Seating invariants, accessible linear editor, sensitive-log scan and two-device conflicts | Existing domain/API foundation; implementation pending |
+| Manage guests and table arrangements | Plan > Guests/Tables, with web handoff until parity | N9 | Seating invariants, accessible linear editor, sensitive-log scan and two-device conflicts | N9A typed hydration, safe conflict recovery, privacy-safe summaries, exact routes and web handoff implemented and locally verified; N9B/N9C editors, two-device and physical-device gates pending |
 | Share securely with one partner | You > Partner; invitation deep link | N10 | Owner/partner/outsider RLS, concurrent invite/accept, redaction, removal and reconnect purge | Dormant schema foundation; hardened implementation pending |
 | Export personal data and delete an account safely | You > Privacy and data/Delete account | N12 | Scoped export, expiry denial, fresh auth, shared-plan outcomes, Storage cleanup, session denial and retry | Plan complete; implementation pending |
 
@@ -44,7 +44,7 @@ passes in the relevant PR or release environment.
 | Genuine planning product rather than directory beside calculator | Today/Discover/Plan share one workspace and decision-state model | N4–N9 | Golden journey from setup through venue commitment, budget change and next action | Plan complete; implementation pending |
 | Weekly return value | Today surfaces one reasoned action, closest payment/task deadline and progress | N6–N8 | Recommendation correctness plus useful-return product metric | N8B closest task/payment and recommendation routing implemented and tested; live product metric pending |
 | Small iPhone usability | Four tabs, full-height filter sheets, single-column critical flows, 44-point targets | N2 and every feature PR | Current small-iPhone physical/simulator matrix with Dynamic Type | Plan complete; implementation pending |
-| Screen-reader and keyboard accessibility | VoiceOver/TalkBack-native controls; accessible linear table/compare alternatives; keyboard-safe web handoffs | N2, N5, N9, N12 | VoiceOver/TalkBack golden journeys, focus/error checks and WCAG AA contrast | Plan complete; implementation pending |
+| Screen-reader and keyboard accessibility | VoiceOver/TalkBack-native controls; accessible linear table/compare alternatives; keyboard-safe web handoffs | N2, N5, N9, N12 | VoiceOver/TalkBack golden journeys, focus/error checks and WCAG AA contrast | N9A count summaries, 44-point actions and named external handoff implemented; native linear editor and physical VoiceOver/TalkBack gates pending |
 | Native responsiveness | Cached useful screen under 1s, connected content under 2.5s, local tap response under 100ms | N2 baseline; N4–N12 enforcement | Physical-device launch/render/interaction traces, separately reported by platform | Plan complete; implementation pending |
 | Web performance remains protected | Lighthouse 90+, LCP <2.5s, INP <200ms, CLS <0.1 | N1 baseline and N12 release repeat | Comparable production-mode Planning Hub run before/after shared extraction | Plan complete; implementation pending |
 | No unnecessary rerenders or unbounded media/data | React-free domain, isolated stores, virtualized lists, eight cards, on-demand galleries | N1, N2, N5, N7 | Render profiling, payload assertions and list update isolation | Plan complete; implementation pending |

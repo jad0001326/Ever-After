@@ -2,6 +2,7 @@ import {
   calculatePlanningHubPlan,
   getPlanningHubItemAvailability,
 } from "@everaft/planning-domain/planning-hub/plan";
+import { getTablePlanGuestOverview } from "@everaft/planning-domain/table-plan/guests";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,9 +11,22 @@ import { radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 
-export function VenuePlanScreen({ data, onDiscover, onPayments, onTasks }: { data: DevicePlanData; onDiscover(): void; onPayments(): void; onTasks(): void }) {
+type VenuePlanScreenProps = Readonly<{
+  data: DevicePlanData;
+  onDiscover(): void;
+  onGuests(): void;
+  onPayments(): void;
+  onTables(): void;
+  onTasks(): void;
+}>;
+
+export function VenuePlanScreen({ data, onDiscover, onGuests, onPayments, onTables, onTasks }: VenuePlanScreenProps) {
   const { colors } = useAppTheme();
   const summary = useMemo(() => calculatePlanningHubPlan(data.budgetPlan), [data.budgetPlan]);
+  const guestOverview = useMemo(
+    () => getTablePlanGuestOverview(data.workspace.tablePlan, data.workspace.profile.guestCount ?? 0),
+    [data.workspace.profile.guestCount, data.workspace.tablePlan],
+  );
   const venues = data.budgetPlan.items.filter((item) => item.categoryId === "venue" && item.bookingStatus !== "cancelled");
 
   return (
@@ -51,6 +65,22 @@ export function VenuePlanScreen({ data, onDiscover, onPayments, onTasks }: { dat
             <Text style={[styles.body, { color: colors.textMuted }]}>Start with a live venue or add one manually.</Text>
           </View>
         )}
+
+        <View style={[styles.tablePlanCard, { backgroundColor: colors.canvasRaised, borderColor: colors.border }]}>
+          <Text style={[styles.eyebrow, { color: colors.accent }]}>GUESTS &amp; SEATING</Text>
+          <Text accessibilityRole="header" style={[styles.cardTitle, { color: colors.primary }]}>Plan the people around your day</Text>
+          <Text style={[styles.body, { color: colors.textMuted }]}>
+            {guestOverview.totalCount} guests · {guestOverview.pendingCount} awaiting RSVP · {guestOverview.unassignedCount} unassigned
+          </Text>
+          <View style={styles.inlineActions}>
+            <Pressable accessibilityRole="button" onPress={onGuests} style={[styles.inlineButton, { borderColor: colors.primary }]}>
+              <Text style={[styles.inlineButtonText, { color: colors.primary }]}>Review guests</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={onTables} style={[styles.inlineButton, { borderColor: colors.primary }]}>
+              <Text style={[styles.inlineButtonText, { color: colors.primary }]}>Review tables</Text>
+            </Pressable>
+          </View>
+        </View>
 
         <Pressable accessibilityRole="button" onPress={onDiscover} style={[styles.button, { backgroundColor: colors.primary }]}>
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Explore venues</Text>
@@ -120,6 +150,10 @@ const styles = StyleSheet.create({
   badge: { borderRadius: radius.pill, fontSize: 11, fontWeight: "800", letterSpacing: 1.2, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   cost: { fontSize: 18, fontWeight: "700" },
   empty: { gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
+  tablePlanCard: { gap: spacing.md, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
+  inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  inlineButton: { minHeight: 48, flexGrow: 1, borderRadius: radius.pill, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
+  inlineButtonText: { fontSize: 15, fontWeight: "700" },
   button: { minHeight: 52, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },
   buttonText: { fontSize: 16, fontWeight: "700" },
   secondaryButton: { minHeight: 52, borderRadius: radius.pill, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },

@@ -2,10 +2,15 @@
 
 Date: 20 August 2026
 
-Status: local planning artifacts only. These documents do not authorise a
-commit, push, deployment, Supabase migration, production-data change, feature
-flag change, supplier contact, outreach action, paid service or App Store
-submission.
+Status: planning pack plus local implementation evidence through N9A. Evidence
+documents describe only the gates actually run; they do not authorise a push,
+deployment, Supabase migration, production-data change, feature flag change,
+supplier contact, outreach action, paid service or App Store submission.
+
+Current implementation note (1 September 2026): N8A is merged in PR #78, N8B
+is the green unmerged draft PR #79, and N9A is locally implemented on an
+isolated branch stacked on N8B. N9A has not been pushed, merged, deployed or
+distributed.
 
 ## Purpose
 
@@ -41,8 +46,14 @@ The native product promise is the same as the web product:
 9. [N1 performance baseline](n1-performance-baseline.md) — reproducible local
    before/after mobile Lighthouse, accessibility, rendering and interaction
    evidence for the shared-package extraction.
+10. [N2 local evidence](n2-local-evidence.md) — the first runtime evidence;
+    later per-slice evidence files live beside it for auth, device planning,
+    connected planning, discovery, tasks, payments and next actions.
+11. [N9A guests and tables foundation](n9a-guests-tables-foundation-evidence.md)
+    — typed table-plan hydration, conflict-safe save foundation, privacy-safe
+    summaries, exact routes and retained web handoff.
 
-## Evidence baseline
+## Original N0 evidence baseline
 
 The plan is based on current `origin/main` at `880a4ee` and the separately
 reviewed draft supplier-claim replacement in PR #69.

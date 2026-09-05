@@ -1,10 +1,12 @@
 import {
   createPlanningApiClient,
   PlanningApiError,
+  type PlanningTablePlanResource,
   type PlanningTaskResource,
   type PlanningWorkspaceHydration,
 } from "@everaft/api-client";
 import type { PlanningTask } from "@everaft/planning-domain/planning-workspace/types";
+import type { TablePlan } from "@everaft/planning-domain/table-plan/types";
 import {
   createContext,
   type Dispatch,
@@ -35,6 +37,10 @@ import {
   type TaskCreateInput,
   updateDeviceTask,
 } from "./task-reliability";
+import {
+  normalizeTablePlanForSave,
+  tablePlanContentMatches,
+} from "./table-plan-reliability";
 
 export type ConnectedPlanningState =
   | Readonly<{ status: "device_only"; reason: "signed_out" | "not_configured" | "no_workspace" }>
@@ -55,6 +61,7 @@ export type ConnectedBudgetSaveResult = Readonly<{
 }>;
 
 export type ConnectedTaskMutationResult = ConnectedBudgetSaveResult;
+export type ConnectedTablePlanMutationResult = ConnectedBudgetSaveResult;
 
 type ConnectedPlanningValue = Readonly<{
   state: ConnectedPlanningState;
@@ -62,6 +69,7 @@ type ConnectedPlanningValue = Readonly<{
   connect(): Promise<void>;
   refresh(): Promise<void>;
   saveBudget(data: DevicePlanData): Promise<ConnectedBudgetSaveResult>;
+  saveTablePlan(tablePlan: TablePlan): Promise<ConnectedTablePlanMutationResult>;
   createTask(input: TaskCreateInput): Promise<ConnectedTaskMutationResult>;
   updateTask(taskId: string, changes: TaskChanges): Promise<ConnectedTaskMutationResult>;
   deleteTask(taskId: string): Promise<ConnectedTaskMutationResult>;
@@ -266,9 +274,99 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
         name: exposedState.hydration.dashboard.workspace.name,
         profile: exposedState.hydration.profile.profile ?? local.workspace.profile,
         tasks: exposedState.hydration.tasks.tasks.map(taskResourceToDeviceTask),
+        tablePlan: exposedState.hydration.tablePlan.tablePlan,
+        updatedAt: exposedState.hydration.tablePlan.workspaceUpdatedAt,
       },
     };
   }, [devicePlan.state, exposedState]);
+
+  const saveTablePlan = useCallback(async (
+    tablePlan: TablePlan,
+  ): Promise<ConnectedTablePlanMutationResult> => {
+    if (!data || devicePlan.state.status !== "ready") {
+      return { outcome: "needs_attention", failure: "unavailable" };
+    }
+    const safeTablePlan = normalizeTablePlanForSave(tablePlan);
+    const startingRevision = revision.current;
+    const connection = exposedState.status === "connected" ? exposedState : null;
+    try {
+      await devicePlan.save(withDeviceTablePlan(data, safeTablePlan));
+    } catch {
+      return { outcome: "needs_attention", failure: "unavailable" };
+    }
+    if (!connection || !client || startingRevision !== revision.current) {
+      return { outcome: "device_only" };
+    }
+
+    const currentRevision = ++revision.current;
+    const base = connection.hydration.tablePlan;
+    markTablePlanSyncSaving(setState, connection);
+    const write = (expectedWorkspaceUpdatedAt: string) => client.updateTablePlan(
+      connection.workspaceId,
+      {
+        schemaVersion: 1,
+        expectedWorkspaceUpdatedAt,
+        tablePlan: safeTablePlan,
+      },
+    );
+    const accept = (resource: PlanningTablePlanResource) => {
+      if (currentRevision !== revision.current) return false;
+      setConnectedTablePlan(setState, connection, resource);
+      return true;
+    };
+
+    try {
+      const success = await write(base.workspaceUpdatedAt);
+      if (!accept(tablePlanResourceAfterWrite(base, safeTablePlan, success.savedAt))) {
+        return { outcome: "device_only" };
+      }
+      return { outcome: "connected" };
+    } catch (error) {
+      const originalFailure = mapConnectionFailure(error);
+      let canonical: PlanningTablePlanResource;
+      try {
+        canonical = await client.getTablePlan(connection.workspaceId);
+      } catch {
+        if (currentRevision !== revision.current) return { outcome: "device_only" };
+        setState({ status: "error", failure: originalFailure });
+        return { outcome: "needs_attention", failure: originalFailure };
+      }
+
+      if (tablePlanContentMatches(canonical.tablePlan, safeTablePlan)) {
+        if (!accept(canonical)) return { outcome: "device_only" };
+        return { outcome: "connected" };
+      }
+
+      if (originalFailure === "conflict"
+        && tablePlanContentMatches(canonical.tablePlan, base.tablePlan)) {
+        try {
+          const success = await write(canonical.workspaceUpdatedAt);
+          if (!accept(tablePlanResourceAfterWrite(canonical, safeTablePlan, success.savedAt))) {
+            return { outcome: "device_only" };
+          }
+          return { outcome: "connected" };
+        } catch (retryError) {
+          const retryFailure = mapConnectionFailure(retryError);
+          try {
+            const confirmed = await client.getTablePlan(connection.workspaceId);
+            if (tablePlanContentMatches(confirmed.tablePlan, safeTablePlan)) {
+              if (!accept(confirmed)) return { outcome: "device_only" };
+              return { outcome: "connected" };
+            }
+          } catch {
+            // The device draft remains available when the retry cannot be confirmed.
+          }
+          if (currentRevision !== revision.current) return { outcome: "device_only" };
+          setState({ status: "error", failure: retryFailure });
+          return { outcome: "needs_attention", failure: retryFailure };
+        }
+      }
+
+      if (currentRevision !== revision.current) return { outcome: "device_only" };
+      setState({ status: "error", failure: originalFailure });
+      return { outcome: "needs_attention", failure: originalFailure };
+    }
+  }, [client, data, devicePlan, exposedState]);
 
   const createTask = useCallback(async (
     input: TaskCreateInput,
@@ -407,10 +505,11 @@ export function ConnectedPlanningProvider({ children }: PropsWithChildren) {
     connect,
     refresh: load,
     saveBudget,
+    saveTablePlan,
     createTask,
     updateTask,
     deleteTask,
-  }), [connect, createTask, data, deleteTask, exposedState, load, saveBudget, updateTask]);
+  }), [connect, createTask, data, deleteTask, exposedState, load, saveBudget, saveTablePlan, updateTask]);
   return (
     <ConnectedPlanningContext.Provider value={value}>
       {children}
@@ -429,6 +528,20 @@ function withDeviceTasks(data: DevicePlanData, tasks: PlanningTask[]): DevicePla
   };
 }
 
+function withDeviceTablePlan(
+  data: DevicePlanData,
+  tablePlan: TablePlan,
+): DevicePlanData {
+  return {
+    ...data,
+    workspace: {
+      ...data.workspace,
+      tablePlan,
+      updatedAt: tablePlan.updatedAt,
+    },
+  };
+}
+
 function markTaskSyncSaving(
   setState: Dispatch<SetStateAction<ConnectedPlanningState>>,
   connection: Extract<ConnectedPlanningState, { status: "connected" }>,
@@ -438,6 +551,50 @@ function markTaskSyncSaving(
     && current.workspaceId === connection.workspaceId
     ? { ...current, syncStatus: "saving" }
     : current);
+}
+
+function markTablePlanSyncSaving(
+  setState: Dispatch<SetStateAction<ConnectedPlanningState>>,
+  connection: Extract<ConnectedPlanningState, { status: "connected" }>,
+) {
+  setState((current) => current.status === "connected"
+    && current.accountId === connection.accountId
+    && current.workspaceId === connection.workspaceId
+    ? { ...current, syncStatus: "saving" }
+    : current);
+}
+
+function setConnectedTablePlan(
+  setState: Dispatch<SetStateAction<ConnectedPlanningState>>,
+  connection: Extract<ConnectedPlanningState, { status: "connected" }>,
+  tablePlan: PlanningTablePlanResource,
+) {
+  setState((current) => current.status === "connected"
+    && current.accountId === connection.accountId
+    && current.workspaceId === connection.workspaceId
+    ? {
+      ...current,
+      syncStatus: "idle",
+      hydration: { ...current.hydration, tablePlan },
+    }
+    : current);
+}
+
+function tablePlanResourceAfterWrite(
+  base: PlanningTablePlanResource,
+  tablePlan: TablePlan,
+  savedAt: string,
+): PlanningTablePlanResource {
+  return {
+    ...base,
+    workspaceUpdatedAt: savedAt,
+    tablePlan: {
+      ...tablePlan,
+      id: base.tablePlan.id,
+      name: base.tablePlan.name,
+      updatedAt: savedAt,
+    },
+  };
 }
 
 function withConnectedTask(
