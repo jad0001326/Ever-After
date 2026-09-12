@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { createPaymentInstallment } from "@everaft/planning-domain/budget/payment-schedule";
 import { updatePlanningHubItemInstallments } from "@everaft/planning-domain/planning-hub/plan";
 
@@ -15,6 +15,28 @@ jest.mock("../../design/use-app-theme", () => ({
 }));
 
 describe("PaymentScheduleScreen", () => {
+  it("explains recording only and retains entries when a save fails", async () => {
+    let rejectSave!: (error: Error) => void;
+    const pending = new Promise<never>((_resolve, reject) => { rejectSave = reject; });
+    const onSave = jest.fn(() => pending);
+    const view = await render(<PaymentScheduleScreen data={planWithVenue()} onBack={jest.fn()} onSave={onSave} />);
+    expect(view.getByText(/EverAft does not send money or pay suppliers/)).toBeOnTheScreen();
+    await fireEvent.press(view.getByRole("button", { name: "Add payment" }));
+    await fireEvent.changeText(view.getByLabelText("Payment 1 amount due"), "250");
+    await fireEvent.press(view.getByRole("button", { name: "Save payment schedule" }));
+    expect(view.getByRole("button", { name: "Saving…", busy: true })).toBeDisabled();
+    expect(view.getByRole("button", { name: "Add payment" })).toBeDisabled();
+    expect(view.getByRole("button", { name: "Back to plan" })).toBeDisabled();
+    expect(view.getByRole("button", { name: "Remove payment 1" })).toBeDisabled();
+    expect(view.getByRole("button", { name: "Mark paid today" })).toBeDisabled();
+    expect(view.getByLabelText("Payment 1 amount due")).toBeDisabled();
+    await fireEvent.changeText(view.getByLabelText("Payment 1 amount due"), "300");
+    await act(async () => { rejectSave(new Error("local storage failure")); });
+    expect(view.getByRole("alert")).toHaveTextContent(/could not save it/i);
+    expect(view.getByLabelText("Payment 1 amount due")).toHaveDisplayValue("250");
+    expect(view.getByRole("button", { name: "Save payment schedule" })).toBeEnabled();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
   it("records a payment on the device-first plan and derives its aggregate state", async () => {
     const data = planWithVenue();
     const onSave = jest.fn(async (_data: DevicePlanData) => ({ outcome: "device_only" as const }));
@@ -47,6 +69,23 @@ describe("PaymentScheduleScreen", () => {
       paymentStatus: "partially_paid",
     });
     expect(view.getByRole("alert")).toHaveTextContent(/saved on this device/i);
+  });
+
+  it("does not claim an unavailable first-connect change was saved", async () => {
+    const onSave = jest.fn(async (_data: DevicePlanData) => ({
+      outcome: "needs_attention" as const,
+      failure: "unavailable" as const,
+    }));
+    const view = await render(
+      <PaymentScheduleScreen data={planWithVenue()} onBack={jest.fn()} onSave={onSave} />,
+    );
+
+    await fireEvent.press(view.getByRole("button", { name: "Add payment" }));
+    await fireEvent.changeText(view.getByLabelText("Payment 1 amount due"), "250");
+    await fireEvent.press(view.getByRole("button", { name: "Save payment schedule" }));
+
+    await waitFor(() => expect(view.getByRole("alert")).toHaveTextContent(/could not be saved/i));
+    expect(view.queryByText(/saved on this device/i)).not.toBeOnTheScreen();
   });
 
   it("keeps the save confirmation when the persisted item receives a new version timestamp", async () => {

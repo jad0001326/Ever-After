@@ -46,6 +46,64 @@ const commonDevicePlanSchema = {
   workspace: workspaceSchema,
 };
 
+const connectedSyncSchema = z.strictObject({
+  lastConnected: z.strictObject({
+    accountId: z.string().uuid(),
+    workspaceId: z.string().uuid(),
+    budgetUpdatedAt: z.iso.datetime({ offset: true }),
+    workspaceUpdatedAt: z.iso.datetime({ offset: true }),
+  }).nullable(),
+  pendingBudget: z.strictObject({
+    accountId: z.string().uuid(),
+    workspaceId: z.string().uuid(),
+    baseBudgetUpdatedAt: z.iso.datetime({ offset: true }),
+  }).nullable(),
+  pendingTablePlan: z.strictObject({
+    accountId: z.string().uuid(),
+    workspaceId: z.string().uuid(),
+    baseWorkspaceUpdatedAt: z.iso.datetime({ offset: true }),
+  }).nullable(),
+  pendingTasks: z.array(z.strictObject({
+    kind: z.enum(["create", "update", "delete"]),
+    accountId: z.string().uuid(),
+    workspaceId: z.string().uuid(),
+    taskId: z.string().uuid(),
+    baseTaskUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+  }).superRefine((operation, context) => {
+    if ((operation.kind === "create") !== (operation.baseTaskUpdatedAt === null)) {
+      context.addIssue({
+        code: "custom",
+        message: "Only a pending task creation can omit its cloud base version.",
+        path: ["baseTaskUpdatedAt"],
+      });
+    }
+  })).max(100),
+});
+
+const devicePlanV5Schema = z.strictObject({
+  ...commonDevicePlanSchema,
+  formatVersion: z.literal(5),
+  connectedSync: connectedSyncSchema,
+  discovery: z.strictObject({
+    comparedVenues: z.array(catalogueVenueSchema).max(3),
+    savedVenueIds: z.array(z.string().uuid()).max(100),
+    comparedSuppliers: z.array(catalogueSupplierSchema).max(3),
+    savedSupplierIds: z.array(z.string().uuid()).max(100),
+  }),
+}).superRefine(validateDevicePlanReferences);
+
+const devicePlanV4Schema = z.strictObject({
+  ...commonDevicePlanSchema,
+  formatVersion: z.literal(4),
+  connectedSync: connectedSyncSchema.omit({ lastConnected: true }),
+  discovery: z.strictObject({
+    comparedVenues: z.array(catalogueVenueSchema).max(3),
+    savedVenueIds: z.array(z.string().uuid()).max(100),
+    comparedSuppliers: z.array(catalogueSupplierSchema).max(3),
+    savedSupplierIds: z.array(z.string().uuid()).max(100),
+  }),
+}).superRefine(validateDevicePlanReferences);
+
 const devicePlanV3Schema = z.strictObject({
   ...commonDevicePlanSchema,
   formatVersion: z.literal(3),
@@ -72,7 +130,14 @@ const devicePlanV1Schema = z.strictObject({
 }).superRefine(validateDevicePlanReferences);
 
 function validateDevicePlanReferences(
-  data: z.infer<typeof devicePlanV3Schema> | z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+  data: Readonly<{
+    budgetPlan: Readonly<{ id: string }>;
+    workspace: Readonly<{
+      budgetPlanId: string;
+      cloudWorkspaceId: string | null;
+      ownerId: string | null;
+    }>;
+  }>,
   context: z.RefinementCtx,
 ) {
   if (data.workspace.budgetPlanId !== data.budgetPlan.id) {
@@ -95,7 +160,7 @@ const recoveryFixtureSchema = z.strictObject({
   fixture: z.literal("everaft-device-plan-recovery"),
   fixtureVersion: z.literal(1),
   exportedAt: z.iso.datetime({ offset: true }),
-  data: z.union([devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]),
+  data: z.union([devicePlanV5Schema, devicePlanV4Schema, devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]),
 });
 
 export class DevicePlanCorruptError extends Error {
@@ -106,7 +171,7 @@ export class DevicePlanCorruptError extends Error {
 }
 
 export function encodeDevicePlan(data: DevicePlanData) {
-  const validated = devicePlanV3Schema.parse(data);
+  const validated = devicePlanV5Schema.parse(data);
   return encodeWithinLimit(validated);
 }
 
@@ -125,7 +190,7 @@ export function encodeRecoveryFixture(data: DevicePlanData, exportedAt = new Dat
     fixture: "everaft-device-plan-recovery",
     fixtureVersion: 1,
     exportedAt: exportedAt.toISOString(),
-    data: devicePlanV3Schema.parse(data),
+    data: devicePlanV5Schema.parse(data),
   });
 }
 
@@ -140,22 +205,34 @@ export function decodeRecoveryFixture(encoded: string): DevicePlanData {
 }
 
 function migrateDevicePlan(value: unknown): DevicePlanData {
-  const parsed = z.union([devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]).parse(value);
+  const parsed = z.union([devicePlanV5Schema, devicePlanV4Schema, devicePlanV3Schema, devicePlanV2Schema, devicePlanV1Schema]).parse(value);
   return migrateParsedDevicePlan(parsed);
 }
 
 function migrateParsedDevicePlan(
-  parsed: z.infer<typeof devicePlanV3Schema> | z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
+  parsed: z.infer<typeof devicePlanV5Schema> | z.infer<typeof devicePlanV4Schema> | z.infer<typeof devicePlanV3Schema> | z.infer<typeof devicePlanV2Schema> | z.infer<typeof devicePlanV1Schema>,
 ): DevicePlanData {
-  if (parsed.formatVersion === 3) return parsed as DevicePlanData;
+  if (parsed.formatVersion === 5) return parsed as DevicePlanData;
+  if (parsed.formatVersion === 4) return {
+    ...parsed,
+    formatVersion: 5,
+    connectedSync: { ...parsed.connectedSync, lastConnected: null },
+  } as DevicePlanData;
+  if (parsed.formatVersion === 3) return {
+    ...parsed,
+    formatVersion: 5,
+    connectedSync: { lastConnected: null, pendingBudget: null, pendingTablePlan: null, pendingTasks: [] },
+  } as DevicePlanData;
   if (parsed.formatVersion === 2) return {
     ...parsed,
-    formatVersion: 3,
+    formatVersion: 5,
+    connectedSync: { lastConnected: null, pendingBudget: null, pendingTablePlan: null, pendingTasks: [] },
     discovery: { ...parsed.discovery, comparedSuppliers: [], savedSupplierIds: [] },
   } as DevicePlanData;
   return {
     ...parsed,
-    formatVersion: 3,
+    formatVersion: 5,
+    connectedSync: { lastConnected: null, pendingBudget: null, pendingTablePlan: null, pendingTasks: [] },
     discovery: { comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] },
   } as DevicePlanData;
 }

@@ -206,7 +206,7 @@ function resultMessage(result: ConnectedTaskMutationResult) {
   if (result.outcome === "device_only") return "Saved on this device.";
   if (result.failure === "conflict") return "The cloud copy changed. Your device copy is safe; refresh before trying again.";
   if (result.failure === "offline") return "Your device copy is safe. Reconnect and refresh to check the cloud copy.";
-  return "Your device copy is safe, but the cloud copy needs attention.";
+  return "This change could not be saved. Wait for My EverAft to finish connecting, then try again.";
 }
 
 function statusActionLabel(status: PlanningTask["status"]) {

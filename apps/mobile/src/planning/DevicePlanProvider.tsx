@@ -14,7 +14,7 @@ type DevicePlanState =
 type DevicePlanContextValue = Readonly<{
   state: DevicePlanState;
   create(data: DevicePlanData): Promise<DevicePlanRecord>;
-  save(data: DevicePlanData): Promise<DevicePlanRecord>;
+  save(data: DevicePlanData, expectedRevision?: number): Promise<DevicePlanRecord>;
   exportRecoveryFixture(): Promise<string>;
   importRecoveryFixture(encoded: string): Promise<DevicePlanRecord>;
   reload(): Promise<void>;
@@ -52,16 +52,21 @@ export function DevicePlanProvider({ children }: PropsWithChildren) {
       setState({ status: "ready", record, saving: false });
       return record;
     },
-    async save(data) {
+    async save(data, expectedRevision) {
       if (state.status !== "ready") throw new Error("There is no open device plan.");
       setState({ ...state, saving: true });
       try {
         const repository = await getDevicePlanRepository();
-        const record = await repository.save(data, state.record.revision);
+        const record = await repository.save(
+          data,
+          expectedRevision ?? state.record.revision,
+        );
         setState({ status: "ready", record, saving: false });
         return record;
       } catch (error) {
-        setState({ ...state, saving: false });
+        setState((current) => current.status === "ready"
+          ? { ...current, saving: false }
+          : current);
         throw error;
       }
     },

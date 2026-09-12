@@ -82,4 +82,28 @@ describe("TaskListScreen", () => {
     expect(view.getByText("Use YYYY-MM-DD for the due date.")).toBeOnTheScreen();
     expect(onCreate).not.toHaveBeenCalled();
   });
+
+  it("does not claim an unavailable first-connect task was saved", async () => {
+    const onCreate = jest.fn(async () => ({
+      outcome: "needs_attention" as const,
+      failure: "unavailable" as const,
+    }));
+    const view = await render(
+      <TaskListScreen
+        onBack={jest.fn()}
+        onChangeStatus={jest.fn()}
+        onCreate={onCreate}
+        onDelete={jest.fn()}
+        saving={false}
+        storageLabel="Checking connection"
+        tasks={[]}
+      />,
+    );
+
+    await fireEvent.changeText(view.getByLabelText("Task title"), "Book transport");
+    await fireEvent.press(view.getByRole("button", { name: "Add task" }));
+
+    await waitFor(() => expect(view.getByText(/could not be saved/i)).toBeOnTheScreen());
+    expect(view.queryByText(/device copy is safe/i)).not.toBeOnTheScreen();
+  });
 });

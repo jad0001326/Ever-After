@@ -29,6 +29,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { type AppColors, radius, spacing, typography } from "../../design/tokens";
 import { useAppTheme } from "../../design/use-app-theme";
+import { ActionButton } from "../../design/ActionButton";
 import type { DevicePlanData } from "../../planning/device-plan-model";
 import { withDevicePaymentSchedule } from "../../planning/payment-reliability";
 
@@ -73,6 +74,8 @@ export function PaymentScheduleScreen({
   const initialSelection = initialItemId ?? items[0]?.id ?? null;
   const [requestedItemId, setRequestedItemId] = useState(initialSelection);
   const [visibleItemCount, setVisibleItemCount] = useState(ITEM_BATCH_SIZE);
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
+  const saving = savingItemId !== null;
   const selectedItem = items.find(({ id }) => id === requestedItemId) ?? items[0] ?? null;
 
   return (
@@ -82,15 +85,14 @@ export function PaymentScheduleScreen({
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Back to plan</Text>
-        </Pressable>
+        <ActionButton label="Back to plan" onPress={onBack} disabled={saving} />
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>YOUR PLAN</Text>
           <Text accessibilityRole="header" style={styles.title}>Payments &amp; instalments</Text>
           <Text style={styles.body}>
             Record real payment terms and what you have paid. EverAft updates your totals and next deadline from this schedule.
           </Text>
+          <Text style={styles.body}>This is a payment record only. EverAft does not send money or pay suppliers.</Text>
         </View>
 
         {items.length === 0 ? (
@@ -108,7 +110,8 @@ export function PaymentScheduleScreen({
                   <Pressable
                     accessibilityLabel={`${item.itemName}, ${paymentSummary(item, data.budgetPlan.currency)}`}
                     accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    accessibilityState={{ disabled: saving, selected }}
+                    disabled={saving}
                     key={item.id}
                     onPress={() => setRequestedItemId(item.id)}
                     style={[styles.itemButton, selected && styles.itemButtonSelected]}
@@ -119,13 +122,7 @@ export function PaymentScheduleScreen({
                 );
               })}
               {visibleItemCount < items.length ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setVisibleItemCount((count) => count + ITEM_BATCH_SIZE)}
-                  style={styles.secondaryButton}
-                >
-                  <Text style={styles.secondaryButtonText}>Show more costs</Text>
-                </Pressable>
+                <ActionButton label="Show more costs" onPress={() => setVisibleItemCount((count) => count + ITEM_BATCH_SIZE)} disabled={saving} />
               ) : null}
             </View>
 
@@ -136,7 +133,9 @@ export function PaymentScheduleScreen({
                 item={selectedItem}
                 key={selectedItem.id}
                 onSave={onSave}
+                onSavingChange={(isSaving) => setSavingItemId(isSaving ? selectedItem.id : null)}
                 referenceDate={referenceDate}
+                saving={saving}
                 styles={styles}
               />
             ) : null}
@@ -152,14 +151,18 @@ function PaymentItemEditor({
   data,
   item,
   onSave,
+  onSavingChange,
   referenceDate,
+  saving,
   styles,
 }: Readonly<{
   currency: string;
   data: DevicePlanData;
   item: BudgetItem;
   onSave(data: DevicePlanData): Promise<PaymentScheduleSaveResult>;
+  onSavingChange(saving: boolean): void;
   referenceDate: Date;
+  saving: boolean;
   styles: PaymentStyles;
 }>) {
   const incomingInstallments = useMemo(() => getEditablePaymentInstallments(item), [item]);
@@ -168,7 +171,6 @@ function PaymentItemEditor({
     [incomingInstallments],
   );
   const [draftState, setDraftState] = useState<PaymentDraftState | null>(null);
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeDraft = getActivePaymentDraft(
     draftState,
@@ -197,6 +199,7 @@ function PaymentItemEditor({
   }, [incomingFingerprint, incomingInstallments]);
 
   function addPayment() {
+    if (saving) return;
     if (installments.length >= 50) {
       setMessage("A payment schedule can contain up to 50 payments.");
       return;
@@ -206,18 +209,21 @@ function PaymentItemEditor({
   }
 
   const updatePayment = useCallback((id: string, changes: Partial<PaymentInstallment>) => {
+    if (saving) return;
     updateInstallments((current) => current.map((installment) => (
       installment.id === id ? { ...installment, ...changes } : installment
     )));
     setMessage(null);
-  }, [updateInstallments]);
+  }, [saving, updateInstallments]);
 
   const removePayment = useCallback((id: string) => {
+    if (saving) return;
     updateInstallments((current) => current.filter((installment) => installment.id !== id));
     setMessage(null);
-  }, [updateInstallments]);
+  }, [saving, updateInstallments]);
 
   async function save() {
+    if (saving) return;
     if (externalChange) {
       setMessage("My EverAft changed while you were editing. Load the latest schedule before saving.");
       return;
@@ -227,7 +233,7 @@ function PaymentItemEditor({
       setMessage(issues[0].message);
       return;
     }
-    setBusy(true);
+    onSavingChange(true);
     setMessage(null);
     try {
       const result = await onSave(withDevicePaymentSchedule(data, item.id, installments));
@@ -235,7 +241,7 @@ function PaymentItemEditor({
     } catch {
       setMessage("This schedule is still on screen, but EverAft could not save it. Try again.");
     } finally {
-      setBusy(false);
+      onSavingChange(false);
     }
   }
 
@@ -266,13 +272,12 @@ function PaymentItemEditor({
           onChange={updatePayment}
           onRemove={removePayment}
           paidToday={paidToday}
+          saving={saving}
           styles={styles}
         />
       ))}
 
-      <Pressable accessibilityRole="button" onPress={addPayment} style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>Add payment</Text>
-      </Pressable>
+      <ActionButton label="Add payment" onPress={addPayment} disabled={saving} />
       {externalChange || message ? (
         <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.message}>
           {externalChange
@@ -281,19 +286,9 @@ function PaymentItemEditor({
         </Text>
       ) : null}
       {externalChange ? (
-        <Pressable accessibilityRole="button" onPress={loadLatestSchedule} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Load latest schedule</Text>
-        </Pressable>
+        <ActionButton label="Load latest schedule" onPress={loadLatestSchedule} disabled={saving} />
       ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ busy, disabled: busy }}
-        disabled={busy}
-        onPress={() => void save()}
-        style={[styles.primaryButton, busy && styles.disabledButton]}
-      >
-        <Text style={styles.primaryButtonText}>{busy ? "Saving…" : "Save payment schedule"}</Text>
-      </Pressable>
+      <ActionButton primary busy={saving} label={saving ? "Saving…" : "Save payment schedule"} onPress={() => void save()} />
     </View>
   );
 }
@@ -322,6 +317,7 @@ const PaymentRow = memo(function PaymentRow({
   onChange,
   onRemove,
   paidToday,
+  saving,
   styles,
 }: Readonly<{
   index: number;
@@ -329,6 +325,7 @@ const PaymentRow = memo(function PaymentRow({
   onChange(id: string, changes: Partial<PaymentInstallment>): void;
   onRemove(id: string): void;
   paidToday: string;
+  saving: boolean;
   styles: PaymentStyles;
 }>) {
   const number = index + 1;
@@ -339,6 +336,8 @@ const PaymentRow = memo(function PaymentRow({
         <Pressable
           accessibilityLabel={`Remove payment ${number}`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: saving }}
+          disabled={saving}
           onPress={() => onRemove(installment.id)}
           style={styles.smallButton}
         >
@@ -352,7 +351,8 @@ const PaymentRow = memo(function PaymentRow({
           <Pressable
             accessibilityLabel={kindLabel(kind)}
             accessibilityRole="radio"
-            accessibilityState={{ checked: installment.kind === kind }}
+            accessibilityState={{ checked: installment.kind === kind, disabled: saving }}
+            disabled={saving}
             key={kind}
             onPress={() => onChange(installment.id, { kind })}
             style={[styles.kindButton, installment.kind === kind && styles.kindButtonSelected]}
@@ -366,6 +366,7 @@ const PaymentRow = memo(function PaymentRow({
         <TextInput
           accessibilityLabel={`Payment ${number} label`}
           autoCapitalize="sentences"
+          editable={!saving}
           maxLength={120}
           onChangeText={(label) => onChange(installment.id, { label })}
           style={styles.input}
@@ -374,12 +375,14 @@ const PaymentRow = memo(function PaymentRow({
       </Field>
       <View style={styles.twoColumns}>
         <MoneyField
+          disabled={saving}
           label={`Payment ${number} amount due`}
           onChange={(amountPence) => onChange(installment.id, { amountPence })}
           styles={styles}
           value={installment.amountPence}
         />
         <MoneyField
+          disabled={saving}
           label={`Payment ${number} amount paid`}
           onChange={(paidPence) => onChange(installment.id, { paidPence: paidPence ?? 0 })}
           styles={styles}
@@ -393,6 +396,7 @@ const PaymentRow = memo(function PaymentRow({
             accessibilityLabel={`Payment ${number} due date`}
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!saving}
             maxLength={10}
             onChangeText={(dueDate) => onChange(installment.id, { dueDate: dueDate || null })}
             placeholder="YYYY-MM-DD"
@@ -407,6 +411,7 @@ const PaymentRow = memo(function PaymentRow({
             accessibilityLabel={`Payment ${number} paid date`}
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!saving}
             maxLength={10}
             onChangeText={(paidAt) => onChange(installment.id, { paidAt: paidAt || null })}
             placeholder="YYYY-MM-DD"
@@ -419,13 +424,13 @@ const PaymentRow = memo(function PaymentRow({
       <Pressable
         accessibilityHint={installment.amountPence === null ? "Enter an expected amount first" : "Records the full expected amount as paid today"}
         accessibilityRole="button"
-        accessibilityState={{ disabled: installment.amountPence === null }}
-        disabled={installment.amountPence === null}
+        accessibilityState={{ disabled: saving || installment.amountPence === null }}
+        disabled={saving || installment.amountPence === null}
         onPress={() => onChange(installment.id, {
           paidPence: installment.amountPence ?? 0,
           paidAt: paidToday,
         })}
-        style={[styles.secondaryButton, installment.amountPence === null && styles.disabledButton]}
+        style={[styles.secondaryButton, (saving || installment.amountPence === null) && styles.disabledButton]}
       >
         <Text style={styles.secondaryButtonText}>Mark paid today</Text>
       </Pressable>
@@ -446,7 +451,8 @@ function Field({ children, label, styles }: Readonly<{
   );
 }
 
-function MoneyField({ label, onChange, styles, value }: Readonly<{
+function MoneyField({ disabled, label, onChange, styles, value }: Readonly<{
+  disabled: boolean;
   label: string;
   onChange(value: number | null): void;
   styles: PaymentStyles;
@@ -475,6 +481,7 @@ function MoneyField({ label, onChange, styles, value }: Readonly<{
     <Field label={label} styles={styles}>
       <TextInput
         accessibilityLabel={label}
+        editable={!disabled}
         keyboardType="decimal-pad"
         onBlur={() => setDraft(editableMoneyValue(value))}
         onChangeText={changeDraft}
@@ -531,18 +538,16 @@ function saveMessage(result: PaymentScheduleSaveResult) {
   if (result.outcome === "device_only") return "Payment schedule saved on this device.";
   if (result.failure === "conflict") return "Saved on this device. My EverAft has a newer version that needs attention.";
   if (result.failure === "offline") return "Saved on this device. Reconnect, then refresh My EverAft.";
-  return "Saved on this device, but My EverAft could not be updated.";
+  return "This change could not be saved. Wait for My EverAft to finish connecting, then try again.";
 }
 
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.canvas },
     content: { gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl },
-    backButton: { alignSelf: "flex-start", justifyContent: "center", minHeight: 44 },
-    backButtonText: { color: colors.primary, fontSize: 16, fontWeight: "700" },
     intro: { gap: spacing.sm },
     eyebrow: { ...typography.label, color: colors.accent },
-    title: { ...typography.display, color: colors.primary, fontSize: 38, lineHeight: 44 },
+    title: { ...typography.display, color: colors.primary, fontSize: 32, lineHeight: 40 },
     section: { gap: spacing.md },
     sectionTitle: { ...typography.display, color: colors.primary, fontSize: 28, lineHeight: 34 },
     body: { ...typography.body, color: colors.textMuted },
@@ -570,8 +575,6 @@ function createStyles(colors: AppColors) {
     input: { backgroundColor: colors.canvas, borderColor: colors.border, borderRadius: radius.sm, borderWidth: 1, color: colors.text, fontSize: 16, minHeight: 48, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
     placeholder: { color: colors.textMuted },
     twoColumns: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-    primaryButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.pill, justifyContent: "center", minHeight: 52, paddingHorizontal: spacing.lg },
-    primaryButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: "700" },
     secondaryButton: { alignItems: "center", borderColor: colors.primary, borderRadius: radius.pill, borderWidth: 1, justifyContent: "center", minHeight: 48, paddingHorizontal: spacing.lg },
     secondaryButtonText: { color: colors.primary, fontSize: 15, fontWeight: "700" },
     disabledButton: { opacity: 0.5 },
