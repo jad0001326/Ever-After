@@ -1,4 +1,5 @@
 import { createPlanningDashboardSnapshot } from "@everaft/planning-domain/planning-workspace/snapshot";
+import { addTablePlanGuest } from "@everaft/planning-domain/table-plan/guest-management";
 
 import { encodeDevicePlan } from "./device-plan-codec";
 import { createDevicePlan } from "./device-plan-model";
@@ -15,6 +16,32 @@ import type {
 const timestamp = "2026-08-24T10:00:00.000Z";
 
 describe("device plan repository", () => {
+  it("reopens guest contact and RSVP details after an offline save", async () => {
+    const storage = new MemoryDevicePlanStorage();
+    const repository = repositoryFor(storage);
+    const created = await repository.create(examplePlan());
+    const tablePlan = addTablePlanGuest(created.data.workspace.tablePlan, {
+      name: "Ailsa", email: "ailsa@example.com", dietaryNotes: "Vegetarian", rsvpStatus: "accepted",
+    });
+    const pendingTablePlan = {
+      accountId: "70000000-0000-4000-8000-000000000007",
+      workspaceId: "60000000-0000-4000-8000-000000000006",
+      baseWorkspaceUpdatedAt: timestamp,
+    };
+    await repository.save({
+      ...created.data,
+      connectedSync: { ...created.data.connectedSync, pendingTablePlan },
+      workspace: { ...created.data.workspace, tablePlan },
+    }, created.revision);
+    const reopened = await repositoryFor(storage).load();
+    expect(reopened).toMatchObject({ kind: "ready", record: { revision: 2, data: {
+      connectedSync: { pendingTablePlan },
+      workspace: { tablePlan: { guests: [
+        expect.objectContaining({ name: "Ailsa", email: "ailsa@example.com", dietaryNotes: "Vegetarian", rsvpStatus: "accepted" }),
+      ] } },
+    } } });
+  });
+
   it("creates and reopens one useful plan after a process restart", async () => {
     const storage = new MemoryDevicePlanStorage();
     const repository = repositoryFor(storage);

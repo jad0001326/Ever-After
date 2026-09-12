@@ -108,6 +108,8 @@ export type PlanningWorkspaceHydration = Readonly<{
 export function createPlanningApiClient(options: PlanningApiClientOptions) {
   const baseUrl = validateBaseUrl(options.baseUrl);
   const fetcher = options.fetch ?? globalThis.fetch;
+  const taskPageLimit = 100;
+  const maximumHydratedTasks = 500;
 
   async function request<T>(
     operation: string,
@@ -151,6 +153,48 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
     }
     options.onDiagnostic?.({ operation, outcome: "success", status: response.status });
     return parsed.data;
+  }
+
+  async function hydrateAllTasks(workspaceId: string): Promise<PlanningTaskCollection> {
+    const tasks: PlanningTaskResource[] = [];
+    const seen = new Set<string>();
+    let offset = 0;
+    let firstPage: PlanningTaskCollection | null = null;
+    const encodedWorkspaceId = encodeURIComponent(workspaceId);
+
+    while (true) {
+      const page = await request(
+        "planning.tasks.list",
+        `/api/planning/v1/workspaces/${encodedWorkspaceId}/tasks?limit=${taskPageLimit}&offset=${offset}`,
+        planningTaskCollectionSchema,
+      );
+      firstPage ??= page;
+      if (page.workspaceId !== workspaceId || page.page.offset !== offset) {
+        throw new PlanningApiError("response_contract_invalid");
+      }
+      for (const task of page.tasks) {
+        if (
+          task.workspaceId !== workspaceId
+          || seen.has(task.id)
+          || tasks.length >= maximumHydratedTasks
+        ) {
+          throw new PlanningApiError("response_contract_invalid");
+        }
+        seen.add(task.id);
+        tasks.push(task);
+      }
+      if (!page.page.hasMore) {
+        return {
+          ...firstPage,
+          tasks,
+          page: { ...firstPage.page, offset: 0, hasMore: false },
+        };
+      }
+      if (page.tasks.length === 0 || tasks.length >= maximumHydratedTasks) {
+        throw new PlanningApiError("response_contract_invalid");
+      }
+      offset += page.tasks.length;
+    }
   }
 
   function fail(
@@ -294,11 +338,7 @@ export function createPlanningApiClient(options: PlanningApiClientOptions) {
           `/api/planning/v1/workspaces/${encoded}/profile`,
           planningProfileResourceSchema,
         ),
-        request(
-          "planning.tasks.list",
-          `/api/planning/v1/workspaces/${encoded}/tasks?limit=100&offset=0`,
-          planningTaskCollectionSchema,
-        ),
+        hydrateAllTasks(workspaceId),
         request(
           "planning.table_plan.get",
           `/api/planning/v1/workspaces/${encoded}/table-plan`,

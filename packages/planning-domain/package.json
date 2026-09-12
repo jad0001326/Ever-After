@@ -26,6 +26,7 @@
     "./planning-workspace/types": "./src/planning-workspace/types.ts",
     "./planning-workspace/validation": "./src/planning-workspace/validation.ts",
     "./table-plan/guests": "./src/table-plan/guests.ts",
+    "./table-plan/guest-management": "./src/table-plan/guest-management.ts",
     "./table-plan/planner": "./src/table-plan/planner.ts",
     "./table-plan/types": "./src/table-plan/types.ts"
   },

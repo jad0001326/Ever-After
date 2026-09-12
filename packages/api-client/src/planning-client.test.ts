@@ -203,6 +203,12 @@ describe("createPlanningApiClient", () => {
 
   it("hydrates the table plan with the other connected workspace resources", async () => {
     const resource = tablePlanResource();
+    const tasks = Array.from({ length: 101 }, (_, index) => ({
+      ...taskResource(),
+      id: `70000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      title: `Task ${index + 1}`,
+      sortOrder: index,
+    }));
     const responses = [
       Response.json({
         schemaVersion: 1,
@@ -270,20 +276,61 @@ describe("createPlanningApiClient", () => {
       Response.json({
         schemaVersion: 1,
         workspaceId: resource.workspaceId,
-        tasks: [],
-        page: { limit: 100, offset: 0, hasMore: false },
+        tasks: tasks.slice(0, 100),
+        page: { limit: 100, offset: 0, hasMore: true },
       }),
       Response.json(resource),
+      Response.json({
+        schemaVersion: 1,
+        workspaceId: resource.workspaceId,
+        tasks: tasks.slice(100),
+        page: { limit: 100, offset: 100, hasMore: false },
+      }),
     ];
+    const hydrationPrefix = responses.slice(0, 5).map((response) => response.clone());
     const client = createPlanningApiClient({
       baseUrl: "https://example.test",
       getAccessToken: async () => "fixture-token",
       fetch: async () => responses.shift()!,
     });
 
-    await expect(client.hydrateWorkspace(resource.workspaceId)).resolves.toMatchObject({
-      tablePlan: resource,
-    });
+    const hydration = await client.hydrateWorkspace(resource.workspaceId);
+
+    expect(hydration.tablePlan).toEqual(resource);
+    expect(hydration.tasks.tasks).toHaveLength(101);
+    expect(hydration.tasks.tasks[100]).toEqual(tasks[100]);
+
+    for (const secondPage of [
+      {
+        schemaVersion: 1,
+        workspaceId: "61111111-1111-4111-8111-111111111111",
+        tasks: tasks.slice(100),
+        page: { limit: 100, offset: 100, hasMore: false },
+      },
+      {
+        schemaVersion: 1,
+        workspaceId: resource.workspaceId,
+        tasks: [{
+          ...tasks[100],
+          workspaceId: "61111111-1111-4111-8111-111111111111",
+        }],
+        page: { limit: 100, offset: 100, hasMore: false },
+      },
+    ]) {
+      const invalidResponses = [
+        ...hydrationPrefix.map((response) => response.clone()),
+        Response.json(secondPage),
+      ];
+      const invalidClient = createPlanningApiClient({
+        baseUrl: "https://example.test",
+        getAccessToken: async () => "fixture-token",
+        fetch: async () => invalidResponses.shift()!,
+      });
+
+      await expect(invalidClient.hydrateWorkspace(resource.workspaceId)).rejects.toMatchObject({
+        failure: "response_contract_invalid",
+      });
+    }
   });
 
   it("rejects cleartext non-local API origins", () => {

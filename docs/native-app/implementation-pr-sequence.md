@@ -1,6 +1,6 @@
 # Native app implementation PR sequence
 
-Date: 26 August 2026
+Updated: 11 September 2026 (original sequence: 26 August 2026)
 
 Status: N0–N5 are merged. N6 is in local development only. This document does
 not authorise a push, deployment, migration or external distribution.
@@ -259,13 +259,19 @@ conflict and sensitive-log scans.
 
 Dependency: N6 plus successful P0 device use.
 
-Current N9A status on 1 September 2026: the typed table-plan API client,
-connected hydration, device-first conflict recovery, privacy-safe Guests and
-Tables summaries, exact Today routing and retained web handoff are implemented
-and locally verified on an isolated branch stacked on draft PR #79. Native
-guest editing, table/seating editing, two-device evidence and physical-device
-accessibility remain N9B/N9C work. See
+Current status on 11 September 2026: N9A's typed table-plan API client,
+connected hydration, privacy-safe Guests and Tables summaries, exact Today
+routing and retained web handoff are in draft PR #80. N9B guest
+add/bulk/search/edit/RSVP/delete, protected private-SQLite persistence, durable
+budget/table/task retry journals and explicit device-versus-cloud recovery are
+implemented and automated locally. N9B still requires transplant onto the
+current PR #80 head, post-transplant gates and a separate draft PR. Native
+table/seating editing, real two-device evidence and physical-device
+accessibility remain N9C/release work. See
 [`n9a-guests-tables-foundation-evidence.md`](n9a-guests-tables-foundation-evidence.md).
+The current local evidence and review boundary are recorded in
+[`../planning-hub/release-register.md`](../planning-hub/release-register.md) and
+[`n9b-guest-management-pr.md`](n9b-guest-management-pr.md).
 
 ### N10 — Partner invitation and membership
 

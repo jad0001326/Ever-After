@@ -9,9 +9,38 @@ import { createEmptyTablePlan } from "@everaft/planning-domain/table-plan/planne
 import type { BudgetPlan } from "@everaft/planning-domain/budget/types";
 import type { CatalogueSupplier, CatalogueVenue } from "@everaft/api-client";
 
+export type PendingTaskSyncOperation = Readonly<{
+  kind: "create" | "update" | "delete";
+  accountId: string;
+  workspaceId: string;
+  taskId: string;
+  baseTaskUpdatedAt: string | null;
+}>;
+
+export type LastConnectedPlanningScope = Readonly<{
+  accountId: string;
+  workspaceId: string;
+  budgetUpdatedAt: string;
+  workspaceUpdatedAt: string;
+}>;
+
 export type DevicePlanData = Readonly<{
   format: "everaft-device-plan";
-  formatVersion: 3;
+  formatVersion: 5;
+  connectedSync: Readonly<{
+    lastConnected: LastConnectedPlanningScope | null;
+    pendingBudget: Readonly<{
+      accountId: string;
+      workspaceId: string;
+      baseBudgetUpdatedAt: string;
+    }> | null;
+    pendingTablePlan: Readonly<{
+      accountId: string;
+      workspaceId: string;
+      baseWorkspaceUpdatedAt: string;
+    }> | null;
+    pendingTasks: PendingTaskSyncOperation[];
+  }>;
   localPreferences: Readonly<{ weddingSeason: string | null }>;
   discovery: Readonly<{
     comparedVenues: CatalogueVenue[];
@@ -68,7 +97,13 @@ export function createDevicePlan(
 
   return {
     format: "everaft-device-plan",
-    formatVersion: 3,
+    formatVersion: 5,
+    connectedSync: {
+      lastConnected: null,
+      pendingBudget: null,
+      pendingTablePlan: null,
+      pendingTasks: [],
+    },
     localPreferences: { weddingSeason: setup.weddingSeason },
     discovery: { comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] },
     budgetPlan,

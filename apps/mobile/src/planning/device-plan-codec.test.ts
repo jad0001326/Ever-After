@@ -4,10 +4,11 @@ import { decodeDevicePlan, encodeDevicePlan } from "./device-plan-codec";
 describe("device plan payload migration", () => {
   it("upgrades N4 payloads with empty N5 discovery state", () => {
     const current = createPlan();
-    const { discovery: _discovery, ...legacy } = current;
+    const { connectedSync: _connectedSync, discovery: _discovery, ...legacy } = current;
     const decoded = decodeDevicePlan(JSON.stringify({ ...legacy, formatVersion: 1 }));
 
-    expect(decoded.formatVersion).toBe(3);
+    expect(decoded.formatVersion).toBe(5);
+    expect(decoded.connectedSync).toEqual({ lastConnected: null, pendingBudget: null, pendingTablePlan: null, pendingTasks: [] });
     expect(decoded.discovery).toEqual({ comparedVenues: [], savedVenueIds: [], comparedSuppliers: [], savedSupplierIds: [] });
   });
 
@@ -36,6 +37,48 @@ describe("device plan payload migration", () => {
 
     expect(reopened.discovery.comparedVenues).toEqual([venue]);
     expect(reopened.discovery.savedVenueIds).toEqual([venue.id]);
+  });
+
+  it("upgrades the previous current payload without losing discovery decisions", () => {
+    const current = createPlan();
+    const { connectedSync: _connectedSync, ...versionThree } = current;
+    const decoded = decodeDevicePlan(JSON.stringify({ ...versionThree, formatVersion: 3 }));
+
+    expect(decoded).toMatchObject({
+      formatVersion: 5,
+      connectedSync: { lastConnected: null, pendingBudget: null, pendingTablePlan: null, pendingTasks: [] },
+      discovery: current.discovery,
+    });
+  });
+
+  it("persists only account-scoped table retry metadata without plan contents", () => {
+    const plan = createPlan();
+    const pendingTablePlan = {
+      accountId: "70000000-0000-4000-8000-000000000007",
+      workspaceId: "60000000-0000-4000-8000-000000000006",
+      baseWorkspaceUpdatedAt: "2026-08-25T10:00:00.000Z",
+    };
+    const reopened = decodeDevicePlan(encodeDevicePlan({
+      ...plan,
+      connectedSync: { ...plan.connectedSync, pendingTablePlan },
+    }));
+
+    expect(reopened.connectedSync.pendingTablePlan).toEqual(pendingTablePlan);
+  });
+
+  it("persists account-scoped budget retry metadata", () => {
+    const plan = createPlan();
+    const pendingBudget = {
+      accountId: "70000000-0000-4000-8000-000000000007",
+      workspaceId: "60000000-0000-4000-8000-000000000006",
+      baseBudgetUpdatedAt: "2026-08-25T10:00:00.000Z",
+    };
+    const reopened = decodeDevicePlan(encodeDevicePlan({
+      ...plan,
+      connectedSync: { ...plan.connectedSync, pendingBudget },
+    }));
+
+    expect(reopened.connectedSync.pendingBudget).toEqual(pendingBudget);
   });
 });
 
