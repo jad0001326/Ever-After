@@ -9,6 +9,7 @@ import {
   publicSupplierClaimPath,
   publicSupplierProfilePath,
 } from "@/lib/supplier-public-routes";
+import { supplierBaseLabel, supplierTravelSummary } from "@/lib/supplier-travel";
 import { absoluteUrl, gbp } from "@/lib/utils";
 import type { SupplierListing } from "@/types/supplier";
 
@@ -37,7 +38,7 @@ export function PublicSupplierProfile({
     description: supplier.summary,
     url: absoluteUrl(profilePath),
     sameAs: [supplier.officialWebsiteUrl, supplier.instagramUrl, supplier.facebookUrl].filter(Boolean),
-    areaServed: supplier.travelsNationwide ? "Scotland" : [supplier.region, ...supplier.serviceAreas],
+    areaServed: supplier.travelsNationwide ? "Scotland" : supplier.serviceAreas.length ? supplier.serviceAreas : supplier.region,
     priceRange: supplier.startingPricePence == null
       ? undefined
       : `From ${gbp.format(supplier.startingPricePence / 100)}`,
@@ -68,7 +69,7 @@ export function PublicSupplierProfile({
             <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-[#95502b]">Wedding {categoryLabel.toLowerCase()}</p>
             <h1 className="mt-3 font-display text-6xl font-semibold leading-[0.9] tracking-[-0.045em] sm:text-7xl">{supplier.name}</h1>
             <p className="mt-6 text-lg leading-8 text-[var(--muted)]">{supplier.summary}</p>
-            <p className="mt-5 flex items-center gap-2 text-sm font-medium text-[#4f4a43]"><MapPin className="text-[#9d7b45]" size={18} />Based in {supplier.baseTown}, {supplier.region}{supplier.travelsNationwide ? " · Scotland-wide coverage" : ""}</p>
+            <p className="mt-5 flex items-center gap-2 text-sm font-medium text-[#4f4a43]"><MapPin className="text-[#9d7b45]" size={18} />{supplierBaseLabel(supplier)}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               {enquiryUrl ? <ButtonLink href={enquiryUrl} rel="noopener noreferrer" target="_blank">Visit website <ExternalLink size={16} /></ButtonLink> : null}
               <ButtonLink href={`/wedding-budget-planner?supplier=${encodeURIComponent(supplier.id)}`} variant="secondary"><Calculator size={16} /> Add to budget</ButtonLink>
@@ -100,7 +101,7 @@ export function PublicSupplierProfile({
             <Detail label="Pricing" icon={<WalletCards size={17} />} value={pricingLabel(supplier)} />
             {photographer?.coverageHoursMin || photographer?.coverageHoursMax ? <Detail label="Coverage" icon={<Clock3 size={17} />} value={rangeLabel(photographer.coverageHoursMin, photographer.coverageHoursMax, "hours")} /> : null}
             {photographer?.turnaroundWeeksMin || photographer?.turnaroundWeeksMax ? <Detail label="Typical turnaround" icon={<Clock3 size={17} />} value={rangeLabel(photographer.turnaroundWeeksMin, photographer.turnaroundWeeksMax, "weeks")} /> : null}
-            <Detail label="Travel" icon={<MapPin size={17} />} value={supplier.travelsNationwide ? "Available throughout Scotland" : supplier.serviceAreas.length ? supplier.serviceAreas.join(", ") : `${supplier.region} and surrounding areas`} />
+            <Detail label="Travel" icon={<MapPin size={17} />} value={supplierTravelSummary(supplier)} />
           </dl>
           {supplier.pricingSummary ? <p className="mt-6 rounded-2xl bg-[#f7f3eb] p-4 text-sm leading-6 text-[var(--muted)]">{supplier.pricingSummary}</p> : null}
           {features.length ? <ul className="mt-6 grid gap-3 border-t border-[var(--line)] pt-5">{features.map(([, label]) => <li className="flex items-center gap-3 text-sm" key={label}><Check className="text-[#5d7758]" size={16} />{label}</li>)}</ul> : null}

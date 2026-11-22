@@ -42,9 +42,10 @@ const categoryCards: CategoryCard[] = [
     image: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1100&q=82"
   },
   {
-    name: "Florists",
-    detail: "Joining the directory",
-    image: "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?auto=format&fit=crop&w=1100&q=82"
+    name: "Videography",
+    detail: "Explore videographers",
+    href: "/suppliers/videographer",
+    image: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1100&q=82"
   },
   {
     name: "Music",
@@ -60,7 +61,7 @@ const faqs = [
   ],
   [
     "Is it free for couples?",
-    "Yes. Browsing venues and photographers and using EverAft's public budget and table planners are free for couples."
+    "Yes. Browsing venues, photographers and videographers, and using EverAft's public budget and table planners, are free for couples."
   ],
   [
     "Can I list my wedding business?",
@@ -142,7 +143,7 @@ export default function Home() {
               The good ones, in one place.
             </h2>
           </div>
-          <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">Venues and photographers are open now, with more wedding categories following through 2026.</p>
+          <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">Venues, photographers and videographers are open now. Further categories open when their listings are ready.</p>
         </div>
         <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {categoryCards.map((category) => {

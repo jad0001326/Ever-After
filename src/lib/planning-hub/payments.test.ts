@@ -124,8 +124,8 @@ describe("Planning Hub payment guidance", () => {
     const plan = planWithDeadlines();
     plan.items[0] = {
       ...plan.items[0],
-      categoryId: "videography",
-      supplierType: "Videographer",
+      categoryId: "flowers",
+      supplierType: "Florist",
     };
     const deadline = getPlanningHubPaymentOverview(
       plan,

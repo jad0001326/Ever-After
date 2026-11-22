@@ -55,8 +55,8 @@ describe("Planning Hub item navigation", () => {
 
   it("does not route an inactive supplier category into an unavailable stage", () => {
     expect(getPlanningHubItemStageRoute(item({
-      categoryId: "videography",
-      supplierType: "Videographer",
+      categoryId: "flowers",
+      supplierType: "Florist",
     }))).toBeNull();
   });
 });

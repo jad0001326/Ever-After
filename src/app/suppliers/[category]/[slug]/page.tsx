@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PublicSupplierProfile } from "@/components/supplier/public-supplier-profile";
+import { publicSupplierProfileKeywords } from "@/lib/public-supplier-copy";
 import { buildMetadata } from "@/lib/seo";
 import {
   getPublicSupplierCategory,
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: SupplierPageProps): Promise<M
     description: supplier.summary,
     path: publicSupplierProfilePath(category.slug, supplier.slug),
     image: supplier.heroImageUrl,
-    keywords: [`${supplier.name} wedding ${category.label.toLowerCase()}`, `wedding ${category.label.toLowerCase()} ${supplier.region}`, `Scottish wedding ${category.plural.toLowerCase()}`],
+    keywords: publicSupplierProfileKeywords(category, supplier),
   });
 }
 

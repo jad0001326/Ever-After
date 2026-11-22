@@ -33,8 +33,20 @@ describe("Budget Planner supplier mapping", () => {
     });
   });
 
-  it("defensively excludes inactive and unknown categories from the public planner", () => {
-    expect(activeSupplierRowToPlannerListing(supplier({ category_slug: "videographer" }))).toBeNull();
+  it("maps a live videographer and excludes categories that are not launched", () => {
+    expect(activeSupplierRowToPlannerListing(supplier({
+      category_slug: "videographer",
+      slug: "channel-one",
+      name: "Channel One Wedding Films",
+      base_town: "Lancaster",
+      region: "Lancashire",
+    }))).toMatchObject({
+      categoryId: "videography",
+      type: "Videographer",
+      listingUrl: "/suppliers/videographer/channel-one",
+      location: "Lancaster, Lancashire",
+    });
+    expect(activeSupplierRowToPlannerListing(supplier({ category_slug: "florist" }))).toBeNull();
     expect(activeSupplierRowToPlannerListing(supplier({ category_slug: "unknown" }))).toBeNull();
   });
 });

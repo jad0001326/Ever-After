@@ -49,7 +49,7 @@ export function PlanningHubSupplierRoadmap({
           <div>
             <h2 className="font-display text-3xl font-semibold text-[#173526] sm:text-4xl" id="supplier-roadmap-title">Choose the supplier stage that matters next</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#625f57]">
-              Browse photography now. For categories whose EverAft catalogue is not ready, add the business you found elsewhere and still track its estimate, quote, booking and payments in this plan.
+              Browse photography and videography now. For categories whose EverAft catalogue is not ready, add the business you found elsewhere and still track its estimate, quote, booking and payments in this plan.
             </p>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -80,7 +80,7 @@ export function PlanningHubSupplierRoadmap({
             ) : (
               <p className="mt-3 flex-1 text-sm leading-6 text-[#625f57]">
                 {entry.catalogueLive
-                  ? `Find and compare Scottish ${entry.plural.toLowerCase()} matched to your plan.`
+                  ? `Browse ${entry.plural.toLowerCase()} covering Scottish weddings, including businesses based here and those who travel in.`
                   : `Record a ${entry.label.toLowerCase()} you found elsewhere without presenting an unfinished EverAft catalogue.`}
               </p>
             )}
