@@ -44,6 +44,34 @@ export function buildMetadata({
   };
 }
 
+export function privatePageMetadata({
+  title,
+  description,
+  path
+}: {
+  title: string;
+  description: string;
+  path: string;
+}): Metadata {
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    robots: { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      url: absoluteUrl(path),
+      siteName: SITE_NAME
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description
+    }
+  };
+}
+
 export function buildBreadcrumbSchema(items: Array<{ name: string; path: string }>) {
   return {
     "@context": "https://schema.org",

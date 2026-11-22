@@ -10,7 +10,7 @@ export function FollowEverAft({ className, compact = false }: { className?: stri
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#95502b]">Follow EverAft</p>
       {compact ? null : (
         <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--muted)]">
-          New venues, planning ideas and thoughtful finds from across the UK wedding community.
+          New venues, planning ideas and thoughtful finds from across the Scottish wedding community.
         </p>
       )}
       <SocialLinks className="mt-4" />

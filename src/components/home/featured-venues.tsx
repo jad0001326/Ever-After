@@ -21,7 +21,7 @@ export async function FeaturedVenues() {
           <VenueCard key={venue.id} priority={index === 0} venue={venue} />
         ))}
       </div>
-      {error ? <p className="mt-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase connection needed: {error}</p> : null}
+      {error ? <p className="mt-6 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">{error}</p> : null}
       {!error && featured.length === 0 ? (
         <div className="rounded-3xl border border-[var(--line)] bg-white p-6">
           <h3 className="font-display text-3xl font-semibold">Featured venues are being curated</h3>

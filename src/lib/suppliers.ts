@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { supplierDirectoryCategories } from "@/data/supplier-directory";
+import { isUnsatisfiableRangeError, normaliseCataloguePage, PUBLIC_CATALOGUE_ERROR, totalFromRangeError, catalogueTotalPages } from "@/lib/catalogue-paging";
+import { isInternalTestVenueRecord, withoutInternalTestVenues } from "@/lib/internal-test-venue";
 import { createClient } from "@/lib/supabase/server";
 import type { PlannerListing } from "@/lib/budget/types";
 import { activeSupplierRowToPlannerListing } from "@/lib/budget/supplier-listing";
@@ -15,12 +17,15 @@ const LISTING_COLUMNS = "id, category_slug, slug, name, base_town, region, count
 
 export async function searchPhotographerListings(params: PhotographerSearchParams) {
   const supabase = await createClient();
-  const page = Math.max(Number(params.page) || 1, 1);
+  const page = normaliseCataloguePage(params.page);
   const pageSize = 12;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  if (!supabase) return { suppliers: [], total: 0, page, totalPages: 1, error: "Supabase is not configured." };
+  if (!supabase) {
+    console.error("Photographer search failed because Supabase is not configured.");
+    return { suppliers: [], total: 0, page: 1, totalPages: 1, error: PUBLIC_CATALOGUE_ERROR };
+  }
 
   let styleSupplierIds: string[] | null = null;
   if (params.style) {
@@ -28,21 +33,25 @@ export async function searchPhotographerListings(params: PhotographerSearchParam
       .from("photographer_profiles")
       .select("supplier_id")
       .contains("styles", [params.style]);
-    if (styleError) return { suppliers: [], total: 0, page, totalPages: 1, error: styleError.message };
+    if (styleError) {
+      console.error("Photographer style filter failed", styleError);
+      return { suppliers: [], total: 0, page: 1, totalPages: 1, error: PUBLIC_CATALOGUE_ERROR };
+    }
     styleSupplierIds = (profiles ?? []).map((profile) => profile.supplier_id);
     if (styleSupplierIds.length === 0) return { suppliers: [], total: 0, page, totalPages: 1 };
   }
 
   let venueSupplierIds: string[] | null = null;
   if (params.venue) {
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("id, town, region")
-      .eq("id", params.venue)
-      .eq("status", "published")
-      .in("listing_status", ["published", "claimed"])
-      .maybeSingle();
-    if (venue) {
+    const { data: venue } = await withoutInternalTestVenues(
+      supabase
+        .from("venues")
+        .select("id, slug, name, town, region")
+        .eq("id", params.venue)
+        .eq("status", "published")
+        .in("listing_status", ["published", "claimed"])
+    ).maybeSingle();
+    if (venue && !isInternalTestVenueRecord(venue)) {
       const baseCoverageQuery = () => supabase.from("supplier_listings").select("id").eq("category_slug", "photographer").eq("listing_status", "published");
       const [nearby, serviceArea, connected] = await Promise.all([
         baseCoverageQuery().or(`travels_nationwide.eq.true,region.ilike.%${safePostgrestValue(venue.region)}%,base_town.ilike.%${safePostgrestValue(venue.town)}%`),
@@ -90,7 +99,15 @@ export async function searchPhotographerListings(params: PhotographerSearchParam
   else query = query.order("starting_price_pence", { ascending: true, nullsFirst: false }).order("is_featured", { ascending: false });
 
   const { data, count, error } = await query.range(from, to);
-  if (error || !data) return { suppliers: [], total: 0, page, totalPages: 1, error: error?.message ?? "Supplier data could not be loaded." };
+  if (isUnsatisfiableRangeError(error)) {
+    const total = typeof count === "number" ? count : totalFromRangeError(error) ?? 0;
+    const totalPages = catalogueTotalPages(total, pageSize);
+    return { suppliers: [], total, page: totalPages, totalPages, outOfRange: true };
+  }
+  if (error || !data) {
+    console.error("Photographer search failed", error);
+    return { suppliers: [], total: 0, page: 1, totalPages: 1, error: PUBLIC_CATALOGUE_ERROR };
+  }
 
   const rows = data as SupplierRow[];
   const photographers = await fetchPhotographerProfiles(supabase, rows.map((row) => row.id));
@@ -99,22 +116,26 @@ export async function searchPhotographerListings(params: PhotographerSearchParam
     suppliers: rows.map((row) => supplierFromRow(row, photographers.get(row.id) ?? null)),
     total,
     page,
-    totalPages: Math.max(Math.ceil(total / pageSize), 1)
+    totalPages: catalogueTotalPages(total, pageSize)
   };
 }
 
 export async function getPhotographerVenueOptions(): Promise<PhotographerVenueOption[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data } = await supabase
-    .from("venues")
-    .select("id, name, town, region")
-    .eq("status", "published")
-    .in("listing_status", ["published", "claimed"])
+  const { data } = await withoutInternalTestVenues(
+    supabase
+      .from("venues")
+      .select("id, slug, name, town, region")
+      .eq("status", "published")
+      .in("listing_status", ["published", "claimed"])
+  )
     .order("region", { ascending: true })
     .order("name", { ascending: true })
     .limit(1000);
-  return data ?? [];
+  return (data ?? [])
+    .filter((venue) => !isInternalTestVenueRecord(venue))
+    .map(({ id, name, town, region }) => ({ id, name, town, region }));
 }
 
 export const getSupplierListingBySlug = cache(async function getSupplierListingBySlug(
@@ -150,7 +171,9 @@ export const getSupplierListingBySlug = cache(async function getSupplierListingB
 
   const venueIds = (connections ?? []).map((connection) => connection.venue_id);
   const { data: venues } = venueIds.length
-    ? await supabase.from("venues").select("id, slug, name, town").in("id", venueIds).eq("status", "published")
+    ? await withoutInternalTestVenues(
+      supabase.from("venues").select("id, slug, name, town, region").in("id", venueIds).eq("status", "published")
+    )
     : { data: [] };
   const venuesById = new Map((venues ?? []).map((venue) => [venue.id, venue]));
 
@@ -160,7 +183,7 @@ export const getSupplierListingBySlug = cache(async function getSupplierListingB
     (images ?? []) as SupplierImageRow[],
     (connections ?? []).flatMap((connection) => {
       const venue = venuesById.get(connection.venue_id);
-      return venue ? [{
+      return venue && !isInternalTestVenueRecord(venue) ? [{
         venueId: venue.id,
         venueName: venue.name,
         venueSlug: venue.slug,

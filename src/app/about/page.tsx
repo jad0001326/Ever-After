@@ -4,7 +4,7 @@ import { FollowEverAft } from "@/components/social/follow-everaft";
 
 export const metadata: Metadata = {
   title: "About EverAft",
-  description: "EverAft helps couples find thoughtful wedding suppliers and helps independent businesses be discovered across the UK.",
+  description: "EverAft helps couples find thoughtful wedding suppliers and helps independent businesses be discovered across Scotland.",
   alternates: { canonical: "/about" }
 };
 

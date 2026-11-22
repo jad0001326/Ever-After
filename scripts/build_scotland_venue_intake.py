@@ -564,8 +564,8 @@ def description_for(candidate: Candidate, text: str) -> tuple[str, str]:
         summary = f"{name} is a {venue_type.lower()} in {town or candidate.region} with ceremony or reception spaces and landscaped grounds."
     else:
         summary = f"{name} is a {venue_type.lower()} in {town or candidate.region} for weddings and private celebrations."
-    description = f"{summary} Imported for EverAft launch review from public venue research; confirm copy, pricing, imagery, and permissions before publishing."
-    return summary[:220], description
+    # Description is public listing copy. Review status stays in the intake columns, not in the sentence couples read.
+    return summary[:220], summary
 
 
 def to_import_row(candidate: Candidate, enrich: dict[str, object], slug: str) -> dict[str, object]:

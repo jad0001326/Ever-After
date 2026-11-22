@@ -40,7 +40,8 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#9d7b45]">Venue search</p>
           <h1 className="mt-3 font-display text-5xl font-semibold">Wedding venues in Scotland</h1>
           <p className="mt-3 text-[var(--muted)]">{results.total} venues matched your search.</p>
-          {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">Supabase connection needed: {results.error}</p> : null}
+          {results.outOfRange && results.venues.length > 0 ? <p className="mt-4 rounded-2xl bg-[#f4efe7] px-4 py-3 text-sm text-[#4f4a43]">That page is past the end of these results, so the last page is shown instead.</p> : null}
+          {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">{results.error}</p> : null}
         </div>
         <SortSelect params={params} />
       </div>
@@ -58,9 +59,9 @@ export default async function VenuesPage({ searchParams }: { searchParams: Promi
             </div>
           ) : (
             <div className="rounded-3xl border border-[var(--line)] bg-white p-10 text-center">
-              <h2 className="font-display text-3xl font-semibold">No venues found</h2>
-              <p className="mt-3 text-[var(--muted)]">Try widening your guest count, budget, location, or venue type.</p>
-              <Link className="mt-5 inline-flex text-sm font-semibold text-[#5c6b52]" href="/venues">Clear all filters</Link>
+              <h2 className="font-display text-3xl font-semibold">{results.outOfRange ? "That page is outside this search" : "No venues found"}</h2>
+              <p className="mt-3 text-[var(--muted)]">{results.outOfRange ? "Head back to the first page to keep browsing venues." : "Try widening your guest count, budget, location, or venue type."}</p>
+              <Link className="mt-5 inline-flex text-sm font-semibold text-[#5c6b52]" href="/venues">{results.outOfRange ? "Back to the first page" : "Clear all filters"}</Link>
             </div>
           )}
 
