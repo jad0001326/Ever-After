@@ -20,7 +20,7 @@ describe("Planning Hub supplier catalogue boundaries", () => {
   it("denies dormant-category detail before touching the database", async () => {
     const client = { from: vi.fn() };
     const result = await getPlanningHubSupplierDetail(
-      "videographer",
+      "florist",
       "10000000-0000-4000-8000-000000000001",
       client as never,
     );

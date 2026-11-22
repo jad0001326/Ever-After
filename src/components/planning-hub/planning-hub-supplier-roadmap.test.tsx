@@ -15,11 +15,11 @@ describe("PlanningHubSupplierRoadmap", () => {
       />,
     );
 
-    expect(screen.getByRole("link", { name: /Browse & compare/i }).getAttribute("href"))
-      .toBe("/planning-hub/photography");
+    expect(screen.getAllByRole("link", { name: /Browse & compare/i }).map((link) => link.getAttribute("href")))
+      .toEqual(expect.arrayContaining(["/planning-hub/photography", "/planning-hub/suppliers/videographer"]));
     expect(screen.getAllByText("Manual planning").length).toBeGreaterThan(1);
     expect(screen.getAllByRole("link", { name: /Add manually/i })[0].getAttribute("href"))
-      .toContain("#manual-videographer");
+      .toContain("#manual-celebrant");
   });
 
   it("shows the latest manual supplier and preserves the shared workspace", () => {

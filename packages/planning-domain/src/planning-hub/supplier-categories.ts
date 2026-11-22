@@ -1,6 +1,6 @@
 export const supplierDirectoryCategories = [
   { slug: "photographer", label: "Photographer", plural: "Photographers", budgetCategoryId: "photography", live: true },
-  { slug: "videographer", label: "Videographer", plural: "Videographers", budgetCategoryId: "videography", live: false },
+  { slug: "videographer", label: "Videographer", plural: "Videographers", budgetCategoryId: "videography", live: true },
   { slug: "celebrant", label: "Celebrant", plural: "Celebrants", budgetCategoryId: "registrar-celebrant", live: false },
   { slug: "florist", label: "Florist", plural: "Florists", budgetCategoryId: "flowers", live: false },
   { slug: "wedding-planner", label: "Wedding planner", plural: "Wedding planners", budgetCategoryId: "miscellaneous", live: false },

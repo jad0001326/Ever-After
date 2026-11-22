@@ -9,6 +9,7 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasOfficialContactSource, isValidOutreachEmail, normalizeEmail, validPublicUrl } from "@/lib/outreach-validation";
+import { publicSupplierCategoryPath, publicSupplierProfilePath } from "@/lib/supplier-public-routes";
 
 function text(formData: FormData, key: string) { return formData.get(key)?.toString().trim() ?? ""; }
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
@@ -140,8 +141,8 @@ export async function saveSupplierListing(formData: FormData) {
   if (outreachError) redirect(`${contactRedirect}?message=${encodeURIComponent(outreachError.message)}`);
 
   revalidatePath("/admin/suppliers");
-  revalidatePath("/photographers");
-  revalidatePath(`/photographers/${result.data.slug}`);
+  revalidatePath(publicSupplierCategoryPath(category.slug));
+  revalidatePath(publicSupplierProfilePath(category.slug, result.data.slug));
   revalidatePath("/wedding-budget-planner");
   redirect(`/admin/suppliers/${result.data.id}/edit?message=Supplier+profile+saved`);
 }

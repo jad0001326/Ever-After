@@ -238,13 +238,15 @@ describe("Planning Hub supplier search", () => {
     });
   });
 
-  it("recognises mapped categories without exposing disabled stages as live", () => {
+  it("recognises mapped categories and only exposes launched catalogues", () => {
     expect(getPlanningHubSupplierCategory("videographer")).toMatchObject({
       budgetCategoryId: "videography",
-      live: false,
+      live: true,
     });
     expect(getLivePlanningHubSupplierCategory("photographer")?.live).toBe(true);
-    expect(getLivePlanningHubSupplierCategory("videographer")).toBeNull();
+    expect(getLivePlanningHubSupplierCategory("videographer")?.slug).toBe("videographer");
+    expect(getPlanningHubSupplierCategory("florist")).toMatchObject({ live: false });
+    expect(getLivePlanningHubSupplierCategory("florist")).toBeNull();
     expect(isSupplierCategorySlug("florist")).toBe(true);
     expect(isSupplierCategorySlug("unknown")).toBe(false);
   });

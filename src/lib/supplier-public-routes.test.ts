@@ -19,8 +19,10 @@ describe("public supplier routes", () => {
     expect(publicSupplierClaimPath("florist", "wild-blooms")).toBe("/suppliers/florist/wild-blooms/claim");
   });
 
-  it("keeps inactive and unknown categories inaccessible", () => {
+  it("opens launched categories and keeps inactive ones inaccessible", () => {
     expect(getPublicSupplierCategory("photographer")?.label).toBe("Photographer");
+    expect(getPublicSupplierCategory("videographer")?.plural).toBe("Videographers");
+    expect(publicSupplierCategoryPath("videographer")).toBe("/suppliers/videographer");
     expect(getPublicSupplierCategory("florist")).toBeNull();
     expect(getPublicSupplierCategory("unknown")).toBeNull();
   });
