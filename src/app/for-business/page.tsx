@@ -6,7 +6,7 @@ import { supplierCategories } from "@/data/supplier-categories";
 
 export const metadata: Metadata = {
   title: "List your wedding business",
-  description: "Apply to list your wedding business on EverAft and connect with couples planning celebrations across the UK.",
+  description: "Apply to list your wedding business on EverAft and connect with couples planning celebrations across Scotland.",
   alternates: { canonical: "/for-business" }
 };
 
@@ -23,7 +23,7 @@ export default async function ForBusinessPage({ searchParams }: { searchParams: 
     <div className="bg-[#f2ede4]">
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-14 sm:px-6 lg:grid lg:grid-cols-[0.82fr_1.18fr] lg:gap-14 lg:px-8 lg:pb-24 lg:pt-20">
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <p className="text-sm font-semibold tracking-[0.16em] text-[#95502b]">For UK wedding businesses</p>
+          <p className="text-sm font-semibold tracking-[0.16em] text-[#95502b]">For Scottish wedding businesses</p>
           <h1 className="mt-4 font-display text-6xl font-semibold leading-[0.88] tracking-[-0.05em] sm:text-7xl">Be found for the work you do best.</h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-[var(--muted)]">EverAft is building a considered wedding directory for brilliant independent businesses. Send your details and we’ll review your application before publication.</p>
           <div className="mt-10 grid gap-5 border-t border-[#cfc3b4] pt-7">

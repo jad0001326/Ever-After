@@ -37,7 +37,8 @@ export default async function PhotographersPage({ searchParams }: { searchParams
           <h1 className="mt-3 max-w-4xl font-display text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">Wedding photographers in Scotland</h1>
           <p className="mt-3 max-w-2xl leading-7 text-[var(--muted)]">Compare photographers by style, location, travel coverage and package price.</p>
           <p className="mt-2 text-sm text-[var(--muted)]">{results.total} {results.total === 1 ? "photographer" : "photographers"} matched your search.</p>
-          {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">The photographer directory is being prepared: {results.error}</p> : null}
+          {"outOfRange" in results && results.outOfRange ? <p className="mt-4 rounded-2xl bg-[#f4efe7] px-4 py-3 text-sm text-[#4f4a43]">That page is past the end of these results.</p> : null}
+          {results.error ? <p className="mt-4 rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm text-[#8a3c19] ring-1 ring-[#f0c2a8]">{results.error}</p> : null}
         </div>
         <Suspense fallback={null}><PhotographerSortSelect /></Suspense>
       </div>

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { INTERNAL_TEST_VENUE_SLUG_PREFIX } from "@/lib/internal-test-venue";
+import { publicVenueCopy } from "@/lib/public-venue-copy";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import { hasUnresolvedTaxLabel, selectBudgetPriceOption } from "@/lib/venue-pricing";
 import type { Database } from "@/types/database";
@@ -130,7 +131,7 @@ export async function getPlanningHubVenueDetail(venueId: string): Promise<Planni
 
   return {
     ...result,
-    description: venue.description,
+    description: publicVenueCopy(venue.description) || publicVenueCopy(venue.summary),
     capacityMin: venue.capacity_min,
     officialWebsiteUrl: venue.official_website_url,
     imageCredit: venue.image_credit,
@@ -191,7 +192,7 @@ function planningHubVenueFromRow(row: VenueRow, options: VenuePriceOption[]): Pl
     type: row.type,
     town: row.town,
     region: row.region,
-    summary: row.summary,
+    summary: publicVenueCopy(row.summary),
     capacityMax: row.capacity_max,
     imageUrl: hasApprovedPhoto ? imageUrlOrRepresentative(row.hero_image, row.type) : PLANNING_HUB_FALLBACK,
     priceFromPence: price?.amountFromPence ?? null,

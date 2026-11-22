@@ -5,6 +5,7 @@ import { readSheet } from "read-excel-file/node";
 import { venueTypes } from "@/data/venue-options";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { publicVenueCopy } from "@/lib/public-venue-copy";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 
 type ImportMode = "validate" | "import";
@@ -118,12 +119,9 @@ function parseInviteStatus(input: string): ParsedVenue["inviteStatus"] {
   return "not_sent";
 }
 
-function defaultSummary(name: string, town: string, region: string) {
-  return `${name} is a ${town || region ? `${town || region} ` : ""}venue listed for EverAft launch review.`;
-}
-
-function defaultDescription(name: string) {
-  return `${name} was imported from the EverAft venue intake workbook. Add reviewed copy before publishing this listing.`;
+function defaultDescription(name: string, town: string, region: string) {
+  const place = [town, region].filter(Boolean).join(", ") || "Scotland";
+  return `${name} is a wedding venue in ${place}.`;
 }
 
 function parseCsv(text: string) {
@@ -225,8 +223,8 @@ function parseVenue(rowNumber: number, row: RawRow): { venue?: ParsedVenue; erro
   const slug = value(row, "Slug") || slugify(name);
   const priceFrom = parseNumber(value(row, "Price from"));
   const priceTo = parseNumber(value(row, "Price to")) ?? priceFrom;
-  const description = value(row, "Description") || defaultDescription(name);
-  const summary = value(row, "Summary") || description.slice(0, 180) || defaultSummary(name, town, region);
+  const description = publicVenueCopy(value(row, "Description")) || defaultDescription(name, town, region);
+  const summary = publicVenueCopy(value(row, "Summary")) || description.slice(0, 180);
   const heroImage = imageUrlOrRepresentative(value(row, "Hero image URL"), type);
   const officialWebsiteUrl = value(row, "Official website URL", "Official website/source") || null;
   const officialGalleryUrl = value(row, "Official gallery URL") || null;

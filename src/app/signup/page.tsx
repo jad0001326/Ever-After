@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
 import { signUp } from "@/app/actions/auth";
 import { AuthCard } from "@/components/auth/auth-card";
+import { privatePageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Create account"
-};
+export const metadata = privatePageMetadata({
+  title: "Create account",
+  description: "Create an EverAft account to save Scottish wedding venues and keep a shortlist in one place.",
+  path: "/signup"
+});
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ message?: string; redirectTo?: string }> }) {
   const { message, redirectTo } = await searchParams;

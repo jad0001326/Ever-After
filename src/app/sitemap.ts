@@ -4,7 +4,7 @@ import { absoluteUrl } from "@/lib/utils";
 import { budgetStarters } from "@/lib/budget/starters";
 import { venueCollections } from "@/lib/venue-collections";
 import { planningGuides } from "@/lib/planning-guides";
-import { INTERNAL_TEST_VENUE_SLUG_PREFIX } from "@/lib/internal-test-venue";
+import { withoutInternalTestVenues } from "@/lib/internal-test-venue";
 import { supplierDirectoryCategories } from "@/data/supplier-directory";
 import { getPublicSupplierCategory, publicSupplierCategoryPath, publicSupplierProfilePath } from "@/lib/supplier-public-routes";
 import type { SupplierCategorySlug } from "@/types/supplier";
@@ -15,7 +15,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
   const [{ data: venues }, { data: suppliers }] = supabase
     ? await Promise.all([
-      supabase.from("venues").select("slug, updated_at").eq("status", "published").in("listing_status", ["published", "claimed"]).not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`).order("updated_at", { ascending: false }),
+      withoutInternalTestVenues(
+        supabase.from("venues").select("slug, updated_at").eq("status", "published").in("listing_status", ["published", "claimed"])
+      ).order("updated_at", { ascending: false }),
       supabase.from("supplier_listings").select("category_slug, slug, updated_at").eq("listing_status", "published").order("updated_at", { ascending: false })
     ])
     : [{ data: [] }, { data: [] }];

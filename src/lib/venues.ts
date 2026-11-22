@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { INTERNAL_TEST_VENUE_SLUG_PREFIX } from "@/lib/internal-test-venue";
+import { catalogueTotalPages, isUnsatisfiableRangeError, normaliseCataloguePage, PUBLIC_CATALOGUE_ERROR, totalFromRangeError } from "@/lib/catalogue-paging";
+import { isInternalTestVenueRecord, withoutInternalTestVenues } from "@/lib/internal-test-venue";
+import { publicVenueCopy } from "@/lib/public-venue-copy";
 import { imageUrlOrRepresentative } from "@/lib/venue-images";
 import { normaliseVenuePricingUnit, selectBudgetPriceOption, venuePriceOptionToImportedType } from "@/lib/venue-pricing";
 import type { Database } from "@/types/database";
@@ -11,98 +13,75 @@ type VenueImageRow = Database["public"]["Tables"]["venue_images"]["Row"];
 type VenuePriceOptionRow = Database["public"]["Tables"]["venue_price_options"]["Row"];
 type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 const PRICE_OPTION_COLUMNS = "id, venue_id, kind, label, amount_from_pence, amount_to_pence, currency, pricing_unit, price_qualifier, included_guests, season_label, day_label, description, tax_label, minimum_nights, valid_from, valid_to, source_url, verified_at, display_priority";
+const VENUE_PAGE_SIZE = 6;
 
-export async function searchVenueListings(params: VenueSearchParams) {
+type VenueSearchResult = {
+  venues: Venue[];
+  total: number;
+  page: number;
+  totalPages: number;
+  outOfRange: boolean;
+  error?: string;
+};
+
+export async function searchVenueListings(params: VenueSearchParams): Promise<VenueSearchResult> {
   const supabase = await createClient();
-  const page = Math.max(Number(params.page) || 1, 1);
-  const pageSize = 6;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const requestedPage = normaliseCataloguePage(params.page);
+  const pageSize = VENUE_PAGE_SIZE;
 
   if (!supabase) {
-    return {
-      venues: [],
-      total: 0,
-      page,
-      totalPages: 1,
-      error: "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
-    };
+    console.error("Venue search failed because Supabase is not configured.");
+    return emptyVenueSearch(PUBLIC_CATALOGUE_ERROR);
   }
 
-  let query = supabase
-    .from("venues")
-    .select("*", { count: "exact" })
-    .eq("status", "published")
-    .in("listing_status", ["published", "claimed"])
-    .not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`);
+  const from = (requestedPage - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, count, error } = await venueSearchQuery(supabase, params).range(from, to);
 
-  if (params.location) {
-    const value = `%${params.location}%`;
-    query = query.or(`region.ilike.${value},town.ilike.${value},country.ilike.${value}`);
+  if (isUnsatisfiableRangeError(error)) {
+    return recoverOutOfRangeVenuePage(supabase, params, pageSize, count, error);
   }
-
-  const guests = Number(params.guests);
-  if (!Number.isNaN(guests) && guests > 0) query = query.gte("capacity_max", guests);
-
-  const budget = Number(params.budget);
-  if (!Number.isNaN(budget) && budget > 0) query = query.not("price_from", "is", null).lte("price_from", budget);
-
-  if (params.type) query = query.eq("type", params.type);
-
-  // Featured listings always lead the matching results, then use the visitor's chosen sort.
-  query = query.order("is_featured", { ascending: false });
-
-  if (params.sort === "price-desc") query = query.order("price_from", { ascending: false, nullsFirst: false });
-  else if (params.sort === "capacity-desc") query = query.order("capacity_max", { ascending: false });
-  else query = query.order("price_from", { ascending: true, nullsFirst: false });
-
-  const { data, count, error } = await query.range(from, to);
 
   if (error || !data) {
-    return {
-      venues: [],
-      total: 0,
-      page,
-      totalPages: 1,
-      error: error?.message ?? "Supabase did not return venue data."
-    };
+    console.error("Venue search failed", error);
+    return emptyVenueSearch(PUBLIC_CATALOGUE_ERROR);
   }
 
-  const visibleRows = data.filter(isVisibleVenueRow);
-  const priceOptions = await fetchPublishedPriceOptions(supabase, visibleRows.map((row) => row.id));
   const total = count ?? data.length;
   return {
-    venues: visibleRows.map((row) => venueFromRow(row, [], [], priceOptions.get(row.id) ?? [])),
+    venues: await mapPublicVenueRows(supabase, data),
     total,
-    page,
-    totalPages: Math.max(Math.ceil(total / pageSize), 1)
+    page: requestedPage,
+    totalPages: catalogueTotalPages(total, pageSize),
+    outOfRange: false
   };
 }
 
 export async function getFeaturedVenueListings() {
   const supabase = await createClient();
   if (!supabase) {
+    console.error("Featured venue search failed because Supabase is not configured.");
     return {
       venues: [],
-      error: "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
+      error: PUBLIC_CATALOGUE_ERROR
     };
   }
 
-  const { data, error } = await supabase
-    .from("venues")
-    .select("*")
-    .eq("status", "published")
-    .in("listing_status", ["published", "claimed"])
-    .not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`)
+  const { data, error } = await withoutInternalTestVenues(
+    supabase
+      .from("venues")
+      .select("*")
+      .eq("status", "published")
+      .in("listing_status", ["published", "claimed"])
+  )
     .eq("is_featured", true)
     .order("updated_at", { ascending: false })
     .limit(3);
 
-  const visibleRows = data?.filter(isVisibleVenueRow) ?? [];
-  const priceOptions = await fetchPublishedPriceOptions(supabase, visibleRows.map((row) => row.id));
+  if (error) console.error("Featured venue search failed", error);
   return {
-    venues: visibleRows.map((row) => venueFromRow(row, [], [], priceOptions.get(row.id) ?? [])),
-    error: error?.message
+    venues: await mapPublicVenueRows(supabase, data ?? []),
+    error: error ? PUBLIC_CATALOGUE_ERROR : undefined
   };
 }
 
@@ -110,7 +89,9 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
   const supabase = await createClient();
   if (!supabase) return undefined;
 
-  const { data: venue } = await supabase.from("venues").select("*").eq("slug", slug).eq("status", "published").single();
+  const { data: venue } = await withoutInternalTestVenues(
+    supabase.from("venues").select("*").eq("slug", slug).eq("status", "published")
+  ).single();
   if (!venue || !isVisibleVenueRow(venue)) return undefined;
 
   const [{ data: images }, { data: links }, { data: amenityRows }, priceOptions] = await Promise.all([
@@ -131,9 +112,12 @@ export async function getVenueListingBySlug(slug: string): Promise<Venue | undef
 export async function getBudgetPlannerVenueListings(): Promise<PlannerListing[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"]).not("slug", "like", `${INTERNAL_TEST_VENUE_SLUG_PREFIX}%`).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(1000);
-  const priceOptions = await fetchPublishedPriceOptions(supabase, (data ?? []).map((venue) => venue.id));
-  return (data ?? []).map((venue) => ({
+  const { data } = await withoutInternalTestVenues(
+    supabase.from("venues").select("id, slug, name, type, town, region, hero_image").eq("status", "published").in("listing_status", ["published", "claimed"])
+  ).order("is_featured", { ascending: false }).order("name", { ascending: true }).limit(1000);
+  const visibleVenues = (data ?? []).filter((venue) => !isInternalTestVenueRecord(venue));
+  const priceOptions = await fetchPublishedPriceOptions(supabase, visibleVenues.map((venue) => venue.id));
+  return visibleVenues.map((venue) => ({
     ...plannerListingFromRow(venue, priceOptions.get(venue.id) ?? [])
   }));
 }
@@ -152,8 +136,8 @@ function venueFromRow(row: VenueRow, images: VenueImageRow[] = [], amenities: Am
     region: row.region,
     town: row.town,
     country: "Scotland",
-    summary: row.summary,
-    description: row.description,
+    summary: publicVenueCopy(row.summary),
+    description: publicVenueCopy(row.description) || publicVenueCopy(row.summary),
     priceFrom: row.price_from,
     priceTo: row.price_to,
     priceOptions,
@@ -259,5 +243,109 @@ async function fetchPublishedPriceOptions(supabase: SupabaseServerClient, venueI
 }
 
 function isVisibleVenueRow(row: VenueRow) {
-  return !["draft", "archived"].includes(row.listing_status ?? "published");
+  return !["draft", "archived"].includes(row.listing_status ?? "published") && !isInternalTestVenueRecord(row);
+}
+
+function emptyVenueSearch(error?: string) {
+  return { venues: [], total: 0, page: 1, totalPages: 1, error, outOfRange: false };
+}
+
+type VenueSearchFilter = {
+  eq(column: string, value: string): VenueSearchFilter;
+  gte(column: string, value: number): VenueSearchFilter;
+  lte(column: string, value: number): VenueSearchFilter;
+  not(column: string, operator: string, value: null): VenueSearchFilter;
+  or(filters: string): VenueSearchFilter;
+};
+
+function applyVenueSearchFilters<T>(query: T, params: VenueSearchParams): T {
+  let filtered = query as unknown as VenueSearchFilter;
+
+  if (params.location) {
+    const value = `%${params.location}%`;
+    filtered = filtered.or(`region.ilike.${value},town.ilike.${value},country.ilike.${value}`);
+  }
+
+  const guests = Number(params.guests);
+  if (!Number.isNaN(guests) && guests > 0) filtered = filtered.gte("capacity_max", guests);
+
+  const budget = Number(params.budget);
+  if (!Number.isNaN(budget) && budget > 0) filtered = filtered.not("price_from", "is", null).lte("price_from", budget);
+
+  if (params.type) filtered = filtered.eq("type", params.type);
+  return filtered as unknown as T;
+}
+
+function venueSearchQuery(supabase: SupabaseServerClient, params: VenueSearchParams) {
+  let query = applyVenueSearchFilters(
+    withoutInternalTestVenues(
+      supabase
+        .from("venues")
+        .select("*", { count: "exact" })
+        .eq("status", "published")
+        .in("listing_status", ["published", "claimed"])
+    ),
+    params
+  );
+
+  // Featured listings always lead the matching results, then use the visitor's chosen sort.
+  query = query.order("is_featured", { ascending: false });
+
+  if (params.sort === "price-desc") query = query.order("price_from", { ascending: false, nullsFirst: false });
+  else if (params.sort === "capacity-desc") query = query.order("capacity_max", { ascending: false });
+  else query = query.order("price_from", { ascending: true, nullsFirst: false });
+
+  return query;
+}
+
+async function mapPublicVenueRows(supabase: SupabaseServerClient, rows: VenueRow[]) {
+  const visibleRows = rows.filter(isVisibleVenueRow);
+  const priceOptions = await fetchPublishedPriceOptions(supabase, visibleRows.map((row) => row.id));
+  return visibleRows.map((row) => venueFromRow(row, [], [], priceOptions.get(row.id) ?? []));
+}
+
+async function recoverOutOfRangeVenuePage(
+  supabase: SupabaseServerClient,
+  params: VenueSearchParams,
+  pageSize: number,
+  reportedCount: number | null,
+  error: { details?: string | null } | null
+): Promise<VenueSearchResult> {
+  const knownTotal = typeof reportedCount === "number" ? reportedCount : totalFromRangeError(error);
+  let total = knownTotal;
+  if (total == null) {
+    const counted = await applyVenueSearchFilters(
+      withoutInternalTestVenues(
+        supabase
+          .from("venues")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "published")
+          .in("listing_status", ["published", "claimed"])
+      ),
+      params
+    );
+    if (counted.error) {
+      console.error("Venue search count failed", counted.error);
+      return emptyVenueSearch(PUBLIC_CATALOGUE_ERROR);
+    }
+    total = counted.count ?? 0;
+  }
+
+  const totalPages = catalogueTotalPages(total, pageSize);
+  if (total === 0) return { venues: [], total: 0, page: 1, totalPages: 1, outOfRange: true };
+
+  const lastFrom = (totalPages - 1) * pageSize;
+  const last = await venueSearchQuery(supabase, params).range(lastFrom, lastFrom + pageSize - 1);
+  if (last.error || !last.data) {
+    console.error("Venue search could not load the last page", last.error);
+    return { venues: [], total, page: totalPages, totalPages, outOfRange: true };
+  }
+
+  return {
+    venues: await mapPublicVenueRows(supabase, last.data),
+    total,
+    page: totalPages,
+    totalPages,
+    outOfRange: true
+  };
 }
