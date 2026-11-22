@@ -1,3 +1,4 @@
+import { configuredReplyToEmail, replyToMailtoHtml } from "@/lib/email";
 import { absoluteUrl } from "@/lib/utils";
 import type { OutreachFollowUpStage } from "@/lib/outreach-sequence";
 
@@ -121,6 +122,7 @@ export function buildOutreachEmail({
   const listingUrl = isSupplier ? null : absoluteUrl(`/venues/${recipient.listingSlug}`);
   const heroUrl = absoluteUrl("/images/everaft-wedding-reception.png");
   const privacyUrl = absoluteUrl("/privacy");
+  const replyTo = configuredReplyToEmail();
   const headline = kind === "follow_up"
     ? followUpStage === "final"
       ? "A final note from EverAft."
@@ -142,7 +144,7 @@ export function buildOutreachEmail({
     "Best,",
     "James",
     "EverAft",
-    "james@everaft.co.uk",
+    ...(replyTo ? [replyTo] : []),
     "",
     `Privacy: ${privacyUrl}`,
     `Unsubscribe from business invitations: ${recipient.unsubscribeUrl}`
@@ -210,7 +212,7 @@ export function buildOutreachEmail({
               <td style="padding:25px 34px;background:#ebe3d8;color:#625f57;font-size:11px;line-height:1.7;text-align:center;">
                 <strong style="color:#24432f;">EverAft</strong> · Curated wedding planning<br>
                 Sent by EverAft because this address is published for ${escapeHtml(recipient.businessName)} or was supplied for business contact.<br>
-                Reply to <a href="mailto:james@everaft.co.uk" style="color:#35533e;">james@everaft.co.uk</a> ·
+                ${replyToMailtoHtml(replyTo)}
                 <a href="${escapeAttribute(privacyUrl)}" style="color:#35533e;">Privacy</a> ·
                 <a href="${escapeAttribute(recipient.unsubscribeUrl)}" style="color:#35533e;">Unsubscribe</a>
               </td>

@@ -1,3 +1,4 @@
+import { configuredReplyToEmail, replyToMailtoHtml } from "@/lib/email";
 import { escapeHtml } from "@/lib/outreach-email";
 import { absoluteUrl } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ export function buildListingReminderEmail(input: ListingReminderEmailInput) {
   const listingUrl = absoluteUrl(`/venues/${input.venueSlug}`);
   const heroUrl = absoluteUrl("/images/everaft-wedding-reception.png");
   const privacyUrl = absoluteUrl("/privacy");
+  const replyTo = configuredReplyToEmail();
   const greeting = recipientName ? `Hi ${recipientName},` : `Hi ${venueName} team,`;
   const nextStepLabel = missing.length === 1 ? "suggested next step" : "suggested next steps";
 
@@ -44,7 +46,7 @@ export function buildListingReminderEmail(input: ListingReminderEmailInput) {
     "Best,",
     "James",
     "EverAft",
-    "james@everaft.co.uk",
+    ...(replyTo ? [replyTo] : []),
     "",
     `Privacy: ${privacyUrl}`
   ].join("\n");
@@ -138,7 +140,7 @@ export function buildListingReminderEmail(input: ListingReminderEmailInput) {
               <td style="padding:25px 34px;background:#ebe3d8;color:#625f57;font-size:11px;line-height:1.7;text-align:center;">
                 <strong style="color:#24432f;">EverAft</strong> · Curated wedding planning<br>
                 You received this service email because your registered EverAft account manages ${escapeHtml(venueName)}.<br>
-                Reply to <a href="mailto:james@everaft.co.uk" style="color:#35533e;">james@everaft.co.uk</a> ·
+                ${replyToMailtoHtml(replyTo)}
                 <a href="${escapeAttribute(privacyUrl)}" style="color:#35533e;">Privacy</a>
               </td>
             </tr>
