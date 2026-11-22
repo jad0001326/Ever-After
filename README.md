@@ -66,12 +66,12 @@ NEXT_PUBLIC_SITE_URL=https://your-site.vercel.app
 
 ## Email Notifications
 
-Titan can stay as your normal domain mailbox for reading and replying to email. The app uses Resend for automated transactional emails when these optional environment variables are configured:
+Use your normal domain mailbox for reading and replying to email. The app uses Resend for automated transactional emails when these optional environment variables are configured:
 
 - `RESEND_API_KEY`: Resend API key.
 - `RESEND_FROM_EMAIL`: branded sender, for example `EverAft <invites@everaft.co.uk>`.
 - `ADMIN_NOTIFICATION_EMAIL`: one or more admin inboxes, comma-separated.
-- `REPLY_TO_EMAIL`: mailbox for replies, usually your Titan inbox.
+- `REPLY_TO_EMAIL`: mailbox that should receive replies to automated emails.
 - `RESEND_WEBHOOK_SECRET`: signing secret for delivery, bounce and complaint events.
 
 If `RESEND_API_KEY` or `RESEND_FROM_EMAIL` is missing, form submissions still work and email sends are skipped. Configure the sending domain in Resend DNS before using a domain sender in production.

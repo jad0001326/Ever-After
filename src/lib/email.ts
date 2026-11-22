@@ -1,6 +1,5 @@
 import { absoluteUrl } from "@/lib/utils";
 import { isValidEmailSyntax } from "@/lib/outreach-validation";
-import { buildClaimApprovedEmail } from "@/lib/claim-approved-email";
 
 export type EmailInput = {
   to: string | string[];
@@ -122,6 +121,26 @@ function emailConfig() {
     adminTo: splitEmails(process.env.ADMIN_NOTIFICATION_EMAIL ?? process.env.EMAIL_ADMIN_TO),
     replyTo: process.env.REPLY_TO_EMAIL ?? process.env.EMAIL_REPLY_TO
   };
+}
+
+const CLOSED_REPLY_MAILBOX = "james@everaft.co.uk";
+const PLACEHOLDER_REPLY_DOMAINS = new Set(["example.com", "example.org", "example.net", "yourdomain.com", "localhost"]);
+
+export function configuredReplyToEmail() {
+  const configured = emailConfig().replyTo?.trim() ?? "";
+  if (!configured) return null;
+  const address = (configured.match(/^[^<>]*<([^<>]+)>$/)?.[1] ?? configured).trim();
+  if (!isValidEmailSyntax(address)) return null;
+  const normalized = address.toLowerCase();
+  const domain = normalized.split("@")[1] ?? "";
+  if (normalized === CLOSED_REPLY_MAILBOX || PLACEHOLDER_REPLY_DOMAINS.has(domain)) return null;
+  return address;
+}
+
+export function replyToMailtoHtml(address: string | null) {
+  if (!address) return "";
+  const safe = htmlEscape(address);
+  return `Reply to <a href="mailto:${safe}" style="color:#35533e;">${safe}</a> · `;
 }
 
 function splitEmails(value: string | undefined) {
@@ -390,7 +409,7 @@ export async function notifyClaimReviewed(input: ClaimReviewedNotification) {
   if (recipients.length === 0) return;
 
   const approved = input.status === "approved";
-  const welcomeEmail = approved ? buildClaimApprovedEmail(input) : null;
+  const welcomeEmail = approved ? (await import("@/lib/claim-approved-email")).buildClaimApprovedEmail(input) : null;
   await sendEmail({
     to: recipients,
     subject: welcomeEmail?.subject ?? `Your EverAft claim for ${input.venueName} was reviewed`,
